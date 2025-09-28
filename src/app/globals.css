@@ -1,26 +1,125 @@
 @import "tailwindcss";
+/* Remove this line: @config "../tailwind.config.ts"; */
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Your colors stay the same */
+  --color-primary: #3a4da1;
+  --color-secondary: #6caaef;
+  --color-text: #1f2937;
+  --color-background: #e2eefc;
+  --color-foreground: #060810;
+  
+  --color-primary-50: #ebedf6;
+  --color-primary-100: #c2c8e2;
+  --color-primary-200: #a4add4;
+  --color-primary-300: #7b88c0;
+  --color-primary-400: #6171b4;
+  --color-primary-500: #3a4da1;
+  --color-primary-600: #354693;
+  --color-primary-700: #293772;
+  --color-primary-800: #202a59;
+  --color-primary-900: #182044;
+  
+  --color-secondary-50: #f0f7fd;
+  --color-secondary-100: #d1e5fa;
+  --color-secondary-200: #bbd8f8;
+  --color-secondary-300: #9dc6f4;
+  --color-secondary-400: #89bbf2;
+  --color-secondary-500: #6caaef;
+  --color-secondary-600: #629bd9;
+  --color-secondary-700: #4d79aa;
+  --color-secondary-800: #3b5e83;
+  --color-secondary-900: #2d4764;
+  
+  /* Add gray colors to fix the theme function error */
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    border-color: #e5e7eb; /* Use direct value instead of theme() */
+  }
+  
+  body {
+    background-color: #e2eefc;
+    color: #060810;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: none;
+    outline: none;
+    padding: 0.5rem 1rem;
+  }
+
+  .btn:focus-visible {
+    outline: 2px solid #3a4da1;
+    outline-offset: 2px;
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background-color: #3a4da1;
+    color: white;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background-color: #354693;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  }
+
+  .btn-lg {
+    height: 3rem;
+    padding: 0 1.5rem;
+    font-size: 1rem;
+  }
+
+  .card {
+    background-color: white;
+    border-radius: 0.75rem;
+    border: 1px solid #a4add4;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+    transition: box-shadow 0.2s ease;
+  }
+
+  .card:hover {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  }
+
+  .container {
+    max-width: 80rem;
+    margin: 0 auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .section {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
 }
