@@ -183,7 +183,7 @@ export default function SignupPage() {
     } else {
       return (
         <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
-          <User size={24} className="text-gray-400" />
+          <User size={24} className="text-gray-900" />
         </div>
       );
     }
@@ -226,7 +226,7 @@ export default function SignupPage() {
     const hasError = form.formState.errors[fieldName];
     return `h-10 w-full pl-10 pr-4 bg-gray-50 rounded-lg text-gray-900 focus:outline-none transition-colors ${
       hasError 
-        ? 'border-[#EF4444] focus:border-[#EF4444] focus:ring-1 focus:ring-[#EF4444]' 
+        ? 'border-error focus:border-error focus:ring-1 focus:ring-error' 
         : 'border border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500'
     }`;
   };
@@ -235,7 +235,7 @@ export default function SignupPage() {
     const hasError = form.formState.errors[fieldName];
     return `h-10 w-full px-3 bg-gray-50 rounded-lg text-gray-900 focus:outline-none transition-colors ${
       hasError 
-        ? 'border-[#EF4444] focus:border-[#EF4444] focus:ring-1 focus:ring-[#EF4444]' 
+        ? 'border-error focus:border-error focus:ring-1 focus:ring-error' 
         : 'border border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500'
     }`;
   };
@@ -244,7 +244,7 @@ export default function SignupPage() {
     const hasError = form.formState.errors[fieldName];
     return `w-full p-3 text-sm bg-gray-50 rounded-lg text-gray-900 focus:outline-none transition-colors resize-none ${
       hasError 
-        ? 'border-[#EF4444] focus:border-[#EF4444] focus:ring-1 focus:ring-[#EF4444]' 
+        ? 'border-error focus:border-error focus:ring-1 focus:ring-error' 
         : 'border border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500'
     }`;
   };
@@ -441,16 +441,15 @@ export default function SignupPage() {
                     onChange={handleFileChange}
                     className="hidden"
                   />
-                  <Button
+                  <button
                     type="button"
-                    variant="outline"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploading}
-                    className="flex items-center gap-2 h-10 px-4 bg-gray-50 border border-gray-300 text-gray-700 hover:border-primary-500 hover:bg-gray-100 transition-colors"
+                    className="flex items-center gap-2 h-10 px-4 bg-gray-50 border border-gray-300 text-gray-700 hover:border-primary-500 hover:bg-gray-100 transition-colors rounded-lg disabled:opacity-50"
                   >
                     <Upload size={14} />
                     {isUploading ? "업로드 중..." : "이미지 선택"}
-                  </Button>
+                  </button>
                   {profileImageFile && (
                     <span className="text-sm text-gray-500">
                       {profileImageFile.name.length > 20 ? 
@@ -522,14 +521,14 @@ export default function SignupPage() {
                 />
               </div>
 
-              {/* Submit Button */}
-              <Button
+              {/* Submit Button - Fixed with proper HTML button instead of Button component */}
+              <button
                 type="submit"
                 className="btn btn-primary btn-lg w-full"
                 disabled={isLoading || isUploading}
               >
                 {isLoading ? "회원가입 중..." : "회원가입"}
-              </Button>
+              </button>
               
               {error && (
                 <p className="text-sm text-error text-center">{error}</p>

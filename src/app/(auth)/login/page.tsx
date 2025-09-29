@@ -238,7 +238,7 @@ export default function LogInPage() {
             <button
               onClick={handleGithubLogin}
               disabled={isLoading}
-              className="w-full h-10 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-primary-500 hover:text-primary-600 transition-colors rounded-lg font-medium flex items-center justify-center"
+              className="w-full btn-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-primary-500 hover:text-primary-600 transition-colors rounded-lg font-medium flex items-center justify-center"
             >
               <Github className="mr-2 h-4 w-4" />
               깃허브로 간편 로그인
