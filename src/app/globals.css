@@ -1,14 +1,15 @@
 @import "tailwindcss";
-/* Remove this line: @config "../tailwind.config.ts"; */
 
 @theme {
-  /* Your colors stay the same */
+  /* SSG Brand Colors */
   --color-primary: #3a4da1;
   --color-secondary: #6caaef;
+  --color-accent: #f59e0b;
   --color-text: #1f2937;
   --color-background: #e2eefc;
   --color-foreground: #060810;
   
+  /* Primary Scale */
   --color-primary-50: #ebedf6;
   --color-primary-100: #c2c8e2;
   --color-primary-200: #a4add4;
@@ -20,9 +21,10 @@
   --color-primary-800: #202a59;
   --color-primary-900: #182044;
   
+  /* Secondary Scale */
   --color-secondary-50: #f0f7fd;
-  --color-secondary-100: #d1e5fa;
-  --color-secondary-200: #bbd8f8;
+  --color-secondary-100: #e9f2fd;
+  --color-secondary-200: #d1e5fa;
   --color-secondary-300: #9dc6f4;
   --color-secondary-400: #89bbf2;
   --color-secondary-500: #6caaef;
@@ -31,95 +33,69 @@
   --color-secondary-800: #3b5e83;
   --color-secondary-900: #2d4764;
   
-  /* Add gray colors to fix the theme function error */
-  --color-gray-50: #f9fafb;
-  --color-gray-100: #f3f4f6;
-  --color-gray-200: #e5e7eb;
-  --color-gray-300: #d1d5db;
-  --color-gray-400: #9ca3af;
-  --color-gray-500: #6b7280;
-  --color-gray-600: #4b5563;
-  --color-gray-700: #374151;
-  --color-gray-800: #1f2937;
-  --color-gray-900: #111827;
+  /* Gray Scale */
+  --color-gray-50: #fbfbfc;
+  --color-gray-100: #f2f3f7;
+  --color-gray-200: #ecedf3;
+  --color-gray-300: #e3e5ed;
+  --color-gray-400: #dde0e9;
+  --color-gray-500: #d5d8e4;
+  --color-gray-600: #c2c5cf;
+  --color-gray-700: #9799a2;
+  --color-gray-800: #75777d;
+  --color-gray-900: #595b60;
 }
 
 @layer base {
   * {
-    border-color: #e5e7eb; /* Use direct value instead of theme() */
+    border-color: var(--color-gray-200);
   }
   
   body {
-    background-color: #e2eefc;
-    color: #060810;
+    background-color: theme(--color-background);
+    color: theme(--color-foreground);
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
 @layer components {
   .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    cursor: pointer;
-    border: none;
-    outline: none;
-    padding: 0.5rem 1rem;
+    @apply inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer border-0 outline-none px-4 py-2;
   }
 
   .btn:focus-visible {
-    outline: 2px solid #3a4da1;
-    outline-offset: 2px;
+    @apply outline-2 outline-primary-500 outline-offset-2;
   }
 
   .btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+    @apply opacity-50 cursor-not-allowed;
   }
 
   .btn-primary {
-    background-color: #3a4da1;
-    color: white;
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    @apply bg-primary-500 text-white shadow-sm;
   }
 
   .btn-primary:hover:not(:disabled) {
-    background-color: #354693;
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    @apply bg-primary-600 shadow-md;
   }
 
   .btn-lg {
-    height: 3rem;
-    padding: 0 1.5rem;
-    font-size: 1rem;
+    @apply h-12 px-6 text-base;
   }
 
   .card {
-    background-color: white;
-    border-radius: 0.75rem;
-    border: 1px solid #a4add4;
-    padding: 1.5rem;
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
-    transition: box-shadow 0.2s ease;
+    @apply bg-white rounded-xl border border-primary-200 p-6 shadow-sm transition-shadow duration-200;
   }
 
   .card:hover {
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    @apply shadow-md;
   }
 
   .container {
-    max-width: 80rem;
-    margin: 0 auto;
-    padding-left: 1rem;
-    padding-right: 1rem;
+    @apply max-w-7xl mx-auto px-4;
   }
 
   .section {
-    padding-top: 3rem;
-    padding-bottom: 3rem;
+    @apply py-12;
   }
 }

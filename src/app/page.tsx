@@ -1,10 +1,12 @@
-import Footer from "@/components/layout/footer";
+import Footer from "@/components/layout/Footer";
+import Header from "@/components/layout/Header";
 
 export default function Home() {
   return (
-    <><div className="min-h-screen" style={{ backgroundColor: '#e2eefc' }}>
+    <><div className="min-h-screen bg-background">
+       <Header />
       <div className="container">
-       
+      
         {/* Test your custom colors */}
         <div className="bg-primary-800 text-white p-4 mb-4">
           Primary color background
