@@ -6,8 +6,8 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { ChevronDownIcon, BellIcon, Search, X, Menu } from "lucide-react";
 
-// Membership levels
-const membership = ["준회원", "정회원", "선배", "운영진"];
+// Role levels 
+const roles = ["준회원", "정회원", "선배", "운영진"];
 
 const navList = [
   { 
@@ -255,7 +255,7 @@ const Header = () => {
                           </div>
                         </div>
                         <div className="mt-2 text-xs text-gray-500">
-                          회원 등급: {user?.membership || '준회원'}
+                          회원 등급: {user?.role || '준회원'}
                         </div>
                       </div>
                       
@@ -356,7 +356,7 @@ const Header = () => {
                       </div>
                       <div>
                         <p className="font-medium text-gray-900">{user?.name || '김민준'}</p>
-                        <p className="text-sm text-gray-500">회원 등급: {user?.membership || '준회원'}</p>
+                        <p className="text-sm text-gray-500">회원 등급: {user?.role || '준회원'}</p>
                       </div>
                     </div>
                     <Link

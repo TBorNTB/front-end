@@ -6,7 +6,7 @@ interface User {
   name: string;
   email: string;
   avatar?: string;
-  membership?: string;
+  role?: string;
 }
 
 interface AuthContextType {
@@ -39,7 +39,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               name: userData.name || "User", 
               email: userData.email || "", 
               avatar: userData.avatar,
-              membership: userData.membership || "준회원",
+              role: userData.role || "준회원",
             });
             setIsAuthenticated(true);
           }

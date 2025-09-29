@@ -1,11 +1,13 @@
+// In your src/app/api/auth/login/route.ts
 import { NextResponse } from 'next/server';
-import { getApiUrl, API_ENDPOINTS } from '@/lib/api';
+import { BASE_URL, API_ENDPOINTS } from '@/lib/api'; // Updated import
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const backendResponse = await fetch(getApiUrl(API_ENDPOINTS.LOGIN), {
+    // Use USERS.LOGIN instead of AUTH.LOGIN
+    const backendResponse = await fetch(`${BASE_URL}${API_ENDPOINTS.USERS.LOGIN}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -16,11 +18,12 @@ export async function POST(request: Request) {
 
     const data = await backendResponse.json();
 
+    // Create response
     const response = NextResponse.json(data, {
       status: backendResponse.status,
     });
 
-    // Forward cookies
+    // Forward all Set-Cookie headers (including HttpOnly cookies)
     const setCookieHeader = backendResponse.headers.get('set-cookie');
     if (setCookieHeader) {
       response.headers.set('set-cookie', setCookieHeader);

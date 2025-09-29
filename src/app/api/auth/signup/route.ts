@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     console.log('Request body:', body);
 
     // Forward to your backend - using the correct endpoint URL
-    const backendResponse = await fetch(getApiUrl(API_ENDPOINTS.SIGNUP), {
+    const backendResponse = await fetch(getApiUrl(API_ENDPOINTS.USERS.SIGNUP), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

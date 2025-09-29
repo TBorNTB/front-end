@@ -4,7 +4,6 @@
   /* SSG Brand Colors */
   --color-primary: #3a4da1;
   --color-secondary: #6caaef;
-  --color-accent: #f59e0b;
   --color-text: #1f2937;
   --color-background: #e2eefc;
   --color-foreground: #060810;
@@ -44,6 +43,25 @@
   --color-gray-700: #9799a2;
   --color-gray-800: #75777d;
   --color-gray-900: #595b60;
+
+    /* Semantic Colors */
+  /* ✅ Semantic Colors - Using utility-specific namespaces */
+  --color-error: #EF4444;
+  --color-success: #16A34A;
+  --color-warning: #D1B400;
+  --color-info: var(--color-primary);
+
+  /* For text utilities (text-error, text-success, etc.) */
+  --text-color-error: #EF4444;
+  --text-color-success: #16A34A;
+  --text-color-warning: #D1B400;
+  --text-color-info: var(--color-primary);
+
+  /* For background utilities (bg-error, bg-success, etc.) */
+  --background-color-error: #FEE2E2;
+  --background-color-success: #BBF7D1;
+  --background-color-warning: #FEFFC1;
+  --background-color-info: var(--color-secondary-100);
 }
 
 @layer base {
@@ -98,4 +116,15 @@
   .section {
     @apply py-12;
   }
+}
+
+/* Remove browser native password reveal icons */
+input::-ms-reveal {
+  display: none;
+}
+
+input::-webkit-credentials-auto-fill-button {
+  visibility: hidden;
+  position: absolute;
+  right: 0;
 }
