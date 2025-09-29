@@ -117,7 +117,7 @@ export default function LogInPage() {
           
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
             <div>
-              <label className="text-sm font-medium text-gray-700">아이디</label>
+              <label className="text-sm font-medium text-gray-700 mb-5">이메일</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
@@ -133,7 +133,7 @@ export default function LogInPage() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700">패스워드</label>
+              <label className="text-sm font-medium text-gray-700 mb-5">패스워드</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
