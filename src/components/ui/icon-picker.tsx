@@ -132,7 +132,7 @@ const IconPicker = React.forwardRef<React.ComponentRef<typeof PopoverTrigger>, I
 
       const categories = new Map<string, IconData[]>();
 
-      filteredIcons.forEach((icon) => {
+      filteredIcons.forEach((icon: IconData) => {
         if (icon.categories && icon.categories.length > 0) {
           icon.categories.forEach((category) => {
             if (!categories.has(category)) {
