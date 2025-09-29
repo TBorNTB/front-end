@@ -7,7 +7,7 @@ import { Check } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { User, Lock, Eye, Github, X } from "lucide-react";
+import { User, Lock, Github, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 
@@ -61,7 +61,7 @@ export default function LogInPage() {
 
         login(userData);
         alert("로그인 성공! 환영합니다.");
-        router.push("/mypage");
+        router.push("/");
       } else {
         throw new Error(data?.message || "로그인에 실패했습니다.");
       }
@@ -147,7 +147,6 @@ export default function LogInPage() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2"
                 >
-                  <Eye className="h-4 w-4 text-gray-400 hover:text-gray-600 cursor-pointer" />
                 </button>
               </div>
               {form.formState.errors.password && (

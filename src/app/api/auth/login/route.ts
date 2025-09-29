@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
+import { getApiUrl, API_ENDPOINTS } from '@/lib/api';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const backendResponse = await fetch('http://3.37.124.162:8000/user-service/users/login', {
+    const backendResponse = await fetch(getApiUrl(API_ENDPOINTS.LOGIN), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -15,12 +16,11 @@ export async function POST(request: Request) {
 
     const data = await backendResponse.json();
 
-    // Create response
     const response = NextResponse.json(data, {
       status: backendResponse.status,
     });
 
-    // Forward all Set-Cookie headers (including HttpOnly cookies)
+    // Forward cookies
     const setCookieHeader = backendResponse.headers.get('set-cookie');
     if (setCookieHeader) {
       response.headers.set('set-cookie', setCookieHeader);

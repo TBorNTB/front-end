@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getApiUrl, API_ENDPOINTS } from '@/lib/api';
 
 export async function POST(request: Request) {
   try {
@@ -8,7 +9,7 @@ export async function POST(request: Request) {
     console.log('Request body:', body);
 
     // Forward to your backend - using the correct endpoint URL
-    const backendResponse = await fetch('http://3.37.124.162:8000/user-service/users', {
+    const backendResponse = await fetch(getApiUrl(API_ENDPOINTS.SIGNUP), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

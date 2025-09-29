@@ -10,7 +10,7 @@ export default function Topics() {
       <main className="container mx-auto px-4 py-8 flex-1">
         {/* Test your custom colors */}
         <p className="text-foreground text-base">
-          This is the Newsletter page
+          This is the Topics page
         </p>
       </main>
       <Footer />

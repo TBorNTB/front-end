@@ -4,8 +4,10 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { ChevronDownIcon, BellIcon, Search, X } from "lucide-react";
-import CategoryDropdown from "./CategoryDropdown"; // Import CategoryDropdown
+import { ChevronDownIcon, BellIcon, Search, X, Menu } from "lucide-react";
+
+// Membership levels
+const membership = ["준회원", "정회원", "선배", "운영진"];
 
 const navList = [
   { 
@@ -20,6 +22,7 @@ const navList = [
       { name: "FAQs", slug: "faqs", href: "/faqs" },
     ]
   },
+  { name: "Topics", slug: "topics", href: "/topics" },
   { name: "Projects", slug: "projects", href: "/projects" },
   { name: "Articles", slug: "articles", href: "/articles" },
   { name: "Newsletter", slug: "newsletter", href: "/newsletter" },
@@ -31,6 +34,7 @@ const Header = () => {
   const [dropdowns, setDropdowns] = useState<Record<string, boolean>>({});
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const dropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -56,6 +60,11 @@ const Header = () => {
     }
   }, [isSearchOpen]);
 
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
+
   const toggleDropdown = (slug: string) => {
     setDropdowns(prev => ({
       ...prev,
@@ -66,6 +75,11 @@ const Header = () => {
         return acc;
       }, {} as Record<string, boolean>)
     }));
+  };
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+    setDropdowns({}); // Close all dropdowns when toggling mobile menu
   };
 
   const isActive = (href: string) => pathname === href;
@@ -81,6 +95,7 @@ const Header = () => {
   const handleLogout = async () => {
     await logout();
     setDropdowns({});
+    setIsMobileMenuOpen(false);
   };
 
   const handleSearchToggle = () => {
@@ -101,17 +116,15 @@ const Header = () => {
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
       <div className="container mx-auto px-4">
         <nav className="flex items-center h-16">
-          {/* Left Side: Logo + Navigation Links */}
+          {/* Left Side: Logo + Navigation Links - Keep navbar next to logo */}
           <div className="flex items-center space-x-8">
             {/* Logo */}
             <Link href={"/"} className="flex items-center gap-1.5 p-2 font-bold hover:cursor-pointer">
               <img src={"/logo.svg"} alt="SSG Logo" className="filter" />
             </Link>
 
-            {/* Navigation Links */}
-            <div className="hidden md:flex items-center space-x-6">
-              {/* Topics Dropdown - Now using CategoryDropdown component */}
-              <CategoryDropdown />
+            {/* Desktop Navigation - Right next to logo */}
+            <div className="hidden lg:flex items-center space-x-6">
               {navList.map((navItem) => (
                 <div key={navItem.slug} className="relative">
                   {navItem.hasDropdown ? (
@@ -126,7 +139,6 @@ const Header = () => {
                       >
                         <span>{navItem.name}</span>
                         <ChevronDownIcon className={`w-4 h-4 transition-transform ${dropdowns[navItem.slug] ? 'rotate-180' : ''}`} />
-                        {/* Active underline */}
                         {isDropdownActive(navItem.dropdownItems) && (
                           <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary-600 rounded-full"></div>
                         )}
@@ -157,7 +169,6 @@ const Header = () => {
                       }`}
                     >
                       {navItem.name}
-                      {/* Active underline with animation */}
                       <div className={`absolute bottom-0 left-0 h-0.5 bg-primary-600 rounded-full transition-all duration-300 ${
                         isActive(navItem.href!) ? "w-full" : "w-0 group-hover:w-full"
                       }`}></div>
@@ -169,9 +180,9 @@ const Header = () => {
           </div>
 
           {/* Right Side - Search, Notifications, Auth */}
-          <div className="flex items-center space-x-4 ml-auto">
-            {/* Search */}
-            <div className="relative">
+          <div className="flex items-center space-x-2 ml-auto">
+            {/* Search - Hidden on small screens */}
+            <div className="hidden sm:block relative">
               {!isSearchOpen ? (
                 <button 
                   onClick={handleSearchToggle}
@@ -211,70 +222,169 @@ const Header = () => {
               </button>
             )}
 
-            {/* Authentication */}
-            {!isAuthenticated ? (
-              <Link href="/login">
-                <button className="btn btn-primary">
-                  로그인
-                </button>
-              </Link>
-            ) : (
-              <div className="relative" ref={el => { dropdownRefs.current.userProfile = el; }}>
-                <button
-                  onClick={() => toggleDropdown('userProfile')}
-                  className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                    {user?.name?.charAt(0) || user?.email?.charAt(0) || '?'}
-                  </div>
-                  <ChevronDownIcon className={`w-4 h-4 text-gray-400 transition-transform ${dropdowns.userProfile ? 'rotate-180' : ''}`} />
-                </button>
+            {/* Authentication - Desktop */}
+            <div className="hidden sm:block">
+              {!isAuthenticated ? (
+                <Link href="/login">
+                  <button className="btn btn-primary">
+                    로그인
+                  </button>
+                </Link>
+              ) : (
+                <div className="relative" ref={el => { dropdownRefs.current.userProfile = el; }}>
+                  <button
+                    onClick={() => toggleDropdown('userProfile')}
+                    className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                      {user?.name?.charAt(0) || user?.email?.charAt(0) || '?'}
+                    </div>
+                    <ChevronDownIcon className={`w-4 h-4 text-gray-400 transition-transform ${dropdowns.userProfile ? 'rotate-180' : ''}`} />
+                  </button>
 
-                {dropdowns.userProfile && (
-                  <div className="absolute top-full right-0 mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                    <div className="px-4 py-3 border-b border-gray-100">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-medium">
-                          {user?.name?.charAt(0) || user?.email?.charAt(0) || '?'}
+                  {dropdowns.userProfile && (
+                    <div className="absolute top-full right-0 mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                      <div className="px-4 py-3 border-b border-gray-100">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-medium">
+                            {user?.name?.charAt(0) || user?.email?.charAt(0) || '?'}
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">{user?.name || '김민준'}</p>
+                            <p className="text-sm text-gray-500">{user?.email || 'kdr123@naver.com'}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{user?.name || '김민준'}</p>
-                          <p className="text-sm text-gray-500">{user?.email || 'kdr123@naver.com'}</p>
+                        <div className="mt-2 text-xs text-gray-500">
+                          회원 등급: {user?.membership || '준회원'}
                         </div>
                       </div>
-                      <div className="mt-2 text-xs text-gray-500">
-                        내 포럼점: {user?.points || 0}
+                      
+                      <div className="py-1">
+                        <Link 
+                          href="/profile/settings" 
+                          className="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                          onClick={() => setDropdowns({})}
+                        >
+                          설정
+                        </Link>
+                        <Link 
+                          href="/profile/activity" 
+                          className="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                          onClick={() => setDropdowns({})}
+                        >
+                          활동
+                        </Link>
+                        <button
+                          onClick={handleLogout}
+                          className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          로그아웃
+                        </button>
                       </div>
                     </div>
-                    
-                    <div className="py-1">
-                      <Link 
-                        href="/profile/settings" 
-                        className="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
-                        onClick={() => setDropdowns({})}
-                      >
-                        설정
-                      </Link>
-                      <Link 
-                        href="/profile/activity" 
-                        className="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
-                        onClick={() => setDropdowns({})}
-                      >
-                        활동
-                      </Link>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Mobile Menu Toggle Button */}
+            <button
+              onClick={toggleMobileMenu}
+              className="lg:hidden p-2 text-gray-700 hover:text-gray-900 transition-colors"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+          </div>
+        </nav>
+
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
+          <div className="lg:hidden border-t border-gray-200 py-4">
+            <div className="space-y-4">
+              {/* Mobile Navigation Links */}
+              {navList.map((navItem) => (
+                <div key={navItem.slug} className="px-4">
+                  {navItem.hasDropdown ? (
+                    <div>
                       <button
-                        onClick={handleLogout}
-                        className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
+                        onClick={() => toggleDropdown(`mobile-${navItem.slug}`)}
+                        className="flex items-center justify-between w-full py-2 text-gray-900 hover:text-primary-600"
                       >
-                        로그아웃
+                        <span>{navItem.name}</span>
+                        <ChevronDownIcon className={`w-4 h-4 transition-transform ${dropdowns[`mobile-${navItem.slug}`] ? 'rotate-180' : ''}`} />
                       </button>
+                      {dropdowns[`mobile-${navItem.slug}`] && (
+                        <div className="pl-4 mt-2 space-y-2">
+                          {navItem.dropdownItems?.map((item) => (
+                            <Link
+                              key={item.slug}
+                              href={item.href}
+                              className="block py-2 text-gray-600 hover:text-primary-600"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                              {item.name}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
                     </div>
+                  ) : (
+                    <Link
+                      href={navItem.href!}
+                      className="block py-2 text-gray-900 hover:text-primary-600"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      {navItem.name}
+                    </Link>
+                  )}
+                </div>
+              ))}
+
+              {/* Mobile Auth */}
+              <div className="px-4 pt-4 border-t border-gray-200">
+                {!isAuthenticated ? (
+                  <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
+                    <button className="btn btn-primary w-full">
+                      로그인
+                    </button>
+                  </Link>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-3 pb-3">
+                      <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-medium">
+                        {user?.name?.charAt(0) || user?.email?.charAt(0) || '?'}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{user?.name || '김민준'}</p>
+                        <p className="text-sm text-gray-500">회원 등급: {user?.membership || '준회원'}</p>
+                      </div>
+                    </div>
+                    <Link
+                      href="/profile/settings"
+                      className="block py-2 text-gray-700 hover:text-primary-600"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      설정
+                    </Link>
+                    <Link
+                      href="/profile/activity"
+                      className="block py-2 text-gray-700 hover:text-primary-600"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      활동
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full text-left py-2 text-red-600 hover:text-red-700"
+                    >
+                      로그아웃
+                    </button>
                   </div>
                 )}
               </div>
-            )}
+            </div>
           </div>
-        </nav>
+        )}
       </div>
     </header>
   );

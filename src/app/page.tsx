@@ -8,7 +8,7 @@ export default function Home() {
       <div className="container">
       
         {/* Test your custom colors */}
-        <div className="bg-primary-800 text-white p-4 mb-4">
+        <div className="bg-primary-200 text-white p-4 mb-4">
           Primary color background
         </div>
 
