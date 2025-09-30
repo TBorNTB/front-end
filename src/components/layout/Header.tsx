@@ -225,11 +225,18 @@ const Header = () => {
             {/* Authentication - Desktop */}
             <div className="hidden sm:block">
               {!isAuthenticated ? (
-                <Link href="/login">
-                  <button className="btn btn-primary">
-                    로그인
-                  </button>
-                </Link>
+                <div className="flex gap-2">
+                  <Link href="/admin">
+                    <button className="btn btn-secondary">
+                      관리자 페이지
+                    </button>
+                  </Link>
+                  <Link href="/login">
+                    <button className="btn btn-primary">
+                      로그인
+                    </button>
+                  </Link>
+                </div>
               ) : (
                 <div className="relative" ref={el => { dropdownRefs.current.userProfile = el; }}>
                   <button

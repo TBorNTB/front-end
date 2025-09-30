@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "../../styles/admin.css";
 
 export const metadata: Metadata = {
   title: "Admin - SSG Hub",
@@ -11,9 +12,7 @@ export default function AdminLayout({
   children: React.ReactNode
 }) {
   return (
-    <div>
-      {/* Admin-specific layout components */}
-      <nav>Admin Navigation</nav>
+    <div className="admin-container min-h-screen bg-gray-50">
       {children}
     </div>
   );
