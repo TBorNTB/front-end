@@ -24,10 +24,10 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@/components/*": ["./src/components/*"],
-      "@/context/*": ["./src/context/*"],
+      "@/components/*": ["./src/shared/components/*"],
+      "@/context/*": ["./src/features/auth/context/*"],
       "@/lib/*": ["./src/lib/*"],
-      "@/types/*": ["./src/types/*"]
+      "@/types/*": ["./src/shared/types/*"]
     }
   },
   "include": [

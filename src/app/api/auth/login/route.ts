@@ -1,12 +1,12 @@
-// In your src/app/api/auth/login/route.ts
+//src/app/api/auth/login/route.ts
 import { NextResponse } from 'next/server';
-import { BASE_URL, API_ENDPOINTS } from '@/lib/api'; // Updated import
+import { BASE_URL, API_ENDPOINTS } from '@/lib/endpoints'; // Updated import
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    // Use USERS.LOGIN instead of AUTH.LOGIN
+    // Call the backend login API
     const backendResponse = await fetch(`${BASE_URL}${API_ENDPOINTS.USERS.LOGIN}`, {
       method: 'POST',
       headers: {

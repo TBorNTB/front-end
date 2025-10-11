@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/context/AuthContext";
+import { AuthProvider } from "@/features/auth/context/AuthContext";
 import { Toaster } from 'react-hot-toast';
 
 <Toaster
@@ -37,8 +37,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "SSG Hub",
-  description: "Sejong Security Group Website",
+  title: 'SSG Hub - Sejong Cybersecurity Group',
+  description: 'A dynamic cybersecurity-focused platform for informations, managing projects and articles',
 };
 
 export default function RootLayout({

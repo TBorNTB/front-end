@@ -44,8 +44,7 @@
   --color-gray-800: #75777d;
   --color-gray-900: #595b60;
 
-    /* Semantic Colors */
-  /* ✅ Semantic Colors - Using utility-specific namespaces */
+  /* Semantic Colors - Using utility-specific namespaces */
   --color-error: #EF4444;
   --color-success: #16A34A;
   --color-warning: #D1B400;
