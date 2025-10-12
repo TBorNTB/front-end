@@ -278,7 +278,7 @@ const Header = () => {
                         {/* ✅ FIX: Admin Dashboard Button - Fixed flex layout */}
                         {user?.role === UserRole.ADMIN && (
                           <Link
-                            href="/admin"
+                            href="/admin/dashboard"
                             className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                             onClick={() => setDropdowns({})}
                           >

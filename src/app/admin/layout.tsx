@@ -1,24 +1,58 @@
-// src/app/admin/layout.tsx
-import type { Metadata } from "next";
-import "../../styles/admin.css";
-import AdminSidebar from "@/components/admin/AdminSidebar";
-import AdminHeader from "@/components/admin/AdminHeader"; 
+// src/app/admin/layout.tsx - SUPER CLEAN VERSION
+"use client";
 
-export const metadata: Metadata = {
-  title: "Admin - SSG Hub",
-  description: "Admin panel for SSG Hub",
-};
+import { useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import { UserRole } from "@/types/core";
+import AdminSidebar from "@/components/admin/AdminSidebar";
+import AdminHeader from "@/components/admin/AdminHeader";
 
 export default function AdminLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  return (
-    <div className="admin-container min-h-screen bg-gray-200">
-      {/* Main Content */}
-     
+  const router = useRouter();
+  const pathname = usePathname();
+  const { user, isAuthenticated, loading } = useAuth();
 
+  // ✅ Check if current page is the main admin page (login)
+  const isAdminLoginPage = pathname === "/admin";
+
+  useEffect(() => {
+    // Skip protection for main admin page (login)
+    if (isAdminLoginPage || loading) {
+      return;
+    }
+
+    // Check authentication and admin role for protected pages
+    if (!isAuthenticated || user?.role !== UserRole.ADMIN) {
+      console.log("❌ Redirecting to admin login");
+      router.replace("/admin");
+    }
+  }, [router, pathname, user, isAuthenticated, loading, isAdminLoginPage]);
+
+  // ✅ ADMIN LOGIN PAGE: Show directly - no loading, no checks
+  if (isAdminLoginPage) {
+    return <>{children}</>;
+  }
+
+  // ✅ LOADING STATE: Only for protected pages while checking auth
+  if (loading || !isAuthenticated || user?.role !== UserRole.ADMIN) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">관리자 권한 확인 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ AUTHORIZED ADMIN: Show full admin layout
+  return (
+    <div className="min-h-screen bg-gray-200">
       {/* Sidebar - Fixed position with responsive width */}
       <div className="fixed inset-y-0 left-0 z-50 w-16 md:w-56 bg-primary-900">
         <AdminSidebar />
@@ -26,15 +60,15 @@ export default function AdminLayout({
       
       {/* Main content - With proper responsive margin */}
       <div className="ml-16 md:ml-56 min-h-screen">
-         <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Admin Header */}
-        <AdminHeader />
-    
-        <main className="p-10">
-          {children}
-        </main>
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Admin Header */}
+          <AdminHeader />
+          
+          <main className="p-10">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
     </div>
   );
 }

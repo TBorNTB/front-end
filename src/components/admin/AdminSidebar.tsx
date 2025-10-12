@@ -1,4 +1,4 @@
-// src/components/admin/AdminSidebar.tsx - MEDIUM SIZE (Sweet Spot)
+// src/components/admin/AdminSidebar.tsx 
 "use client";
 
 import { usePathname } from "next/navigation";
@@ -15,7 +15,7 @@ import {
 const navigation = [
   {
     name: "대시보드",
-    href: "/admin", 
+    href: "/admin/dashboard", 
     icon: LayoutDashboard,
   },
   {

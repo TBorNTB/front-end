@@ -11,6 +11,11 @@ export default function AdminHeader() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
+  const handleLogout = async () => {
+  console.log(" logout clicked");
+  setIsUserMenuOpen(false);
+  await logout(); // This redirects to /admin
+};
   // Close user menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -90,11 +95,12 @@ export default function AdminHeader() {
                   </Link>
                   
                   <button
-                    onClick={logout}
-                    className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
-                  >
-                    로그아웃
-                  </button>
+                  onClick={handleLogout}
+                  className="flex items-center w-full text-left px-5 py-3 text-red-600 hover:bg-red-50 transition-colors text-sm font-medium"
+                >
+                  <ArrowLeft className="h-4.5 w-4.5 mr-3 text-red-400 rotate-180" />
+                  로그아웃
+                </button>
                 </div>
               </div>
             )}

@@ -1,3 +1,4 @@
+// src/context/AuthContext.tsx - FIXED VERSION
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
@@ -20,36 +21,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // ✅ FIX: Check if user has auth cookies before making API calls
-  const hasAuthCookies = (): boolean => {
-    if (typeof document === 'undefined') return false;
-    
-    const cookies = document.cookie;
-    const hasAccessToken = cookies.includes('accessToken=');
-    const hasRefreshToken = cookies.includes('refreshToken=');
-    
-    console.log('Auth cookies check:', { hasAccessToken, hasRefreshToken });
-    return hasAccessToken && hasRefreshToken;
+  // ✅ Enhanced: Check if user should stay signed in
+  const shouldKeepSignedIn = (): boolean => {
+    try {
+      return localStorage.getItem('keepSignedIn') === 'true';
+    } catch {
+      return false;
+    }
   };
 
-  // Fetch user profile only if we have auth cookies
+  // Fetch user profile and role from backend using token
   const fetchUserProfile = async (): Promise<AuthUser | null> => {
     try {
-      // ✅ FIX: Don't make API calls if no auth cookies
-      if (!hasAuthCookies()) {
-        console.log('No auth cookies found, skipping API call');
-        return null;
-      }
-
-      console.log('Fetching user profile with auth cookies...');
-      
       const userResponse = await fetch('/api/auth/user', {
         credentials: 'include',
+        cache: 'no-store',
       });
 
       if (userResponse.ok) {
         const userData = await userResponse.json();
-        console.log('User data from API:', userData);
         
         if (userData.authenticated && userData.user) {
           const authUser: AuthUser = {
@@ -59,150 +49,176 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             role: userData.user.role as UserRole,
             profile_image: userData.user.profileImageUrl || userData.user.profile_image,
           };
-          
-          console.log('Mapped auth user from API:', authUser);
+
           return authUser;
         }
-      } else {
-        console.log('API call failed:', userResponse.status);
       }
 
-      return null;
+      // ✅ SKIP refresh token attempt if backend doesn't support it
+      // Uncomment these lines if your backend supports refresh tokens:
+      
+      /*
+      console.log('⚠️ Auth failed, trying refresh token...');
+      const refreshResponse = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        credentials: 'include',
+        cache: 'no-store',
+      });
 
+      if (refreshResponse.ok) {
+        // Retry user fetch after refresh
+        const retryUserResponse = await fetch('/api/auth/user', {
+          credentials: 'include',
+          cache: 'no-store',
+        });
+
+        if (retryUserResponse.ok) {
+          const userData = await retryUserResponse.json();
+          if (userData.authenticated && userData.user) {
+            // ... handle refreshed user data
+          }
+        }
+      }
+      */
+
+      return null;
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.error('❌ Network error fetching user profile:', error);
       return null;
     }
   };
 
+  // In AuthContext initialization
   useEffect(() => {
-    const checkAuthStatus = async () => {
+    const initializeAuth = async () => {
       try {
-        // ✅ FIX: First check localStorage for persisted user
-        const savedUser = localStorage.getItem('auth_user');
-        if (savedUser) {
+        const keepSignedInEnabled = shouldKeepSignedIn();
+        
+        if (keepSignedInEnabled) {
           try {
-            const userData = JSON.parse(savedUser);
-            console.log('Restored user from localStorage:', userData);
-            setUser(userData);
-            setIsAuthenticated(true);
-            
-            // ✅ FIX: Only try to refresh if we have auth cookies
-            if (hasAuthCookies()) {
-              console.log('Has auth cookies, trying to refresh user data...');
-              const freshUser = await fetchUserProfile();
-              if (freshUser) {
-                console.log('Updated with fresh user data');
-                setUser(freshUser);
-                localStorage.setItem('auth_user', JSON.stringify(freshUser));
-              }
+            const savedUser = localStorage.getItem('auth_user');
+            if (savedUser) {
+              const userData = JSON.parse(savedUser);
+              console.log('✅ Restored user from localStorage:', userData.nickname);
+              setUser(userData);
+              setIsAuthenticated(true);
+              
+              // ✅ Background refresh - don't log if it fails
+              fetchUserProfile().then(freshUser => {
+                if (freshUser) {
+                  setUser(freshUser);
+                  localStorage.setItem('auth_user', JSON.stringify(freshUser));
+                }
+              });
+              
+              setLoading(false);
+              return;
             }
-            
-            return;
           } catch (error) {
-            console.error('Error parsing saved user data:', error);
+            // Clear invalid data
             localStorage.removeItem('auth_user');
+            localStorage.removeItem('keepSignedIn');
           }
         }
 
-        // ✅ FIX: Only try server check if we have auth cookies
-        if (hasAuthCookies()) {
-          console.log('No saved user, but has auth cookies, checking server...');
-          const serverUser = await fetchUserProfile();
-          
-          if (serverUser) {
-            console.log('Server auth successful:', serverUser);
-            setUser(serverUser);
-            setIsAuthenticated(true);
-            return;
-          }
+        // ✅ Check server token silently
+        const serverUser = await fetchUserProfile();
+        if (serverUser) {
+          console.log('✅ Server auth successful:', serverUser.nickname);
+          setUser(serverUser);
+          setIsAuthenticated(true);
         } else {
-          console.log('No auth cookies, user not logged in');
+          // ✅ SILENT: Don't log when user is simply not logged in
+          setUser(null);
+          setIsAuthenticated(false);
         }
-
+        
       } catch (error) {
-        console.error('Auth check failed:', error);
+        console.error('❌ Auth initialization error:', error);
+        setUser(null);
+        setIsAuthenticated(false);
       } finally {
         setLoading(false);
       }
     };
 
-    checkAuthStatus();
+    initializeAuth();
   }, []);
 
+
+  // ✅ FIXED: Login function with proper keepSignedIn handling
   const login = (userData: AuthUser, keepSignedIn: boolean = false) => {
-    console.log('AuthContext login called with:', userData, 'keepSignedIn:', keepSignedIn);
+    console.log('🔑 AuthContext login called with:', userData.nickname, userData.role, 'keepSignedIn:', keepSignedIn);
+    
     setUser(userData);
     setIsAuthenticated(true);
-    
-    if (keepSignedIn) {
-      try {
+
+    // ✅ Store keepSignedIn preference
+    try {
+      if (keepSignedIn) {
+        localStorage.setItem('keepSignedIn', 'true');
         localStorage.setItem('auth_user', JSON.stringify(userData));
-        console.log('User data saved to localStorage');
-      } catch (error) {
-        console.error('Error saving auth to localStorage:', error);
+        console.log('✅ User data saved to localStorage for persistent login');
+      } else {
+        localStorage.removeItem('keepSignedIn');
+        localStorage.removeItem('auth_user');
+        console.log('✅ Non-persistent login - localStorage cleared');
       }
+    } catch (error) {
+      console.error('❌ Error managing localStorage:', error);
     }
   };
 
+  // ✅ Refresh user function
   const refreshUser = async (): Promise<boolean> => {
     try {
-      // ✅ FIX: Only refresh if we have auth cookies
-      if (!hasAuthCookies()) {
-        console.log('No auth cookies for refresh');
-        return false;
-      }
-
       const freshUser = await fetchUserProfile();
-      
       if (freshUser) {
         setUser(freshUser);
         setIsAuthenticated(true);
         
-        const savedUser = localStorage.getItem('auth_user');
-        if (savedUser) {
+        // Update localStorage if keep signed in is enabled
+        if (shouldKeepSignedIn()) {
           localStorage.setItem('auth_user', JSON.stringify(freshUser));
         }
+        
         return true;
       }
-      
       return false;
     } catch (error) {
-      console.error('Refresh user error:', error);
+      console.error('❌ Refresh user error:', error);
       return false;
     }
   };
 
+  // ✅ FIXED: Logout function
   const logout = async () => {
     try {
-      // ✅ FIX: Only call logout API if we have auth cookies
-      if (hasAuthCookies()) {
-        console.log('Calling logout API...');
-        const response = await fetch('/api/auth/logout', {
-          method: 'POST',
-          credentials: 'include',
-        });
-        
-        if (response.ok) {
-          console.log('Logout API successful');
-        }
-      } else {
-        console.log('No auth cookies, skipping logout API call');
-      }
+      console.log('🚪 Logging out...');
+      
+      // Call backend logout
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('❌ Logout API error:', error);
     } finally {
-      // Always clear local state
+      // ✅ Always clear client state regardless of API success
       setUser(null);
       setIsAuthenticated(false);
       
+      // Clear all stored data
       try {
         localStorage.removeItem('auth_user');
-        console.log('Cleared localStorage');
+        localStorage.removeItem('keepSignedIn');
+        console.log('✅ Cleared all authentication data');
       } catch (error) {
-        console.error('Error clearing localStorage:', error);
+        console.error('❌ Error clearing localStorage:', error);
       }
       
+      // Redirect to home
       window.location.href = '/';
     }
   };
@@ -214,7 +230,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       login,
       logout,
       loading,
-      refreshUser
+      refreshUser,
     }}>
       {children}
     </AuthContext.Provider>
