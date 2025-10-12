@@ -3,11 +3,9 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuth } from "@/features/auth/context/AuthContext";
-import { ChevronDownIcon, BellIcon, Search, X, Menu } from "lucide-react";
-
-// Role levels 
-const roles = ["준회원", "정회원", "선배", "운영진"];
+import { useAuth } from "@/context/AuthContext";
+import { ChevronDownIcon, BellIcon, Search, X, Menu, Shield } from "lucide-react";
+import { UserRoleDisplay, UserRole } from "@/types/core";
 
 const navList = [
   { 
@@ -29,7 +27,7 @@ const navList = [
 ];
 
 const Header = () => {
-  const { user, login, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const pathname = usePathname();
   const [dropdowns, setDropdowns] = useState<Record<string, boolean>>({});
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -88,10 +86,6 @@ const Header = () => {
     return dropdownItems?.some(item => pathname === item.href) || false;
   };
 
-  const handleLogin = async () => {
-    await login({ name: "User", email: "user@example.com" });
-  };
-
   const handleLogout = async () => {
     await logout();
     setDropdowns({});
@@ -112,18 +106,24 @@ const Header = () => {
     }
   };
 
+  // ✅ FIX: Better user data handling with debugging
+  const displayName = user?.nickname || user?.full_name || '김민준';
+  const displayEmail = user?.email || 'kdr123@naver.com';
+  const displayRole = user?.role ? UserRoleDisplay[user.role as UserRole] : '외부인';  
+  const userInitial = displayName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || '?';
+
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
       <div className="container mx-auto px-4">
         <nav className="flex items-center h-16">
-          {/* Left Side: Logo + Navigation Links - Keep navbar next to logo */}
+          {/* Left Side: Logo + Navigation Links */}
           <div className="flex items-center space-x-8">
             {/* Logo */}
             <Link href={"/"} className="flex items-center gap-1.5 p-2 font-bold hover:cursor-pointer">
               <img src={"/logo.svg"} alt="SSG Logo" className="filter" />
             </Link>
 
-            {/* Desktop Navigation - Right next to logo */}
+            {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center space-x-6">
               {navList.map((navItem) => (
                 <div key={navItem.slug} className="relative">
@@ -237,7 +237,7 @@ const Header = () => {
                     className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                      {user?.name?.charAt(0) || user?.email?.charAt(0) || '?'}
+                      {userInitial}
                     </div>
                     <ChevronDownIcon className={`w-4 h-4 text-gray-400 transition-transform ${dropdowns.userProfile ? 'rotate-180' : ''}`} />
                   </button>
@@ -247,15 +247,15 @@ const Header = () => {
                       <div className="px-4 py-3 border-b border-gray-100">
                         <div className="flex items-center space-x-3">
                           <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-medium">
-                            {user?.name?.charAt(0) || user?.email?.charAt(0) || '?'}
+                            {userInitial}
                           </div>
                           <div>
-                            <p className="font-medium text-gray-900">{user?.name || '김민준'}</p>
-                            <p className="text-sm text-gray-600">{user?.email || 'kdr123@naver.com'}</p>
+                            <p className="font-medium text-gray-900">{displayName}</p>
+                            <p className="text-sm text-gray-600">{displayEmail}</p>
                           </div>
                         </div>
                         <div className="mt-2 text-xs text-gray-600">
-                          회원 등급: {user?.role || '준회원'}
+                          권한: {displayRole}
                         </div>
                       </div>
                       
@@ -274,6 +274,18 @@ const Header = () => {
                         >
                           활동
                         </Link>
+                        
+                        {/* ✅ FIX: Admin Dashboard Button - Fixed flex layout */}
+                        {user?.role === UserRole.ADMIN && (
+                          <Link
+                            href="/admin"
+                            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                            onClick={() => setDropdowns({})}
+                          >
+                            어드민 
+                          </Link>
+                        )}
+
                         <button
                           onClick={handleLogout}
                           className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
@@ -352,11 +364,11 @@ const Header = () => {
                   <div className="space-y-2">
                     <div className="flex items-center space-x-3 pb-3">
                       <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-medium">
-                        {user?.name?.charAt(0) || user?.email?.charAt(0) || '?'}
+                        {userInitial}
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">{user?.name || '김민준'}</p>
-                        <p className="text-sm text-gray-500">회원 등급: {user?.role || '준회원'}</p>
+                        <p className="font-medium text-gray-900">{displayName}</p>
+                        <p className="text-sm text-gray-500">권한: {displayRole}</p>
                       </div>
                     </div>
                     <Link
@@ -373,6 +385,19 @@ const Header = () => {
                     >
                       활동
                     </Link>
+
+                    {/* ✅ FIX: Mobile Admin Dashboard Button - Fixed flex layout */}
+                    {user?.role === UserRole.ADMIN && (
+                      <Link
+                        href="/admin/dashboard"
+                        className="flex items-center gap-2 py-2 text-gray-700 hover:text-primary-600 transition-colors"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <Shield size={16} />
+                        관리자 대시보드
+                      </Link>
+                    )}
+
                     <button
                       onClick={handleLogout}
                       className="block w-full text-left py-2 text-red-600 hover:text-red-700"

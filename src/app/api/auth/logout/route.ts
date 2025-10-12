@@ -1,48 +1,56 @@
+// src/app/api/auth/logout/route.ts
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { BASE_URL, API_ENDPOINTS } from '@/lib/endpoints';
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
+    // Forward cookies to backend for auth verification
+    const cookieHeader = request.headers.get('cookie');
     
-    // Get all cookies to forward to backend
-    const allCookies = cookieStore.getAll();
-    const cookieString = allCookies
-      .map(({ name, value }) => `${name}=${value}`)
-      .join('; ');
-
-    // Forward logout request to backend with cookies
-    const backendResponse = await fetch('http://3.37.124.162:8000/user-service/users/logout', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Cookie': cookieString, // Forward all cookies to backend
-      },
-    });
-
-    // Whether backend logout succeeds or not, clear local cookies
+    // Always clear local cookies, even if backend call fails
     const response = NextResponse.json(
-      { 
-        message: 'Logged out successfully',
-        backendLogout: backendResponse.ok 
-      },
+      { message: 'Logged out successfully' },
       { status: 200 }
     );
 
-    // Delete the accessToken cookie locally
+    // Clear all auth-related cookies locally
     response.cookies.delete('accessToken');
-    
-    // If there are other auth-related cookies, delete them too
     response.cookies.delete('refreshToken');
     response.cookies.delete('session');
+
+    // Try to logout from backend if we have cookies
+    if (cookieHeader) {
+      try {
+        console.log('Calling backend logout:', `${BASE_URL}${API_ENDPOINTS.USERS.LOGOUT}`);
+        
+        const backendResponse = await fetch(`${BASE_URL}${API_ENDPOINTS.USERS.LOGOUT}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Cookie': cookieHeader,
+          },
+          // Add timeout to prevent hanging
+          signal: AbortSignal.timeout(5000), // 5 second timeout
+        });
+
+        if (backendResponse.ok) {
+          console.log('Backend logout successful');
+        } else {
+          console.warn('Backend logout failed:', backendResponse.status);
+        }
+      } catch (backendError) {
+        // Log backend error but don't fail the entire logout
+        console.warn('Backend logout error (proceeding with local logout):', backendError);
+      }
+    }
 
     return response;
 
   } catch (error) {
     console.error("Logout API route error:", error);
     
-    // Even if backend logout fails, clear local cookies
+    // Even if everything fails, still clear local cookies
     const response = NextResponse.json(
       { message: 'Logged out successfully (local only)' },
       { status: 200 }

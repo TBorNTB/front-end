@@ -503,7 +503,7 @@ export default function SignupPage() {
                 className="btn btn-primary btn-lg w-full"
                 disabled={isLoading}
               >
-                {isLoading ? "업로드 및 회원가입 중..." : "회원가입"}
+                {isLoading ? "회원가입 중..." : "회원가입"}
               </button>
               
               {error && (

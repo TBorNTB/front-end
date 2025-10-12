@@ -1,11 +1,11 @@
-import Footer from "@/shared/components/layout/Footer";
-import Header from "@/shared/components/layout/Header";
-import HeroBanner from "@/shared/components/landing/HeroBanner";
-import { ProjectCardHome } from "@/shared/components/landing/ProjectCardHome";
-import { ArticleCardHome } from "@/shared/components/landing/ArticleCardHome";
-import { FeaturedProjectCard } from "@/shared/components/landing/FeaturedCardHome";
-import Topics from "@/shared/components/landing/Topics";
-import StatisticsSection from "@/shared/components/landing/Statistics";
+import Footer from "@/components/layout/Footer";
+import Header from "@/components/layout/Header";
+import HeroBanner from "@/components/landing/HeroBanner";
+import { ProjectCardHome } from "@/components/landing/ProjectCardHome";
+import { ArticleCardHome } from "@/components/landing/ArticleCardHome";
+import { FeaturedProjectCard } from "@/components/landing/FeaturedCardHome";
+import Topics from "@/components/landing/Topics";
+import StatisticsSection from "@/components/landing/Statistics";
 
 // Mock data matching the design
 const featuredProject = {

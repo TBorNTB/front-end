@@ -1,39 +1,89 @@
+// src/app/api/auth/user/route.ts - DEBUG VERSION
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { BASE_URL, API_ENDPOINTS } from '@/lib/endpoints';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('accessToken')?.value;
-
-    if (!token) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    // Forward cookies to backend for auth verification
+    const cookieHeader = request.headers.get('cookie');
+    
+    if (!cookieHeader) {
+      console.log('No cookies found, returning 401');
+      return NextResponse.json({
+        authenticated: false,
+        user: null
+      }, { status: 401 });
     }
 
-    // Make request to backend to validate token and get user info
-    const response = await fetch('http://3.37.124.162:8000/user-service/users/me', {
+    const profileResponse = await fetch(`${BASE_URL}${API_ENDPOINTS.USERS.PROFILE}`, {
+      method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Accept': 'application/json',
+        'Cookie': cookieHeader
       },
     });
 
-    if (!response.ok) {
-      return NextResponse.json({ message: 'Token validation failed' }, { status: 401 });
+    if (profileResponse.ok) {
+      const profileData = await profileResponse.json();
+      console.log('Profile data from backend:', JSON.stringify(profileData, null, 2));
+      
+      const roleResponse = await fetch(`${BASE_URL}${API_ENDPOINTS.USERS.ROLE}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Cookie': cookieHeader
+        },
+      });
+
+      console.log('Role response status:', roleResponse.status);
+
+      let roleData = null;
+      if (roleResponse.ok) {
+        roleData = await roleResponse.json();
+        console.log('Role data from backend:', JSON.stringify(roleData, null, 2));
+      } else {
+        const roleError = await roleResponse.text();
+        console.log('Role endpoint error:', roleError);
+      }
+
+      // Try to combine the data
+      let userData;
+      if (roleData) {
+        userData = {
+          ...profileData,
+          role: roleData.role || roleData // Backend might return { role: "SENIOR" } or just "SENIOR"
+        };
+      } else {
+        // If role endpoint fails, use profile data as-is
+        userData = profileData;
+      }
+
+      console.log('Final combined user data:', JSON.stringify(userData, null, 2));
+
+      return NextResponse.json({
+        authenticated: true,
+        user: userData
+      });
+    } else {
+      const profileError = await profileResponse.text();
+      console.log('Profile endpoint error:', profileError);
+      
+      return NextResponse.json({
+        authenticated: false,
+        user: null,
+        debug: {
+          profileStatus: profileResponse.status,
+          profileError: profileError
+        }
+      }, { status: 401 });
     }
 
-    const data = await response.json();
-    
-    // Transform the data to match your frontend user structure
-    const user = {
-      name: data.nickname || data.name || "User",
-      email: data.email,
-      avatar: data.profileImageUrl || "/default-avatar.png",
-    };
-
-    return NextResponse.json(user);
   } catch (error) {
-    console.error("User API route error:", error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    console.error("Auth check error:", error);
+    return NextResponse.json({
+      authenticated: false,
+      user: null,
+      error: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
   }
 }

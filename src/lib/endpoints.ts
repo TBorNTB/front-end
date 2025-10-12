@@ -15,6 +15,8 @@ export const API_ENDPOINTS = {
     LOGIN: '/user-service/users/login',           // POST /users/login (사용자 로그인)
     SIGNUP: '/user-service/users',                // POST /users (회원가입) 
     LOGOUT: '/user-service/users/logout',         // POST /users/logout (로그아웃)
+    ROLE : '/user-service/users/role/one',           // GET /users/role (사용자 역할 조회)
+    PROFILE: '/user-service/users/profile',                 // GET /users/me (현재 사용자 정보 조회)
     
     // User management endpoints
     GET_ALL: '/user-service/users',               // GET /users (전체 사용자 조회)
@@ -24,17 +26,10 @@ export const API_ENDPOINTS = {
     GRANT_ADMIN: '/user-service/users/{grantedUsername}/admin', // PATCH /users/{grantedUsername}/admin (관리자 권한 부여)
   },
 
-  // Internal endpoints 
-  INTERNAL: {
-    USER_EXISTS: '/user-service/internal/{username}/exists',          // GET (사용자 존재 여부 확인)
-    USER_EXISTS_MULTIPLE: '/user-service/internal/{username}/exists/multiple', // GET (방장 및 협력자 존재 여부 확인)
-    ALL_USERS_EXIST: '/user-service/internal/exists',                 // GET (다중 사용자 존재 여부 확인)
-    GET_NICKNAMES: '/user-service/internal/all',                      // GET (usernames을 받아서 실제 nicknames를 반환)
-  },
-
   // Token management 
   TOKEN: {
-    REISSUE: '/user-service/token/reissue',       // POST (토큰 재발급)
+    REISSUE: '/user-service/token/reissue',
+    REFRESH: '/user-service/token/refresh',     // ADD refresh endpoint
   },
 
   // S3 File management 

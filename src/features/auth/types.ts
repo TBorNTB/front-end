@@ -1,24 +1,31 @@
 // features/auth/types.ts - Clean auth domain types
-import { BaseEntity, UserRole } from '@/shared/types/core';
+import { BaseEntity, UserRole } from '@/types/core';
 
 
-//Core User entity - nickname is the unique identifier
+// Backend User entity - match your actual backend response
 export interface User extends BaseEntity {
-  nickname: string;        // Unique identifier (primary key for user lookup)
-  full_name: string;       // Full display name
+  nickname: string;
+  realName: string;        // Backend uses realName, not full_name
   email: string;
   role: UserRole;
-  profile_image?: string;
-  description?: string;    // Bio field from your SignupRequest
-  github_url?: string;
-  blog_url?: string;
-  linkedin_url?: string;
+  profileImageUrl?: string; // Backend uses profileImageUrl
+  description?: string;
+  githubUrl?: string;
+  blogUrl?: string;
+  linkedinUrl?: string;
   is_confirmed: boolean;
   is_active: boolean;
 }
 
 // Derived user types
-export type AuthUser = Pick<User, 'nickname' | 'full_name' | 'email' | 'role' | 'profile_image'>;
+// Frontend display user - map backend fields to frontend needs
+export type AuthUser = {
+  nickname: string;
+  full_name: string;       // Map from realName
+  email: string;
+  role: UserRole;
+  profile_image?: string;  // Map from profileImageUrl
+};
 export type PublicUser = Omit<User, 'email'>; //Hides sensitive fields
 
 // Login Credentials
