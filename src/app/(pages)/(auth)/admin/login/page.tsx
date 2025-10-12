@@ -33,7 +33,7 @@ export default function AdminLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuth(); // ✅ Remove refreshUser and user - they're broken
+  const { login } = useAuth();
   const router = useRouter();
 
   const form = useForm<FormData>({
@@ -45,7 +45,7 @@ export default function AdminLoginPage() {
     },
   });
 
-  // ✅ JWT Parser Function (same as regular login)
+  // JWT Parser Function
   const parseJWT = (token: string) => {
     try {
       const base64Url = token.split('.')[1];
@@ -60,7 +60,7 @@ export default function AdminLoginPage() {
     }
   };
 
-  // ✅ Extract Access Token from Cookies
+  // Extract Access Token from Cookies
   const getAccessTokenFromCookies = (): string | null => {
     const cookies = document.cookie;
     const accessTokenMatch = cookies.match(/accessToken=([^;]+)/);
@@ -95,7 +95,6 @@ export default function AdminLoginPage() {
       if (data.message === "로그인 성공" || data.authenticated) {
         console.log('✅ Admin login successful! Processing user data...');
         
-        // ✅ FIX: Use JWT parsing instead of broken refreshUser
         setTimeout(() => {
           const accessToken = getAccessTokenFromCookies();
           console.log('Access token found:', !!accessToken);
@@ -113,14 +112,13 @@ export default function AdminLoginPage() {
             }
           }
 
-          // ✅ FIX: Create user data from both backend + JWT
           const backendUser = data.user || data;
           
           const authUser: AuthUser = {
             nickname: backendUser?.nickname || username,
             full_name: backendUser?.realName || username,
             email: backendUser?.email || values.email,
-            role: userRole, // ✅ Use role from JWT
+            role: userRole,
             profile_image: backendUser?.profileImageUrl,
           };
 
@@ -129,7 +127,6 @@ export default function AdminLoginPage() {
           console.log('- Role:', authUser.role);
           console.log('- Expected role:', UserRole.ADMIN);
 
-          // ✅ FIX: Check admin role immediately
           if (authUser.role !== UserRole.ADMIN) {
             throw new Error(
               `❌ 관리자 권한이 필요합니다.\n\n` +
@@ -141,9 +138,9 @@ export default function AdminLoginPage() {
 
           console.log('✅ Admin role confirmed, logging in...');
           login(authUser, values.keepSignedIn);
-          router.push("/admin/dashboard");
+          router.push("/admin");
           
-        }, 100); // Small delay for cookies to be set
+        }, 100);
         
       } else {
         throw new Error(data?.message || "로그인에 실패했습니다.");
@@ -160,34 +157,27 @@ export default function AdminLoginPage() {
     const hasError = form.formState.errors[fieldName];
     return `h-10 w-full pl-10 bg-gray-50 rounded-lg text-gray-900 focus:outline-none transition-colors font-normal ${
       hasError 
-        ? 'border-red-300 focus:border-red-500 focus:ring-1 focus:ring-red-500' 
+        ? 'border-error focus:border-error focus:ring-1 focus:ring-error' 
         : 'border border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500'
     }`;
   };
 
   return (
     <>
-      <div className="flex h-screen w-full items-center justify-center bg-gray-50">
-        <div className="flex h-[550px] w-[850px] rounded-xl bg-white shadow-xl shadow-red-500/10 overflow-hidden z-10 border border-gray-200">
+      <div className="flex h-screen w-full items-center justify-center bg-gray-900">
+        <div className="absolute top-0 left-0 h-full w-full bg-[radial-gradient(circle_at_center,_rgba(58,_77,_161,_0.08)_0,_transparent_30%)]" />
+        <div className="flex h-[600px] w-[850px] rounded-xl bg-gray-100 shadow-xl shadow-primary-500/10 overflow-hidden z-10">
           
-          {/* Left Panel - Admin theme */}
-          <div className="flex flex-col items-center justify-center w-1/3 bg-gradient-to-br from-red-600 to-red-800 p-10 text-center">
-            <Shield className="w-24 h-24 mx-auto mb-6 text-white opacity-90" />
-            <h2 className="mb-2 text-2xl font-bold text-white">관리자 전용</h2>
-            <p className="mb-6 text-red-100">Administrator Access</p>
-            <div className="w-full py-3 px-4 rounded-lg text-center bg-red-700/50 text-red-100 border border-red-600/50">
-              <span className="font-medium">ADMIN ONLY</span>
-            </div>
-            
-            {/* Back to regular login */}
-            <div className="mt-4 pt-4 border-t border-red-400/30 w-full">
-              <p className="text-red-200 text-xs mb-2">일반 사용자이신가요?</p>
-              <Link
-                href="/login"
-                className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium text-red-100 bg-red-800/50 hover:bg-red-800 border border-red-600/50 hover:border-red-600 rounded-md transition-all duration-200"
-              >
-                일반 로그인
-              </Link>
+          {/* Left Panel - Admin theme with brand colors */}
+          <div className="flex flex-col items-center justify-center w-1/3 p-10 text-center transition-colors bg-primary-900">
+            <Link href="/" className="flex items-center gap-1.5 p-2 font-bold">
+              <img src="/logo-white.svg" alt="SSG Logo" className="w-24 h-24" />
+            </Link>
+            <h2 className="mb-2 text-2xl font-bold transition-colors text-primary-100">관리자 로그인</h2>
+            <p className="mb-6 transition-colors text-primary-100">관리자 권한으로 로그인하세요</p>
+            <div className="w-full py-3 px-4 rounded-lg text-center transition-colors bg-primary-700 text-primary-100 border border-primary-600">
+              <Shield className="inline w-5 h-5 mr-2" />
+              <span className="font-medium">Admin Access</span>
             </div>
           </div>
 
@@ -196,15 +186,12 @@ export default function AdminLoginPage() {
             <button
               type="button"
               onClick={() => router.push("/")}
-              className="absolute top-4 right-4 text-gray-400 hover:text-red-600 transition-colors"
+              className="absolute top-4 right-4 text-gray-400 hover:text-primary-600 transition-colors"
             >
               <X size={20} />
             </button>
 
-            <div className="flex items-center justify-center mb-6">
-              <Shield className="w-8 h-8 text-red-600 mr-3" />
-              <h2 className="text-3xl font-bold text-red-600">관리자 로그인</h2>
-            </div>
+            <h2 className="mb-6 text-3xl font-bold text-primary-900 text-center">관리자 로그인</h2>
             
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
@@ -213,7 +200,7 @@ export default function AdminLoginPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium text-red-700">관리자 이메일</FormLabel>
+                      <FormLabel className="text-sm font-medium text-primary-900">관리자 이메일</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -225,7 +212,7 @@ export default function AdminLoginPage() {
                           />
                         </div>
                       </FormControl>
-                      <FormMessage className="text-red-600" />
+                      <FormMessage className="text-error" />
                     </FormItem>
                   )}
                 />
@@ -235,7 +222,7 @@ export default function AdminLoginPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium text-red-700">패스워드</FormLabel>
+                      <FormLabel className="text-sm font-medium text-primary-900">패스워드</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -254,7 +241,7 @@ export default function AdminLoginPage() {
                           </button>
                         </div>
                       </FormControl>
-                      <FormMessage className="text-red-600" />
+                      <FormMessage className="text-error" />
                     </FormItem>
                   )}
                 />
@@ -266,9 +253,9 @@ export default function AdminLoginPage() {
                       className="sr-only peer"
                       {...form.register("keepSignedIn")}
                     />
-                    <div className="flex items-center justify-center rounded w-4 h-4 bg-gray-100 border-2 border-gray-300 ring-offset-background peer-focus-visible:ring-2 peer-focus-visible:ring-red-500 peer-focus-visible:ring-offset-2 transition-all duration-300 peer-checked:bg-red-50 peer-checked:border-red-500 cursor-pointer">
+                    <div className="flex items-center justify-center rounded w-4 h-4 bg-gray-100 border-2 border-gray-300 ring-offset-background peer-focus-visible:ring-2 peer-focus-visible:ring-primary-500 peer-focus-visible:ring-offset-2 transition-all duration-300 peer-checked:bg-primary-50 peer-checked:border-primary-500 cursor-pointer">
                       <Check
-                        className={`h-3 w-3 text-red-600 transition-opacity duration-300 ${
+                        className={`h-3 w-3 text-primary-900 transition-opacity duration-300 ${
                           form.watch("keepSignedIn") ? "opacity-100" : "opacity-0"
                         }`}
                       />
@@ -277,42 +264,33 @@ export default function AdminLoginPage() {
                   </label>
                   <Link
                     href="/auth/forgot"
-                    className="text-red-600 text-sm font-medium no-underline hover:text-red-700"
+                    className="text-primary-900 text-sm font-medium no-underline hover:text-primary-700"
                   >
                     비밀번호 찾기
                   </Link>
                 </div>
 
-                <button 
-                  type="submit" 
-                  className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-white py-3 px-4 rounded-lg font-medium transition-colors btn-lg" 
-                  disabled={isLoading}
-                >
+                <button type="submit" className="btn btn-primary btn-lg w-full" disabled={isLoading}>
                   {isLoading ? "로그인 중..." : "관리자 로그인"}
                 </button>
 
                 {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-                    <div className="flex items-start">
-                      <Shield className="w-5 h-5 text-red-600 mr-2 mt-0.5 flex-shrink-0" />
-                      <p className="text-sm text-red-700 font-medium whitespace-pre-line text-left">{error}</p>
-                    </div>
+                  <div className="text-sm text-red-600 text-center bg-red-50 p-3 rounded-lg border border-red-200 whitespace-pre-line">
+                    {error}
                   </div>
                 )}
               </form>
             </Form>
 
-            {/* Admin Notice */}
-            <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            {/* Admin Notice with brand colors */}
+            <div className="mt-6 p-4 bg-gray-100 rounded-lg border-l-4 border-primary-900">
               <div className="flex items-start">
-                <Shield className="w-5 h-5 text-red-600 mr-3 mt-0.5" />
+                <Shield className="w-5 h-5 text-primary-900 mr-3 mt-0.5" />
                 <div>
-                  <h4 className="text-sm font-medium text-red-800 mb-1">⚠️ 관리자 접근 안내</h4>
-                  <p className="text-xs text-red-700 mb-2">
-                    <span className="font-medium">ADMIN (운영진)</span> 권한이 있는 계정만 접근할 수 있습니다.
-                  </p>
-                  <p className="text-xs text-red-600">
-                    일반 사용자는 <Link href="/login" className="underline hover:no-underline font-medium">일반 로그인</Link>을 사용하세요.
+                  <h4 className="text-sm font-medium text-gray-900 mb-1">⚠️ 관리자 접근 안내</h4>
+                  <p className="text-xs text-gray-600">
+                    <span className="font-medium text-primary-600">운영진</span> 권한이 있는 계정만 접근할 수 있습니다. 
+                    일반 사용자는 <Link href="/login" className="text-primary-600 hover:text-primary-700 font-medium">일반 로그인</Link>을 사용하세요.
                   </p>
                 </div>
               </div>
