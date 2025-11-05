@@ -7,6 +7,7 @@
   --color-text: #1f2937;
   --color-background: #e2eefc;
   --color-foreground: #060810;
+  --color-gradient-background: radial-gradient(ellipse at top, #e2eefc, #3a4da1);
   
   /* Primary Scale */
   --color-primary-50: #ebedf6;
@@ -76,6 +77,9 @@
 }
 
 @layer components {
+  .bg-gradient-background {
+  background: var(--color-gradient-background);
+}
   .btn {
     @apply inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer border-0 outline-none px-4 py-2;
   }

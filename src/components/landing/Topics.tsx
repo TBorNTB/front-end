@@ -2,128 +2,91 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Shield, Wifi, Zap, Search, Cloud, AlertTriangle, ArrowRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
+import { Topic, CategoryType, CategoryHelpers } from '@/app/(main)/topics/types/category';
+import { CategoryIcons, CategoryColors } from '@/app/(main)/topics/types/icon';
 
-const topicsData = [
-  {
-    id: 1,
-    title: 'Network Security',
-    slug: 'network-security',
-    description: 'Learn about firewalls, intrusion detection, and network protection strategies',
-    projects: 24,
-    articles: 18,
-    icon: Shield,
-    color: 'bg-blue-500',
-    darkBg: 'bg-gray-900'
-  },
-  {
-    id: 2,
-    title: 'Penetration Testing',
-    slug: 'penetration-testing',
-    description: 'Master ethical hacking techniques and vulnerability assessment',
-    projects: 31,
-    articles: 22,
-    icon: Zap,
-    color: 'bg-pink-500',
-    darkBg: 'bg-gray-900'
-  },
-  {
-    id: 3,
-    title: 'Cryptography',
-    slug: 'cryptography',
-    description: 'Explore encryption algorithms and secure communication protocols',
-    projects: 19,
-    articles: 15,
-    icon: Wifi,
-    color: 'bg-blue-600',
-    darkBg: 'bg-gray-900'
-  },
-  {
-    id: 4,
-    title: 'Digital Forensics',
-    slug: 'digital-forensics',
-    description: 'Learn incident response and digital evidence analysis techniques',
-    projects: 16,
-    articles: 12,
-    icon: Search,
-    color: 'bg-yellow-500',
-    darkBg: 'bg-gray-900'
-  },
-  {
-    id: 5,
-    title: 'Cloud Security',
-    slug: 'cloud-security',
-    description: 'Secure cloud infrastructure and understand cloud-native security',
-    projects: 28,
-    articles: 20,
-    icon: Cloud,
-    color: 'bg-purple-500',
-    darkBg: 'bg-gray-900'
-  },
-  {
-    id: 6,
-    title: 'Incident Response',
-    slug: 'incident-response',
-    description: 'Handle security breaches and develop response strategies',
-    projects: 21,
-    articles: 17,
-    icon: AlertTriangle,
-    color: 'bg-red-500',
-    darkBg: 'bg-gray-900'
-  },
-    {
-    id: 7,
-    title: 'Digital Forensics',
-    slug: 'digital-forensics',
-    description: 'Learn incident response and digital evidence analysis techniques',
-    projects: 16,
-    articles: 12,
-    icon: Search,
-    color: 'bg-yellow-500',
-    darkBg: 'bg-gray-900'
-  },
-  {
-    id: 8,
-    title: 'Cloud Security',
-    slug: 'cloud-security',
-    description: 'Secure cloud infrastructure and understand cloud-native security',
-    projects: 28,
-    articles: 20,
-    icon: Cloud,
-    color: 'bg-purple-500',
-    darkBg: 'bg-gray-900'
-  },
-  {
-    id: 9,
-    title: 'Incident Response',
-    slug: 'incident-response',
-    description: 'Handle security breaches and develop response strategies',
-    projects: 21,
-    articles: 17,
-    icon: AlertTriangle,
-    color: 'bg-red-500',
-    darkBg: 'bg-gray-900'
-  }
-];
+// Convert your category data to Topic format
+const getTopicsData = (): Topic[] => {
+  const baseTopics: Array<{
+    type: CategoryType;
+    projectCount: number;
+    articleCount: number;
+  }> = [
+    { type: CategoryType.WEB_HACKING, projectCount: 24, articleCount: 18 },
+    { type: CategoryType.SYSTEM_HACKING, projectCount: 31, articleCount: 22 },
+    { type: CategoryType.CRYPTOGRAPHY, projectCount: 19, articleCount: 15 },
+    { type: CategoryType.DIGITAL_FORENSICS, projectCount: 16, articleCount: 12 },
+    { type: CategoryType.NETWORK_SECURITY, projectCount: 28, articleCount: 20 },
+    { type: CategoryType.IOT_SECURITY, projectCount: 21, articleCount: 17 },
+    { type: CategoryType.REVERSING, projectCount: 18, articleCount: 14 }
+  ];
+
+  return baseTopics.map((topic, index) => ({
+    id: `topic-${index + 1}`,
+    name: CategoryHelpers.getDisplayName(topic.type), // Korean name
+    slug: CategoryHelpers.getSlug(topic.type),
+    description: getCategoryDescription(topic.type),
+    type: topic.type,
+    projectCount: topic.projectCount,
+    articleCount: topic.articleCount
+  }));
+};
+
+// Korean descriptions for each category
+const getCategoryDescription = (type: CategoryType): string => {
+  const descriptions: Record<CategoryType, string> = {
+    [CategoryType.WEB_HACKING]: 'SQL Injection, XSS, CSRF 등 웹 애플리케이션 보안 취약점 분석 및 대응',
+    [CategoryType.REVERSING]: '바이너리 분석, 역공학 기술을 통한 소프트웨어 구조 분석 및 이해',
+    [CategoryType.SYSTEM_HACKING]: 'Buffer Overflow, ROP 등 시스템 레벨 취약점 분석 및 익스플로잇 개발',
+    [CategoryType.DIGITAL_FORENSICS]: '디지털 증거 수집 및 분석, 사고 대응을 위한 포렌식 기법',
+    [CategoryType.NETWORK_SECURITY]: '네트워크 트래픽 분석, 침입 탐지 및 방화벽 보안 기술',
+    [CategoryType.IOT_SECURITY]: '스마트 기기의 보안 취약점을 분석 및 대응',
+    [CategoryType.CRYPTOGRAPHY]: '현대 암호학 이론, 암호 시스템 분석 및 보안 프로토콜 구현'
+  };
+  
+  return descriptions[type];
+};
 
 interface TopicsSectionProps {
   showHeader?: boolean;
   className?: string;
+  topics?: Topic[]; // Optional prop for external data
 }
 
 export default function TopicsSection({ 
   showHeader = true,
-  className = "" 
+  className = "",
+  topics: externalTopics
 }: TopicsSectionProps) {
   const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   
-  const itemsPerPage = 6; // 3x2 grid
+  // Use external topics or fallback to static data
+  const topicsData = externalTopics || getTopicsData();
+  
+  const itemsPerPage = 8; // 4x2 grid (4 columns, 2 rows)
   const totalPages = Math.ceil(topicsData.length / itemsPerPage);
 
-  
+  // Auto-play functionality
+  useEffect(() => {
+    if (isAutoPlaying && totalPages > 1) {
+      intervalRef.current = setInterval(() => {
+        setCurrentIndex((prev) => (prev + 1) % totalPages);
+      }, 5000);
+    } else if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [isAutoPlaying, totalPages]);
+
   const nextSlide = () => {
     setCurrentIndex((prev) => (prev + 1) % totalPages);
     setIsAutoPlaying(false);
@@ -143,7 +106,7 @@ export default function TopicsSection({
     router.push(`/topics?category=${slug}`);
   };
 
-  const getCurrentItems = () => {
+  const getCurrentItems = (): Topic[] => {
     const startIndex = currentIndex * itemsPerPage;
     return topicsData.slice(startIndex, startIndex + itemsPerPage);
   };
@@ -154,117 +117,128 @@ export default function TopicsSection({
         {/* Header Section */}
         {showHeader && (
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-foreground mb-4">
-              Learning Topics
+            <h2 className="text-4xl font-bold text-primary mb-4">
+              보안 학습 주제
             </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Discover cybersecurity topics tailored to your interests
+            <p className="text-lg text-gray-800 max-w-2xl mx-auto">
+              사이버 보안 전문 지식을 체계적으로 학습할 수 있는 주제들을 탐색하세요
             </p>
           </div>
         )}
 
         {/* Carousel Container */}
         <div className="relative">
-          {/* Topics Grid */}
+          {/* Topics Grid - Updated to 4 columns */}
           <div 
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto"
             onMouseEnter={() => setIsAutoPlaying(false)}
             onMouseLeave={() => setIsAutoPlaying(true)}
           >
             {getCurrentItems().map((topic) => {
-              const IconComponent = topic.icon;
+              const IconComponent = CategoryIcons[topic.type];
+              const colorClass = CategoryColors[topic.type];
               
               return (
                 <div
                   key={topic.id}
-                  className="relative group cursor-pointer"
+                  className="group cursor-pointer transform transition-all duration-300 hover:scale-105"
                   onClick={() => handleTopicClick(topic.slug)}
                 >
-                  <div className={`
-                    relative h-56 rounded-2xl overflow-hidden
-                    ${topic.darkBg} hover:shadow-xl
-                  `}>
+                  {/* Card Container */}
+                  <div className="card bg-white hover:shadow-xl hover:shadow-primary-500/20 border border-primary-100 hover:border-primary-300 transition-all duration-300 h-full">
                     
-                    {/* Content */}
-                    <div className="absolute inset-0 p-6 flex flex-col justify-between">
-                      {/* Icon and Title */}
-                      <div className="flex items-center space-x-3">
-                        <div className={`
-                          w-12 h-12 rounded-lg ${topic.color} 
-                          flex items-center justify-center
-                        `}>
-                          <IconComponent className="w-6 h-6 text-white" />
-                        </div>
-                        <h3 className="text-xl font-semibold text-white">
-                          {topic.title}
-                        </h3>
+                    {/* Icon and Title Section */}
+                    <div className="flex items-center space-x-3 mb-4">
+                      <div className={`
+                        w-12 h-12 rounded-xl ${colorClass} 
+                        flex items-center justify-center
+                        group-hover:scale-110 transition-transform duration-300
+                        shadow-lg group-hover:shadow-xl flex-shrink-0
+                      `}>
+                        <IconComponent className="w-6 h-6 text-white" />
                       </div>
+                      <h3 className="text-lg font-bold text-primary-800 group-hover:text-primary-600 transition-colors flex-1 line-clamp-2">
+                        {topic.name}
+                      </h3>
+                    </div>
 
-                      {/* Main Content */}
-                      <div className="flex-1 flex flex-col justify-center">
-                        <p className="text-gray-300 text-sm mb-4 leading-relaxed">
-                          {topic.description}
-                        </p>
+                    {/* Description */}
+                    <p className="text-gray-800 text-sm leading-relaxed mb-4 line-clamp-2">
+                      {topic.description}
+                    </p>
+
+                    {/* Stats Section */}
+                    <div className="flex items-center justify-center space-x-4 mb-4">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 rounded-full bg-primary-500"></div>
+                        <span className="text-xs text-gray-800">
+                          {topic.projectCount}개 프로젝트
+                        </span>
                       </div>
-
-                      {/* Bottom Section */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4 text-sm text-gray-400">
-                          <span>{topic.projects} Projects</span>
-                          <span>•</span>
-                          <span>{topic.articles} Articles</span>
-                        </div>
-                        
-                        <div className="flex items-center justify-center w-8 h-8">
-                          <ArrowRight className="w-4 h-4 text-gray-400" />
-                        </div>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 rounded-full bg-secondary-500"></div>
+                        <span className="text-xs text-gray-800">
+                          {topic.articleCount}개 아티클
+                        </span>
                       </div>
                     </div>
 
-                    {/* Subtle border effect */}
-                    <div className="absolute inset-0 rounded-2xl border border-transparent hover:border-primary-400/30 hover:shadow-lg hover:shadow-primary-500/10" />
+                    {/* Action Button */}
+                    <div className="flex items-center justify-center pt-3 border-t border-primary-100 mt-auto">
+                      <div className="flex items-center space-x-2 text-primary-600 group-hover:text-primary-700 transition-colors">
+                        <span className="text-sm font-medium">학습보기</span>
+                        <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-300" />
+                      </div>
+                    </div>
                   </div>
                 </div>
               );
             })}
           </div>
 
-          {/* Navigation Arrows */}
-          <button
-            onClick={prevSlide}
-            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 lg:-translate-x-8
-                     w-10 h-10 rounded-full bg-white border border-gray-200 shadow-md
-                     hover:bg-gray-50 hover:shadow-lg
-                     flex items-center justify-center text-gray-600 hover:text-primary-600"
-            disabled={totalPages <= 1}
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          
-          <button
-            onClick={nextSlide}
-            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 lg:translate-x-8
-                     w-10 h-10 rounded-full bg-white border border-gray-200 shadow-md
-                     hover:bg-gray-50 hover:shadow-lg
-                     flex items-center justify-center text-gray-600 hover:text-primary-600"
-            disabled={totalPages <= 1}
-          >
-            <ChevronRight className="h-5 w-5" />
-          </button>
+          {/* Navigation Arrows - Only show if more than one page */}
+          {totalPages > 1 && (
+            <>
+              <button
+                onClick={prevSlide}
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 lg:-translate-x-8
+                         w-12 h-12 rounded-full bg-white border-2 border-primary-200 shadow-lg
+                         hover:bg-primary-50 hover:border-primary-300 hover:shadow-xl
+                         flex items-center justify-center text-primary-600 hover:text-primary-700
+                         transition-all duration-200"
+                aria-label="이전 주제들"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+              
+              <button
+                onClick={nextSlide}
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 lg:translate-x-8
+                         w-12 h-12 rounded-full bg-white border-2 border-primary-200 shadow-lg
+                         hover:bg-primary-50 hover:border-primary-300 hover:shadow-xl
+                         flex items-center justify-center text-primary-600 hover:text-primary-700
+                         transition-all duration-200"
+                aria-label="다음 주제들"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            </>
+          )}
         </div>
 
         {/* Pagination Dots */}
         {totalPages > 1 && (
-          <div className="flex justify-center mt-8 space-x-2">
+          <div className="flex justify-center mt-10 space-x-3">
             {Array.from({ length: totalPages }, (_, index) => (
               <button
                 key={index}
                 onClick={() => goToSlide(index)}
-                className={`w-3 h-3 rounded-full ${
+                className={`w-3 h-3 rounded-full transition-all duration-200 ${
                   index === currentIndex 
-                    ? 'bg-primary-600 scale-125' 
-                    : 'bg-gray-300 hover:bg-gray-400'
+                    ? 'bg-primary-600 scale-125 shadow-md' 
+                    : 'bg-primary-200 hover:bg-primary-400 hover:scale-110'
                 }`}
+                aria-label={`${index + 1}페이지로 이동`}
               />
             ))}
           </div>

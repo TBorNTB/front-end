@@ -18,12 +18,6 @@ export default function AdminSettings() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">설정</h1>
-        <p className="mt-1 text-sm text-gray-600">시스템 설정을 관리하세요</p>
-      </div>
-
       {/* Tab Navigation */}
       <div>
         <nav className="flex space-x-8 border-b border-gray-200">

@@ -1,6 +1,6 @@
 //src/app/api/auth/login/route.ts
 import { NextResponse } from 'next/server';
-import { BASE_URL, API_ENDPOINTS } from '@/lib/endpoints'; // Updated import
+import { BASE_URL, API_ENDPOINTS } from '@/lib/api/services/user-service'; 
 
 export async function POST(request: Request) {
   try {
@@ -23,10 +23,20 @@ export async function POST(request: Request) {
       status: backendResponse.status,
     });
 
-    // Forward all Set-Cookie headers (including HttpOnly cookies)
-    const setCookieHeader = backendResponse.headers.get('set-cookie');
-    if (setCookieHeader) {
-      response.headers.set('set-cookie', setCookieHeader);
+    // ✅ FIX: Properly forward ALL Set-Cookie headers
+    const setCookieHeaders = backendResponse.headers.getSetCookie?.() || 
+                           backendResponse.headers.get('set-cookie');
+    
+    if (setCookieHeaders) {
+      if (Array.isArray(setCookieHeaders)) {
+        // ✅ Multiple cookies - set each one separately
+        setCookieHeaders.forEach(cookie => {
+          response.headers.append('set-cookie', cookie);
+        });
+      } else {
+        // ✅ Single cookie string
+        response.headers.set('set-cookie', setCookieHeaders);
+      }
     }
 
     return response;

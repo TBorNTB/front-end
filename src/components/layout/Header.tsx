@@ -22,7 +22,7 @@ const navList = [
   },
   { name: "Topics", slug: "topics", href: "/topics" },
   { name: "Projects", slug: "projects", href: "/projects" },
-  { name: "Articles", slug: "articles", href: "/articles" },
+  { name: "CS Blog", slug: "CSblog", href: "/CSblog" },
   { name: "Newsletter", slug: "newsletter", href: "/newsletter" },
 ];
 
@@ -106,7 +106,7 @@ const Header = () => {
     }
   };
 
-  // ✅ FIX: Better user data handling with debugging
+  // Better user data handling with debugging
   const displayName = user?.nickname || user?.full_name || '김민준';
   const displayEmail = user?.email || 'kdr123@naver.com';
   const displayRole = user?.role ? UserRoleDisplay[user.role as UserRole] : '외부인';  
@@ -260,29 +260,23 @@ const Header = () => {
                       </div>
                       
                       <div className="py-1">
+                        {/* ✅ UPDATED: Changed from "활동" to "마이페이지" and removed "설정" */}
                         <Link 
-                          href="/profile/settings" 
+                          href="/mypage" 
                           className="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
                           onClick={() => setDropdowns({})}
                         >
-                          설정
-                        </Link>
-                        <Link 
-                          href="/profile/activity" 
-                          className="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
-                          onClick={() => setDropdowns({})}
-                        >
-                          활동
+                          마이페이지
                         </Link>
                         
-                        {/* ✅ FIX: Admin Dashboard Button - Fixed flex layout */}
+                        {/* Admin Dashboard Button */}
                         {user?.role === UserRole.ADMIN && (
                           <Link
                             href="/admin/dashboard"
-                            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                            className="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
                             onClick={() => setDropdowns({})}
                           >
-                            어드민 
+                            어드민 대시보드 
                           </Link>
                         )}
 
@@ -371,22 +365,17 @@ const Header = () => {
                         <p className="text-sm text-gray-500">권한: {displayRole}</p>
                       </div>
                     </div>
+                    
+                    {/* ✅ UPDATED: Changed from "활동" to "마이페이지" and removed "설정" */}
                     <Link
-                      href="/profile/settings"
+                      href="/mypage"
                       className="block py-2 text-gray-700 hover:text-primary-600"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      설정
-                    </Link>
-                    <Link
-                      href="/profile/activity"
-                      className="block py-2 text-gray-700 hover:text-primary-600"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      활동
+                      마이페이지
                     </Link>
 
-                    {/* ✅ FIX: Mobile Admin Dashboard Button - Fixed flex layout */}
+                    {/* Mobile Admin Dashboard Button */}
                     {user?.role === UserRole.ADMIN && (
                       <Link
                         href="/admin/dashboard"

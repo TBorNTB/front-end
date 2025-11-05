@@ -1,45 +1,47 @@
-// src/app/api/auth/logout/route.ts - Server-side logout
-import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
+import { BASE_URL, API_ENDPOINTS } from '@/lib/api/services/user-service';
 
-export async function POST(_request: NextRequest) {
-  try {        
-    // List of cookies to clear
-    const cookiesToClear = [
-      'accessToken',
-      'refreshToken', 
-      'sessionToken',
-      'userId',
-      'userRole',
-      'authState',
-      'keepSignedIn'
-    ];
+export async function POST(request: Request) {
+  try {
+    // ✅ Forward cookies to backend for logout
+    const cookieHeader = request.headers.get('cookie');
 
-    // Create response
-    const response = NextResponse.json(
-      { message: '로그아웃되었습니다', success: true },
-      { status: 200 }
-    );
-
-    // Clear all auth-related cookies
-    cookiesToClear.forEach(cookieName => {
-      response.cookies.set(cookieName, '', {
-        expires: new Date(0),
-        path: '/',
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax'
-      });
+    const backendResponse = await fetch(`${BASE_URL}${API_ENDPOINTS.USERS.LOGOUT}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        ...(cookieHeader && { 'Cookie': cookieHeader }),
+      },
     });
 
-    console.log('Server logout completed');
-    return response;
+    const data = await backendResponse.json().catch(() => ({}));
+
+    const response = NextResponse.json(data, {
+      status: backendResponse.status,
+    });
+
+    // ✅ Forward cookie clearing headers
+    const setCookieHeaders = backendResponse.headers.getSetCookie?.() || 
+                           backendResponse.headers.get('set-cookie');
     
+    if (setCookieHeaders) {
+      if (Array.isArray(setCookieHeaders)) {
+        setCookieHeaders.forEach(cookie => {
+          response.headers.append('set-cookie', cookie);
+        });
+      } else {
+        response.headers.set('set-cookie', setCookieHeaders);
+      }
+    }
+
+    return response;
+
   } catch (error) {
-    console.error('Server logout error:', error);
+    console.error("Logout API route error:", error);
     return NextResponse.json(
-      { message: '로그아웃 처리 중 오류가 발생했습니다', success: false },
-      { status: 500 }
+      { message: 'Logout completed' },
+      { status: 200 }
     );
   }
 }

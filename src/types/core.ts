@@ -42,6 +42,6 @@ export enum ProjectStatus {
 
 export enum PostType {
   PROJECT = 'PROJECT',
-  ARTICLE = 'ARTICLE',
+  CSBLOG = 'CSBLOG',
   NEWS = 'NEWS',
 }

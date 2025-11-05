@@ -1,4 +1,4 @@
-// shared/types/index.ts - Clean exports
+// types/index.ts - Clean exports
 export * from './core';
 export * from './api';
 

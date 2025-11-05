@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getApiUrl, API_ENDPOINTS } from '@/lib/endpoints';
+import { getApiUrl, API_ENDPOINTS } from '@/lib/api/services/user-service';
 
 export async function POST(request: Request) {
   try {
@@ -128,7 +128,7 @@ export async function POST(request: Request) {
 
     // Create user account
     const signupApiUrl = getApiUrl(API_ENDPOINTS.USERS.SIGNUP);
-    console.log('🌐 Signup API URL:', signupApiUrl);
+    console.log('Signup API URL:', signupApiUrl);
     
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
@@ -155,11 +155,11 @@ export async function POST(request: Request) {
     }
 
     const data = await backendResponse.json();
-    console.log('✅ Signup Success!');
+    console.log('Signup Success!');
     return NextResponse.json(data, { status: backendResponse.status });
 
   } catch (error) {
-    console.error('💥 Signup Route Error:', error);
+    console.error('Signup Route Error:', error);
     
     if (typeof error === 'object' && error !== null && 'name' in error && (error as { name?: unknown }).name === 'AbortError') {
       return NextResponse.json({
