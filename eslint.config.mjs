@@ -21,26 +21,35 @@ const eslintConfig = [
     ],
   },
   {
-    // Add custom rules to fix your compilation errors
+    // Combined custom rules to fix compilation errors and improve code quality
     rules: {
-      // TypeScript unused variables - change from error to warning
-      "@typescript-eslint/no-unused-vars": ["warn", { 
-        "argsIgnorePattern": "^_",
-        "varsIgnorePattern": "^_" 
-      }],
+      // ✅ TypeScript unused variables - unified pattern
+      "@typescript-eslint/no-unused-vars": [
+        "error", 
+        {
+          "argsIgnorePattern": "^_",
+          "varsIgnorePattern": "^_",
+          "caughtErrorsIgnorePattern": "^_"
+        }
+      ],
       
-      // Function type safety
+      // ✅ Function type safety
       "@typescript-eslint/no-unsafe-function-type": "warn",
       "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-empty-object-type": "error", // Added for empty interface fix
       
-      // Next.js Image optimization 
+      // ✅ React and Next.js rules
+      "react/no-unescaped-entities": "warn", // Added from your request
       "@next/next/no-img-element": "warn",
       
-      // Accessibility
+      // ✅ Accessibility
       "jsx-a11y/alt-text": "warn",
       
-      // React Hooks
+      // ✅ React Hooks
       "react-hooks/exhaustive-deps": "warn",
+      
+      // ✅ General code quality
+      "prefer-const": "error", // Fix for let -> const issues
     }
   }
 ];

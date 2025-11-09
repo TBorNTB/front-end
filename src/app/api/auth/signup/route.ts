@@ -121,8 +121,8 @@ export async function POST(request: Request) {
     }
 
     // Prepare user data for backend (exclude file-related fields)
-    const { fileData, fileName, fileType, confirmPassword, ...userData } = body;
-    userData.profileImageUrl = profileImageUrl;
+   // const { fileData, fileName, fileType, confirmPassword, ...userData } = body;
+//    userData.profileImageUrl = profileImageUrl;
 
     console.log('👤 Creating user account...');
 
@@ -139,7 +139,7 @@ export async function POST(request: Request) {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      body: JSON.stringify(userData),
+      //body: JSON.stringify(userData),
       signal: controller.signal,
     });
 

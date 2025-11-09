@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Twitter, Linkedin, Github, Mail, Instagram, Youtube } from "lucide-react";
+import {Github, Mail, Instagram, Youtube } from "lucide-react";
 
 const Footer = () => {
   const scrollToTop = () => {

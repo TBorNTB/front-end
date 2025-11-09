@@ -3,7 +3,6 @@
 
 import { useState } from 'react';
 import { 
-  Calendar,
   Trophy,
   Users,
   BookOpen,
@@ -162,7 +161,7 @@ export default function SSGTimeline() {
             
             {/* Timeline Events */}
             <div className="flex justify-between items-center relative z-10">
-            {visibleEvents.map((event, index) => {
+            {visibleEvents.map((event) => {
                 const IconComponent = event.icon;
                 const isActive = activeEvent === event.id;
                 

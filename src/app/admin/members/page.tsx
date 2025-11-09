@@ -1,4 +1,4 @@
-// src/app/admin/members/page.tsx - IMPROVED & COHESIVE
+// src/app/admin/members/AdminMembersContent.tsx - NEW FILE
 "use client";
 
 import { useState, useEffect } from "react";
@@ -12,7 +12,6 @@ import {
   Users, 
   Clock,
   Edit3,
-  Trash2,
   UserX,
   AlertCircle,
   Download,
@@ -84,7 +83,7 @@ const gradeStats = [
   { role: "운영진", count: 5, color: "orange" }
 ];
 
-export default function AdminMembers() {
+export default function AdminMembersContent() {
   const [activeTab, setActiveTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -94,7 +93,7 @@ export default function AdminMembers() {
 
   // Initialize tab from URL params
   useEffect(() => {
-    const tab = searchParams?.get('tab');
+    const tab = searchParams.get('tab');
     if (tab && ['all', 'requests', 'grades'].includes(tab)) {
       setActiveTab(tab);
     }
@@ -126,6 +125,8 @@ export default function AdminMembers() {
       {/* Header Section */}
       <div className="flex items-center justify-between">
         <div>
+          <h1 className="text-3xl font-bold text-primary-900">회원 관리</h1>
+          <p className="text-gray-600 mt-1">SSG 회원들을 관리하고 등급 변경 요청을 처리합니다</p>
         </div>
         <button
           onClick={handleRefresh}
@@ -363,7 +364,7 @@ export default function AdminMembers() {
           </div>
         )}
 
-        {/* Grades Management Tab - Inline */}
+        {/* Grades Management Tab */}
         {activeTab === "grades" && (
           <div>
             <div className="border-b border-gray-200 pb-4 mb-6">

@@ -2,23 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  Shield, 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Eye, 
-  EyeOff, 
-  AlertTriangle,
-  CheckCircle,
-  Bell,
-  Lock,
-  Trash2,
-  Save
-} from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-
+import { CheckCircle } from 'lucide-react';
 interface UserData {
   id: number;
   username: string;
@@ -62,16 +46,7 @@ export default function SettingsContent() {
     browserNotifications: false,
     securityAlerts: true
   });
-
-  const [showPasswords, setShowPasswords] = useState({
-    current: false,
-    new: false,
-    confirm: false
-  });
-
-  const [isLoading, setIsLoading] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
+  
   // Mock user data - replace with actual API call
   useEffect(() => {
     const mockUserData: UserData = {
@@ -119,76 +94,6 @@ export default function SettingsContent() {
         ...prev,
         [name]: value
       }));
-    }
-  };
-
-  const togglePasswordVisibility = (field: 'current' | 'new' | 'confirm') => {
-    setShowPasswords(prev => ({
-      ...prev,
-      [field]: !prev[field]
-    }));
-  };
-
-  const handleProfileSave = async () => {
-    setIsLoading(true);
-    try {
-      // API call would go here
-      console.log('Saving profile data:', formData);
-      alert('프로필이 성공적으로 업데이트되었습니다.');
-    } catch (error) {
-      console.error('Error saving profile:', error);
-      alert('프로필 업데이트 중 오류가 발생했습니다.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handlePasswordChange = async () => {
-    if (formData.newPassword !== formData.confirmPassword) {
-      alert('새 비밀번호가 일치하지 않습니다.');
-      return;
-    }
-
-    if (formData.newPassword.length < 8) {
-      alert('비밀번호는 최소 8자 이상이어야 합니다.');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      // API call would go here
-      console.log('Changing password');
-      setFormData(prev => ({
-        ...prev,
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      }));
-      alert('비밀번호가 성공적으로 변경되었습니다.');
-    } catch (error) {
-      console.error('Error changing password:', error);
-      alert('비밀번호 변경 중 오류가 발생했습니다.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleAccountDelete = async () => {
-    if (showDeleteConfirm) {
-      setIsLoading(true);
-      try {
-        // API call would go here
-        console.log('Deleting account');
-        alert('계정이 삭제되었습니다.');
-      } catch (error) {
-        console.error('Error deleting account:', error);
-        alert('계정 삭제 중 오류가 발생했습니다.');
-      } finally {
-        setIsLoading(false);
-        setShowDeleteConfirm(false);
-      }
-    } else {
-      setShowDeleteConfirm(true);
     }
   };
 
@@ -284,7 +189,6 @@ export default function SettingsContent() {
         </div>
         
         <button 
-          onClick={handleAccountDelete}
           className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg 
                    transition-colors duration-300 text-sm font-medium"
         >

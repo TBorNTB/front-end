@@ -204,13 +204,9 @@ export interface SignupSubmitData extends Omit<SignupFormData, 'confirmPassword'
   fileType?: string;
 }
 
-export interface LoginSubmitData extends LoginFormData {
-  // No additional fields needed for login
-}
-
-export interface ForgotPasswordSubmitData extends ForgotPasswordFormData {
+//export interface ForgotPasswordSubmitData extends ForgotPasswordFormData {
   // Additional fields if needed for forgot password
-}
+//}
 
 // ===== CONTEXT TYPES =====
 export interface AuthContextType {
@@ -245,7 +241,7 @@ export function mapSignupFormToRequest(
   formData: SignupFormData,
   fileData?: { fileData: string; fileName: string; fileType: string }
 ): SignupRequest {
-  const { confirmPassword, ...baseData } = formData;
+  const { ...baseData } = formData;
   
   return {
     ...baseData,

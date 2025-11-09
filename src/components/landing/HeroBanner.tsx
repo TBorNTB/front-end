@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronDown, ArrowRight, BookOpen, Code, Shield } from 'lucide-react';
+import { ArrowRight, BookOpen, Code, Shield } from 'lucide-react';
+import Image from 'next/image';
 
 export default function HeroBanner() {
   return (
@@ -36,7 +37,7 @@ export default function HeroBanner() {
 
         {/* 메인 문구 */}
         <h2 className="mb-3 flex justify-center items-center text-3xl text-white font-extrabold md:text-5xl">
-          Welcome to <img src={"/logo-white.svg"} width={120} height={60} className="px-3" /> HUB
+          Welcome to <Image src={"/logo-white.svg"} width={120} height={60} className="px-3" alt={''} /> HUB
         </h2>
 
         {/* Enhanced description with glow */}

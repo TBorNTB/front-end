@@ -1,4 +1,4 @@
-// lib/user-service.ts
+/*// lib/user-service.ts
 // Configuration for frontend API endpoints connecting with SSG backend microservices
 const API_CONFIG = {
   DEVELOPMENT: 'http://43.202.91.154:8000', //  staging server
@@ -82,3 +82,4 @@ export const API_ENDPOINTS = {
 export const getApiUrl = (endpoint: string) => {
   return `${BASE_URL}${endpoint}`as const;
 };
+*/

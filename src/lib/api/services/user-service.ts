@@ -1,40 +1,54 @@
 // lib/user-service.ts
 // Configuration for frontend API endpoints connecting with SSG backend microservices
+
 const API_CONFIG = {
-  DEVELOPMENT: 'http://43.202.91.154:8000', //  staging server
+  DEVELOPMENT: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080', // Local backend
+  STAGING: 'https://api.sejongssg.kr', // Your deployed server
+  PRODUCTION: 'https://api.sejongssg.kr', // Same for now, change later if needed
 };
 
-export const BASE_URL = API_CONFIG.DEVELOPMENT;
+// ✅ Auto-detect environment
+const getBaseUrl = () => {
+  // Check if running in browser
+  if (typeof window !== 'undefined') {
+    // Use environment variable if set, otherwise use staging
+    return process.env.NEXT_PUBLIC_API_URL || API_CONFIG.STAGING;
+  }
+  
+  // Server-side: use environment variable or staging
+  return process.env.NEXT_PUBLIC_API_URL || API_CONFIG.STAGING;
+};
+
+export const BASE_URL = getBaseUrl();
 
 // Feature-specific endpoints matching microservices
 export const API_ENDPOINTS = {
-
   // User-service endpoints 
   USERS: {
     // Authentication endpoints
-    LOGIN: '/user-service/users/login',           // POST /users/login (사용자 로그인)
-    SIGNUP: '/user-service/users',                // POST /users (회원가입) 
-    LOGOUT: '/user-service/users/logout',         // POST /users/logout (로그아웃)
-    ROLE : '/user-service/users/role/one',           // GET /users/role (사용자 역할 조회)
-    PROFILE: '/user-service/users/profile',                 // GET /users/me (현재 사용자 정보 조회)
+    LOGIN: '/user-service/users/login',
+    SIGNUP: '/user-service/users',
+    LOGOUT: '/user-service/users/logout',
+    ROLE: '/user-service/users/role/one',
+    PROFILE: '/user-service/users/profile',
     
     // User management endpoints
-    GET_ALL: '/user-service/users',               // GET /users (전체 사용자 조회)
-    DELETE_USER: '/user-service/users',           // DELETE /users (사용자 탈퇴)
-    UPDATE_USER: '/user-service/users',           // PATCH /users (사용자 정보 수정)
-    CONFIRM_USER: '/user-service/users/{username}/confirm',  // PATCH /users/{username}/confirm (정식 회원 승인)
-    GRANT_ADMIN: '/user-service/users/{grantedUsername}/admin', // PATCH /users/{grantedUsername}/admin (관리자 권한 부여)
+    GET_ALL: '/user-service/users',
+    DELETE_USER: '/user-service/users',
+    UPDATE_USER: '/user-service/users',
+    CONFIRM_USER: '/user-service/users/{username}/confirm',
+    GRANT_ADMIN: '/user-service/users/{grantedUsername}/admin',
   },
 
   // Token management 
   TOKEN: {
     REISSUE: '/user-service/token/reissue',
-    REFRESH: '/user-service/token/refresh',     // ADD refresh endpoint
+    REFRESH: '/user-service/token/refresh',
   },
 
   // S3 File management 
   S3: {
-    PRESIGNED_URL: '/user-service/api/s3/presigned-url', // POST (S3 Presigned URL 생성)
+    PRESIGNED_URL: '/user-service/api/s3/presigned-url',
   },
 
   // Archive-service endpoints
@@ -58,7 +72,7 @@ export const API_ENDPOINTS = {
     GET_COLLABORATORS: '/project-service/projects/:id/collaborators',
   },
 
-  // Meta-service endpoints (comments, likes, etc.)
+  // Meta-service endpoints
   META: {
     COMMENTS: '/meta-service/comments',
     COMMENTS_BY_POST: '/meta-service/comments/post/:postId',
@@ -72,13 +86,19 @@ export const API_ENDPOINTS = {
     UNSUBSCRIBE: '/newsletter-service/unsubscribe',
   },
 
-  // Categories (from  article categories enum)
+  // Categories
   CATEGORIES: {
     GET_ALL: '/archive-service/categories',
   },
 } as const;
 
-// Helper function
+// ✅ Helper function with environment logging
 export const getApiUrl = (endpoint: string) => {
-  return `${BASE_URL}${endpoint}`as const;
+  const url = `${BASE_URL}${endpoint}`;
+  
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`🔗 API Request: ${url}`);
+  }
+  
+  return url;
 };

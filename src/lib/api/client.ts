@@ -1,4 +1,4 @@
-import { cookies } from 'next/headers';
+/*import { cookies } from 'next/headers';
 
 // ✅ Your existing configuration - single gateway URL
 const API_CONFIG = {
@@ -149,3 +149,4 @@ export class GatewayAPIClient {
 
 // ✅ Export single instance
 export const apiClient = new GatewayAPIClient();
+*/

@@ -1,19 +1,11 @@
 // app/members/page.tsx
 'use client';
-
-import { Metadata } from 'next';
 import { useState, useEffect } from 'react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { 
   Search, 
-  Filter, 
-  User,
-  Mail,
   Calendar,
-  Code,
-  Shield,
-  Award,
   MapPin,
   Loader2,
   AlertCircle,
@@ -176,7 +168,7 @@ export default function MembersPage() {
         await new Promise(resolve => setTimeout(resolve, 1000));
         setMembers(mockMembers);
         setFilteredMembers(mockMembers);
-      } catch (err) {
+      } catch (_err) {
         setError('멤버 정보를 불러올 수 없습니다.');
       } finally {
         setIsLoading(false);

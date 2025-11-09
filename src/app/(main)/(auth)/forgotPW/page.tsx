@@ -45,7 +45,7 @@ export default function ForgotPasswordPage() {
   
   const [currentStep, setCurrentStep] = useState<PasswordResetStep>('email');
   const [email, setEmail] = useState('');
-  const [verificationCode, setVerificationCode] = useState('');
+
   const [timeLeft, setTimeLeft] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -122,7 +122,6 @@ export default function ForgotPasswordPage() {
       const data = await response.json();
 
       if (response.ok) {
-        setVerificationCode(values.verificationCode);
         setCurrentStep('reset');
         resetForm.setValue('email', values.email);
         resetForm.setValue('verificationCode', values.verificationCode);

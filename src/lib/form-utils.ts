@@ -1,6 +1,5 @@
 // lib/form-utils.ts
 import { useState } from "react";
-import { FieldError } from "react-hook-form";
 
 /**
  * Generates consistent input className based on validation state
@@ -123,7 +122,7 @@ export const validatePasswordStrength = (password: string) => {
   const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
   
   let strength = 0;
-  let feedback: string[] = [];
+  const feedback: string[] = [];
   
   if (length >= 8) strength++;
   else feedback.push("최소 8글자 이상");

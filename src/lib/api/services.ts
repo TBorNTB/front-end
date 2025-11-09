@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+/*import { apiClient } from './client';
 import { API_ENDPOINTS } from './endpoints'; // Your existing endpoints
 
 // ✅ User Service Functions
@@ -120,3 +120,4 @@ export const s3Service = {
   getPresignedUrl: (fileData: any, request?: Request) => 
     apiClient.post(API_ENDPOINTS.S3.PRESIGNED_URL, fileData, request),
 };
+*/

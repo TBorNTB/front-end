@@ -164,7 +164,6 @@ export const CategoryHelpers = {
     slug: CategoryHelpers.getSlug(type),
     type,
     description: CategoryHelpers.getDescription(type),
-    categories: options?.categories,
     projectCount: counts.projectCount,
     articleCount: counts.articleCount,
     createdAt: options?.createdAt || new Date(),
@@ -312,7 +311,7 @@ export const CategoryHelpers = {
   }),
 
   topicToCategory: (topic: Topic): Category => {
-    const { categories, ...categoryData } = topic;
+    const { ...categoryData } = topic;
     return categoryData;
   },
 

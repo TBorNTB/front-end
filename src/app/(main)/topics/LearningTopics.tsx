@@ -2,9 +2,41 @@
 "use client";
 
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Shield, Github, Star, Users, Calendar, Clock, ArrowRight, Globe } from 'lucide-react';
-import { CategoryIcons, CategoryColors } from '@/app/(main)/topics/types/icon';
-import { CategoryType } from '@/app/(main)/topics/types/category';
+import { Star, Users, Clock, ArrowRight, Globe, Shield, Code, Lock, Search, Wifi, Cpu, Key } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+
+// Define CategoryType inline to avoid import issues
+enum CategoryType {
+  WEB_HACKING = 'WEB_HACKING',
+  REVERSING = 'REVERSING',
+  SYSTEM_HACKING = 'SYSTEM_HACKING',
+  DIGITAL_FORENSICS = 'DIGITAL_FORENSICS',
+  NETWORK_SECURITY = 'NETWORK_SECURITY',
+  IOT_SECURITY = 'IOT_SECURITY',
+  CRYPTOGRAPHY = 'CRYPTOGRAPHY',
+}
+
+// Icon mapping for each category
+const CategoryIcons: Record<CategoryType, LucideIcon> = {
+  [CategoryType.WEB_HACKING]: Code,
+  [CategoryType.REVERSING]: Search,
+  [CategoryType.SYSTEM_HACKING]: Lock,
+  [CategoryType.DIGITAL_FORENSICS]: Shield,
+  [CategoryType.NETWORK_SECURITY]: Wifi,
+  [CategoryType.IOT_SECURITY]: Cpu,
+  [CategoryType.CRYPTOGRAPHY]: Key,
+};
+
+// Color mapping for each category
+const CategoryColors: Record<CategoryType, string> = {
+  [CategoryType.WEB_HACKING]: 'bg-blue-500',
+  [CategoryType.REVERSING]: 'bg-purple-500',
+  [CategoryType.SYSTEM_HACKING]: 'bg-red-500',
+  [CategoryType.DIGITAL_FORENSICS]: 'bg-green-500',
+  [CategoryType.NETWORK_SECURITY]: 'bg-indigo-500',
+  [CategoryType.IOT_SECURITY]: 'bg-orange-500',
+  [CategoryType.CRYPTOGRAPHY]: 'bg-yellow-500',
+};
 
 const categories = [ 
   { 

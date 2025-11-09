@@ -14,10 +14,8 @@ import {
   MessageCircle,
   BookOpen,
   ThumbsUp as Like,
-  Settings,
   Award
 } from 'lucide-react';
-import { useState } from 'react';
 import Link from 'next/link';
 
 const userData = {
@@ -66,7 +64,6 @@ const recentActivity = [
 ];
 
 export default function ProfileContent() {
-  const [isEditing, setIsEditing] = useState(false);
 
   return (
     <div className="space-y-8">

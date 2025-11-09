@@ -51,11 +51,7 @@ export default function BadgeAssignment() {
   const handleAssignBadge = () => {
     console.log(`뱃지 "${selectedBadge.name}"을 ${selectedMembers.length}명에게 부여:`, selectedMembers);
   };
-
-  const getSelectedMemberNames = () => {
-    return selectedMembers.map((id) => members.find((m) => m.id === id)?.name).join(", ");
-  };
-
+  
   return (
     <div className="p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-6">뱃지 다중 부여</h3>

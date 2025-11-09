@@ -2,9 +2,81 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
-import { Topic, CategoryType, CategoryHelpers } from '@/app/(main)/topics/types/category';
-import { CategoryIcons, CategoryColors } from '@/app/(main)/topics/types/icon';
+import { ChevronLeft, ChevronRight, ArrowRight, Code, Search, Lock, Shield, Wifi, Cpu, Key } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+
+// Define CategoryType enum inline
+enum CategoryType {
+  WEB_HACKING = 'WEB_HACKING',
+  REVERSING = 'REVERSING',
+  SYSTEM_HACKING = 'SYSTEM_HACKING',
+  DIGITAL_FORENSICS = 'DIGITAL_FORENSICS',
+  NETWORK_SECURITY = 'NETWORK_SECURITY',
+  IOT_SECURITY = 'IOT_SECURITY',
+  CRYPTOGRAPHY = 'CRYPTOGRAPHY',
+}
+
+// Define Topic interface inline
+interface Topic {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  type: CategoryType;
+  projectCount: number;
+  articleCount: number;
+}
+
+// Icon mapping for each category
+const CategoryIcons: Record<CategoryType, LucideIcon> = {
+  [CategoryType.WEB_HACKING]: Code,
+  [CategoryType.REVERSING]: Search,
+  [CategoryType.SYSTEM_HACKING]: Lock,
+  [CategoryType.DIGITAL_FORENSICS]: Shield,
+  [CategoryType.NETWORK_SECURITY]: Wifi,
+  [CategoryType.IOT_SECURITY]: Cpu,
+  [CategoryType.CRYPTOGRAPHY]: Key,
+};
+
+// Color mapping for each category
+const CategoryColors: Record<CategoryType, string> = {
+  [CategoryType.WEB_HACKING]: 'bg-blue-500',
+  [CategoryType.REVERSING]: 'bg-purple-500',
+  [CategoryType.SYSTEM_HACKING]: 'bg-red-500',
+  [CategoryType.DIGITAL_FORENSICS]: 'bg-green-500',
+  [CategoryType.NETWORK_SECURITY]: 'bg-indigo-500',
+  [CategoryType.IOT_SECURITY]: 'bg-orange-500',
+  [CategoryType.CRYPTOGRAPHY]: 'bg-yellow-500',
+};
+
+// Category Helpers inline
+const CategoryHelpers = {
+  getDisplayName: (type: CategoryType): string => {
+    const displayNames: Record<CategoryType, string> = {
+      [CategoryType.WEB_HACKING]: '웹 해킹',
+      [CategoryType.REVERSING]: '리버싱',
+      [CategoryType.SYSTEM_HACKING]: '시스템 해킹',
+      [CategoryType.DIGITAL_FORENSICS]: '디지털 포렌식',
+      [CategoryType.NETWORK_SECURITY]: '네트워크 보안',
+      [CategoryType.IOT_SECURITY]: 'IoT보안',
+      [CategoryType.CRYPTOGRAPHY]: '암호학',
+    };
+    return displayNames[type];
+  },
+
+  getSlug: (type: CategoryType): string => {
+    const slugs: Record<CategoryType, string> = {
+      [CategoryType.WEB_HACKING]: 'web-hacking',
+      [CategoryType.REVERSING]: 'reversing',
+      [CategoryType.SYSTEM_HACKING]: 'system-hacking',
+      [CategoryType.DIGITAL_FORENSICS]: 'digital-forensics',
+      [CategoryType.NETWORK_SECURITY]: 'network-security',
+      [CategoryType.IOT_SECURITY]: 'iot-security',
+      [CategoryType.CRYPTOGRAPHY]: 'cryptography',
+    };
+    return slugs[type];
+  },
+};
 
 // Convert your category data to Topic format
 const getTopicsData = (): Topic[] => {

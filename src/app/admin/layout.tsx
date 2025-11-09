@@ -1,8 +1,8 @@
-// src/app/admin/layout.tsx - SUPER CLEAN VERSION
+// src/app/admin/layout.tsx
 "use client";
 
 import { useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation"; // ✅ Add useRouter here
 import { useAuth } from "@/context/AuthContext";
 import { UserRole } from "@/types/core";
 import AdminSidebar from "@/components/admin/AdminSidebar";
@@ -13,15 +13,15 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const router = useRouter();
+  const router = useRouter(); // ✅ Now properly imported
   const pathname = usePathname();
   const { user, isAuthenticated, loading } = useAuth();
 
   // ✅ Check if current page is the main admin page (login)
   const isAdminLoginPage = pathname === "/admin";
 
-  /* 
-  // ❌ COMMENTED OUT: Authentication checks disabled for direct access
+   
+  // Authentication checks disabled for direct access
   useEffect(() => {
     // Skip protection for main admin page (login)
     if (isAdminLoginPage || loading) {
@@ -34,15 +34,14 @@ export default function AdminLayout({
       router.replace("/admin");
     }
   }, [router, pathname, user, isAuthenticated, loading, isAdminLoginPage]);
-  */
+  
 
   // ✅ ADMIN LOGIN PAGE: Show directly - no loading, no checks
   if (isAdminLoginPage) {
     return <>{children}</>;
   }
 
-  /* 
-  // ❌ COMMENTED OUT: Loading state and auth checks disabled
+   
   // ✅ LOADING STATE: Only for protected pages while checking auth
   if (loading || !isAuthenticated || user?.role !== UserRole.ADMIN) {
     return (
@@ -54,8 +53,7 @@ export default function AdminLayout({
       </div>
     );
   }
-  */
-
+  
   // ✅ AUTHORIZED ADMIN: Show full admin layout (now accessible to all)
   return (
     <div className="min-h-screen bg-gray-200">

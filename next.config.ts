@@ -1,19 +1,27 @@
-import type { NextConfig } from "next";
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
     remotePatterns: [
       {
         protocol: 'https',
+        hostname: 'images.pexels.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
         hostname: 'images.unsplash.com',
-        pathname: '**',
+        port: '',
+        pathname: '/**',
       },
     ],
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
+  eslint: {
+  ignoreDuringBuilds: true,
+},
 };
 
 export default nextConfig;

@@ -125,7 +125,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.error('❌ Error managing localStorage:', handleAuthError(error));
     }
   };
-
+/*
   // ✅ Enhanced refresh function with type mapping
   const refreshUser = async (): Promise<boolean> => {
     try {
@@ -158,7 +158,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return false;
     }
   };
-
+*/
   // ✅ Enhanced logout function
   const logout = async () => {
     try {

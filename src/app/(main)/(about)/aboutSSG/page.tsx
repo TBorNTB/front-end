@@ -153,8 +153,8 @@ export default function AboutSSGPage() {
                 <div className="card p-8 bg-gradient-to-r from-primary-50 to-secondary-50 border-primary-300">
                   <h3 className="text-2xl font-bold text-primary-700 mb-4">Our Vision</h3>
                   <p className="text-gray-700 leading-relaxed">
-                    "세종대학교를 넘어 국내외 보안 커뮤니티에서 인정받는 학술 동아리로 성장하여, 
-                    보안 분야의 혁신을 이끄는 리더들을 배출하는 것"
+                    세종대학교를 넘어 국내외 보안 커뮤니티에서 인정받는 학술 동아리로 성장하여, 
+                    보안 분야의 혁신을 이끄는 리더들을 배출하는 것
                   </p>
                 </div>
               </div>

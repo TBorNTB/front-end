@@ -11,6 +11,8 @@ import {
   Settings,
   ExternalLink
 } from "lucide-react";
+import Image from 'next/image';
+
 
 const navigation = [
   {
@@ -59,7 +61,7 @@ export default function AdminSidebar() {
         {/* Desktop header */}
         <div className="hidden md:flex items-center h-18 px-5">
           <div className="flex items-center gap-2 p-2.5 font-bold">
-            <img src={"/logo-white.svg"} alt="SSG Logo" className="filter w-9 h-9" />
+            <Image src="/logo-white.svg" alt="SSG Logo" width={36} height={36} className="filter" />
           </div>
           <span className="ml-2.5 text-lg font-bold text-primary-100">ADMIN</span>
         </div>
@@ -67,7 +69,7 @@ export default function AdminSidebar() {
         {/* Mobile header - Just icon */}
         <div className="md:hidden flex justify-center py-4.5">
           <div className="flex items-center gap-2 p-2.5 font-bold">
-            <img src={"/logo-white.svg"} alt="SSG Logo" className="filter w-9 h-9" />
+            <Image src="/logo-white.svg" alt="SSG Logo" width={36} height={36} className="filter" />
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 //Role based access control (RBAC) middleware example
 // Typical middleware.ts pattern for SSG auth
-import { NextRequest, NextResponse } from 'next/server'
+/*import { NextRequest, NextResponse } from 'next/server'
 
 const protectedRoutes = ['/admin', '/projects', '/topics']
 const publicRoutes = ['/login', '/signup', '/']
@@ -17,4 +17,4 @@ export default function middleware(req: NextRequest) {
   return NextResponse.next()
 }
 // You can expand this middleware to check user roles and permissions
-// by decoding the token and verifying access rights for each route.
+// by decoding the token and verifying access rights for each route.*/

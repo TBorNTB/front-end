@@ -1,5 +1,5 @@
 "use client";
-
+import Image from 'next/image';
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -120,7 +120,7 @@ const Header = () => {
           <div className="flex items-center space-x-8">
             {/* Logo */}
             <Link href={"/"} className="flex items-center gap-1.5 p-2 font-bold hover:cursor-pointer">
-              <img src={"/logo.svg"} alt="SSG Logo" className="filter" />
+              <Image src="/logo.svg" alt="Logo" width={50} height={50} />
             </Link>
 
             {/* Desktop Navigation */}

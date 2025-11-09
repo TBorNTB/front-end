@@ -2,7 +2,7 @@
 "use client";
 
 import { useAuth } from "@/context/AuthContext";
-import { ArrowLeft, Bell, User, ChevronDown, LogOut } from "lucide-react";
+import { Bell,ChevronDown, LogOut } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
 

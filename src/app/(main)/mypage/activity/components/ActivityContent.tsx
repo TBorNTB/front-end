@@ -4,7 +4,6 @@
 import { useState, useEffect } from 'react';
 import { 
   Search, 
-  Filter, 
   Grid, 
   List,
   Eye,
@@ -126,7 +125,7 @@ export default function ActivityContent() {
         // Simulate API call
         await new Promise(resolve => setTimeout(resolve, 1000));
         setActivities(mockActivities);
-      } catch (err) {
+      } catch (_err) {
         setError('활동 내역을 불러올 수 없습니다.');
       } finally {
         setIsLoading(false);

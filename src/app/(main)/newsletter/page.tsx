@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { Mail, Shield, Clock, BookOpen, Users, Star, Github, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { Mail, Shield, Clock, BookOpen, Users, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import Image from 'next/image';
 
 const testimonials = [
   {
@@ -108,7 +109,7 @@ export default function SSGNewsletter() {
 
         {/* Main title with logo integration */}
         <h1 className="mb-4 flex justify-center items-center text-3xl text-white font-extrabold md:text-5xl">
-          <img src="/logo-white.svg" width={100} height={50} className="pr-3" />
+          <Image src="/logo-white.svg" alt="Description" width={100} height={50} />
           Newsletter
         </h1>
         
@@ -288,15 +289,18 @@ export default function SSGNewsletter() {
             {testimonials.map((testimonial, index) => (
               <div key={index} className="card p-6">
                 <div className="flex items-start gap-4">
-                  <img 
+                  <Image 
                     src={testimonial.avatar}
                     alt={testimonial.name}
-                    className="w-10 h-10 rounded-full bg-gray-200"
+                    width={40}
+                    height={40}
+                    className="rounded-full bg-gray-200"
                   />
                   <div className="flex-1">
                     <p className="text-gray-700 mb-4 leading-relaxed">
-                      "{testimonial.comment}"
+                      {testimonial.comment}
                     </p>
+
                     <div>
                       <div className="font-semibold text-primary-700">{testimonial.name}</div>
                       <div className="text-sm text-gray-500">{testimonial.role}</div>

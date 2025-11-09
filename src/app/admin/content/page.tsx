@@ -32,7 +32,7 @@ const mockCategories = [
 // Inline Category Management Component
 function InlineCategoryManagement() {
   const [isCreating, setIsCreating] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [_editingId, setEditingId] = useState<number | null>(null);
   const [newCategory, setNewCategory] = useState({ name: "", slug: "", color: "bg-blue-100 text-blue-800" });
 
   const colorOptions = [

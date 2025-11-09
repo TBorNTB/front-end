@@ -15,9 +15,6 @@ import {
   CheckCircle,
   RefreshCw,
   Users,
-  FileText,
-  FolderOpen,
-  ExternalLink,
   ChevronRight
 } from "lucide-react";
 

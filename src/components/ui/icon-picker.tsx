@@ -233,7 +233,7 @@ const IconPicker = React.forwardRef<React.ComponentRef<typeof PopoverTrigger>, I
           }, 1);
         }
       },
-      [open, onOpenChange, virtualizer],
+      [open, onOpenChange, virtualizer, setSearch],
     );
 
     const handleIconClick = useCallback(
@@ -242,7 +242,7 @@ const IconPicker = React.forwardRef<React.ComponentRef<typeof PopoverTrigger>, I
         setIsOpen(false);
         setSearch("");
       },
-      [handleValueChange],
+      [handleValueChange, setSearch],
     );
 
     const handleSearchChange = useCallback(
@@ -255,7 +255,7 @@ const IconPicker = React.forwardRef<React.ComponentRef<typeof PopoverTrigger>, I
 
         virtualizer.scrollToOffset(0);
       },
-      [virtualizer],
+      [virtualizer, setSearch],
     );
 
     const scrollToCategory = useCallback(

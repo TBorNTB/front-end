@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
-import { Calendar, User, Eye, ThumbsUp, MessageCircle, Search, Filter, Plus, X, Grid, List, ChevronDown } from 'lucide-react';
-import { CategoryType, CategoryHelpers } from '@/app/(main)/topics/types/category';
+import { User, Eye, ThumbsUp, MessageCircle, Search, Plus, X, Grid, List, ChevronDown } from 'lucide-react';
+import Image from 'next/image';
 
 const articles = [
   {
@@ -118,9 +117,9 @@ const categories = [
   { name: '암호학', slug: 'cryptography' }
 ];
 
-export default function ArticlesPage() {
+// Separate component that uses useSearchParams
+function ArticlesContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -157,279 +156,295 @@ export default function ArticlesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      
-      {/* Full width container */}
-      <div className="w-full px-3 sm:px-4 lg:px-10 py-10">
-        {/* Header Section */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-primary-600 mb-4">CS지식</h1>
-          <p className="text-gray-600 text-lg max-w-3xl mx-auto">
-            동아리의 모든 지식과 경험을 이곳에서 찾아보세요
-          </p>
-          {/* Breadcrumb for filtered topic */}
-          {currentTopicName && (
-            <div className="mt-4">
-              <div className="inline-flex items-center space-x-2 bg-primary-50 text-primary-700 px-4 py-2 rounded-lg border border-primary-200">
-                <span className="text-sm">필터링된 주제:</span>
-                <span className="font-semibold">{currentTopicName}</span>
-                <button
-                  onClick={clearFilters}
-                  className="ml-2 hover:text-primary-900"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Top Controls with Card Background */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8 bg-white rounded-xl p-6 shadow-lg border border-gray-200">
-          <div className="flex items-center justify-between w-full">
-            {/* Search Bar */}
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="찾고자 할 컨텐츠를 작성..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full h-10 pl-10 pr-4 text-sm bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
-              />
-            </div>
-
-            {/* Controls */}
-            <div className="flex items-center gap-3">
-              {/* View Mode Toggle */}
-              <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 ${viewMode === 'grid' ? 'bg-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                >
-                  <Grid size={16} />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 ${viewMode === 'list' ? 'bg-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                >
-                  <List size={16} />
-                </button>
-              </div>
-
-              {(currentUser === 'member' || currentUser === 'admin') && (
-                <button className="bg-primary text-white px-6 py-2 rounded-lg font-semibold hover:bg-primary-700 transition-colors flex items-center gap-2 whitespace-nowrap">
-                  <Plus size={16} />
-                 새 글 쓰기
-                </button>
-              )}
+    <div className="w-full px-3 sm:px-4 lg:px-10 py-10">
+      {/* Header Section */}
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-bold text-primary-600 mb-4">CS지식</h1>
+        <p className="text-gray-600 text-lg max-w-3xl mx-auto">
+          동아리의 모든 지식과 경험을 이곳에서 찾아보세요
+        </p>
+        {/* Breadcrumb for filtered topic */}
+        {currentTopicName && (
+          <div className="mt-4">
+            <div className="inline-flex items-center space-x-2 bg-primary-50 text-primary-700 px-4 py-2 rounded-lg border border-primary-200">
+              <span className="text-sm">필터링된 주제:</span>
+              <span className="font-semibold">{currentTopicName}</span>
+              <button
+                onClick={clearFilters}
+                className="ml-2 hover:text-primary-900"
+              >
+                <X size={16} />
+              </button>
             </div>
           </div>
-        </div>
+        )}
+      </div>
 
-        {/* Main Content with Sidebar */}
-        <div className="flex gap-8">
-          {/* Sidebar Filter */}
-          <div className="w-64 flex-shrink-0">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 sticky top-8">
-              <div className="p-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">카테고리</h3>
-              </div>
-              <div className="p-2">
-                {categories.map((category) => {
-                  const isActive = selectedCategory === category.slug;
-                  const categoryCount = category.slug === 'all' 
-                    ? articles.length 
-                    : articles.filter(a => a.topicSlug === category.slug).length;
-                  
-                  return (
-                    <button
-                      key={category.slug}
-                      onClick={() => setSelectedCategory(category.slug)}
-                      className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-sm transition-all ${
-                        isActive
-                          ? 'bg-primary-600 text-white font-medium'
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      <span>{category.name}</span>
-                      <span className={`px-2 py-0.5 rounded-full text-xs ${
-                        isActive
-                          ? 'bg-white bg-opacity-20 text-white'
-                          : 'bg-gray-200 text-gray-600'
-                      }`}>
-                        {categoryCount}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+      {/* Top Controls with Card Background */}
+      <div className="flex flex-col md:flex-row gap-4 mb-8 bg-white rounded-xl p-6 shadow-lg border border-gray-200">
+        <div className="flex items-center justify-between w-full">
+          {/* Search Bar */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="찾고자 할 컨텐츠를 작성..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full h-10 pl-10 pr-4 text-sm bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+            />
           </div>
 
-          {/* Main Content */}
-          <div className="flex-1">
-            {/* Results Count and Sort - Single Line */}
-            <div className="flex items-center justify-between mb-6">
-              <p className="text-gray-600">
-                총 <span className="font-semibold text-primary">{filteredArticles.length}</span>개의 글
-                {searchTerm && ` (검색어: "${searchTerm}")`}
-                {currentTopicName && ` (주제: ${currentTopicName})`}
-              </p>
-
-              {/* Sort Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowSortDropdown(!showSortDropdown)}
-                  className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  {sortBy}
-                  <ChevronDown size={16} className={`transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
-                </button>
-                
-                {showSortDropdown && (
-                  <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                    {sortOptions.map((option) => (
-                      <button
-                        key={option}
-                        onClick={() => {
-                          setSortBy(option);
-                          setShowSortDropdown(false);
-                        }}
-                        className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors ${
-                          sortBy === option ? 'text-primary font-medium' : 'text-gray-700'
-                        }`}
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+          {/* Controls */}
+          <div className="flex items-center gap-3">
+            {/* View Mode Toggle */}
+            <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 ${viewMode === 'grid' ? 'bg-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+              >
+                <Grid size={16} />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 ${viewMode === 'list' ? 'bg-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+              >
+                <List size={16} />
+              </button>
             </div>
 
-            {/* Articles Grid/List */}
-            {filteredArticles.length === 0 ? (
-              <div className="text-center py-20">
-                <div className="text-gray-600 text-xl mb-4">검색 결과가 없습니다.</div>
-                <button 
-                  onClick={clearFilters}
-                  className="text-primary hover:underline"
-                >
-                  필터 초기화
-                </button>
-              </div>
-            ) : (
-              <div className={viewMode === 'grid' 
-                ? "grid grid-cols-1 md:grid-cols-2 gap-6" 
-                : "space-y-6"
-              }>
-                {filteredArticles.map((article) => (
-                  <div key={article.id} className={`group ${viewMode === 'list' ? 'flex gap-6' : ''}`}>
-                    <div className={`bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-primary hover:shadow-lg transition-all duration-200 hover:-translate-y-1 ${
-                      viewMode === 'list' ? 'flex flex-1' : ''
-                    }`}>
-                      
-                      {/* Image */}
-                      <div className={`relative ${viewMode === 'list' ? 'w-64 flex-shrink-0' : ''}`}>
-                        <img 
-                          src={article.image} 
-                          alt={article.title}
-                          className={`w-full object-cover ${viewMode === 'list' ? 'h-full' : 'h-48'}`}
-                        />
-                        <div className="absolute top-3 left-3">
-                          <span className="bg-primary text-white px-2 py-1 rounded-full text-xs font-medium">
-                            {article.category}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      {/* Content */}
-                      <div className="p-5 flex-1">
-                        <h3 className={`font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-primary transition-colors ${
-                          viewMode === 'list' ? 'text-xl' : 'text-lg'
-                        }`}>
-                          {article.title}
-                        </h3>
-                        <p className={`text-gray-600 mb-4 leading-relaxed ${
-                          viewMode === 'list' ? 'line-clamp-2' : 'line-clamp-3 text-sm'
-                        }`}>
-                          {article.excerpt}
-                        </p>
-                        
-                        {/* Meta Info */}
-                        <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                          <div className="flex items-center gap-1">
-                            <User className="h-3 w-3" />
-                            <span>by {article.author}</span>
-                          </div>
-                          <span>{article.date}</span>
-                          <span className="text-primary-600 font-medium">{article.readTime} 읽기</span>
-                        </div>
-                        
-                        {/* Stats */}
-                        <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-1">
-                              <Eye className="h-3 w-3" />
-                              <span>{article.views}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <ThumbsUp className="h-3 w-3" />
-                              <span>{article.likes}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <MessageCircle className="h-3 w-3" />
-                              <span>{article.comments}</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* Tags */}
-                        <div className="flex flex-wrap gap-2">
-                          {article.tags.slice(0, 3).map((tag, index) => (
-                            <span key={index} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
-                              {tag}
-                            </span>
-                          ))}
-                          {article.tags.length > 3 && (
-                            <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
-                              +{article.tags.length - 3}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            {(currentUser === 'member' || currentUser === 'admin') && (
+              <button className="bg-primary text-white px-6 py-2 rounded-lg font-semibold hover:bg-primary-700 transition-colors flex items-center gap-2 whitespace-nowrap">
+                <Plus size={16} />
+               새 글 쓰기
+              </button>
             )}
-
-            {/* Pagination */}
-            <div className="flex items-center justify-center space-x-2 mt-12">
-              <button className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center text-gray-500 hover:bg-gray-50">
-                &lt;
-              </button>
-              {[1, 2, 3, '...', 7].map((page, index) => (
-                <button
-                  key={index}
-                  className={`w-8 h-8 rounded flex items-center justify-center text-sm ${
-                    page === 1
-                      ? 'bg-primary text-white'
-                      : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-              <button className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center text-gray-500 hover:bg-gray-50">
-                &gt;
-              </button>
-            </div>
           </div>
         </div>
       </div>
+
+      {/* Main Content with Sidebar */}
+      <div className="flex gap-8">
+        {/* Sidebar Filter */}
+        <div className="w-64 flex-shrink-0">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 sticky top-8">
+            <div className="p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">카테고리</h3>
+            </div>
+            <div className="p-2">
+              {categories.map((category) => {
+                const isActive = selectedCategory === category.slug;
+                const categoryCount = category.slug === 'all' 
+                  ? articles.length 
+                  : articles.filter(a => a.topicSlug === category.slug).length;
+                
+                return (
+                  <button
+                    key={category.slug}
+                    onClick={() => setSelectedCategory(category.slug)}
+                    className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-sm transition-all ${
+                      isActive
+                        ? 'bg-primary-600 text-white font-medium'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <span>{category.name}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-xs ${
+                      isActive
+                        ? 'bg-white bg-opacity-20 text-white'
+                        : 'bg-gray-200 text-gray-600'
+                    }`}>
+                      {categoryCount}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1">
+          {/* Results Count and Sort - Single Line */}
+          <div className="flex items-center justify-between mb-6">
+            <p className="text-gray-600">
+              총 <span className="font-semibold text-primary">{filteredArticles.length}</span>개의 글
+              {searchTerm && ` (검색어: "${searchTerm}")`}
+              {currentTopicName && ` (주제: ${currentTopicName})`}
+            </p>
+
+            {/* Sort Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowSortDropdown(!showSortDropdown)}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                {sortBy}
+                <ChevronDown size={16} className={`transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {showSortDropdown && (
+                <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                  {sortOptions.map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => {
+                        setSortBy(option);
+                        setShowSortDropdown(false);
+                      }}
+                      className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors ${
+                        sortBy === option ? 'text-primary font-medium' : 'text-gray-700'
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Articles Grid/List */}
+          {filteredArticles.length === 0 ? (
+            <div className="text-center py-20">
+              <div className="text-gray-600 text-xl mb-4">검색 결과가 없습니다.</div>
+              <button 
+                onClick={clearFilters}
+                className="text-primary hover:underline"
+              >
+                필터 초기화
+              </button>
+            </div>
+          ) : (
+            <div className={viewMode === 'grid' 
+              ? "grid grid-cols-1 md:grid-cols-2 gap-6" 
+              : "space-y-6"
+            }>
+              {filteredArticles.map((article) => (
+                <div key={article.id} className={`group ${viewMode === 'list' ? 'flex gap-6' : ''}`}>
+                  <div className={`bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-primary hover:shadow-lg transition-all duration-200 hover:-translate-y-1 ${
+                    viewMode === 'list' ? 'flex flex-1' : ''
+                  }`}>
+                    
+                    {/* Image */}
+                    <div className={`relative ${viewMode === 'list' ? 'w-64 flex-shrink-0' : ''}`}>
+                      <Image 
+                        src={article.image} 
+                        alt={article.title}
+                        width={400}
+                        height={250}
+                        className={`w-full object-cover ${viewMode === 'list' ? 'h-full' : 'h-48'}`}
+                      />
+                      <div className="absolute top-3 left-3">
+                        <span className="bg-primary text-white px-2 py-1 rounded-full text-xs font-medium">
+                          {article.category}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="p-5 flex-1">
+                      <h3 className={`font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-primary transition-colors ${
+                        viewMode === 'list' ? 'text-xl' : 'text-lg'
+                      }`}>
+                        {article.title}
+                      </h3>
+                      <p className={`text-gray-600 mb-4 leading-relaxed ${
+                        viewMode === 'list' ? 'line-clamp-2' : 'line-clamp-3 text-sm'
+                      }`}>
+                        {article.excerpt}
+                      </p>
+                      
+                      {/* Meta Info */}
+                      <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                        <div className="flex items-center gap-1">
+                          <User className="h-3 w-3" />
+                          <span>by {article.author}</span>
+                        </div>
+                        <span>{article.date}</span>
+                        <span className="text-primary-600 font-medium">{article.readTime} 읽기</span>
+                      </div>
+                      
+                      {/* Stats */}
+                      <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-1">
+                            <Eye className="h-3 w-3" />
+                            <span>{article.views}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <ThumbsUp className="h-3 w-3" />
+                            <span>{article.likes}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <MessageCircle className="h-3 w-3" />
+                            <span>{article.comments}</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Tags */}
+                      <div className="flex flex-wrap gap-2">
+                        {article.tags.slice(0, 3).map((tag, index) => (
+                          <span key={index} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+                            {tag}
+                          </span>
+                        ))}
+                        {article.tags.length > 3 && (
+                          <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+                            +{article.tags.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          <div className="flex items-center justify-center space-x-2 mt-12">
+            <button className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center text-gray-500 hover:bg-gray-50">
+              &lt;
+            </button>
+            {[1, 2, 3, '...', 7].map((page, index) => (
+              <button
+                key={index}
+                className={`w-8 h-8 rounded flex items-center justify-center text-sm ${
+                  page === 1
+                    ? 'bg-primary text-white'
+                    : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            <button className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center text-gray-500 hover:bg-gray-50">
+              &gt;
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main page component with Suspense wrapper
+export default function ArticlesPage() {
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+      <Suspense fallback={
+        <div className="w-full px-3 sm:px-4 lg:px-10 py-10">
+          <div className="animate-pulse space-y-8">
+            <div className="h-32 bg-gray-200 rounded"></div>
+            <div className="h-64 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      }>
+        <ArticlesContent />
+      </Suspense>
       <Footer />
     </div>
   );

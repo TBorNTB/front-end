@@ -1,6 +1,7 @@
 // app/(main)/(auth)/signup/page.tsx
 "use client";
 
+import Image from 'next/image';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState, useRef } from "react";
@@ -100,7 +101,7 @@ export default function SignupPage() {
     if (profileImagePreview) {
       return (
         <div className="relative w-16 h-16">
-          <img 
+          <Image 
             src={profileImagePreview} 
             alt="Profile Preview" 
             className="w-full h-full rounded-full object-cover border-2 border-primary-500"

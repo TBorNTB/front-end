@@ -33,7 +33,7 @@ export interface ApiError {
 export interface ValidationError {
   field: string;
   message: string;
-  rejectedValue?: any;
+  rejectedValue?: string | number | boolean | null;
 }
 
 // Utility Types
@@ -49,7 +49,7 @@ export interface DateRange {
 }
 
 // Form Types
-export interface FormField<T = any> {
+export interface FormField<T = string> {
   value: T;
   error?: string;
   touched: boolean;
