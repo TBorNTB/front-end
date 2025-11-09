@@ -50,23 +50,25 @@ export default function LogInPage() {
 
   // ✅ Development bypass - Mock user login
   const handleMockLogin = () => {
-    if (process.env.NODE_ENV !== 'development') {
-      alert('⚠️ This feature is only available in development mode');
-      return;
-    }
+  // ✅ Check the environment variable instead
+  if (process.env.NEXT_PUBLIC_ENABLE_DEV_BYPASS !== 'true') {
+    alert('⚠️ This feature is only available in development/preview environments');
+    return;
+  }
 
-    const mockUser: AuthUser = {
-      nickname: "Dev User",
-      full_name: "Development User",
-      email: "dev@example.com",
-      role: UserRole.GUEST,
-      profile_image: undefined,
-    };
-
-    login(mockUser, true);
-    console.log("🔓 DEV MODE: Bypassing authentication with mock user");
-    router.push("/");
+  const mockUser: AuthUser = {
+    nickname: "Dev User",
+    full_name: "Development User",
+    email: "dev@example.com",
+    role: UserRole.GUEST,
+    profile_image: undefined,
   };
+
+  login(mockUser, true);
+  console.log("🔓 DEV MODE: Bypassing authentication with mock user");
+  router.push("/");
+};
+
 
   // ✅ Fetch user profile using token
   const fetchUserProfileWithToken = async (): Promise<AuthUser | null> => {
@@ -325,20 +327,22 @@ export default function LogInPage() {
           </Form>
 
           {/* ✅ Development-only mock login button */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mt-4 space-y-2">
-              <button 
-                onClick={handleMockLogin}
-                className="btn btn-lg w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-semibold border-2 border-yellow-600"
-                type="button"
-              >
-                🔓 개발 모드: 인증 건너뛰기
-              </button>
-              <p className="text-xs text-center text-yellow-700 bg-yellow-50 py-1 px-2 rounded">
-                ⚠️ 개발 환경에서만 표시됩니다
-              </p>
-            </div>
-          )}
+          {/* ✅ Show button based on environment variable */}
+            {process.env.NEXT_PUBLIC_ENABLE_DEV_BYPASS === 'true' && (
+              <div className="mt-4 space-y-2">
+                <button 
+                  onClick={handleMockLogin}
+                  className="btn btn-lg w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-semibold border-2 border-yellow-600"
+                  type="button"
+                >
+                  🔓 개발 모드: 인증 건너뛰기
+                </button>
+                <p className="text-xs text-center text-yellow-700 bg-yellow-50 py-1 px-2 rounded">
+                  ⚠️ 개발 환경에서만 표시됩니다
+                </p>
+              </div>
+            )}
+
 
           <div className="my-5 flex items-center">
             <div className="flex-grow border-t border-gray-300"></div>

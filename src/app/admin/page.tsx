@@ -37,8 +37,6 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-// src/app/admin/page.tsx
-
 export default function AdminPage() {
   const { isLoading, error, setIsLoading, handleError } = useAuthFormState();
   const [showPassword, setShowPassword] = useState(false);
@@ -54,10 +52,11 @@ export default function AdminPage() {
     },
   });
 
-  // ✅ Development bypass handler - Creates mock admin session
+  // ✅ CHANGED: Development bypass handler - Uses environment variable
   const handleDevBypass = () => {
-    if (process.env.NODE_ENV !== 'development') {
-      alert('⚠️ This feature is only available in development mode');
+    // ✅ Check NEXT_PUBLIC variable instead of NODE_ENV
+    if (process.env.NEXT_PUBLIC_ENABLE_DEV_BYPASS !== 'true') {
+      alert('⚠️ This feature is only available in development/preview environments');
       return;
     }
 
@@ -295,8 +294,8 @@ export default function AdminPage() {
             </form>
           </Form>
 
-            {/* ✅ Development-only bypass button */}
-          {process.env.NODE_ENV === 'development' && (
+          {/* ✅ CHANGED: Use NEXT_PUBLIC_ENABLE_DEV_BYPASS instead of NODE_ENV */}
+          {process.env.NEXT_PUBLIC_ENABLE_DEV_BYPASS === 'true' && (
             <div className="mt-4">
               <button 
                 onClick={handleDevBypass}
@@ -305,7 +304,7 @@ export default function AdminPage() {
                 🔓 개발 모드: 인증 건너뛰기
               </button>
               <p className="text-xs text-yellow-700 text-center mt-2">
-                개발 환경에서만 표시됩니다
+                개발/프리뷰 환경에서만 표시됩니다
               </p>
             </div>
           )}
