@@ -6,6 +6,8 @@ import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
 import { Message } from "./types";
 import ChatBotCharacter from "./ChatBotCharacter";
+import { queryRAG } from "./api";
+import toast from "react-hot-toast";
 
 interface ChatWindowProps {
   onClose: () => void;
@@ -43,17 +45,30 @@ const ChatWindow = ({ onClose, isMinimized }: ChatWindowProps) => {
     setMessages((prev) => [...prev, userMessage]);
     setIsTyping(true);
 
-    // Simulate AI response (will be replaced with actual API call later)
-    setTimeout(() => {
+    try {
+      // Call RAG API
+      const answer = await queryRAG(content);
+      
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "SSG에 대한 질문을 감사합니다. 실제 RAG API가 연결되면 여기에 답변이 표시됩니다.",
+        content: answer,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error("RAG API 오류:", error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "죄송합니다. 답변을 가져오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+      toast.error("답변을 가져오는 중 오류가 발생했습니다.");
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   return (
