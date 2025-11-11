@@ -1,4 +1,5 @@
 // RAG API 호출 함수
+import { BASE_URL, API_ENDPOINTS } from "@/lib/api/services/user-service";
 
 interface RAGRequest {
   query: string;
@@ -21,7 +22,7 @@ interface RAGResponse {
   error?: string;
 }
 
-const RAG_API_URL = "https://api.sejongssg.kr/elastic-service/api/v1/rag/query";
+const RAG_API_URL = `${BASE_URL}${API_ENDPOINTS.RAG.QUERY}`;
 
 /**
  * 답변 텍스트에서 참고문서 관련 내용을 제거하는 함수
