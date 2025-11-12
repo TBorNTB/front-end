@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { ChevronDownIcon, BellIcon, Search, X, Menu, Shield } from "lucide-react";
 import { UserRoleDisplay, UserRole } from "@/types/core";
+import AlarmPopup from "./AlarmPopup";
 
 const navList = [
   { 
@@ -33,6 +34,7 @@ const Header = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAlarmPopupOpen, setIsAlarmPopupOpen] = useState(false);
   
   const dropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -216,10 +218,19 @@ const Header = () => {
 
             {/* Notifications */}
             {isAuthenticated && (
-              <button className="p-2 text-gray-400 hover:text-gray-600 relative transition-colors">
-                <BellIcon className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-              </button>
+              <>
+                <button 
+                  onClick={() => setIsAlarmPopupOpen(true)}
+                  className="p-2 text-gray-400 hover:text-gray-600 relative transition-colors"
+                >
+                  <BellIcon className="w-5 h-5" />
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+                </button>
+                <AlarmPopup 
+                  isOpen={isAlarmPopupOpen} 
+                  onClose={() => setIsAlarmPopupOpen(false)} 
+                />
+              </>
             )}
 
             {/* Authentication - Desktop */}

@@ -90,6 +90,11 @@ export const API_ENDPOINTS = {
   CATEGORIES: {
     GET_ALL: '/archive-service/categories',
   },
+
+  // Alarm endpoints
+  ALARM: {
+    RECEIVED: '/user-service/alarm/received',
+  },
 } as const;
 
 // ✅ Helper function with environment logging
