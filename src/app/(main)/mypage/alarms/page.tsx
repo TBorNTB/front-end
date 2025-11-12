@@ -23,80 +23,6 @@ const mapAlarmResponseToAlarm = (response: AlarmResponse): Alarm => {
   };
 };
 
-// Mock data - 실제로는 API에서 가져올 데이터
-const mockAlarms: Alarm[] = [
-  {
-    id: '1',
-    type: AlarmType.COMMENT_ADDED,
-    title: '새로운 댓글이 달렸습니다',
-    content: '김민수님이 "보안 프로젝트 진행 중" 게시글에 댓글을 남겼습니다.',
-    isRead: false,
-    createdAt: '2024-01-15T10:30:00Z',
-    link: '/CSblog/post/123',
-    relatedUser: {
-      nickname: '김민수',
-      profileImage: undefined,
-    },
-    relatedPost: {
-      id: '123',
-      title: '보안 프로젝트 진행 중',
-    },
-  },
-  {
-    id: '2',
-    type: AlarmType.COMMENT_REPLY_ADDED,
-    title: '댓글에 답글이 달렸습니다',
-    content: '이영희님이 당신의 댓글에 답글을 남겼습니다.',
-    isRead: false,
-    createdAt: '2024-01-15T09:15:00Z',
-    link: '/CSblog/post/123#comment-456',
-    relatedUser: {
-      nickname: '이영희',
-    },
-  },
-  {
-    id: '3',
-    type: AlarmType.POST_LIKED,
-    title: '게시글에 좋아요가 눌렸습니다',
-    content: '박지훈님 외 3명이 "Next.js 보안 가이드" 게시글에 좋아요를 눌렀습니다.',
-    isRead: true,
-    createdAt: '2024-01-14T16:45:00Z',
-    link: '/CSblog/post/456',
-    relatedPost: {
-      id: '456',
-      title: 'Next.js 보안 가이드',
-    },
-  },
-  {
-    id: '4',
-    type: AlarmType.COMMENT_ADDED,
-    title: '새로운 댓글이 달렸습니다',
-    content: '최수진님이 "프로젝트 회고" 게시글에 댓글을 남겼습니다.',
-    isRead: true,
-    createdAt: '2024-01-14T14:20:00Z',
-    link: '/projects/789',
-    relatedUser: {
-      nickname: '최수진',
-    },
-    relatedPost: {
-      id: '789',
-      title: '프로젝트 회고',
-    },
-  },
-  {
-    id: '5',
-    type: AlarmType.SIGNUP,
-    title: '새로운 회원이 가입했습니다',
-    content: '홍길동님이 회원가입을 완료했습니다.',
-    isRead: false,
-    createdAt: '2024-01-14T11:00:00Z',
-    link: '/admin/members',
-    relatedUser: {
-      nickname: '홍길동',
-    },
-  },
-];
-
 const categoryConfig = {
   [AlarmType.COMMENT_ADDED]: {
     label: '댓글',
@@ -191,8 +117,7 @@ export default function AlarmsPage() {
       } catch (err) {
         console.error('Failed to load alarms:', err);
         setError('알람을 불러오는데 실패했습니다.');
-        // Fallback to mock data for development
-        setAlarms(mockAlarms.filter(a => a.type === selectedCategory));
+        setAlarms([]);
       } finally {
         setIsLoading(false);
       }
