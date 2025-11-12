@@ -28,22 +28,57 @@ const categoryConfig = {
   all: {
     label: '전체',
     icon: Bell,
+    color: 'text-gray-600',
+    activeColor: 'text-primary-600',
+    bgColor: 'bg-gray-100',
+    activeBgColor: 'bg-primary-50',
+    borderColor: 'border-primary-500',
+    iconBgColor: 'bg-blue-100',
+    iconColor: 'text-blue-600',
   },
   [AlarmType.COMMENT_ADDED]: {
     label: '댓글',
     icon: MessageSquare,
+    color: 'text-blue-600',
+    activeColor: 'text-blue-700',
+    bgColor: 'bg-blue-50',
+    activeBgColor: 'bg-blue-100',
+    borderColor: 'border-blue-500',
+    iconBgColor: 'bg-blue-100',
+    iconColor: 'text-blue-600',
   },
   [AlarmType.COMMENT_REPLY_ADDED]: {
     label: '답글',
     icon: Reply,
+    color: 'text-purple-600',
+    activeColor: 'text-purple-700',
+    bgColor: 'bg-purple-50',
+    activeBgColor: 'bg-purple-100',
+    borderColor: 'border-purple-500',
+    iconBgColor: 'bg-purple-100',
+    iconColor: 'text-purple-600',
   },
   [AlarmType.POST_LIKED]: {
     label: '좋아요',
     icon: Heart,
+    color: 'text-red-600',
+    activeColor: 'text-red-700',
+    bgColor: 'bg-red-50',
+    activeBgColor: 'bg-red-100',
+    borderColor: 'border-red-500',
+    iconBgColor: 'bg-red-100',
+    iconColor: 'text-red-600',
   },
   [AlarmType.SIGNUP]: {
     label: '회원가입',
     icon: UserPlus,
+    color: 'text-green-600',
+    activeColor: 'text-green-700',
+    bgColor: 'bg-green-50',
+    activeBgColor: 'bg-green-100',
+    borderColor: 'border-green-500',
+    iconBgColor: 'bg-green-100',
+    iconColor: 'text-green-600',
   },
 };
 
@@ -174,8 +209,13 @@ export default function AlarmPopup({ isOpen, onClose }: AlarmPopupProps) {
       <div className="fixed top-16 right-4 z-50 w-[480px] max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-2xl border border-gray-200 max-h-[calc(100vh-5rem)] flex flex-col md:top-20 md:right-4">
         <div ref={popupRef} className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
-            <h2 className="text-lg font-bold text-gray-900">알림</h2>
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-primary-50 to-secondary-50">
+            <div className="flex items-center space-x-2">
+              <div className="p-2 bg-primary-500 rounded-lg">
+                <Bell className="w-5 h-5 text-white" />
+              </div>
+              <h2 className="text-lg font-bold text-gray-900">알림</h2>
+            </div>
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => {
@@ -207,16 +247,18 @@ export default function AlarmPopup({ isOpen, onClose }: AlarmPopupProps) {
                 <button
                   key={category}
                   onClick={() => setSelectedCategory(category)}
-                  className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap ${
+                  className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-all whitespace-nowrap ${
                     isActive
-                      ? 'border-primary-500 text-primary-600 font-semibold'
-                      : 'border-transparent text-gray-700 hover:text-gray-900 font-medium'
+                      ? `${config.borderColor} ${config.activeColor} font-semibold ${config.activeBgColor}`
+                      : `border-transparent ${config.color} hover:${config.activeBgColor} font-medium hover:${config.activeColor}`
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className={`w-4 h-4 ${isActive ? config.activeColor : config.color}`} />
                   <span className="text-sm">{config.label}</span>
                   {unreadCount > 0 && (
-                    <span className="text-xs font-semibold px-1.5 py-0.5 bg-red-500 text-white rounded-full">
+                    <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${
+                      isActive ? 'bg-white text-red-600' : 'bg-red-500 text-white'
+                    }`}>
                       {unreadCount}
                     </span>
                   )}
@@ -254,23 +296,25 @@ export default function AlarmPopup({ isOpen, onClose }: AlarmPopupProps) {
                       key={alarm.id}
                       href={alarm.link || '#'}
                       onClick={onClose}
-                      className={`block p-4 hover:bg-gray-50 transition-colors ${
-                        !alarm.isRead ? 'bg-blue-50/50' : ''
+                      className={`block p-4 transition-all ${
+                        !alarm.isRead 
+                          ? `${config.bgColor} hover:${config.activeBgColor} border-l-4 ${config.borderColor}` 
+                          : 'hover:bg-gray-50'
                       }`}
                     >
                       <div className="flex items-start space-x-3">
                         {/* Profile Picture or Icon */}
                         <div className="flex-shrink-0">
                           {alarm.relatedUser ? (
-                            <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                            <div className={`w-10 h-10 ${config.iconBgColor} rounded-full flex items-center justify-center text-white text-sm font-medium`}>
                               {alarm.relatedUser.nickname.charAt(0)}
                             </div>
                           ) : (
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              alarm.isRead ? 'bg-gray-100' : 'bg-primary-100'
+                              alarm.isRead ? 'bg-gray-100' : config.iconBgColor
                             }`}>
                               <Icon className={`w-5 h-5 ${
-                                alarm.isRead ? 'text-gray-400' : 'text-primary-600'
+                                alarm.isRead ? 'text-gray-400' : config.iconColor
                               }`} />
                             </div>
                           )}
@@ -285,7 +329,12 @@ export default function AlarmPopup({ isOpen, onClose }: AlarmPopupProps) {
                               {alarm.title}
                             </h4>
                             {!alarm.isRead && (
-                              <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1.5 ml-2"></span>
+                              <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1.5 ml-2 animate-pulse ${
+                                alarm.type === AlarmType.COMMENT_ADDED ? 'bg-blue-500' :
+                                alarm.type === AlarmType.COMMENT_REPLY_ADDED ? 'bg-purple-500' :
+                                alarm.type === AlarmType.POST_LIKED ? 'bg-red-500' :
+                                'bg-green-500'
+                              }`}></span>
                             )}
                           </div>
                           
