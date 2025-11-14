@@ -18,6 +18,27 @@ export interface User extends BaseEntity {
   is_active: boolean;
 }
 
+// types/api.ts
+/*export interface SignupRequest {
+  nickname: string;
+  realName: string;
+  email: string;
+  password: string;
+  description?: string;
+  githubUrl?: string;
+  linkedinUrl?: string;
+  blogUrl?: string;
+  profileImageUrl?: string;
+}
+
+export interface SignupResponse {
+  userId: string;
+  message: string;
+}
+
+// Then in route.ts
+const data: SignupResponse = await backendResponse.json();*/
+
 // ===== API RESPONSE TYPES =====
 // Enhanced auth response with proper typing
 export interface AuthResponse {
