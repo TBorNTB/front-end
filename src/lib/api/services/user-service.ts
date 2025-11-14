@@ -94,6 +94,9 @@ export const API_ENDPOINTS = {
     GET_ALL: '/archive-service/categories',
   },
 
+  // Alarm endpoints
+  ALARM: {
+    RECEIVED: '/user-service/alarm/received',
   // RAG Service endpoints
   RAG: {
     QUERY: '/elastic-service/api/v1/rag/query',

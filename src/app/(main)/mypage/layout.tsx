@@ -5,7 +5,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { User, Settings, Award, Activity } from 'lucide-react';
+import { User, Settings, Award, Activity, Bell } from 'lucide-react';
 
 const menuItems = [
   { 
@@ -25,6 +25,12 @@ const menuItems = [
     label: '활동 배지', 
     icon: Award, 
     href: '/mypage/badges',
+  },
+    { 
+    id: 'alarms', 
+    label: '알림', 
+    icon: Bell, 
+    href: '/mypage/alarms',
   },
     { 
     id: 'settings', 
