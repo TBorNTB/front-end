@@ -365,37 +365,6 @@ export default function SignupPage() {
                   </FormItem>
                 )}
               />
-
-              {/* Profile Image */}
-              <div>
-                <label className="block text-gray-700 text-sm font-medium mb-2">프로필 이미지</label>
-                <div className="flex items-center gap-3">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-2 h-10 px-4 bg-gray-50 border border-gray-300 text-gray-700 hover:border-primary-500 hover:bg-gray-100 transition-colors rounded-lg"
-                  >
-                    <Upload size={14} />
-                    이미지 선택
-                  </button>
-                  {profileImageFile && (
-                    <span className="text-sm text-gray-500">
-                      {profileImageFile.name.length > 20 ? 
-                        profileImageFile.name.substring(0, 20) + '...' : 
-                        profileImageFile.name}
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-gray-500 mt-1">JPG, PNG, GIF (최대 5MB)</p>
-              </div>
-
               {/* Social Links - Using standard input className */}
               <div className="space-y-4">
                 <FormField

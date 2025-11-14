@@ -197,6 +197,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+// In AuthContext.tsx
+const checkTokenValidity = async (): Promise<boolean> => {
+  try {
+    // ✅ Use existing endpoint instead
+    const response = await fetch('/api/auth/user', {
+      method: 'GET',
+      credentials: 'include',
+      cache: 'no-store',
+    });
+    const data = await response.json();
+    return response.ok && data.authenticated;
+  } catch (error) {
+    console.error('Token validation error:', handleAuthError(error));
+    return false;
+  }
+};
+
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {

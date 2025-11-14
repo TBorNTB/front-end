@@ -49,8 +49,8 @@ const categories = [
     longDescription: `웹 해킹은 웹 애플리케이션에서 발생할 수 있는 다양한 보안 취약점을 실습하고 분석하는 분야입니다. 
 
 SQL 인젝션, XSS(Cross-Site Scripting), CSRF(Cross-Site Request Forgery) 등의 공격 기법과 이에 대한 방어 매커니즘을 실습합니다. 자동화된 취약점 스캐너 개발, 웹 애플리케이션 펜테스팅 도구 사용법, 그리고 현실적인 공격 시나리오 분석을 다룹니다.
+`
 
-이 주제를 통해 웹 개발자가 알아야 할 보안 지식과 취약점 분석 능력을 기를 수 있습니다.`
   },
   { 
     name: '리버싱', 
@@ -61,9 +61,7 @@ SQL 인젝션, XSS(Cross-Site Scripting), CSRF(Cross-Site Request Forgery) 등�
     description: '바이너리 분석, 역공학 기술을 통한 소프트웨어 구조 분석 및 이해',
     longDescription: `리버싱(역공학)은 컴파일된 바이너리 파일을 분석하여 원본 코드의 로직과 구조를 이해하는 기술입니다.
 
-IDA Pro, Ghidra, x64dbg와 같은 전문 도구를 사용하여 바이너리를 분석하고, 어셈블리어를 해독하며, 프로그램의 실행 흐름을 파악합니다. 또한 패킹된 악성코드 언패킹, 프로텍션 우회, 크랙미 문제 해결 등의 실습을 진행합니다.
-
-이 과정을 통해 시스템 저수준 이해와 악성코드 분석 능력을 키울 수 있습니다.`
+IDA Pro, Ghidra, x64dbg와 같은 전문 도구를 사용하여 바이너리를 분석하고, 어셈블리어를 해독하며, 프로그램의 실행 흐름을 파악합니다. 또한 패킹된 악성코드 언패킹, 프로텍션 우회, 크랙미 문제 해결 등의 실습을 진행합니다.`
   },
   { 
     name: '시스템 해킹', 
@@ -74,9 +72,7 @@ IDA Pro, Ghidra, x64dbg와 같은 전문 도구를 사용하여 바이너리를 
     description: 'Buffer Overflow, ROP 등 시스템 레벨 취약점 분석 및 익스플로잇 개발',
     longDescription: `시스템 해킹은 운영체제와 시스템 레벨에서 발생하는 취약점을 분석하고 익스플로잇을 개발하는 분야입니다.
 
-Buffer Overflow, Format String Bug, Use-After-Free와 같은 메모리 corruption 취약점을 실습하고, ROP(Return-Oriented Programming), JOP(Jump-Oriented Programming) 등의 고급 익스플로잇 기법을 학습합니다. 또한 ASLR, DEP, Stack Canary와 같은 보안 메커니즘 우회 기법도 다룹니다.
-
-이를 통해 시스템 보안의 기본 원리와 고급 익스플로잇 개발 능력을 습득할 수 있습니다.`
+Buffer Overflow, Format String Bug, Use-After-Free와 같은 메모리 corruption 취약점을 실습하고, ROP(Return-Oriented Programming), JOP(Jump-Oriented Programming) 등의 고급 익스플로잇 기법을 학습합니다. 또한 ASLR, DEP, Stack Canary와 같은 보안 메커니즘 우회 기법도 다룹니다.`
   },
   { 
     name: '디지털 포렌식', 
@@ -87,9 +83,7 @@ Buffer Overflow, Format String Bug, Use-After-Free와 같은 메모리 corruptio
     description: '디지털 증거 수집 및 분석, 사고 대응을 위한 포렌식 기법',
     longDescription: `디지털 포렌식은 사이버 범죄나 보안 사고 발생 시 디지털 증거를 수집하고 분석하는 전문 분야입니다.
 
-파일 시스템 분석, 메모리 덤프 분석, 네트워크 패킷 분석을 통해 침해 흔적을 추적하고 사고 원인을 규명합니다. Volatility, Autopsy, Wireshark 등의 전문 도구를 활용하여 실제 사고 시나리오를 분석하고, 법정에서 인정받을 수 있는 증거 수집 절차를 학습합니다.
-
-체계적인 사고 대응 능력과 정확한 분석 기술을 기를 수 있습니다.`
+파일 시스템 분석, 메모리 덤프 분석, 네트워크 패킷 분석을 통해 침해 흔적을 추적하고 사고 원인을 규명합니다. Volatility, Autopsy, Wireshark 등의 전문 도구를 활용하여 실제 사고 시나리오를 분석하고, 법정에서 인정받을 수 있는 증거 수집 절차를 학습합니다.`
   },
   { 
     name: '네트워크 보안', 
@@ -100,9 +94,7 @@ Buffer Overflow, Format String Bug, Use-After-Free와 같은 메모리 corruptio
     description: '네트워크 트래픽 분석, 침입 탐지 및 방화벽 보안 기술',
     longDescription: `네트워크 보안은 네트워크를 통한 공격과 방어에 대한 전반적인 보안 기술을 다루는 분야입니다.
 
-패킷 분석을 통한 네트워크 트래픽 모니터링, IDS/IPS 시스템 구축 및 운영, 방화벽 정책 설계, 그리고 무선 네트워크 보안을 실습합니다. 또한 네트워크 스캐닝, 포트 스캐닝, 네트워크 기반 공격 기법들과 이에 대한 탐지 및 차단 방법을 학습합니다.
-
-실무에서 바로 활용할 수 있는 네트워크 보안 운영 능력을 기를 수 있습니다.`
+패킷 분석을 통한 네트워크 트래픽 모니터링, IDS/IPS 시스템 구축 및 운영, 방화벽 정책 설계, 그리고 무선 네트워크 보안을 실습합니다. 또한 네트워크 스캐닝, 포트 스캐닝, 네트워크 기반 공격 기법들과 이에 대한 탐지 및 차단 방법을 학습합니다.`
   },
   { 
     name: 'IoT보안', 
@@ -113,9 +105,7 @@ Buffer Overflow, Format String Bug, Use-After-Free와 같은 메모리 corruptio
     description: '스마트 기기의 보안 취약점을 분석 및 대응',
     longDescription: `IoT 보안은 점점 증가하는 사물인터넷 기기들의 보안 취약점을 분석하고 대응하는 새로운 보안 분야입니다.
 
-임베디드 시스템 보안, 펌웨어 분석, 하드웨어 해킹, 무선 통신 프로토콜 보안을 다룹니다. 실제 IoT 기기를 대상으로 펌웨어 추출, 바이너리 분석, 통신 패킷 분석을 실습하고, UART, JTAG와 같은 하드웨어 인터페이스를 활용한 분석 기법을 학습합니다.
-
-미래의 핵심 보안 분야인 IoT 보안 전문가로 성장할 수 있는 기반을 마련할 수 있습니다.`
+임베디드 시스템 보안, 펌웨어 분석, 하드웨어 해킹, 무선 통신 프로토콜 보안을 다룹니다. 실제 IoT 기기를 대상으로 펌웨어 추출, 바이너리 분석, 통신 패킷 분석을 실습하고, UART, JTAG와 같은 하드웨어 인터페이스를 활용한 분석 기법을 학습합니다.`
   },
   { 
     name: '암호학', 
@@ -126,9 +116,7 @@ Buffer Overflow, Format String Bug, Use-After-Free와 같은 메모리 corruptio
     description: '현대 암호학 이론, 암호 시스템 분석 및 보안 프로토콜 구현',
     longDescription: `암호학은 정보 보안의 핵심 이론과 기술을 다루는 근본적인 보안 분야입니다.
 
-대칭키/비대칭키 암호, 해시 함수, 디지털 서명의 이론적 배경과 실제 구현을 학습합니다. RSA, AES, ECC와 같은 주요 암호 알고리즘의 동작 원리와 보안성을 분석하고, TLS/SSL, PKI와 같은 실제 보안 프로토콜의 설계와 취약점을 연구합니다.
-
-정보 보안의 수학적 기초와 암호 시스템 설계 능력을 기를 수 있으며, 블록체인, 영지식 증명 등 최신 암호학 기술도 다룹니다.`
+대칭키/비대칭키 암호, 해시 함수, 디지털 서명의 이론적 배경과 실제 구현을 학습합니다. RSA, AES, ECC와 같은 주요 암호 알고리즘의 동작 원리와 보안성을 분석하고, TLS/SSL, PKI와 같은 실제 보안 프로토콜의 설계와 취약점을 연구합니다.`
   },
 ];
 
@@ -252,9 +240,9 @@ export function LearningTopics() {
 
   // Common Header Component
   const renderHeader = () => (
-    <div className="text-center mb-8">
-      <h1 className="text-4xl font-bold text-primary-600 mb-4">Learning Topics</h1>
-      <p className="text-gray-600 text-lg max-w-3xl mx-auto">
+    <div className="text-center mb-4">
+      <h1 className="text-4xl font-bold text-primary-600 mb-2">Learning Topics</h1>
+      <p className="text-gray-600 text-lg max-w-3xl mx-auto mb-8">
         사이버보안의 다양한 분야를 탐구하고 실무 경험을 쌓을 수 있는 학습 주제들을 확인하세요.
       </p>
     </div>
@@ -311,18 +299,18 @@ export function LearningTopics() {
   );
 
   const renderCategoryDetail = () => (
-    <div className="space-y-8">
-      {/* Header Section - Also shown on category detail */}
+    <div className="space-y-6">
+      {/* Header Section */}
       {renderHeader()}
 
-      <div className="flex gap-8">
-        {/* Sidebar - Simple Clean Style */}
+      <div className="flex gap-8 items-start">
+        {/* Sidebar - Sticky */}
         <div className="w-64 flex-shrink-0">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 sticky top-8">
+          <div className="sticky top-8 bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="p-4 border-b border-gray-200">
               <h3 className="text-base font-semibold text-gray-900">전체 카테고리</h3>
             </div>
-            <div className="p-2">
+            <div className="p-2 max-h-[calc(100vh-10rem)] overflow-y-auto">
               {categories.map((category) => {
                 const isActive = selectedCategory === category.slug;
                 
@@ -351,20 +339,20 @@ export function LearningTopics() {
           </div>
         </div>
 
-        {/* Content Area */}
-        <div className="flex-1 space-y-8">
-          {/* Category Header */}
-          <div className="relative bg-gradient-to-r from-primary-50 to-secondary-50 rounded-2xl p-8 border border-primary-100">
-            <div className="flex items-start space-x-6">
-              <div className={`w-20 h-20 rounded-2xl ${CategoryColors[currentCategory!.type]} flex items-center justify-center flex-shrink-0`}>
+        {/* Content Area - Naturally Scrollable */}
+        <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+          {/* Category Header - Compact spacing */}
+          <div className="pb-6 mb-6 border-b border-gray-200">
+            <div className="flex items-start space-x-4">
+              <div className={`w-14 h-14 rounded-xl ${CategoryColors[currentCategory!.type]} flex items-center justify-center flex-shrink-0`}>
                 {(() => {
                   const IconComponent = CategoryIcons[currentCategory!.type];
-                  return <IconComponent className="w-10 h-10 text-white" />;
+                  return <IconComponent className="w-7 h-7 text-white" />;
                 })()}
               </div>
               <div className="flex-1">
-                <h1 className="text-3xl font-bold text-primary-800 mb-4">{currentCategory?.name}</h1>
-                <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                <h1 className="text-2xl font-bold text-foreground mb-2">{currentCategory?.name}</h1>
+                <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
                   {currentCategory?.longDescription}
                 </p>
               </div>
@@ -376,7 +364,7 @@ export function LearningTopics() {
             {/* Projects Section */}
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-foreground">관련 프로젝트</h2>
+                <h2 className="text-xl font-bold text-foreground">관련 프로젝트</h2>
                 <span className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium">
                   {filteredProjects.length}개
                 </span>
@@ -385,9 +373,9 @@ export function LearningTopics() {
               <div className="space-y-4">
                 {filteredProjects.length > 0 ? (
                   filteredProjects.map((project) => (
-                    <div key={project.id} className="card hover:shadow-lg transition-all duration-200">
+                    <div key={project.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-200">
                       <div className="flex items-start justify-between mb-3">
-                        <h3 className="text-lg font-bold text-foreground flex-1">{project.title}</h3>
+                        <h3 className="text-base font-bold text-foreground flex-1">{project.title}</h3>
                         <span className={`px-2 py-1 rounded-full text-xs border ml-3 flex-shrink-0 ${getStatusColor(project.status)}`}>
                           {getStatusText(project.status)}
                         </span>
@@ -397,7 +385,7 @@ export function LearningTopics() {
                       
                       <div className="flex items-center space-x-2 mb-4">
                         {project.tags.map((tag, index) => (
-                          <span key={index} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+                          <span key={index} className="bg-white text-gray-700 px-2 py-1 rounded text-xs border border-gray-200">
                             {tag}
                           </span>
                         ))}
@@ -421,28 +409,27 @@ export function LearningTopics() {
                     </div>
                   ))
                 ) : (
-                  <div className="card text-center py-8">
+                  <div className="bg-gray-50 rounded-lg p-8 text-center border border-gray-200">
                     <p className="text-gray-500">이 카테고리에 등록된 프로젝트가 없습니다.</p>
                   </div>
                 )}
               </div>
               
-            <div className="text-center">
-              <button 
-                onClick={() => router.push(`/projects?topic=${currentCategory?.slug}`)}
-                className="text-primary-600 hover:text-primary-700 font-medium flex items-center space-x-2 mx-auto"
-              >
-                <span>모든 프로젝트 보기</span>
-                <ArrowRight size={16} />
-              </button>
-            </div>
-
+              <div className="text-center">
+                <button 
+                  onClick={() => router.push(`/projects?topic=${currentCategory?.slug}`)}
+                  className="text-primary-600 hover:text-primary-700 font-medium flex items-center space-x-2 mx-auto text-sm"
+                >
+                  <span>모든 프로젝트 보기</span>
+                  <ArrowRight size={16} />
+                </button>
+              </div>
             </div>
 
             {/* Articles Section */}
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-foreground">관련 CS지식</h2>
+                <h2 className="text-xl font-bold text-foreground">관련 CS지식</h2>
                 <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
                   {filteredArticles.length}개
                 </span>
@@ -451,8 +438,8 @@ export function LearningTopics() {
               <div className="space-y-4">
                 {filteredArticles.length > 0 ? (
                   filteredArticles.map((article) => (
-                    <div key={article.id} className="card hover:shadow-lg transition-all duration-200">
-                      <h3 className="text-lg font-bold text-foreground mb-2">{article.title}</h3>
+                    <div key={article.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-200">
+                      <h3 className="text-base font-bold text-foreground mb-2">{article.title}</h3>
                       <p className="text-gray-600 text-sm mb-4">{article.description}</p>
                       
                       <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
@@ -478,7 +465,7 @@ export function LearningTopics() {
                     </div>
                   ))
                 ) : (
-                  <div className="card text-center py-8">
+                  <div className="bg-gray-50 rounded-lg p-8 text-center border border-gray-200">
                     <p className="text-gray-500">이 카테고리에 등록된 CS지식이 없습니다.</p>
                   </div>
                 )}
@@ -487,19 +474,19 @@ export function LearningTopics() {
               <div className="text-center">
                 <button 
                   onClick={() => router.push(`/CSblog?topic=${currentCategory?.slug}`)}
-                  className="text-green-600 hover:text-green-700 font-medium flex items-center space-x-2 mx-auto"
+                  className="text-green-600 hover:text-green-700 font-medium flex items-center space-x-2 mx-auto text-sm"
                 >
                   <span>모든 CS지식 보기</span>
                   <ArrowRight size={16} />
                 </button>
               </div>
-
             </div>
           </div>
         </div>
       </div>
     </div>
   );
+
 
   return (
     <div className="min-h-screen bg-background">
