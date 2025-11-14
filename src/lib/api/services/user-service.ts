@@ -20,6 +20,9 @@ const getBaseUrl = () => {
 };
 
 export const BASE_URL = getBaseUrl();
+//Check if variables are loaded
+console.log('Base URL:', process.env.NEXT_PUBLIC_API_URL);
+
 
 // Feature-specific endpoints matching microservices
 export const API_ENDPOINTS = {
