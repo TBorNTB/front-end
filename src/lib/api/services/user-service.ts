@@ -93,6 +93,11 @@ export const API_ENDPOINTS = {
   CATEGORIES: {
     GET_ALL: '/archive-service/categories',
   },
+
+  // RAG Service endpoints
+  RAG: {
+    QUERY: '/elastic-service/api/v1/rag/query',
+  },
 } as const;
 
 // ✅ Helper function with environment logging
