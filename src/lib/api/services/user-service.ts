@@ -97,6 +97,8 @@ export const API_ENDPOINTS = {
   // Alarm endpoints
   ALARM: {
     RECEIVED: '/user-service/alarm/received',
+  },
+  
   // RAG Service endpoints
   RAG: {
     QUERY: '/elastic-service/api/v1/rag/query',

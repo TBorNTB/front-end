@@ -5,7 +5,7 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState, useEffect, createElement, useRef } from 'react';
+import { useState, useEffect, createElement, useRef, JSX } from 'react';
 
 interface BlogPostPageProps {
   params: Promise<{ blog: string }>;
@@ -128,7 +128,7 @@ Return-to-libc: 공격자가 프로그램의 실행 흐름을 조작하여 라�
   const renderContent = (content: string) => {
     const lines = content.split('\n');
     let headingIndex = 0;
-    const elements: JSX.Element[] = [];
+    const elements: React.JSX.Element[] = [];
     let currentParagraph = '';
 
     lines.forEach((line, index) => {
@@ -157,7 +157,7 @@ Return-to-libc: 공격자가 프로그램의 실행 흐름을 조작하여 라�
 
         elements.push(
           createElement(
-            tagName,
+            tagName as string,
             { key: id, id, className },
             text
           )

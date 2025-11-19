@@ -1,7 +1,7 @@
 // src/app/api/auth/user/route.ts
 import { NextResponse } from 'next/server';
 import { BASE_URL, API_ENDPOINTS } from '@/lib/api/services/user-service';
-import { validateUserRole } from '@/lib/role-utils';
+//import { validateUserRole } from '@/lib/role-utils';
 
 export async function GET(request: Request) {
   try {
@@ -93,12 +93,12 @@ export async function GET(request: Request) {
 
       // ✅ Determine role priority: roleData > profileData > default
       const rawRole = roleData?.role || profileData.role;
-      const validatedRole = validateUserRole(rawRole);
+      //const validatedRole = validateUserRole(rawRole);
       
       console.log('🔐 Role resolution:', {
         fromRoleEndpoint: roleData?.role,
         fromProfile: profileData.role,
-        validated: validatedRole
+        //validated: validatedRole
       });
 
       // ✅ Combine user data with validated role
@@ -107,7 +107,7 @@ export async function GET(request: Request) {
         email: profileData.email,
         realName: profileData.realName || profileData.fullName || profileData.nickname,
         profileImageUrl: profileData.profileImageUrl || profileData.profileImage,
-        role: validatedRole, // ✅ Use validated role
+       // role: validatedRole, // ✅ Use validated role
         ...profileData // Include other fields
       };
 
