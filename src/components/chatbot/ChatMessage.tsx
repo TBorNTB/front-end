@@ -1,7 +1,7 @@
 "use client";
 
 import { User } from "lucide-react";
-import { Message } from "./types";
+import { Message } from "@/types";
 import ChatBotCharacter from "./ChatBotCharacter";
 
 interface ChatMessageProps {

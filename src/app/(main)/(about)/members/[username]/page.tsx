@@ -292,7 +292,7 @@ export default async function MemberPage({ params }: MemberPageProps) {
                 {articles.map((article) => (
                   <Link
                     key={article.id}
-                    href={`/CSblog/${article.id}`}
+                    href={`/articles/${article.id}`}
                     className="card hover:shadow-lg transition-shadow group"
                   >
                     <div className="flex items-center gap-2 mb-3">

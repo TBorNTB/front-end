@@ -34,6 +34,13 @@ export const UserRoleDisplay: Record<UserRole, string> = {
   [UserRole.ADMIN]: "운영진",
 };
 
+export interface Message {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+}
+
 export enum ProjectStatus {
   ACTIVE = 'ACTIVE', 
   PLANNING = 'PLANNING',      
@@ -42,6 +49,6 @@ export enum ProjectStatus {
 
 export enum PostType {
   PROJECT = 'PROJECT',
-  CSBLOG = 'CSBLOG',
+  ARTICLES = 'ARTICLES',
   NEWS = 'NEWS',
 }

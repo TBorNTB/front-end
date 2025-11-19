@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 };
 
 // Import the actual content component
-import ProfileContent from './components/ProfileOverview';
+import ProfileContent from './_components/ProfileOverview';
 
 export default function ProfilePage() {
   return <ProfileContent />;

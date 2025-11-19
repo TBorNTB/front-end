@@ -37,7 +37,7 @@ import {
 } from "@/lib/form-utils";
 
 // Import OTP component
-import { OTPInput } from "../components/OTPInput";
+import { OTPInput } from "../_components/OTPInput";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();

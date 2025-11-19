@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { X, Minimize2 } from "lucide-react";
 import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
-import { Message } from "./types";
+import { Message } from "@/types";
 import ChatBotCharacter from "./ChatBotCharacter";
 import { queryRAG } from "./api";
 import toast from "react-hot-toast";

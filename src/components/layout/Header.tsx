@@ -23,7 +23,7 @@ const navList = [
   },
   { name: "Topics", slug: "topics", href: "/topics" },
   { name: "Projects", slug: "projects", href: "/projects" },
-  { name: "CS Blog", slug: "CSblog", href: "/CSblog" },
+  { name: "Articles", slug: "articles", href: "/articles" },
   { name: "Newsletter", slug: "newsletter", href: "/newsletter" },
 ];
 

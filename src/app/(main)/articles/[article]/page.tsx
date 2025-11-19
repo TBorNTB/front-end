@@ -1,4 +1,4 @@
-// app/(main)/CSblog/[blog]/page.tsx
+// app/(main)/articles/[blog]/page.tsx
 
 'use client';
 
@@ -220,7 +220,7 @@ Return-to-libc: 공격자가 프로그램의 실행 흐름을 조작하여 라�
       <div className="bg-white border-b border-gray-200">
         <div className="container py-6">
           <Link
-            href="/CSblog"
+            href="/articles"
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -408,7 +408,7 @@ Return-to-libc: 공격자가 프로그램의 실행 흐름을 조작하여 라�
                 <h3 className="text-lg font-bold text-foreground mb-4">인기 아티클</h3>
                 <div className="space-y-3">
                   {post.popularArticles.map((article) => (
-                    <Link key={article.id} href={`/CSblog/${article.slug}`} className="block group">
+                    <Link key={article.id} href={`/articles/${article.slug}`} className="block group">
                       <p className="text-sm font-medium text-gray-900 group-hover:text-primary-600 transition-colors mb-1">
                         {article.title}
                       </p>
@@ -423,7 +423,7 @@ Return-to-libc: 공격자가 프로그램의 실행 흐름을 조작하여 라�
                 <h3 className="text-lg font-bold text-foreground mb-4">저자의 다른 글</h3>
                 <div className="space-y-4">
                   {post.relatedArticles.map((article) => (
-                    <Link key={article.id} href={`/CSblog/${article.slug}`} className="block group pb-4 border-b border-gray-100 last:border-0 last:pb-0">
+                    <Link key={article.id} href={`/articles/${article.slug}`} className="block group pb-4 border-b border-gray-100 last:border-0 last:pb-0">
                       <div className="mb-2">
                         <span className="px-2 py-0.5 rounded text-xs font-medium bg-secondary-50 text-secondary-700">
                           {article.category}
