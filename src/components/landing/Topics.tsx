@@ -184,7 +184,7 @@ export default function TopicsSection({
   };
 
   return (
-    <section className={`section bg-background ${className}`}>
+    <section id="topics" className={`section bg-background ${className}`}>
       <div className="container">
         {/* Header Section */}
         {showHeader && (

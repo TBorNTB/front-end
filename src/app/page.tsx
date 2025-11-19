@@ -1,3 +1,5 @@
+'use client';
+
 import Footer from "@/components/layout/Footer";
 import Header from "@/components/layout/Header";
 import HeroBanner from "@/components/landing/HeroBanner";
@@ -6,6 +8,8 @@ import { ArticleCardHome } from "@/components/landing/ArticleCardHome";
 import { FeaturedProjectCard } from "@/components/landing/FeaturedCardHome";
 import Topics from "@/components/landing/Topics";
 import StatisticsSection from "@/components/landing/Statistics";
+import { useRouter } from 'next/navigation';
+import { useEffect } from "react";
 
 // Mock data matching the design
 const featuredProject = {
@@ -91,6 +95,29 @@ const articlesData = [
 ];
 
 export default function Home() {
+  useEffect(() => {
+    // Check if there's a hash in the URL
+    const hash = window.location.hash;
+    if (hash) {
+      const sectionId = hash.replace('#', '');
+      
+      // Wait for page to fully load
+      setTimeout(() => {
+        const section = document.getElementById(sectionId);
+        if (section) {
+          const headerOffset = 80; // Height of sticky header
+          const elementPosition = section.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          });
+        }
+      }, 300); // Increased timeout for better reliability
+    }
+  }, []);
+
   return (
     <>
       <div className="min-h-screen bg-background">
@@ -102,8 +129,8 @@ export default function Home() {
         </div>
         <StatisticsSection />
 
+        {/* ✅ Make sure Topics component has id="topics" */}
         <Topics />
-
 
         {/* Latest Project Section */}
         <section className="section bg-gray-50">
