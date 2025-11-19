@@ -2,7 +2,7 @@
 import Image from 'next/image';
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { ChevronDownIcon, BellIcon, Search, X, Menu, Shield } from "lucide-react";
 import { UserRoleDisplay, UserRole } from "@/types/core";
@@ -21,7 +21,7 @@ const navList = [
       { name: "FAQs", slug: "faqs", href: "/faqs" },
     ]
   },
-  { name: "Topics", slug: "topics", href: "/topics" },
+  { name: "Topics", slug: "topics", href: "/topics", scrollToSection: "topics" }, // ✅ Added scrollToSection
   { name: "Projects", slug: "projects", href: "/projects" },
   { name: "Articles", slug: "articles", href: "/articles" },
   { name: "Newsletter", slug: "newsletter", href: "/newsletter" },
@@ -30,6 +30,7 @@ const navList = [
 const Header = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const [dropdowns, setDropdowns] = useState<Record<string, boolean>>({});
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -108,6 +109,33 @@ const Header = () => {
     }
   };
 
+  // ✅  Handle navigation with scroll and offset
+  const handleNavClick = (e: React.MouseEvent, navItem: any) => {
+    // If it has a scrollToSection property
+    if (navItem.scrollToSection) {
+      e.preventDefault();
+      
+      // If we're on homepage, scroll to section
+      if (pathname === '/') {
+        const section = document.getElementById(navItem.scrollToSection);
+        if (section) {
+          const headerOffset = 80; // Height of sticky header
+          const elementPosition = section.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          });
+        }
+      } else {
+        // If we're on another page, navigate to homepage with hash
+        router.push('/#' + navItem.scrollToSection);
+      }
+    }
+  };
+
+
   // Better user data handling with debugging
   const displayName = user?.nickname || user?.full_name || '김민준';
   const displayEmail = user?.email || 'kdr123@naver.com';
@@ -139,10 +167,8 @@ const Header = () => {
                             : "text-gray-900 hover:text-primary-600"
                         }`}
                       >
-                        {/* ✅ Added pb-1 for space between text and underline */}
                         <span className="relative group pb-1">
                           {navItem.name}
-                          {/* ✅ Underline only under the text with gap */}
                           <div className={`absolute bottom-0 left-0 h-0.5 bg-primary-600 rounded-full transition-all duration-300 ${
                             isDropdownActive(navItem.dropdownItems) ? "w-full" : "w-0 group-hover:w-full"
                           }`}></div>
@@ -168,16 +194,15 @@ const Header = () => {
                   ) : (
                     <Link 
                       href={navItem.href!}
+                      onClick={(e) => handleNavClick(e, navItem)}
                       className={`py-2 px-1 transition-all duration-200 relative cursor-pointer inline-block ${
                         isActive(navItem.href!) 
                           ? "text-primary-600 font-bold" 
                           : "text-gray-900 hover:text-primary-600"
                       }`}
                     >
-                      {/* ✅ Added pb-1 for consistent spacing */}
                       <span className="relative group pb-1 inline-block">
                         {navItem.name}
-                        {/* ✅ Underline with gap */}
                         <div className={`absolute bottom-0 left-0 h-0.5 bg-primary-600 rounded-full transition-all duration-300 ${
                           isActive(navItem.href!) ? "w-full" : "w-0 group-hover:w-full"
                         }`}></div>
@@ -289,7 +314,6 @@ const Header = () => {
                           마이페이지
                         </Link>
                         
-                        {/* Admin Dashboard Button */}
                         {user?.role === UserRole.ADMIN && (
                           <Link
                             href="/admin/dashboard"
@@ -327,7 +351,6 @@ const Header = () => {
         {isMobileMenuOpen && (
           <div className="lg:hidden border-t border-gray-200 py-4">
             <div className="space-y-4">
-              {/* Mobile Navigation Links */}
               {navList.map((navItem) => (
                 <div key={navItem.slug} className="px-4">
                   {navItem.hasDropdown ? (
@@ -357,8 +380,11 @@ const Header = () => {
                   ) : (
                     <Link
                       href={navItem.href!}
+                      onClick={(e) => {
+                        handleNavClick(e, navItem);
+                        setIsMobileMenuOpen(false);
+                      }}
                       className="block py-2 text-gray-900 hover:text-primary-600 cursor-pointer"
-                      onClick={() => setIsMobileMenuOpen(false)}
                     >
                       {navItem.name}
                     </Link>
@@ -394,7 +420,6 @@ const Header = () => {
                       마이페이지
                     </Link>
 
-                    {/* Mobile Admin Dashboard Button */}
                     {user?.role === UserRole.ADMIN && (
                       <Link
                         href="/admin/dashboard"
