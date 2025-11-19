@@ -15,16 +15,16 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
     <div className={`flex items-start gap-2 ${isUser ? "flex-row-reverse" : ""}`}>
       {/* Avatar */}
       <div
-        className={`rounded-full flex items-center justify-center flex-shrink-0 ${
+        className={`flex items-center justify-center flex-shrink-0 ${
           isUser
-            ? "w-8 h-8 bg-primary-600 text-white"
-            : "w-10 h-10 bg-primary-100 text-primary-600 border-2 border-primary-200"
+            ? "w-8 h-8 bg-primary-600 text-white rounded-full"
+            : "w-10 h-10" // ✅ Removed background circle classes
         }`}
       >
         {isUser ? (
           <User className="w-5 h-5" />
         ) : (
-          <ChatBotCharacter size={20} className="text-primary-600" />
+          <ChatBotCharacter size={40} className="text-primary-600" animated showBubble={false}/> 
         )}
       </div>
 
@@ -34,7 +34,7 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
           className={`rounded-2xl px-4 py-3 max-w-[80%] shadow-sm ${
             isUser
               ? "bg-primary-600 text-white rounded-tr-sm"
-              : "bg-white text-gray-900 rounded-tl-sm"
+              : "bg-white text-gray-900 rounded-tl-sm border border-gray-200"
           }`}
         >
           <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
@@ -53,4 +53,3 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
 };
 
 export default ChatMessage;
-

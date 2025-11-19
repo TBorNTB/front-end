@@ -33,9 +33,6 @@ const ChatBot = () => {
             <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-300 rounded-full animate-ping opacity-80"></div>
             <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-yellow-200 rounded-full animate-pulse opacity-60"></div>
           </div>
-          {/* Pulse animation rings */}
-          <span className="absolute inset-0 rounded-full bg-primary-400 animate-ping opacity-40"></span>
-          <span className="absolute inset-0 rounded-full bg-white/20 animate-ping" style={{ animationDelay: "0.5s" }}></span>
         </button>
       )}
 

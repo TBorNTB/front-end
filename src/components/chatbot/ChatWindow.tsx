@@ -76,9 +76,7 @@ const ChatWindow = ({ onClose, isMinimized }: ChatWindowProps) => {
       {/* Header */}
       <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border-2 border-white/30">
-            <ChatBotCharacter size={24} className="text-white" />
-          </div>
+            <ChatBotCharacter size={40} className="text-white" showBubble={false} />
           <div>
             <h3 className="font-semibold text-sm">SSG 챗봇</h3>
             <p className="text-xs text-white/90">SSG 정보를 물어보세요</p>
@@ -112,13 +110,14 @@ const ChatWindow = ({ onClose, isMinimized }: ChatWindowProps) => {
           <ChatMessage key={message.id} message={message} />
         ))}
         
-        {/* Typing Indicator */}
+        {/* Typing Indicator - ✅ Removed circular background */}
         {isTyping && (
           <div className="flex items-start gap-2">
-            <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0 border-2 border-primary-200">
-              <ChatBotCharacter size={20} className="text-primary-600" animated />
+            {/* ✅ No background circle, just the robot */}
+            <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+              <ChatBotCharacter size={40} className="text-primary-600" animated />
             </div>
-            <div className="flex-1 bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+            <div className="flex-1 bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm border border-gray-200">
               <div className="flex gap-1">
                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
@@ -140,4 +139,3 @@ const ChatWindow = ({ onClose, isMinimized }: ChatWindowProps) => {
 };
 
 export default ChatWindow;
-
