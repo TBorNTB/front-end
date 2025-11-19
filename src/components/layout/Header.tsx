@@ -133,17 +133,21 @@ const Header = () => {
                     <div ref={el => { dropdownRefs.current[navItem.slug] = el; }}>
                       <button
                         onClick={() => toggleDropdown(navItem.slug)}
-                        className={`flex items-center space-x-1 py-2 px-1 transition-all duration-200 relative group ${
+                        className={`flex items-center space-x-1 py-2 px-1 transition-all duration-200 cursor-pointer ${
                           isDropdownActive(navItem.dropdownItems) 
                             ? "text-primary-600 font-bold" 
                             : "text-gray-900 hover:text-primary-600"
                         }`}
                       >
-                        <span>{navItem.name}</span>
+                        {/* ✅ Added pb-1 for space between text and underline */}
+                        <span className="relative group pb-1">
+                          {navItem.name}
+                          {/* ✅ Underline only under the text with gap */}
+                          <div className={`absolute bottom-0 left-0 h-0.5 bg-primary-600 rounded-full transition-all duration-300 ${
+                            isDropdownActive(navItem.dropdownItems) ? "w-full" : "w-0 group-hover:w-full"
+                          }`}></div>
+                        </span>
                         <ChevronDownIcon className={`w-4 h-4 transition-transform ${dropdowns[navItem.slug] ? 'rotate-180' : ''}`} />
-                        {isDropdownActive(navItem.dropdownItems) && (
-                          <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary-600 rounded-full"></div>
-                        )}
                       </button>
                       
                       {dropdowns[navItem.slug] && (
@@ -152,7 +156,7 @@ const Header = () => {
                             <Link 
                               key={item.slug} 
                               href={item.href}
-                              className="block px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-primary-600 transition-colors text-sm"
+                              className="block px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-primary-600 transition-colors text-sm cursor-pointer"
                               onClick={() => setDropdowns({})}
                             >
                               {item.name}
@@ -164,16 +168,20 @@ const Header = () => {
                   ) : (
                     <Link 
                       href={navItem.href!}
-                      className={`py-2 px-1 transition-all duration-200 relative group ${
+                      className={`py-2 px-1 transition-all duration-200 relative cursor-pointer inline-block ${
                         isActive(navItem.href!) 
                           ? "text-primary-600 font-bold" 
                           : "text-gray-900 hover:text-primary-600"
                       }`}
                     >
-                      {navItem.name}
-                      <div className={`absolute bottom-0 left-0 h-0.5 bg-primary-600 rounded-full transition-all duration-300 ${
-                        isActive(navItem.href!) ? "w-full" : "w-0 group-hover:w-full"
-                      }`}></div>
+                      {/* ✅ Added pb-1 for consistent spacing */}
+                      <span className="relative group pb-1 inline-block">
+                        {navItem.name}
+                        {/* ✅ Underline with gap */}
+                        <div className={`absolute bottom-0 left-0 h-0.5 bg-primary-600 rounded-full transition-all duration-300 ${
+                          isActive(navItem.href!) ? "w-full" : "w-0 group-hover:w-full"
+                        }`}></div>
+                      </span>
                     </Link>
                   )}
                 </div>
@@ -188,7 +196,7 @@ const Header = () => {
               {!isSearchOpen ? (
                 <button 
                   onClick={handleSearchToggle}
-                  className="p-2 text-gray-700 hover:text-gray-900 transition-colors"
+                  className="p-2 text-gray-700 hover:text-gray-900 transition-colors cursor-pointer"
                 >
                   <Search className="w-5 h-5" />
                 </button>
@@ -208,7 +216,7 @@ const Header = () => {
                   <button
                     type="button"
                     onClick={handleSearchToggle}
-                    className="ml-2 p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="ml-2 p-2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -221,7 +229,7 @@ const Header = () => {
               <>
                 <button 
                   onClick={() => setIsAlarmPopupOpen(true)}
-                  className="relative p-2.5 rounded-lg bg-primary-50 hover:bg-primary-100 transition-all duration-200 group"
+                  className="relative p-2.5 rounded-lg bg-primary-50 hover:bg-primary-100 transition-all duration-200 group cursor-pointer"
                 >
                   <BellIcon className="w-5 h-5 text-primary-600 group-hover:text-primary-700 transition-colors" />
                   <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center animate-pulse">
@@ -239,7 +247,7 @@ const Header = () => {
             <div className="hidden sm:block">
               {!isAuthenticated ? (
                  <Link href="/login">
-                    <button className="btn btn-primary">
+                    <button className="btn btn-primary cursor-pointer">
                       로그인
                     </button>
                   </Link>
@@ -247,7 +255,7 @@ const Header = () => {
                 <div className="relative" ref={el => { dropdownRefs.current.userProfile = el; }}>
                   <button
                     onClick={() => toggleDropdown('userProfile')}
-                    className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
                   >
                     <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
                       {userInitial}
@@ -273,10 +281,9 @@ const Header = () => {
                       </div>
                       
                       <div className="py-1">
-                        {/* ✅ UPDATED: Changed from "활동" to "마이페이지" and removed "설정" */}
                         <Link 
                           href="/mypage" 
-                          className="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                          className="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
                           onClick={() => setDropdowns({})}
                         >
                           마이페이지
@@ -286,7 +293,7 @@ const Header = () => {
                         {user?.role === UserRole.ADMIN && (
                           <Link
                             href="/admin/dashboard"
-                            className="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                            className="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
                             onClick={() => setDropdowns({})}
                           >
                             어드민 대시보드 
@@ -295,7 +302,7 @@ const Header = () => {
 
                         <button
                           onClick={handleLogout}
-                          className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
+                          className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                         >
                           로그아웃
                         </button>
@@ -309,7 +316,7 @@ const Header = () => {
             {/* Mobile Menu Toggle Button */}
             <button
               onClick={toggleMobileMenu}
-              className="lg:hidden p-2 text-gray-700 hover:text-gray-900 transition-colors"
+              className="lg:hidden p-2 text-gray-700 hover:text-gray-900 transition-colors cursor-pointer"
             >
               <Menu className="w-6 h-6" />
             </button>
@@ -327,7 +334,7 @@ const Header = () => {
                     <div>
                       <button
                         onClick={() => toggleDropdown(`mobile-${navItem.slug}`)}
-                        className="flex items-center justify-between w-full py-2 text-gray-900 hover:text-primary-600"
+                        className="flex items-center justify-between w-full py-2 text-gray-900 hover:text-primary-600 cursor-pointer"
                       >
                         <span>{navItem.name}</span>
                         <ChevronDownIcon className={`w-4 h-4 transition-transform ${dropdowns[`mobile-${navItem.slug}`] ? 'rotate-180' : ''}`} />
@@ -338,7 +345,7 @@ const Header = () => {
                             <Link
                               key={item.slug}
                               href={item.href}
-                              className="block py-2 text-gray-600 hover:text-primary-600"
+                              className="block py-2 text-gray-600 hover:text-primary-600 cursor-pointer"
                               onClick={() => setIsMobileMenuOpen(false)}
                             >
                               {item.name}
@@ -350,7 +357,7 @@ const Header = () => {
                   ) : (
                     <Link
                       href={navItem.href!}
-                      className="block py-2 text-gray-900 hover:text-primary-600"
+                      className="block py-2 text-gray-900 hover:text-primary-600 cursor-pointer"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       {navItem.name}
@@ -363,7 +370,7 @@ const Header = () => {
               <div className="px-4 pt-4 border-t border-gray-200">
                 {!isAuthenticated ? (
                   <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                    <button className="btn btn-primary w-full">
+                    <button className="btn btn-primary w-full cursor-pointer">
                       로그인
                     </button>
                   </Link>
@@ -379,10 +386,9 @@ const Header = () => {
                       </div>
                     </div>
                     
-                    {/* ✅ UPDATED: Changed from "활동" to "마이페이지" and removed "설정" */}
                     <Link
                       href="/mypage"
-                      className="block py-2 text-gray-700 hover:text-primary-600"
+                      className="block py-2 text-gray-700 hover:text-primary-600 cursor-pointer"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       마이페이지
@@ -392,7 +398,7 @@ const Header = () => {
                     {user?.role === UserRole.ADMIN && (
                       <Link
                         href="/admin/dashboard"
-                        className="flex items-center gap-2 py-2 text-gray-700 hover:text-primary-600 transition-colors"
+                        className="flex items-center gap-2 py-2 text-gray-700 hover:text-primary-600 transition-colors cursor-pointer"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <Shield size={16} />
@@ -402,7 +408,7 @@ const Header = () => {
 
                     <button
                       onClick={handleLogout}
-                      className="block w-full text-left py-2 text-red-600 hover:text-red-700"
+                      className="block w-full text-left py-2 text-red-600 hover:text-red-700 cursor-pointer"
                     >
                       로그아웃
                     </button>
