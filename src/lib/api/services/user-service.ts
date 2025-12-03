@@ -73,6 +73,7 @@ export const API_ENDPOINTS = {
     UPDATE: '/project-service/projects/:id',
     DELETE: '/project-service/projects/:id',
     GET_COLLABORATORS: '/project-service/projects/:id/collaborators',
+    GET_CATEGORIES: '/project-service/api/category',
   },
 
   // Meta-service endpoints
