@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { ChevronDownIcon, BellIcon, Search, X, Menu, Shield } from "lucide-react";
 import { UserRoleDisplay, UserRole } from "@/types/core";
 import AlarmPopup from "./AlarmPopup";
+import { profileService, UserResponse } from "@/lib/api/services/user-service";
 
 const navList = [
   { 
@@ -36,6 +37,7 @@ const Header = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAlarmPopupOpen, setIsAlarmPopupOpen] = useState(false);
+  const [profileData, setProfileData] = useState<UserResponse | null>(null);
   
   const dropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -65,6 +67,22 @@ const Header = () => {
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
+
+  // 프로필 정보 로드
+  useEffect(() => {
+    if (isAuthenticated) {
+      const loadProfile = async () => {
+        try {
+          const profile = await profileService.getProfile();
+          setProfileData(profile);
+        } catch (error) {
+          console.error('Failed to load profile in header:', error);
+          // 에러가 발생해도 기존 user 데이터 사용
+        }
+      };
+      loadProfile();
+    }
+  }, [isAuthenticated]);
 
   const toggleDropdown = (slug: string) => {
     setDropdowns(prev => ({
@@ -136,11 +154,26 @@ const Header = () => {
   };
 
 
-  // Better user data handling with debugging
-  const displayName = user?.nickname || user?.full_name || '김민준';
-  const displayEmail = user?.email || 'kdr123@naver.com';
-  const displayRole = user?.role ? UserRoleDisplay[user.role as UserRole] : '외부인';  
-  const userInitial = displayName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || '?';
+  // API에서 가져온 프로필 데이터 우선 사용, 없으면 AuthContext의 user 데이터 사용
+  const displayName = profileData?.realName || profileData?.nickname || user?.nickname || user?.full_name || '사용자';
+  const displayEmail = profileData?.email || user?.email || '';
+  
+  // Role 매핑: API 응답의 role을 UserRoleDisplay로 변환
+  const getDisplayRole = (role?: string): string => {
+    if (!role) return '외부인';
+    // UserRole enum 값과 매칭 시도
+    const roleKey = role.toUpperCase() as UserRole;
+    if (roleKey in UserRoleDisplay) {
+      return UserRoleDisplay[roleKey];
+    }
+    // 매칭되지 않으면 원본 role 반환
+    return role;
+  };
+  
+  const displayRole = profileData?.role 
+    ? getDisplayRole(profileData.role)
+    : (user?.role ? getDisplayRole(user.role) : '외부인');
+  const userInitial = displayName?.charAt(0)?.toUpperCase() || displayEmail?.charAt(0)?.toUpperCase() || '?';
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
