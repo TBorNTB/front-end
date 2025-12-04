@@ -69,11 +69,26 @@ export default function MyPageLayout({
     loadProfile();
   }, []);
 
+  // URL 유효성 검사 함수
+  const isValidImageUrl = (url: string | null | undefined): string | null => {
+    if (!url || typeof url !== 'string') return null;
+    if (url.trim() === '' || url === 'string' || url === 'null' || url === 'undefined') return null;
+    // 상대 경로는 유효함
+    if (url.startsWith('/')) return url;
+    // 절대 URL 검사
+    try {
+      new URL(url);
+      return url;
+    } catch {
+      return null;
+    }
+  };
+
   // 프로필 정보 표시용 변수
   const displayName = profile?.realName || profile?.nickname || profile?.username || '사용자';
   const displayEmail = profile?.email || 'API 연결이 필요합니다';
   const displayRole = profile?.role || 'Member';
-  const displayAvatar = profile?.profileImageUrl || '/default-avatar.png';
+  const displayAvatar = isValidImageUrl(profile?.profileImageUrl) || '/default-avatar.png';
 
   // 통계 정보는 API 응답에 없으므로 -1로 표시
   const stats = {

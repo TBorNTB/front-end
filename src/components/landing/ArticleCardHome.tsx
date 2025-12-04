@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Heart, MessageCircle } from 'lucide-react';
+import { Heart, Eye } from 'lucide-react';
 
 interface ArticleCardHomeProps {
   article: {
@@ -16,29 +16,54 @@ interface ArticleCardHomeProps {
     category: string;
     thumbnailImage: string;
     likes: number;
-    comments: number;
+    views: number;
+    tags?: string[];
   };
 }
+
+// URL 유효성 검사 함수
+const isValidImageUrl = (url: string | null | undefined): boolean => {
+  if (!url || typeof url !== 'string') return false;
+  if (url.trim() === '' || url === 'string' || url === 'null' || url === 'undefined') return false;
+  
+  // 상대 경로는 유효함 (/, /images/...)
+  if (url.startsWith('/')) return true;
+  
+  // 절대 URL 검사
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 export function ArticleCardHome({ article }: ArticleCardHomeProps) {
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'Security': return 'bg-red-500';
       case 'AI Security': return 'bg-blue-500';
+      case 'MT': return 'bg-purple-500';
       default: return 'bg-gray-500';
     }
   };
+
+  const hasValidImage = isValidImageUrl(article.thumbnailImage);
 
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 group">
       {/* Article Image */}
       <div className="relative h-48 overflow-hidden">
-        {article.thumbnailImage ? (
+        {hasValidImage ? (
           <Image
             src={article.thumbnailImage}
             alt={article.title}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"
+            unoptimized={article.thumbnailImage.startsWith('http')}
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
@@ -92,16 +117,30 @@ export function ArticleCardHome({ article }: ArticleCardHomeProps) {
           {article.description}
         </p>
 
+        {/* Tags */}
+        {article.tags && article.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {article.tags.slice(0, 3).map((tag, index) => (
+              <span
+                key={index}
+                className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md"
+              >
+                #{tag}
+              </span>
+            ))}
+          </div>
+        )}
+
         {/* Stats */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4 text-gray-500">
-            <div className="flex items-center">
-              <Heart className="w-4 h-4 mr-1" />
-              <span className="text-sm">{article.likes}</span>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center gap-1 text-red-500">
+              <Heart className="w-4 h-4 fill-red-500" />
+              <span className="text-sm font-medium">{article.likes}</span>
             </div>
-            <div className="flex items-center">
-              <MessageCircle className="w-4 h-4 mr-1" />
-              <span className="text-sm">{article.comments}</span>
+            <div className="flex items-center gap-1 text-blue-500">
+              <Eye className="w-4 h-4 fill-blue-500" />
+              <span className="text-sm font-medium">{article.views}</span>
             </div>
           </div>
           

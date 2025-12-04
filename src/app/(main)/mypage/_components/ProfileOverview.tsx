@@ -1,7 +1,7 @@
 // app/profile/ProfileContent.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { Badge } from '@/components/ui/badge';
@@ -21,8 +21,10 @@ import {
   AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
-import { profileService, UserResponse } from '@/lib/api/services/user-service';
+import toast from 'react-hot-toast';
+import { profileService, s3Service, UserResponse } from '@/lib/api/services/user-service';
 import { useAuth } from '@/context/AuthContext';
+import { validateImageFile } from '@/lib/form-utils';
 
 // 날짜 포맷팅 헬퍼 함수
 const formatDate = (dateString: string) => {
@@ -60,7 +62,9 @@ export default function ProfileContent() {
   const { isAuthenticated, user } = useAuth();
   const [profile, setProfile] = useState<UserResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // 로그인 상태 확인
@@ -126,6 +130,21 @@ export default function ProfileContent() {
     );
   }
 
+  // URL 유효성 검사 함수
+  const isValidImageUrl = (url: string | null | undefined): string | null => {
+    if (!url || typeof url !== 'string') return null;
+    if (url.trim() === '' || url === 'string' || url === 'null' || url === 'undefined') return null;
+    // 상대 경로는 유효함
+    if (url.startsWith('/')) return url;
+    // 절대 URL 검사
+    try {
+      new URL(url);
+      return url;
+    } catch {
+      return null;
+    }
+  };
+
   // API 응답에 없는 필드들은 기본값으로 처리
   const displayName = profile.realName || profile.nickname || profile.username || '사용자';
   const displayEmail = profile.email || 'API 연결이 필요합니다';
@@ -134,7 +153,7 @@ export default function ProfileContent() {
   const displayBio = profile.description || '';
   const displayRole = profile.role || 'Member';
   const displayJoinDate = profile.createdAt ? formatDate(profile.createdAt) : 'API 연결이 필요합니다';
-  const displayAvatar = profile.profileImageUrl || '/default-avatar.png';
+  const displayAvatar = isValidImageUrl(profile.profileImageUrl) || '/default-avatar.png';
 
   // 통계 정보는 API 응답에 없으므로 -1로 표시
   const stats = {
@@ -145,6 +164,62 @@ export default function ProfileContent() {
     badgesEarned: -1,
   };
 
+  // 이미지 클릭 핸들러
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  // 파일 선택 핸들러
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 파일 유효성 검사
+    const validation = validateImageFile(file);
+    if (!validation.isValid) {
+      toast.error(validation.error || '유효하지 않은 파일입니다.');
+      return;
+    }
+
+    setIsUploading(true);
+    setError(null);
+
+    try {
+      // S3에 파일 업로드
+      const uploadedUrl = await s3Service.uploadFile(file);
+      
+      // 프로필 업데이트
+      const updatedProfile = await profileService.updateProfile({
+        profileImageUrl: uploadedUrl,
+      });
+      
+      // 프로필 상태 업데이트
+      setProfile(updatedProfile);
+      
+      // 성공 메시지 표시
+      toast.success('프로필 이미지가 성공적으로 변경되었습니다!', {
+        duration: 2000,
+        icon: '✅',
+      });
+      
+      // 페이지 새로고침하여 최신 데이터 반영
+      setTimeout(() => {
+        router.refresh();
+      }, 500);
+    } catch (err: any) {
+      console.error('Failed to upload profile image:', err);
+      const errorMessage = err.message || '이미지 업로드에 실패했습니다.';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsUploading(false);
+      // 파일 input 초기화
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Profile Header */}
@@ -152,16 +227,40 @@ export default function ProfileContent() {
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="flex flex-col items-center lg:items-start">
             <div className="relative">
-              <ImageWithFallback
-                src={displayAvatar}
-                alt={displayName}
-                width={120}
-                height={120}
-                className="w-30 h-30 rounded-full object-cover border-4 border-primary-200"
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/gif"
+                onChange={handleFileChange}
+                className="hidden"
               />
-              <button className="absolute bottom-2 right-2 btn btn-primary btn-sm rounded-full p-2">
-                <Edit3 className="h-4 w-4" />
-              </button>
+              <div 
+                onClick={handleImageClick}
+                className="relative cursor-pointer group"
+              >
+                <ImageWithFallback
+                  src={displayAvatar}
+                  alt={displayName}
+                  width={120}
+                  height={120}
+                  className="w-30 h-30 rounded-full object-cover border-4 border-primary-200 group-hover:border-primary-400 transition-all duration-300"
+                />
+                {isUploading ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+                    <Loader2 className="h-6 w-6 animate-spin text-white" />
+                  </div>
+                ) : (
+                  <button 
+                    className="absolute bottom-2 right-2 btn btn-primary btn-sm rounded-full p-2 shadow-lg hover:scale-110 transition-transform"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleImageClick();
+                    }}
+                  >
+                    <Edit3 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
             </div>
             <Link href="/mypage/settings" className="btn btn-primary mt-4">
               프로필 편집
