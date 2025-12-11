@@ -1,9 +1,9 @@
 'use client';
 
-import { Fragment, useState, useMemo } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
+import { Fragment, useMemo, useState } from 'react';
 
 interface DocumentModalProps {
   isOpen: boolean;

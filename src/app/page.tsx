@@ -1,16 +1,15 @@
 'use client';
 
-import Footer from "@/components/layout/Footer";
-import Header from "@/components/layout/Header";
-import HeroBanner from "@/components/landing/HeroBanner";
-import { ProjectCardHome } from "@/components/landing/ProjectCardHome";
 import { ArticleCardHome } from "@/components/landing/ArticleCardHome";
 import { FeaturedProjectCard } from "@/components/landing/FeaturedCardHome";
-import Topics from "@/components/landing/Topics";
+import HeroBanner from "@/components/landing/HeroBanner";
+import { ProjectCardHome } from "@/components/landing/ProjectCardHome";
 import StatisticsSection from "@/components/landing/Statistics";
-import { useRouter } from 'next/navigation';
+import Topics from "@/components/landing/Topics";
+import Footer from "@/components/layout/Footer";
+import Header from "@/components/layout/Header";
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from "react";
-import { ChevronRight, ChevronLeft } from 'lucide-react';
 
 // API Response Types
 interface ApiProject {
@@ -251,7 +250,7 @@ export default function Home() {
           thumbnailImage: "/images/projects/osint-dashboard.jpg",
           viewText: "자세히 보기"
         });
-        setProjectsData([]);
+        setAllProjects([]);
       } finally {
         setLoading(false);
       }
