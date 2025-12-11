@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { ExternalLink, Github, Grid, List, Plus, Search, ChevronDown, X, ChevronLeft, ChevronRight, Heart, Eye } from 'lucide-react';
 import { CategoryHelpers, CategoryType, CategoryDisplayNames } from '@/app/(main)/topics/types/category';
 import Image from 'next/image';
@@ -10,6 +11,7 @@ import Image from 'next/image';
 const fetchElasticSearchSuggestions = async (query: string): Promise<string[]> => {
   if (!query || query.trim().length === 0) {
     return [];
+
   }
 
   try {
@@ -192,11 +194,11 @@ const getStatusColor = (status: string) => {
 };
 
 // Avatar Stack Component
-const AvatarStack = ({ 
-  creator, 
-  contributors, 
-  maxVisible = 3 
-}: { 
+const AvatarStack = ({
+  creator,
+  contributors,
+  maxVisible = 3
+}: {
   creator: { name: string; avatar: string };
   contributors: { name: string; avatar: string }[];
   maxVisible?: number;
@@ -409,8 +411,8 @@ export default function ProjectsContent() {
   }, [selectedCategories, selectedStatuses, sortBy, currentPage, searchTerm]);
 
   const handleCategoryToggle = (category: string) => {
-    setSelectedCategories(prev => 
-      prev.includes(category) 
+    setSelectedCategories(prev =>
+      prev.includes(category)
         ? prev.filter(c => c !== category)
         : [...prev, category]
     );
@@ -471,8 +473,8 @@ export default function ProjectsContent() {
   const filteredProjects = projects;
 
   // Get current topic name for breadcrumb
-  const currentTopicName = searchParams.get('topic') 
-    ? CategoryHelpers.getDisplayName(CategoryHelpers.getTypeBySlug(searchParams.get('topic')!)!) 
+  const currentTopicName = searchParams.get('topic')
+    ? CategoryHelpers.getDisplayName(CategoryHelpers.getTypeBySlug(searchParams.get('topic')!)!)
     : null;
 
   return (
@@ -695,7 +697,7 @@ export default function ProjectsContent() {
                   {sortBy}
                   <ChevronDown size={16} className={`transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
                 </button>
-                
+
                 {showSortDropdown && (
                   <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                     {sortOptions.map((option) => (
@@ -738,8 +740,8 @@ export default function ProjectsContent() {
                   }`}>
                     {/* Image */}
                     <div className={`relative ${viewMode === 'list' ? 'w-64 flex-shrink-0' : ''}`}>
-                      <Image 
-                        src={project.image} 
+                      <Image
+                        src={project.image}
                         alt={project.title}
                         width={viewMode === 'list' ? 256 : 400}
                         height={viewMode === 'list' ? 300 : 192}
@@ -756,7 +758,7 @@ export default function ProjectsContent() {
                         </span>
                       </div>
                     </div>
-                    
+
                     {/* Content */}
                     <div className="p-5 flex-1">
                       <h3 className={`font-bold text-gray-900 mb-2 line-clamp-2 ${
@@ -791,9 +793,9 @@ export default function ProjectsContent() {
 
                       {/* Contributors Avatar Stack */}
                       <div className="mb-3">
-                        <AvatarStack 
+                        <AvatarStack
                           creator={project.creator}
-                          contributors={project.contributors} 
+                          contributors={project.contributors}
                         />
                       </div>
 
@@ -811,7 +813,7 @@ export default function ProjectsContent() {
 
                       <div className="flex justify-between items-center">
                         <div className="flex space-x-2">
-                          <a 
+                          <a
                             href={project.github}
                             className="text-gray-400 hover:text-primary transition-colors"
                             target="_blank"
@@ -820,7 +822,7 @@ export default function ProjectsContent() {
                             <Github size={18} />
                           </a>
                           {project.demo && (
-                            <a 
+                            <a
                               href={project.demo}
                               className="text-gray-400 hover:text-primary transition-colors"
                               target="_blank"
@@ -830,9 +832,15 @@ export default function ProjectsContent() {
                             </a>
                           )}
                         </div>
-                        <button className="bg-primary text-white px-4 py-1.5 rounded-lg text-xs font-medium hover:bg-primary-700 transition-colors">
+
+                        {/* 여기서부터: 자세히 보기 -> Link */}
+                        <Link
+                          href={`/projects/${project.id}`}
+                          className="bg-primary text-white px-4 py-1.5 rounded-lg text-xs font-medium hover:bg-primary-700 transition-colors"
+                        >
                           자세히 보기
-                        </button>
+                        </Link>
+                        {/* 여기까지 */}
                       </div>
                     </div>
                   </div>
@@ -845,7 +853,7 @@ export default function ProjectsContent() {
             {!isLoading && filteredProjects.length === 0 && (
               <div className="text-center py-12">
                 <p className="text-gray-500 text-lg mb-4">검색 조건에 맞는 프로젝트가 없습니다.</p>
-                <button 
+                <button
                   onClick={clearAllFilters}
                   className="text-primary hover:underline"
                 >
