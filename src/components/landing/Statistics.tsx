@@ -9,6 +9,26 @@ interface StatisticItemProps {
   delay?: number;
 }
 
+interface ApiCountResponse {
+  userCount: number;
+  projectCount: number;
+  articleCount: number;
+  csCount: number;
+}
+
+// 숫자 포맷팅 함수
+const formatNumber = (num: number): string => {
+  if (num >= 1000) {
+    const k = Math.floor(num / 1000);
+    const remainder = num % 1000;
+    if (remainder >= 100) {
+      return `${k}.${Math.floor(remainder / 100)}k+`;
+    }
+    return `${k}k+`;
+  }
+  return `${num}+`;
+};
+
 const StatisticItem = ({ number, label, description, delay = 0 }: StatisticItemProps) => {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -54,28 +74,81 @@ interface StatisticsSectionProps {
 }
 
 export default function StatisticsSection({ className = "" }: StatisticsSectionProps) {
-  const statistics = [
+  const [statistics, setStatistics] = useState([
     {
-      number: '250+',
+      number: '0+',
       label: 'Active Projects',
       description: '활성 프로젝트'
     },
     {
-      number: '1.2k+',
+      number: '0+',
       label: 'Articles Published',
       description: '게시된 아티클'
     },
     {
-      number: '5k+',
+      number: '0+',
       label: '함께 멤버',
       description: '활발한 커뮤니티'
     },
     {
-      number: '15+',
+      number: '0+',
       label: 'Learning Topics',
       description: '학습 주제'
     }
-  ];
+  ]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStatistics = async () => {
+      try {
+        const response = await fetch(
+          'https://api.sejongssg.kr/meta-service/api/meta/count',
+          {
+            method: 'GET',
+            headers: {
+              'accept': 'application/json',
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch statistics');
+        }
+
+        const data: ApiCountResponse = await response.json();
+
+        setStatistics([
+          {
+            number: formatNumber(data.projectCount),
+            label: 'Active Projects',
+            description: '활성 프로젝트'
+          },
+          {
+            number: formatNumber(data.articleCount),
+            label: 'Articles Published',
+            description: '게시된 아티클'
+          },
+          {
+            number: formatNumber(data.userCount),
+            label: '함께 멤버',
+            description: '활발한 커뮤니티'
+          },
+          {
+            number: formatNumber(data.csCount),
+            label: 'Learning Topics',
+            description: '학습 주제'
+          }
+        ]);
+      } catch (error) {
+        console.error('Error fetching statistics:', error);
+        // 에러 발생 시 기본값 유지
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStatistics();
+  }, []);
 
   return (
     <section className={`py-8 md:py-12 bg-white ${className}`}>

@@ -1,173 +1,188 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ExternalLink, Github, Grid, List, Plus, Search, ChevronDown, X } from 'lucide-react';
-import { CategoryHelpers } from '@/app/(main)/topics/types/category';
+import { ExternalLink, Github, Grid, List, Plus, Search, ChevronDown, X, ChevronLeft, ChevronRight, Heart, Eye } from 'lucide-react';
+import { CategoryHelpers, CategoryType, CategoryDisplayNames } from '@/app/(main)/topics/types/category';
 import Image from 'next/image';
 
-// Projects data
-const projects = [
-  {
-    id: 1,
-    title: 'SQL 인젝션 취약점 스캐너',
-    description: 'Python 기반으로 URL의 XSS 취약점을 자동으로 탐지하는 도구',
-    image: 'https://images.pexels.com/photos/577585/pexels-photo-577585.jpeg?auto=compress&cs=tinysrgb&w=800',
-    tags: ['Python', 'Flask', 'SQLAlchemy', 'Selenium'],
-    category: '웹 해킹',
-    topicSlug: 'web-hacking',
-    status: '진행중',
-    stars: 5,
-    creator: { name: '김민준', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face' },
-    contributors: [
-      { name: '김민준', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face' },
-      { name: '이서연', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b098?w=32&h=32&fit=crop&crop=face' }
-    ],
-    lastUpdate: '2024.01.15',
-    github: 'https://github.com/ssg/vulnerability-scanner',
-    demo: 'https://scanner.ssg.com'
-  },
-  {
-    id: 2,
-    title: 'XSS 방어 라이브러리',
-    description: 'Cross-Site Scripting 공격을 방어하는 JavaScript 라이브러리',
-    image: 'https://images.pexels.com/photos/1181263/pexels-photo-1181263.jpeg?auto=compress&cs=tinysrgb&w=800',
-    tags: ['JavaScript', 'TypeScript', 'Security', 'Web'],
-    category: '웹 해킹',
-    topicSlug: 'web-hacking',
-    status: '진행중',
-    stars: 12,
-    creator: { name: '김민준', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face' },
-    contributors: [
-      { name: '김민준', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face' },
-      { name: '박지윤', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=32&h=32&fit=crop&crop=face' },
-      { name: '최현우', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face' }
-    ],
-    lastUpdate: '2024.01.20',
-    github: 'https://github.com/ssg/xss-defense',
-    demo: 'https://xss-defense.ssg.com'
-  },
-  {
-    id: 3,
-    title: '악성코드 분석 보고서',
-    description: '멀웨어 해석에 새로운 동작 방식을 정적으로 분석하고 보고서를 작성합니다.',
-    image: 'https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=800',
-    tags: ['IDA Pro', 'Ghidra', 'Assembly', 'Malware'],
-    category: '리버싱',
-    topicSlug: 'reversing',
-    status: '완료',
-    stars: 3,
-    creator: { name: '박보안', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=32&h=32&fit=crop&crop=face' },
-    contributors: [
-      { name: '박보안', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=32&h=32&fit=crop&crop=face' }
-    ],
-    lastUpdate: '2024.01.10',
-    github: 'https://github.com/ssg/malware-analyzer',
-    demo: null
-  },
-  {
-    id: 4,
-    title: 'Buffer Overflow 익스플로잇 도구',
-    description: '시스템 레벨 취약점을 분석하고 익스플로잇을 개발하는 도구입니다.',
-    image: 'https://images.pexels.com/photos/1181298/pexels-photo-1181298.jpeg?auto=compress&cs=tinysrgb&w=800',
-    tags: ['C', 'Assembly', 'GDB', 'Pwntools'],
-    category: '시스템 해킹',
-    topicSlug: 'system-hacking',
-    status: '계획중',
-    stars: 8,
-    creator: { name: '최유진', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=32&h=32&fit=crop&crop=face' },
-    contributors: [
-      { name: '최유진', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=32&h=32&fit=crop&crop=face' },
-      { name: '이민호', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=32&h=32&fit=crop&crop=face' }
-    ],
-    lastUpdate: '2024.01.08',
-    github: 'https://github.com/ssg/buffer-overflow-tool',
-    demo: null
-  },
-  {
-    id: 5,
-    title: '디지털 포렌식 분석 툴킷',
-    description: '디지털 증거 수집 및 분석을 위한 통합 도구입니다.',
-    image: 'https://images.pexels.com/photos/1181467/pexels-photo-1181467.jpeg?auto=compress&cs=tinysrgb&w=800',
-    tags: ['Python', 'Volatility', 'Autopsy', 'Wireshark'],
-    category: '디지털 포렌식',
-    topicSlug: 'digital-forensics',
-    status: '진행중',
-    stars: 15,
-    creator: { name: '정현우', avatar: 'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=32&h=32&fit=crop&crop=face' },
-    contributors: [
-      { name: '정현우', avatar: 'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=32&h=32&fit=crop&crop=face' },
-      { name: '송미래', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b098?w=32&h=32&fit=crop&crop=face' },
-      { name: '한진우', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face' }
-    ],
-    lastUpdate: '2024.01.12',
-    github: 'https://github.com/ssg/forensics-toolkit',
-    demo: null
-  },
-  {
-    id: 6,
-    title: '네트워크 침입 탐지 시스템',
-    description: '네트워크 트래픽을 분석하여 침입을 탐지하고 차단하는 시스템입니다.',
-    image: 'https://images.pexels.com/photos/1181316/pexels-photo-1181316.jpeg?auto=compress&cs=tinysrgb&w=800',
-    tags: ['Python', 'Scapy', 'iptables', 'Suricata'],
-    category: '네트워크 보안',
-    topicSlug: 'network-security',
-    status: '완료',
-    stars: 23,
-    creator: { name: '한소영', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=32&h=32&fit=crop&crop=face' },
-    contributors: [
-      { name: '한소영', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=32&h=32&fit=crop&crop=face' },
-      { name: '권태현', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face' },
-      { name: '이다은', avatar: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=32&h=32&fit=crop&crop=face' }
-    ],
-    lastUpdate: '2024.01.18',
-    github: 'https://github.com/ssg/network-ids',
-    demo: 'https://ids.ssg.com'
-  },
-  {
-    id: 7,
-    title: 'IoT 디바이스 펌웨어 분석기',
-    description: 'IoT 기기의 펌웨어를 추출하고 보안 취약점을 분석하는 도구입니다.',
-    image: 'https://images.pexels.com/photos/1181345/pexels-photo-1181345.jpeg?auto=compress&cs=tinysrgb&w=800',
-    tags: ['Python', 'Binwalk', 'UART', 'ARM'],
-    category: 'IoT보안',
-    topicSlug: 'iot-security',
-    status: '진행중',
-    stars: 11,
-    creator: { name: '김도현', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face' },
-    contributors: [
-      { name: '김도현', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face' },
-      { name: '박수진', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b098?w=32&h=32&fit=crop&crop=face' }
-    ],
-    lastUpdate: '2024.01.14',
-    github: 'https://github.com/ssg/iot-firmware-analyzer',
-    demo: null
-  },
-  {
-    id: 8,
-    title: 'RSA 암호 구현 및 분석',
-    description: 'RSA 암호 알고리즘을 구현하고 보안성을 분석하는 프로젝트입니다.',
-    image: 'https://images.pexels.com/photos/1181298/pexels-photo-1181298.jpeg?auto=compress&cs=tinysrgb&w=800',
-    tags: ['Python', 'RSA', 'Number Theory', 'Sage'],
-    category: '암호학',
-    topicSlug: 'cryptography',
-    status: '완료',
-    stars: 19,
-    creator: { name: '이수민', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=32&h=32&fit=crop&crop=face' },
-    contributors: [
-      { name: '이수민', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=32&h=32&fit	crop&crop=face' },
-      { name: '정하늘', avatar: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=32&h=32&fit=crop&crop=face' },
-      { name: '김재현', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=32&h=32&fit=crop&crop=face' }
-    ],
-    lastUpdate: '2024.01.16',
-    github: 'https://github.com/ssg/rsa-implementation',
-    demo: 'https://rsa.ssg.com'
+// Elasticsearch API 호출 함수 - 검색 제안
+const fetchElasticSearchSuggestions = async (query: string): Promise<string[]> => {
+  if (!query || query.trim().length === 0) {
+    return [];
+
   }
-];
+
+  try {
+    const response = await fetch(
+      `https://api.sejongssg.kr/elastic-service/api/elastic/project/suggestion?query=${encodeURIComponent(query)}`,
+      {
+        method: 'GET',
+        headers: {
+          'accept': 'application/json',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      console.error('Elasticsearch API error:', response.status);
+      return [];
+    }
+
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error('Error fetching Elasticsearch suggestions:', error);
+    return [];
+  }
+};
+
+// 프로젝트 상태 한글 → 영어 변환
+const statusToEnglish = (status: string): string => {
+  const statusMap: Record<string, string> = {
+    '진행중': 'IN_PROGRESS',
+    '완료': 'COMPLETED',
+    '계획중': 'ARCHIVED'
+  };
+  return statusMap[status] || '';
+};
+
+// 정렬 한글 → 영어 변환
+const sortToEnglish = (sort: string): string => {
+  const sortMap: Record<string, string> = {
+    '최신순': 'LATEST',
+    '인기순': 'POPULAR',
+    '이름순': 'NAME'
+  };
+  return sortMap[sort] || 'LATEST';
+};
+
+// 한글 카테고리 → 영어 대문자 변환 (API는 하이픈 형식 사용)
+const categoryToEnglish = (categoryName: string): string | null => {
+  const categoryType = CategoryHelpers.getTypeByDisplayName(categoryName);
+  if (!categoryType) return null;
+  // 언더스코어를 하이픈으로 변환 (예: WEB_HACKING -> WEB-HACKING)
+  return categoryType.replace(/_/g, '-');
+};
+
+// 프로젝트 검색 API 호출 함수
+interface ProjectSearchParams {
+  query?: string;
+  projectStatus?: string;
+  categories?: string;
+  projectSortType?: string;
+  size?: number;
+  page?: number;
+}
+
+interface ProjectSearchResponse {
+  content: any[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+const fetchProjects = async (params: ProjectSearchParams): Promise<ProjectSearchResponse> => {
+  try {
+    const queryParams = new URLSearchParams();
+    
+    // query 처리: 검색어가 있을 때만 전송, 없으면 생략
+    // 사용자 예시를 보면 query=%20을 보내지만, 초기 로드 시에는 생략하는 게 맞을 수도 있음
+    if (params.query && params.query.trim()) {
+      queryParams.append('query', params.query.trim());
+    } else {
+      // 빈 값일 때는 공백으로 전송 (사용자 예시에 따르면)
+      queryParams.append('query', ' ');
+    }
+    
+    // projectStatus 처리: 빈 값이면 파라미터 생략, 있으면 각각 추가
+    if (params.projectStatus && params.projectStatus.trim() !== '') {
+      // 여러 개일 경우 각각 추가
+      const statuses = params.projectStatus.split(',');
+      statuses.forEach(status => {
+        if (status.trim()) {
+          queryParams.append('projectStatus', status.trim());
+        }
+      });
+    }
+    // 빈 값일 때는 파라미터를 전송하지 않음 (API가 빈 값을 받지 못함)
+    
+    // categories가 있으면 추가 (여러 개일 경우 각각 추가)
+    if (params.categories) {
+      const cats = params.categories.split(',');
+      cats.forEach(cat => {
+        if (cat.trim()) {
+          queryParams.append('categories', cat.trim());
+        }
+      });
+    }
+    
+    // projectSortType은 항상 전송 (기본값: LATEST)
+    queryParams.append('projectSortType', params.projectSortType || 'LATEST');
+    
+    // size와 page는 항상 전송
+    queryParams.append('size', (params.size || 12).toString());
+    queryParams.append('page', (params.page || 0).toString());
+
+    const url = `https://api.sejongssg.kr/elastic-service/api/elastic/project/search?${queryParams.toString()}`;
+    
+    // 디버깅을 위한 상세 로그
+    const queryValue = params.query && params.query.trim() ? params.query.trim() : ' ';
+    console.log('=== API Request Debug ===');
+    console.log('Full URL:', url);
+    console.log('Decoded URL:', decodeURIComponent(url));
+    console.log('Params:', {
+      query: queryValue,
+      projectStatus: params.projectStatus || 'none',
+      categories: params.categories || 'none',
+      projectSortType: params.projectSortType || 'LATEST',
+      size: params.size || 12,
+      page: params.page || 0
+    });
+    console.log('========================');
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      // 에러 응답 본문 읽기
+      let errorMessage = `API error: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        console.error('API Error Response:', errorData);
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch (e) {
+        const errorText = await response.text();
+        console.error('API Error Text:', errorText);
+      }
+      throw new Error(errorMessage);
+    }
+
+    const data: ProjectSearchResponse = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching projects:', error);
+    return {
+      content: [],
+      page: 0,
+      size: 0,
+      totalElements: 0,
+      totalPages: 0
+    };
+  }
+};
 
 const categories = ['웹 해킹', '리버싱', '시스템 해킹', '디지털 포렌식', '네트워크 보안', 'IoT보안', '암호학'];
 const statuses = ['진행중', '완료', '계획중'];
+
+// 페이지 크기 설정
+const PAGE_SIZE = 6;
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -239,11 +254,24 @@ const AvatarStack = ({
 export default function ProjectsContent() {
   const searchParams = useSearchParams();
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(['진행중']); // 기본값: 진행중
   const [searchTerm, setSearchTerm] = useState('');
+  const [elasticSearchTerm, setElasticSearchTerm] = useState('');
+  const [projects, setProjects] = useState<any[]>([]);
+  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [sortBy, setSortBy] = useState('최신순');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [isSearching, setIsSearching] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
 
   const sortOptions = ['최신순', '인기순', '이름순'];
 
@@ -259,50 +287,190 @@ export default function ProjectsContent() {
     }
   }, [searchParams]);
 
+  // 프로젝트 검색 API 호출
+  const loadProjects = async (page: number = 0) => {
+    setIsLoading(true);
+    
+    try {
+      // 필터 파라미터 구성
+      const categoriesParam = selectedCategories.length > 0
+        ? selectedCategories.map(cat => categoryToEnglish(cat)).filter(Boolean).join(',')
+        : undefined;
+      
+      // 프로젝트 상태: 선택되지 않았을 때는 undefined로 전송 (파라미터 생략)
+      const statusParam = selectedStatuses.length > 0
+        ? selectedStatuses.map(status => statusToEnglish(status)).join(',')
+        : undefined;
+
+      const searchQuery = searchTerm.trim() || ' ';
+
+      const response = await fetchProjects({
+        query: searchQuery,
+        projectStatus: statusParam,
+        categories: categoriesParam,
+        projectSortType: sortToEnglish(sortBy),
+        size: PAGE_SIZE,
+        page: page
+      });
+
+      // 기본 이미지 URL
+      const defaultImageUrl = 'https://images.pexels.com/photos/577585/pexels-photo-577585.jpeg?auto=compress&cs=tinysrgb&w=800';
+      
+      // 이미지 URL 검증 함수
+      const getValidImageUrl = (url: string | null | undefined): string => {
+        if (!url || typeof url !== 'string' || url.trim() === '') {
+          return defaultImageUrl;
+        }
+        // 유효한 URL인지 확인 (http:// 또는 https://로 시작)
+        if (url.startsWith('http://') || url.startsWith('https://')) {
+          return url;
+        }
+        // 상대 경로인 경우 기본 이미지 사용
+        return defaultImageUrl;
+      };
+
+      // API 응답을 기존 프로젝트 형식으로 변환
+      const transformedProjects = response.content.map((item: any) => ({
+        id: item.id,
+        title: item.title || '제목 없음',
+        description: item.description || '',
+        image: getValidImageUrl(item.thumbnailUrl),
+        tags: item.projectTechStacks || [],
+        category: item.projectCategories?.[0] ? 
+          CategoryDisplayNames[item.projectCategories[0] as CategoryType] || item.projectCategories[0] : 
+          '',
+        topicSlug: item.projectCategories?.[0] ? 
+          CategoryHelpers.getSlug(item.projectCategories[0] as CategoryType) : 
+          '',
+        status: item.projectStatus === 'IN_PROGRESS' ? '진행중' :
+                item.projectStatus === 'COMPLETED' ? '완료' :
+                item.projectStatus === 'ARCHIVED' ? '계획중' : '진행중',
+        stars: item.likeCount || 0,
+        likeCount: item.likeCount || 0,
+        viewCount: item.viewCount || 0,
+        creator: { name: 'Unknown', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face' },
+        contributors: [],
+        lastUpdate: item.updatedAt || item.createdAt || '',
+        github: '',
+        demo: null
+      }));
+
+      setProjects(transformedProjects);
+      setTotalPages(response.totalPages);
+      setTotalElements(response.totalElements);
+      setCurrentPage(response.page);
+    } catch (error) {
+      console.error('Error loading projects:', error);
+      setProjects([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 초기 로드 및 필터/정렬/검색 변경 시 API 호출
+  useEffect(() => {
+    // 검색어 debounce 처리
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    if (searchTerm.length > 0) {
+      setIsSearching(true);
+      debounceTimerRef.current = setTimeout(async () => {
+        // 검색 제안 가져오기
+        const suggestions = await fetchElasticSearchSuggestions(searchTerm);
+        if (suggestions.length > 0 && typeof suggestions[0] === 'string') {
+          setSearchSuggestions(suggestions);
+          setShowSuggestions(true);
+        } else {
+          setSearchSuggestions([]);
+        }
+        setIsSearching(false);
+        // 검색어가 변경되면 첫 페이지로 이동
+        setCurrentPage(0);
+      }, 500);
+    } else {
+      setSearchSuggestions([]);
+      setShowSuggestions(false);
+      setIsSearching(false);
+      // 검색어가 비어있으면 첫 페이지로 이동
+      setCurrentPage(0);
+    }
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [searchTerm]);
+
+  // 필터/정렬/페이지 변경 시 API 호출
+  useEffect(() => {
+    loadProjects(currentPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategories, selectedStatuses, sortBy, currentPage, searchTerm]);
+
   const handleCategoryToggle = (category: string) => {
     setSelectedCategories(prev =>
       prev.includes(category)
         ? prev.filter(c => c !== category)
         : [...prev, category]
     );
+    setCurrentPage(0);
   };
 
   const handleStatusToggle = (status: string) => {
-    setSelectedStatuses(prev =>
-      prev.includes(status)
-        ? prev.filter(s => s !== status)
-        : [...prev, status]
-    );
+    // 라디오 버튼처럼 동작: 항상 하나만 선택, 같은 것을 다시 클릭해도 해제되지 않음
+    setSelectedStatuses([status]);
+    setCurrentPage(0);
   };
 
   const clearAllFilters = () => {
     setSelectedCategories([]);
-    setSelectedStatuses([]);
+    setSelectedStatuses(['진행중']); // 필터 초기화 시에도 진행중 유지
     setSearchTerm('');
+    setShowSuggestions(false);
+    setSearchSuggestions([]);
+    setCurrentPage(0);
   };
 
-  let filteredProjects = projects.filter(project => {
-    const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(project.category);
-    const matchesStatus = selectedStatuses.length === 0 || selectedStatuses.includes(project.status);
-    const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      project.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      project.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+  // 검색 제안 클릭 핸들러
+  const handleSuggestionClick = (suggestion: string) => {
+    setSearchTerm(suggestion);
+    setShowSuggestions(false);
+    setCurrentPage(0);
+    searchInputRef.current?.blur();
+  };
 
-    return matchesCategory && matchesStatus && matchesSearch;
-  });
-
-  // Sorting logic
-  filteredProjects = filteredProjects.sort((a, b) => {
-    switch (sortBy) {
-      case '인기순':
-        return b.stars - a.stars;
-      case '이름순':
-        return a.title.localeCompare(b.title);
-      case '최신순':
-      default:
-        return new Date(b.lastUpdate).getTime() - new Date(a.lastUpdate).getTime();
+  // 페이지 변경 핸들러
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 0 && newPage < totalPages) {
+      setCurrentPage(newPage);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  });
+  };
+
+  // 외부 클릭 시 드롭다운 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target as Node) &&
+        searchInputRef.current &&
+        !searchInputRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // API에서 받은 프로젝트를 그대로 사용 (필터링과 정렬은 API에서 처리)
+  const filteredProjects = projects;
 
   // Get current topic name for breadcrumb
   const currentTopicName = searchParams.get('topic')
@@ -339,14 +507,67 @@ export default function ProjectsContent() {
           <div className="flex items-center justify-between w-full">
             {/* Search Bar */}
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${isSearching ? 'text-primary animate-pulse' : 'text-gray-400'}`} />
               <input
+                ref={searchInputRef}
                 type="text"
                 placeholder="프로젝트 검색..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  if (e.target.value.length > 0) {
+                    setShowSuggestions(true);
+                  } else {
+                    setShowSuggestions(false);
+                  }
+                }}
+                onFocus={() => {
+                  if (searchSuggestions.length > 0) {
+                    setShowSuggestions(true);
+                  }
+                }}
                 className="w-full h-10 pl-10 pr-4 text-sm bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
               />
+              {isSearching && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              )}
+              
+              {/* 검색 제안 드롭다운 */}
+              {showSuggestions && searchSuggestions.length > 0 && searchTerm.length > 0 && (
+                <div
+                  ref={suggestionsRef}
+                  className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto"
+                >
+                  <div className="py-2">
+                    {searchSuggestions.map((suggestion, index) => {
+                      // 검색어와 일치하는 부분을 하이라이트
+                      const parts = suggestion.split(new RegExp(`(${searchTerm})`, 'gi'));
+                      return (
+                        <button
+                          key={index}
+                          onClick={() => handleSuggestionClick(suggestion)}
+                          className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center"
+                        >
+                          <Search className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
+                          <span className="flex-1">
+                            {parts.map((part, i) =>
+                              part.toLowerCase() === searchTerm.toLowerCase() ? (
+                                <span key={i} className="text-primary font-semibold">
+                                  {part}
+                                </span>
+                              ) : (
+                                <span key={i}>{part}</span>
+                              )
+                            )}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Controls Group */}
@@ -398,26 +619,25 @@ export default function ProjectsContent() {
               </div>
 
               <div className="p-4">
-                {/* Status Filters */}
+                {/* Status Filters - 라디오 버튼 스타일 (항상 하나만 선택) */}
                 <div className="space-y-3 mb-6">
                   <h4 className="text-base font-semibold text-gray-900">프로젝트 상태</h4>
                   {statuses.map((status) => (
                     <label key={status} className="flex items-center cursor-pointer">
                       <input
-                        type="checkbox"
+                        type="radio"
+                        name="projectStatus"
                         checked={selectedStatuses.includes(status)}
                         onChange={() => handleStatusToggle(status)}
                         className="sr-only"
                       />
-                      <div className={`w-4 h-4 border-2 rounded mr-3 flex items-center justify-center ${
+                      <div className={`w-4 h-4 border-2 rounded-full mr-3 flex items-center justify-center ${
                         selectedStatuses.includes(status)
-                          ? 'bg-primary border-primary'
+                          ? 'border-primary'
                           : 'border-gray-300'
                       }`}>
                         {selectedStatuses.includes(status) && (
-                          <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
+                          <div className="w-2 h-2 bg-primary rounded-full"></div>
                         )}
                       </div>
                       <span className="text-gray-700">{status}</span>
@@ -462,6 +682,9 @@ export default function ProjectsContent() {
               <p className="text-gray-600">
                 <span className="font-semibold text-primary">{filteredProjects.length}</span>개의 프로젝트
                 {searchTerm && ` (검색어: "${searchTerm}")`}
+                {elasticSearchTerm && elasticSearchTerm !== searchTerm && (
+                  <span className="text-xs text-gray-500 ml-1">→ "{elasticSearchTerm}"</span>
+                )}
                 {currentTopicName && ` (주제: ${currentTopicName})`}
               </p>
 
@@ -496,12 +719,21 @@ export default function ProjectsContent() {
               </div>
             </div>
 
+            {/* Loading State */}
+            {isLoading && (
+              <div className="text-center py-12">
+                <div className="inline-block w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                <p className="mt-4 text-gray-500">프로젝트를 불러오는 중...</p>
+              </div>
+            )}
+
             {/* Project Grid/List based on viewMode */}
-            <div className={viewMode === 'grid'
-              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-              : "space-y-6"
-            }>
-              {filteredProjects.map((project) => (
+            {!isLoading && (
+              <div className={viewMode === 'grid' 
+                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" 
+                : "space-y-6"
+              }>
+                {filteredProjects.map((project) => (
                 <div key={project.id} className={`group ${viewMode === 'list' ? 'flex gap-6' : ''}`}>
                   <div className={`bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-primary hover:shadow-lg transition-all duration-200 hover:-translate-y-1 ${
                     viewMode === 'list' ? 'flex flex-1' : ''
@@ -534,11 +766,30 @@ export default function ProjectsContent() {
                       }`}>
                         {project.title}
                       </h3>
-                      <p className={`text-gray-600 mb-4 leading-relaxed ${
+                      <p className={`text-gray-600 mb-3 leading-relaxed ${
                         viewMode === 'list' ? 'line-clamp-2' : 'line-clamp-3 text-sm'
                       }`}>
                         {project.description}
                       </p>
+
+                      {/* 기술 스택 태그 */}
+                      {project.tags && project.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {project.tags.slice(0, 5).map((tag: string, index: number) => (
+                            <span
+                              key={index}
+                              className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md border border-gray-200"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                          {project.tags.length > 5 && (
+                            <span className="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded-md border border-gray-200">
+                              +{project.tags.length - 5}
+                            </span>
+                          )}
+                        </div>
+                      )}
 
                       {/* Contributors Avatar Stack */}
                       <div className="mb-3">
@@ -546,6 +797,18 @@ export default function ProjectsContent() {
                           creator={project.creator}
                           contributors={project.contributors}
                         />
+                      </div>
+
+                      {/* 좋아요 수와 조회수 */}
+                      <div className="flex items-center gap-4 mb-3 text-sm">
+                        <div className="flex items-center gap-1 text-gray-700 font-medium">
+                          <Heart size={16} className="text-red-500 fill-red-500" />
+                          <span>{project.likeCount || 0}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-gray-700 font-medium">
+                          <Eye size={16} className="text-blue-600" />
+                          <span>{project.viewCount || 0}</span>
+                        </div>
                       </div>
 
                       <div className="flex justify-between items-center">
@@ -582,11 +845,12 @@ export default function ProjectsContent() {
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
             {/* No Results */}
-            {filteredProjects.length === 0 && (
+            {!isLoading && filteredProjects.length === 0 && (
               <div className="text-center py-12">
                 <p className="text-gray-500 text-lg mb-4">검색 조건에 맞는 프로젝트가 없습니다.</p>
                 <button
@@ -595,6 +859,69 @@ export default function ProjectsContent() {
                 >
                   필터 초기화
                 </button>
+              </div>
+            )}
+
+            {/* Pagination */}
+            {!isLoading && totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-8">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 0}
+                  className={`p-2 rounded-lg border transition-colors ${
+                    currentPage === 0
+                      ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <ChevronLeft size={20} />
+                </button>
+
+                {/* Page Numbers */}
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum: number;
+                    if (totalPages <= 5) {
+                      pageNum = i;
+                    } else if (currentPage < 3) {
+                      pageNum = i;
+                    } else if (currentPage > totalPages - 4) {
+                      pageNum = totalPages - 5 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`px-4 py-2 rounded-lg border transition-colors ${
+                          currentPage === pageNum
+                            ? 'bg-primary text-white border-primary'
+                            : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {pageNum + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= totalPages - 1}
+                  className={`p-2 rounded-lg border transition-colors ${
+                    currentPage >= totalPages - 1
+                      ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <ChevronRight size={20} />
+                </button>
+
+                <span className="ml-4 text-sm text-gray-500">
+                  {currentPage + 1} / {totalPages} 페이지
+                </span>
               </div>
             )}
           </div>

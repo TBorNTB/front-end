@@ -7,6 +7,8 @@ import { useAuth } from "@/context/AuthContext";
 import { ChevronDownIcon, BellIcon, Search, X, Menu, Shield } from "lucide-react";
 import { UserRoleDisplay, UserRole } from "@/types/core";
 import AlarmPopup from "./AlarmPopup";
+import { profileService, UserResponse } from "@/lib/api/services/user-service";
+import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 
 const navList = [
   { 
@@ -36,6 +38,7 @@ const Header = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAlarmPopupOpen, setIsAlarmPopupOpen] = useState(false);
+  const [profileData, setProfileData] = useState<UserResponse | null>(null);
   
   const dropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -65,6 +68,22 @@ const Header = () => {
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
+
+  // 프로필 정보 로드
+  useEffect(() => {
+    if (isAuthenticated) {
+      const loadProfile = async () => {
+        try {
+          const profile = await profileService.getProfile();
+          setProfileData(profile);
+        } catch (error) {
+          console.error('Failed to load profile in header:', error);
+          // 에러가 발생해도 기존 user 데이터 사용
+        }
+      };
+      loadProfile();
+    }
+  }, [isAuthenticated]);
 
   const toggleDropdown = (slug: string) => {
     setDropdowns(prev => ({
@@ -136,11 +155,42 @@ const Header = () => {
   };
 
 
-  // Better user data handling with debugging
-  const displayName = user?.nickname || user?.full_name || '김민준';
-  const displayEmail = user?.email || 'kdr123@naver.com';
-  const displayRole = user?.role ? UserRoleDisplay[user.role as UserRole] : '외부인';  
-  const userInitial = displayName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || '?';
+  // URL 유효성 검사 함수
+  const isValidImageUrl = (url: string | null | undefined): string | null => {
+    if (!url || typeof url !== 'string') return null;
+    if (url.trim() === '' || url === 'string' || url === 'null' || url === 'undefined') return null;
+    // 상대 경로는 유효함
+    if (url.startsWith('/')) return url;
+    // 절대 URL 검사
+    try {
+      new URL(url);
+      return url;
+    } catch {
+      return null;
+    }
+  };
+
+  // API에서 가져온 프로필 데이터 우선 사용, 없으면 AuthContext의 user 데이터 사용
+  const displayName = profileData?.realName || profileData?.nickname || user?.nickname || user?.full_name || '사용자';
+  const displayEmail = profileData?.email || user?.email || '';
+  const profileImageUrl = isValidImageUrl(profileData?.profileImageUrl) || isValidImageUrl(user?.profile_image) || null;
+  
+  // Role 매핑: API 응답의 role을 UserRoleDisplay로 변환
+  const getDisplayRole = (role?: string): string => {
+    if (!role) return '외부인';
+    // UserRole enum 값과 매칭 시도
+    const roleKey = role.toUpperCase() as UserRole;
+    if (roleKey in UserRoleDisplay) {
+      return UserRoleDisplay[roleKey];
+    }
+    // 매칭되지 않으면 원본 role 반환
+    return role;
+  };
+  
+  const displayRole = profileData?.role 
+    ? getDisplayRole(profileData.role)
+    : (user?.role ? getDisplayRole(user.role) : '외부인');
+  const userInitial = displayName?.charAt(0)?.toUpperCase() || displayEmail?.charAt(0)?.toUpperCase() || '?';
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
@@ -282,9 +332,22 @@ const Header = () => {
                     onClick={() => toggleDropdown('userProfile')}
                     className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
                   >
-                    <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                      {userInitial}
-                    </div>
+                    {profileImageUrl ? (
+                      <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-primary-200">
+                        <ImageWithFallback
+                          src={profileImageUrl}
+                          alt={displayName}
+                          width={32}
+                          height={32}
+                          className="w-full h-full object-cover"
+                          showPlaceholder={false}
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                        {userInitial}
+                      </div>
+                    )}
                     <ChevronDownIcon className={`w-4 h-4 text-gray-400 transition-transform ${dropdowns.userProfile ? 'rotate-180' : ''}`} />
                   </button>
 
@@ -292,12 +355,25 @@ const Header = () => {
                     <div className="absolute top-full right-0 mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                       <div className="px-4 py-3 border-b border-gray-100">
                         <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-medium">
-                            {userInitial}
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900">{displayName}</p>
-                            <p className="text-sm text-gray-600">{displayEmail}</p>
+                          {profileImageUrl ? (
+                            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-200 flex-shrink-0">
+                              <ImageWithFallback
+                                src={profileImageUrl}
+                                alt={displayName}
+                                width={40}
+                                height={40}
+                                className="w-full h-full object-cover"
+                                showPlaceholder={false}
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-medium flex-shrink-0">
+                              {userInitial}
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-gray-900 truncate">{displayName}</p>
+                            <p className="text-sm text-gray-600 truncate">{displayEmail}</p>
                           </div>
                         </div>
                         <div className="mt-2 text-xs text-gray-600">
@@ -403,11 +479,24 @@ const Header = () => {
                 ) : (
                   <div className="space-y-2">
                     <div className="flex items-center space-x-3 pb-3">
-                      <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-medium">
-                        {userInitial}
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{displayName}</p>
+                      {profileImageUrl ? (
+                        <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-200 flex-shrink-0">
+                          <ImageWithFallback
+                            src={profileImageUrl}
+                            alt={displayName}
+                            width={40}
+                            height={40}
+                            className="w-full h-full object-cover"
+                            showPlaceholder={false}
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-medium flex-shrink-0">
+                          {userInitial}
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-gray-900 truncate">{displayName}</p>
                         <p className="text-sm text-gray-500">권한: {displayRole}</p>
                       </div>
                     </div>

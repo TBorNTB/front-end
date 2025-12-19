@@ -5,6 +5,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Mail, Shield, Clock, BookOpen, Users, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import Image from 'next/image';
+import NewsletterSubscribe from '@/components/newsletter/NewsletterSubscribe';
 
 const testimonials = [
   {
@@ -53,17 +54,7 @@ const faqs = [
 ];
 
 export default function SSGNewsletter() {
-  const [email, setEmail] = useState('');
-  const [category, setCategory] = useState('all');
-  const [isSubscribed, setIsSubscribed] = useState(false);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
-
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Handle subscription logic here
-    setIsSubscribed(true);
-    setTimeout(() => setIsSubscribed(false), 3000);
-  };
 
   const toggleFaq = (index: number) => {
     setExpandedFaq(expandedFaq === index ? null : index);
@@ -127,34 +118,15 @@ export default function SSGNewsletter() {
           <span className="text-gray-400">최신 보안 지식과 실습 문제를 직접 큐레이팅하여 보내드려요</span>
         </p>
 
-        {/* Glowing subscription form */}
+        {/* Glowing subscription CTA */}
         <div className="max-w-md mx-auto">
-          <form onSubmit={handleSubscribe} className="flex gap-3 mb-4">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="이메일 주소를 입력하세요"
-              className="flex-1 px-4 py-3 rounded-lg bg-black/70 border-2 border-primary-500/50 text-white placeholder-gray-400 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none backdrop-blur-sm"
-              required
-            />
-            <button 
-              type="submit"
-              className="text-black px-6 py-3 rounded-lg font-bold text-base transition-all shadow-lg glow-button flex items-center justify-center space-x-2 bg-gradient-to-r from-primary-500 to-secondary-300 hover:from-primary-600 hover:to-secondary-200 shadow-primary-500/30 hover:shadow-primary-500/50 whitespace-nowrap"
-            >
-              <Mail size={16} />
-              <span>구독하기</span>
-            </button>
-          </form>
-          
-          {isSubscribed && (
-            <div className="bg-black/50 backdrop-blur-sm border border-green-500/50 rounded-lg p-3">
-              <p className="text-green-400 text-sm flex items-center justify-center gap-2">
-                <Check size={16} />
-                구독이 완료되었습니다!
-              </p>
-            </div>
-          )}
+          <a 
+            href="#subscribe-form"
+            className="block text-center text-black px-6 py-3 rounded-lg font-bold text-base transition-all shadow-lg glow-button flex items-center justify-center space-x-2 bg-gradient-to-r from-primary-500 to-secondary-300 hover:from-primary-600 hover:to-secondary-200 shadow-primary-500/30 hover:shadow-primary-500/50 whitespace-nowrap"
+          >
+            <Mail size={16} />
+            <span>구독하기</span>
+          </a>
         </div>
 
         {/* Additional CTA hint */}
@@ -329,67 +301,9 @@ export default function SSGNewsletter() {
       </section>
 
       {/* Subscription Form */}
-      <section className="section py-20">
+      <section id="subscribe-form" className="section py-20">
         <div className="container">
-          <div className="max-w-2xl mx-auto">
-            <div className="card p-8">
-              <h2 className="text-2xl font-bold text-center text-primary-800 mb-8">
-                지금 구독하고 보안 전문가로 성장하세요
-              </h2>
-
-              <form onSubmit={handleSubscribe} className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    이메일 주소
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="example@email.com"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    관심 분야 (선택사항)
-                  </label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary"
-                  >
-                    <option value="all">전체</option>
-                    <option value="web-hacking">웹 해킹</option>
-                    <option value="reversing">리버싱</option>
-                    <option value="system-hacking">시스템 해킹</option>
-                    <option value="digital-forensics">디지털 포렌식</option>
-                    <option value="network-security">네트워크 보안</option>
-                    <option value="iot-security">IoT 보안</option>
-                    <option value="cryptography">암호학</option>
-                  </select>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full btn btn-primary py-4 text-lg font-semibold"
-                >
-                  무료로 구독하기
-                </button>
-              </form>
-
-              {isSubscribed && (
-                <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-green-800 text-center flex items-center justify-center gap-2">
-                    <Check className="w-5 h-5" />
-                    환영합니다! 구독이 완료되었습니다. 내일 아침 9시에 첫 번째 뉴스레터를 받아보세요.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
+          <NewsletterSubscribe />
         </div>
       </section>
 

@@ -1,11 +1,14 @@
 // app/mypage/layout.tsx
 'use client';
 
+import { useState, useEffect } from 'react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { User, Settings, Award, Activity, Bell } from 'lucide-react';
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
+import { profileService, UserResponse } from '@/lib/api/services/user-service';
 
 const menuItems = [
   { 
@@ -46,6 +49,53 @@ export default function MyPageLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [profile, setProfile] = useState<UserResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        setIsLoading(true);
+        const profileData = await profileService.getProfile();
+        setProfile(profileData);
+      } catch (err) {
+        console.error('Failed to load profile:', err);
+        // 에러가 발생해도 레이아웃은 계속 표시
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, []);
+
+  // URL 유효성 검사 함수
+  const isValidImageUrl = (url: string | null | undefined): string | null => {
+    if (!url || typeof url !== 'string') return null;
+    if (url.trim() === '' || url === 'string' || url === 'null' || url === 'undefined') return null;
+    // 상대 경로는 유효함
+    if (url.startsWith('/')) return url;
+    // 절대 URL 검사
+    try {
+      new URL(url);
+      return url;
+    } catch {
+      return null;
+    }
+  };
+
+  // 프로필 정보 표시용 변수
+  const displayName = profile?.realName || profile?.nickname || profile?.username || '사용자';
+  const displayEmail = profile?.email || 'API 연결이 필요합니다';
+  const displayRole = profile?.role || 'Member';
+  const displayAvatar = isValidImageUrl(profile?.profileImageUrl) || '/default-avatar.png';
+
+  // 통계 정보는 API 응답에 없으므로 -1로 표시
+  const stats = {
+    projects: -1,
+    articles: -1,
+    badges: -1,
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -73,13 +123,25 @@ export default function MyPageLayout({
                   {/* User Info Header */}
                   <div className="p-6 bg-gradient-to-r from-primary-500 to-primary-600 text-white">
                     <div className="flex items-center space-x-4">
-                      <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-                        <User className="h-8 w-8" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-xl">김민수</h3>
-                        <p className="text-primary-100 text-sm">minsu.kim@ssg.ac.kr</p>
-                        <p className="text-primary-200 text-xs mt-1">Security Researcher</p>
+                      {isLoading ? (
+                        <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+                          <User className="h-8 w-8" />
+                        </div>
+                      ) : (
+                        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/30">
+                          <ImageWithFallback
+                            src={displayAvatar}
+                            alt={displayName}
+                            width={64}
+                            height={64}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-xl truncate">{displayName}</h3>
+                        <p className="text-primary-100 text-sm truncate">{displayEmail}</p>
+                        <p className="text-primary-200 text-xs mt-1">{displayRole}</p>
                       </div>
                     </div>
                   </div>
@@ -123,15 +185,21 @@ export default function MyPageLayout({
                       <p className="text-sm font-medium text-gray-700 mb-3">나의 활동</p>
                       <div className="flex justify-around">
                         <div className="text-center">
-                          <div className="text-xl font-bold text-primary-700">12</div>
+                          <div className="text-xl font-bold text-primary-700">
+                            {stats.projects === -1 ? '-' : stats.projects}
+                          </div>
                           <div className="text-xs text-gray-600">프로젝트</div>
                         </div>
                         <div className="text-center">
-                          <div className="text-xl font-bold text-secondary-700">20</div>
+                          <div className="text-xl font-bold text-secondary-700">
+                            {stats.articles === -1 ? '-' : stats.articles}
+                          </div>
                           <div className="text-xs text-gray-600">CS지식 글</div>
                         </div>
                         <div className="text-center">
-                          <div className="text-xl font-bold text-warning">5</div>
+                          <div className="text-xl font-bold text-warning">
+                            {stats.badges === -1 ? '-' : stats.badges}
+                          </div>
                           <div className="text-xs text-gray-600">획득 배지</div>
                         </div>
                       </div>
