@@ -8,6 +8,7 @@ import StatisticsSection from "@/components/landing/Statistics";
 import Topics from "@/components/landing/Topics";
 import Footer from "@/components/layout/Footer";
 import Header from "@/components/layout/Header";
+import { BASE_URL } from "@/lib/api/services/user-service";
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from "react";
 
@@ -187,7 +188,7 @@ export default function Home() {
         setError(null);
 
         const response = await fetch(
-          'https://api.sejongssg.kr/elastic-service/api/elastic/project/search/latest?size=10&page=0',
+          `${BASE_URL}/elastic-service/api/elastic/project/search/latest?size=10&page=0`,
           {
             method: 'GET',
             headers: {
@@ -267,7 +268,7 @@ export default function Home() {
         setArticlesError(null);
 
         const response = await fetch(
-          'https://api.sejongssg.kr/elastic-service/api/elastic/news/search/latest?page=0&size=10',
+          `${BASE_URL}/elastic-service/api/elastic/news/search/latest?page=0&size=10`,
           {
             method: 'GET',
             headers: {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { BASE_URL } from '@/lib/api/services/user-service';
 
 interface StatisticItemProps {
   number: string;
@@ -102,7 +103,7 @@ export default function StatisticsSection({ className = "" }: StatisticsSectionP
     const fetchStatistics = async () => {
       try {
         const response = await fetch(
-          'https://api.sejongssg.kr/meta-service/api/meta/count',
+          `${BASE_URL}/meta-service/api/meta/count`,
           {
             method: 'GET',
             headers: {

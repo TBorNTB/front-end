@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ExternalLink, Github, Grid, List, Plus, Search, ChevronDown, X, ChevronLeft, ChevronRight, Heart, Eye } from 'lucide-react';
 import { CategoryHelpers, CategoryType, CategoryDisplayNames } from '@/app/(main)/topics/types/category';
 import Image from 'next/image';
+import { BASE_URL } from '@/lib/api/services/user-service';
 
 // Elasticsearch API 호출 함수 - 검색 제안
 const fetchElasticSearchSuggestions = async (query: string): Promise<string[]> => {
@@ -16,7 +17,7 @@ const fetchElasticSearchSuggestions = async (query: string): Promise<string[]> =
 
   try {
     const response = await fetch(
-      `https://api.sejongssg.kr/elastic-service/api/elastic/project/suggestion?query=${encodeURIComponent(query)}`,
+      `${BASE_URL}/elastic-service/api/elastic/project/suggestion?query=${encodeURIComponent(query)}`,
       {
         method: 'GET',
         headers: {
@@ -126,7 +127,7 @@ const fetchProjects = async (params: ProjectSearchParams): Promise<ProjectSearch
     queryParams.append('size', (params.size || 12).toString());
     queryParams.append('page', (params.page || 0).toString());
 
-    const url = `https://api.sejongssg.kr/elastic-service/api/elastic/project/search?${queryParams.toString()}`;
+    const url = `${BASE_URL}/elastic-service/api/elastic/project/search?${queryParams.toString()}`;
     
     // 디버깅을 위한 상세 로그
     const queryValue = params.query && params.query.trim() ? params.query.trim() : ' ';
