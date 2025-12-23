@@ -37,6 +37,8 @@ export const API_ENDPOINTS = {
     UPDATE_USER: '/user-service/users',
     CONFIRM_USER: '/user-service/users/{username}/confirm',
     GRANT_ADMIN: '/user-service/users/{grantedUsername}/admin',
+    SEND_VERIFICATION_CODE: '/user-service/users/auth/verification-code',                                     
+    RESET_PASSWORD: '/user-service/users/auth/reset-password', 
   },
 
   // Token management
