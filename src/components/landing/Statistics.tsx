@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { BASE_URL } from '@/lib/api/services/user-service';
+import { BASE_URL } from '@/lib/api/config';
 
 interface StatisticItemProps {
   number: string;

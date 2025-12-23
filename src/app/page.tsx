@@ -8,7 +8,7 @@ import StatisticsSection from "@/components/landing/Statistics";
 import Topics from "@/components/landing/Topics";
 import Footer from "@/components/layout/Footer";
 import Header from "@/components/layout/Header";
-import { BASE_URL } from "@/lib/api/services/user-service";
+import { BASE_URL } from "@/lib/api/config";
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from "react";
 

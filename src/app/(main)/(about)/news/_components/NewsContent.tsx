@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Grid, List, Search, ChevronDown, X, ChevronLeft, ChevronRight, Heart, Eye, Calendar, User } from 'lucide-react';
 import { NewsCard } from './NewsCard';
 import Image from 'next/image';
-import { BASE_URL } from '@/lib/api/services/user-service';
+import { BASE_URL } from '@/lib/api/config';
 
 // News API Response Types
 interface NewsSearchParams {

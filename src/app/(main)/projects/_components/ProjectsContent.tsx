@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { ExternalLink, Github, Grid, List, Plus, Search, ChevronDown, X, ChevronLeft, ChevronRight, Heart, Eye } from 'lucide-react';
 import { CategoryHelpers, CategoryType, CategoryDisplayNames } from '@/app/(main)/topics/types/category';
 import Image from 'next/image';
-import { BASE_URL } from '@/lib/api/services/user-service';
+import { BASE_URL } from '@/lib/api/config';
 
 // Elasticsearch API 호출 함수 - 검색 제안
 const fetchElasticSearchSuggestions = async (query: string): Promise<string[]> => {

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { BASE_URL } from '@/lib/api/services/user-service';
+import { BASE_URL } from '@/lib/api/config';
 
 export async function POST(request: Request) {
   try {

@@ -1,7 +1,5 @@
-// lib/api/services/newsletter-service.ts
+// src/lib/api/services/newsletter-service.ts
 // Newsletter 구독 관련 API 서비스
-
-import { BASE_URL } from './user-service';
 
 // API 요청 타입 정의
 export type EmailFrequency = 'DAILY' | 'WEEKLY';

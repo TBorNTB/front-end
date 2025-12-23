@@ -1,6 +1,6 @@
 // src/app/api/auth/user/route.ts
 import { NextResponse } from 'next/server';
-import { BASE_URL, API_ENDPOINTS } from '@/lib/api/services/user-service';
+import { BASE_URL, API_ENDPOINTS } from '@/lib/api/config';
 //import { validateUserRole } from '@/lib/role-utils';
 
 export async function GET(request: Request) {
