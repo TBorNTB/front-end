@@ -3,16 +3,12 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import {
-  User,
-  Eye,
-  ThumbsUp,
-  MessageCircle,
   Search,
   Plus,
-  X,
   Grid,
   List,
   ChevronDown,
@@ -290,10 +286,10 @@ function ArticlesContent() {
           {/* 오른쪽: 뷰모드 + 정렬 + 새 글쓰기 */}
           <div className="flex items-center justify-end gap-3">
             {/* 새 글 쓰기 버튼 (디자인 유지용) */}
-            <button className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700">
+            <Link href="/articles/create" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700">
               <Plus className="w-4 h-4" />
               새 글 쓰기
-            </button>
+            </Link>
           </div>
         </section>
 

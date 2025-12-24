@@ -313,7 +313,9 @@ export default function ProjectsContent() {
     <div className="min-h-screen bg-background">
       <div className="w-full px-3 sm:px-4 lg:px-10 py-10">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-primary-600 mb-4">Projects</h1>
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <h1 className="text-4xl font-bold text-primary-600">Projects</h1>
+          </div>
           <p className="text-gray-600 text-lg max-w-3xl mx-auto">
             동아리 멤버들이 만들어낸 결과물을 만나보세요.
           </p>
@@ -370,10 +372,10 @@ export default function ProjectsContent() {
               </div>
 
               {/* Create Project Button */}
-              <button className="bg-primary text-white px-6 py-2 rounded-lg font-semibold hover:bg-primary-700 transition-colors flex items-center gap-2 whitespace-nowrap">
-                <Plus size={16} />
-                새 프로젝트 만들기
-              </button>
+              <Link href="/projects/create" className="bg-primary text-white px-6 py-2 rounded-lg font-semibold hover:bg-primary-700 transition-colors flex items-center gap-2 whitespace-nowrap">
+                  <Plus size={16} />
+                <span>새 프로젝트 만들기</span>
+              </Link>
             </div>
           </div>
         </div>
