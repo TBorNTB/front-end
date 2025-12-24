@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Grid, List, Search, ChevronDown, X, ChevronLeft, ChevronRight, Heart, Eye, Calendar, User } from 'lucide-react';
 import { NewsCard } from './NewsCard';
 import Image from 'next/image';
+import { BASE_URL } from '@/lib/api/config';
 
 // News API Response Types
 interface NewsSearchParams {
@@ -57,7 +58,7 @@ const fetchNews = async (params: NewsSearchParams): Promise<NewsSearchResponse> 
       queryParams.append('page', params.page.toString());
     }
 
-    const url = `https://api.sejongssg.kr/elastic-service/api/elastic/news/search?${queryParams.toString()}`;
+    const url = `${BASE_URL}/elastic-service/api/elastic/news/search?${queryParams.toString()}`;
     
     const response = await fetch(url, {
       method: 'GET',
@@ -101,7 +102,7 @@ const fetchElasticSearchSuggestions = async (query: string): Promise<string[]> =
 
   try {
     const response = await fetch(
-      `https://api.sejongssg.kr/elastic-service/api/elastic/news/suggestion?query=${encodeURIComponent(query)}`,
+      `${BASE_URL}/elastic-service/api/elastic/news/suggestion?query=${encodeURIComponent(query)}`,
       {
         method: 'GET',
         headers: {

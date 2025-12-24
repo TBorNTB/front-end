@@ -1,6 +1,6 @@
 //src/app/api/auth/login/route.ts
 import { NextResponse } from 'next/server';
-import { BASE_URL, API_ENDPOINTS } from '@/lib/api/services/user-service'; 
+import { BASE_URL, API_ENDPOINTS } from '@/lib/api/config'; 
 
 export async function POST(request: Request) {
   try {

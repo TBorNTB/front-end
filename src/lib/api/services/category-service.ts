@@ -1,7 +1,7 @@
-// lib/api/services/category-service.ts
+// src/lib/api/services/category-service.ts
 // 보안 학습 주제 조회 관련 API 서비스
 
-import { BASE_URL, API_ENDPOINTS } from './user-service';
+import { BASE_URL, API_ENDPOINTS } from '@/lib/api/config';
 
 // API 응답 타입 정의
 export interface CategoryItem {

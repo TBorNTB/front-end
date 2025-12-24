@@ -1,5 +1,5 @@
 // RAG API 호출 함수
-import { BASE_URL, API_ENDPOINTS } from "@/lib/api/services/user-service";
+import { BASE_URL, API_ENDPOINTS } from "@/lib/api/config";
 
 interface RAGRequest {
   query: string;
