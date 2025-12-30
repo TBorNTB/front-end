@@ -1,0 +1,193 @@
+@import "tailwindcss";
+
+@theme {
+  /* SSG Brand Colors */
+  --color-primary: #3a4da1;
+  --color-secondary: #6caaef;
+  --color-text: #1f2937;
+  --color-background: #e2eefc;
+  --color-foreground: #060810;
+  --color-gradient-background: radial-gradient(ellipse at top, #e2eefc, #3a4da1);
+  
+  /* Primary Scale */
+  --color-primary-50: #ebedf6;
+  --color-primary-100: #c2c8e2;
+  --color-primary-200: #a4add4;
+  --color-primary-300: #7b88c0;
+  --color-primary-400: #6171b4;
+  --color-primary-500: #3a4da1;
+  --color-primary-600: #354693;
+  --color-primary-700: #293772;
+  --color-primary-800: #202a59;
+  --color-primary-900: #182044;
+  
+  /* Secondary Scale */
+  --color-secondary-50: #f0f7fd;
+  --color-secondary-100: #e9f2fd;
+  --color-secondary-200: #d1e5fa;
+  --color-secondary-300: #9dc6f4;
+  --color-secondary-400: #89bbf2;
+  --color-secondary-500: #6caaef;
+  --color-secondary-600: #629bd9;
+  --color-secondary-700: #4d79aa;
+  --color-secondary-800: #3b5e83;
+  --color-secondary-900: #2d4764;
+  
+  /* Gray Scale */
+  --color-gray-50: #fbfbfc;
+  --color-gray-100: #f2f3f7;
+  --color-gray-200: #ecedf3;
+  --color-gray-300: #e3e5ed;
+  --color-gray-400: #dde0e9;
+  --color-gray-500: #d5d8e4;
+  --color-gray-600: #c2c5cf;
+  --color-gray-700: #9799a2;
+  --color-gray-800: #75777d;
+  --color-gray-900: #595b60;
+
+  /* Semantic Colors - Using utility-specific namespaces */
+  --color-error: #EF4444;
+  --color-success: #16A34A;
+  --color-warning: #D1B400;
+  --color-info: var(--color-primary);
+
+  /* For text utilities (text-error, text-success, etc.) */
+  --text-color-error: #EF4444;
+  --text-color-success: #16A34A;
+  --text-color-warning: #D1B400;
+  --text-color-info: var(--color-primary);
+
+  /* For background utilities (bg-error, bg-success, etc.) */
+  --background-color-error: #FEE2E2;
+  --background-color-success: #BBF7D1;
+  --background-color-warning: #FEFFC1;
+  --background-color-info: var(--color-secondary-100);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-gray-200);
+  }
+  
+  body {
+    background-color: theme(--color-background);
+    color: theme(--color-foreground);
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  .bg-gradient-background {
+  background: var(--color-gradient-background);
+}
+  .btn {
+    @apply inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer border-0 outline-none px-4 py-2;
+  }
+
+  .btn:focus-visible {
+    @apply outline-2 outline-primary-500 outline-offset-2;
+  }
+
+  .btn:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply bg-primary-500 text-white shadow-sm;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    @apply bg-primary-600 shadow-md;
+  }
+
+  .btn-lg {
+    @apply h-12 px-6 text-base;
+  }
+
+  .card {
+    @apply bg-white rounded-xl border border-primary-200 p-6 shadow-sm transition-shadow duration-200;
+  }
+
+  .card:hover {
+    @apply shadow-md;
+  }
+
+  .container {
+    @apply max-w-7xl mx-auto px-4;
+  }
+
+  .section {
+    @apply py-12;
+  }
+}
+
+/* Chatbot Animations */
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 2s ease-in-out infinite;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+/* Custom Scrollbar for Chatbot */
+.chat-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb {
+  background: #c2c5cf;
+  border-radius: 3px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #9799a2;
+}
+
+/* Remove browser native password reveal icons */
+input::-ms-reveal {
+  display: none;
+}
+
+input::-webkit-credentials-auto-fill-button {
+  visibility: hidden;
+  position: absolute;
+  right: 0;
+}
