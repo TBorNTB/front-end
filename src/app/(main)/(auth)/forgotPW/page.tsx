@@ -1,6 +1,7 @@
 // app/(main)/(auth)/forgot-password/page.tsx
 "use client";
 
+<<<<<<< HEAD
 import {
   Form,
   FormControl,
@@ -38,6 +39,43 @@ import {
 // Import API config
 import { API_ENDPOINTS, BASE_URL } from "@/lib/api/config";
 
+=======
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Mail, X, ArrowLeft, Send, Lock, Eye, EyeOff, CheckCircle, Timer } from "lucide-react";
+import Link from "next/link";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form";
+
+// Import co-located types and components
+import { 
+  forgotPasswordSchema,
+  verifyCodeSchema,
+  resetPasswordSchema,
+  ForgotPasswordFormData,
+  VerifyCodeFormData,
+  ResetPasswordFormData,
+  PasswordResetStep
+} from "../types/forgot-pw";
+
+// Import form utilities
+import { 
+  getIconInputClassName,
+  getPasswordInputClassName,
+  useAuthFormState, 
+  makeAuthenticatedRequest,
+  validatePasswordStrength
+} from "@/lib/form-utils";
+
+>>>>>>> api-merge
 // Import OTP component
 import { OTPInput } from "../_components/OTPInput";
 
@@ -82,12 +120,17 @@ export default function ForgotPasswordPage() {
     }, 1000);
   };
 
+<<<<<<< HEAD
   // Step 1: Send password reset email (백엔드 직접 호출)
+=======
+  // Step 1: Send password reset email
+>>>>>>> api-merge
   const handleEmailSubmit = async (values: ForgotPasswordFormData) => {
     setIsLoading(true);
     resetStates();
 
     try {
+<<<<<<< HEAD
       const response = await fetch(
         `${BASE_URL}${API_ENDPOINTS.USERS.SEND_VERIFICATION_CODE}`,
         {
@@ -96,6 +139,12 @@ export default function ForgotPasswordPage() {
           body: JSON.stringify({ email: values.email }),
         }
       );
+=======
+      const response = await makeAuthenticatedRequest("/api/auth/forgot-password", {
+        method: "POST",
+        body: JSON.stringify(values),
+      });
+>>>>>>> api-merge
 
       const data = await response.json();
 
@@ -114,6 +163,7 @@ export default function ForgotPasswordPage() {
     }
   };
 
+<<<<<<< HEAD
   const handleCodeSubmit = async (values: VerifyCodeFormData) => {
     setCurrentStep('reset');
     resetForm.setValue('email', values.email);
@@ -121,11 +171,42 @@ export default function ForgotPasswordPage() {
   };
 
   // Step 2: Reset password (백엔드 직접 호출)
+=======
+  // Step 2: Verify code
+  const handleCodeSubmit = async (values: VerifyCodeFormData) => {
+    setIsLoading(true);
+    resetStates();
+
+    try {
+      const response = await makeAuthenticatedRequest("/api/auth/verify-reset-code", {
+        method: "POST",
+        body: JSON.stringify(values),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setCurrentStep('reset');
+        resetForm.setValue('email', values.email);
+        resetForm.setValue('verificationCode', values.verificationCode);
+      } else {
+        handleError(new Error(data.message || "인증코드가 올바르지 않습니다."));
+      }
+    } catch (err) {
+      handleError(err, "인증 중 오류가 발생했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Step 3: Reset password
+>>>>>>> api-merge
   const handlePasswordReset = async (values: ResetPasswordFormData) => {
     setIsLoading(true);
     resetStates();
 
     try {
+<<<<<<< HEAD
       const response = await fetch(
         `${BASE_URL}${API_ENDPOINTS.USERS.RESET_PASSWORD}`,
         {
@@ -138,6 +219,16 @@ export default function ForgotPasswordPage() {
           }),
         }
       );
+=======
+      const response = await makeAuthenticatedRequest("/api/auth/reset-password", {
+        method: "POST",
+        body: JSON.stringify({
+          email: values.email,
+          verificationCode: values.verificationCode,
+          newPassword: values.newPassword,
+        }),
+      });
+>>>>>>> api-merge
 
       const data = await response.json();
 
@@ -272,7 +363,11 @@ export default function ForgotPasswordPage() {
         <div className="flex flex-col items-center justify-center w-1/3 bg-gradient-to-br from-blue-500 to-blue-700 p-10 text-center">
           <Send className="w-16 h-16 text-white mb-4" />
           <h2 className="mb-2 text-2xl font-bold text-white">인증코드 입력</h2>
+<<<<<<< HEAD
           <p className="mb-6 text-blue-100">이메일로 발송된 8자리 코드를 입력하세요</p>
+=======
+          <p className="mb-6 text-blue-100">이메일로 발송된 6자리 코드를 입력하세요</p>
+>>>>>>> api-merge
           <div className="px-4 py-2 bg-white/20 rounded-lg text-white text-sm">
             2단계 / 3단계
           </div>
@@ -294,7 +389,11 @@ export default function ForgotPasswordPage() {
             <p className="text-gray-600 mb-2">
               <span className="font-semibold text-primary-600">{email}</span>로 발송된
             </p>
+<<<<<<< HEAD
             <p className="text-gray-600">8자리 인증코드를 입력해주세요</p>
+=======
+            <p className="text-gray-600">6자리 인증코드를 입력해주세요</p>
+>>>>>>> api-merge
           </div>
 
           <Form {...codeForm}>
@@ -307,13 +406,21 @@ export default function ForgotPasswordPage() {
                     <FormControl>
                       <div className="space-y-4">
                         <OTPInput
+<<<<<<< HEAD
                           length={8}
+=======
+                          length={6}
+>>>>>>> api-merge
                           value={field.value || ''}
                           onChange={field.onChange}
                           onComplete={(code) => {
                             field.onChange(code);
                             // Auto-submit when code is complete (optional)
+<<<<<<< HEAD
                             if (code.length === 8) {
+=======
+                            if (code.length === 6) {
+>>>>>>> api-merge
                               setTimeout(() => {
                                 codeForm.handleSubmit(handleCodeSubmit)();
                               }, 500);
@@ -352,7 +459,11 @@ export default function ForgotPasswordPage() {
               <button 
                 type="submit" 
                 className="btn btn-primary btn-lg w-full" 
+<<<<<<< HEAD
                 disabled={isLoading || codeForm.watch('verificationCode')?.length !== 8}
+=======
+                disabled={isLoading || codeForm.watch('verificationCode')?.length !== 6}
+>>>>>>> api-merge
               >
                 {isLoading ? "확인 중..." : "인증코드 확인"}
               </button>

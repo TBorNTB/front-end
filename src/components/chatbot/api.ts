@@ -1,5 +1,9 @@
 // RAG API 호출 함수
+<<<<<<< HEAD
 import { BASE_URL, API_ENDPOINTS } from "@/lib/api/config";
+=======
+import { BASE_URL, API_ENDPOINTS } from "@/lib/api/endpoints/user";
+>>>>>>> api-merge
 
 interface RAGRequest {
   query: string;

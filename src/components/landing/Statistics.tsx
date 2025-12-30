@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+<<<<<<< HEAD
 import { BASE_URL } from '@/lib/api/config';
+=======
+>>>>>>> api-merge
 
 interface StatisticItemProps {
   number: string;
@@ -10,6 +13,7 @@ interface StatisticItemProps {
   delay?: number;
 }
 
+<<<<<<< HEAD
 interface ApiCountResponse {
   userCount: number;
   projectCount: number;
@@ -30,6 +34,8 @@ const formatNumber = (num: number): string => {
   return `${num}+`;
 };
 
+=======
+>>>>>>> api-merge
 const StatisticItem = ({ number, label, description, delay = 0 }: StatisticItemProps) => {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -75,23 +81,38 @@ interface StatisticsSectionProps {
 }
 
 export default function StatisticsSection({ className = "" }: StatisticsSectionProps) {
+<<<<<<< HEAD
   const [statistics, setStatistics] = useState([
     {
       number: '0+',
+=======
+  const statistics = [
+    {
+      number: '250+',
+>>>>>>> api-merge
       label: 'Active Projects',
       description: '활성 프로젝트'
     },
     {
+<<<<<<< HEAD
       number: '0+',
+=======
+      number: '1.2k+',
+>>>>>>> api-merge
       label: 'Articles Published',
       description: '게시된 아티클'
     },
     {
+<<<<<<< HEAD
       number: '0+',
+=======
+      number: '5k+',
+>>>>>>> api-merge
       label: '함께 멤버',
       description: '활발한 커뮤니티'
     },
     {
+<<<<<<< HEAD
       number: '0+',
       label: 'Learning Topics',
       description: '학습 주제'
@@ -150,6 +171,13 @@ export default function StatisticsSection({ className = "" }: StatisticsSectionP
 
     fetchStatistics();
   }, []);
+=======
+      number: '15+',
+      label: 'Learning Topics',
+      description: '학습 주제'
+    }
+  ];
+>>>>>>> api-merge
 
   return (
     <section className={`py-8 md:py-12 bg-white ${className}`}>

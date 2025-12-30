@@ -9,13 +9,22 @@ export const forgotPasswordSchema = z.object({
 export const verifyCodeSchema = z.object({
   email: z.string().email(),
   verificationCode: z.string()
+<<<<<<< HEAD
     .length(8, { message: "인증코드는 8자리입니다." })
     .regex(/^[a-zA-Z0-9]{8}$/, { message: "인증코드는 숫자와 영어조합만 입력 가능합니다." }),
+=======
+    .length(6, { message: "인증코드는 6자리입니다." })
+    .regex(/^\d{6}$/, { message: "인증코드는 숫자만 입력 가능합니다." }),
+>>>>>>> api-merge
 });
 
 export const resetPasswordSchema = z.object({
   email: z.string().email(),
+<<<<<<< HEAD
   verificationCode: z.string().length(8),
+=======
+  verificationCode: z.string().length(6),
+>>>>>>> api-merge
   newPassword: z.string()
     .min(6, { message: "비밀번호는 최소 6글자 이상이어야 합니다." })
     .max(128, { message: "비밀번호는 128글자 이하여야 합니다." }),

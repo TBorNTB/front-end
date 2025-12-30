@@ -5,7 +5,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Mail, Shield, Clock, BookOpen, Users, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import Image from 'next/image';
-import NewsletterSubscribe from '@/components/newsletter/NewsletterSubscribe';
+import NewsletterSubscribe from './_components/NewsletterSubscribe';
 
 const testimonials = [
   {
@@ -122,7 +122,7 @@ export default function SSGNewsletter() {
         <div className="max-w-md mx-auto">
           <a 
             href="#subscribe-form"
-            className="block text-center text-black px-6 py-3 rounded-lg font-bold text-base transition-all shadow-lg glow-button flex items-center justify-center space-x-2 bg-gradient-to-r from-primary-500 to-secondary-300 hover:from-primary-600 hover:to-secondary-200 shadow-primary-500/30 hover:shadow-primary-500/50 whitespace-nowrap"
+            className="block text-center text-black px-6 py-3 rounded-lg font-bold text-base transition-all shadow-lg glow-button items-center justify-center space-x-2 bg-gradient-to-r from-primary-500 to-secondary-300 hover:from-primary-600 hover:to-secondary-200 shadow-primary-500/30 hover:shadow-primary-500/50 whitespace-nowrap"
           >
             <Mail size={16} />
             <span>구독하기</span>

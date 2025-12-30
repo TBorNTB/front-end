@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
+<<<<<<< HEAD
 import { BASE_URL, API_ENDPOINTS } from '@/lib/api/config';
+=======
+import { BASE_URL, API_ENDPOINTS } from '@/lib/api/endpoints/user';
+>>>>>>> api-merge
 
 export async function POST(request: Request) {
   try {

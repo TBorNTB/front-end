@@ -1,21 +1,33 @@
-/*import { cookies } from 'next/headers';
+// src/lib/client.ts
+// HTTP client - server-side only (cookies from next/headers)
+import { cookies } from 'next/headers';
+import { BASE_URL } from './config'; // Import config
 
-// ✅ Your existing configuration - single gateway URL
-const API_CONFIG = {
-  DEVELOPMENT: 'http://43.202.91.154:8000', // API Gateway
-};
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
-export const BASE_URL = API_CONFIG.DEVELOPMENT;
+interface RequestOptions {
+  method?: HttpMethod;
+  body?: any;
+  request?: Request; // API route request (to reuse incoming cookies)
+  headers?: Record<string, string>;
+  requireAuth?: boolean;
+}
 
-// ✅ Universal API client for all microservices through the gateway
+interface GatewayResult<T = unknown> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  status: number;
+}
+
 export class GatewayAPIClient {
   private baseURL: string;
 
   constructor() {
-    this.baseURL = BASE_URL;
+    this.baseURL = BASE_URL; // Use imported config ✅
   }
 
-  // ✅ Extract cookies for authorization
+  // ✅ Extract cookies for authorization (SSR or API routes)
   private async getCookieHeader(request?: Request): Promise<string | null> {
     try {
       if (request) {
@@ -33,94 +45,85 @@ export class GatewayAPIClient {
     }
   }
 
-  // ✅ Check if auth cookies exist
   private hasAuthCookies(cookieHeader: string | null): boolean {
     if (!cookieHeader) return false;
-    return cookieHeader.includes('accessToken') || 
-           cookieHeader.includes('refreshToken') || 
-           cookieHeader.includes('sessionToken');
+    return (
+      cookieHeader.includes('accessToken') ||
+      cookieHeader.includes('refreshToken') ||
+      cookieHeader.includes('sessionToken')
+    );
   }
 
-  // ✅ Make authorized request to any microservice through the gateway
-  async request<T = any>(
-    endpoint: string, // e.g., '/user-service/users/profile'
-    options: {
-      method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-      body?: any;
-      request?: Request;
-      headers?: Record<string, string>;
-      requireAuth?: boolean;
-    } = {}
-  ): Promise<{
-    success: boolean;
-    data?: T;
-    error?: string;
-    status: number;
-  }> {
-    try {
-      const { method = 'GET', body, request, headers = {}, requireAuth = true } = options;
+  // ✅ Core request method to gateway
+  async request<T = unknown>(
+    endpoint: string,
+    options: RequestOptions = {}
+  ): Promise<GatewayResult<T>> {
+    const {
+      method = 'GET',
+      body,
+      request,
+      headers = {},
+      requireAuth = true,
+    } = options;
 
-      // ✅ Get authorization cookies
+    try {
       const cookieHeader = await this.getCookieHeader(request);
-      
+
       if (requireAuth && !this.hasAuthCookies(cookieHeader)) {
         return {
           success: false,
           error: 'Authentication required',
-          status: 401
+          status: 401,
         };
       }
 
-      // ✅ Build request for gateway
       const fetchOptions: RequestInit = {
         method,
         headers: {
-          'Accept': 'application/json',
+          Accept: 'application/json',
           'Content-Type': 'application/json',
-          ...(cookieHeader && { 'Cookie': cookieHeader }),
-          ...headers
+          ...(cookieHeader && { Cookie: cookieHeader }),
+          ...headers,
         },
-        cache: 'no-store'
+        cache: 'no-store',
       };
 
       if (body && method !== 'GET') {
         fetchOptions.body = JSON.stringify(body);
       }
 
-      // ✅ Call through the API gateway
-      const response = await fetch(`${this.baseURL}${endpoint}`, fetchOptions);
-      
-      if (response.ok) {
-        const data = await response.json();
+      const res = await fetch(`${this.baseURL}${endpoint}`, fetchOptions);
+
+      if (res.ok) {
+        const data = (await res.json().catch(() => null)) as T | null;
         return {
           success: true,
-          data,
-          status: response.status
-        };
-      } else {
-        // Handle auth failures gracefully
-        if (response.status === 401 || response.status === 403) {
-          return {
-            success: false,
-            error: 'Authentication failed',
-            status: response.status
-          };
-        }
-
-        const errorData = await response.json().catch(() => ({}));
-        return {
-          success: false,
-          error: errorData.message || 'Request failed',
-          status: response.status
+          data: data ?? undefined,
+          status: res.status,
         };
       }
 
+      if (res.status === 401 || res.status === 403) {
+        return {
+          success: false,
+          error: 'Authentication failed',
+          status: res.status,
+        };
+      }
+
+      const errorData = await res.json().catch(() => ({}));
+      return {
+        success: false,
+        error: (errorData as any).message || 'Request failed',
+        status: res.status,
+      };
     } catch (error) {
       console.error('Gateway API request error:', error);
       return {
         success: false,
         error: 'Network error',
-        status: 500
+        status: 500,
       };
     }
   }
@@ -147,6 +150,5 @@ export class GatewayAPIClient {
   }
 }
 
-// ✅ Export single instance
+// ✅ Export single instance bound to BASE_URL
 export const apiClient = new GatewayAPIClient();
-*/

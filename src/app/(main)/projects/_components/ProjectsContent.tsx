@@ -592,10 +592,10 @@ export default function ProjectsContent() {
               </div>
 
               {/* Create Project Button */}
-              <button className="bg-primary text-white px-6 py-2 rounded-lg font-semibold hover:bg-primary-700 transition-colors flex items-center gap-2 whitespace-nowrap">
-                <Plus size={16} />
-                새 프로젝트 만들기
-              </button>
+              <Link href="/projects/create" className="bg-primary text-white px-6 py-2 rounded-lg font-semibold hover:bg-primary-700 transition-colors flex items-center gap-2 whitespace-nowrap">
+                  <Plus size={16} />
+                <span>새 프로젝트 만들기</span>
+              </Link>
             </div>
           </div>
         </div>
@@ -632,13 +632,15 @@ export default function ProjectsContent() {
                         onChange={() => handleStatusToggle(status)}
                         className="sr-only"
                       />
-                      <div className={`w-4 h-4 border-2 rounded-full mr-3 flex items-center justify-center ${
+                      <div className={`w-4 h-4 border-2 rounded mr-3 flex items-center justify-center ${
                         selectedStatuses.includes(status)
-                          ? 'border-primary'
+                          ? 'bg-primary border-primary'
                           : 'border-gray-300'
                       }`}>
                         {selectedStatuses.includes(status) && (
-                          <div className="w-2 h-2 bg-primary rounded-full"></div>
+                          <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
                         )}
                       </div>
                       <span className="text-gray-700">{status}</span>
