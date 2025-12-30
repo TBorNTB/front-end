@@ -35,10 +35,6 @@ import {
   validatePasswordStrength
 } from "@/lib/form-utils";
 
-// Import API config
-import { BASE_URL } from "@/lib/api/config";
-import { USER_ENDPOINTS } from "@/lib/api/endpoints/user";
-
 // Import OTP component
 import { OTPInput } from "../_components/OTPInput";
 
@@ -83,20 +79,17 @@ export default function ForgotPasswordPage() {
     }, 1000);
   };
 
-  // Step 1: Send password reset email
+  // Step 1: Send password reset email - NOW CALLS YOUR API
   const handleEmailSubmit = async (values: ForgotPasswordFormData) => {
     setIsLoading(true);
     resetStates();
 
     try {
-      const response = await fetch(
-        `${BASE_URL}${USER_ENDPOINTS.USER.SEND_VERIFICATION_CODE}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: values.email }),
-        }
-      );
+      const response = await fetch('/api/auth/forgot-password', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: values.email }),
+      });
 
       const data = await response.json();
 
@@ -121,24 +114,21 @@ export default function ForgotPasswordPage() {
     resetForm.setValue('verificationCode', values.verificationCode);
   };
 
-  // Step 2: Reset password (백엔드 직접 호출)
+  // Step 3: Reset password - NOW CALLS YOUR API
   const handlePasswordReset = async (values: ResetPasswordFormData) => {
     setIsLoading(true);
     resetStates();
 
     try {
-      const response = await fetch(
-        `${BASE_URL}${USER_ENDPOINTS.USER.RESET_PASSWORD}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: values.email,
-            randomCode: values.verificationCode,  // 프론트에서 직접 매핑
-            newPassword: values.newPassword,
-          }),
-        }
-      );
+      const response = await fetch('/api/auth/reset-password', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: values.email,
+          verificationCode: values.verificationCode,
+          newPassword: values.newPassword,
+        }),
+      });
 
       const data = await response.json();
 
@@ -160,7 +150,7 @@ export default function ForgotPasswordPage() {
     
     setIsLoading(true);
     try {
-      await handleEmailSubmit({ email });
+      await handleEmailSubmit({ email } as ForgotPasswordFormData);
     } catch (err) {
       handleError(err, "재전송에 실패했습니다.");
     }

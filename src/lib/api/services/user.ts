@@ -1,6 +1,6 @@
 // src/lib/api/services/user-service.ts
 // User 관련 API 서비스 함수
-
+import { apiClient } from '@/lib/api/client';
 import { USER_ENDPOINTS, getUserApiUrl } from '@/lib/api/endpoints/user';
 
 // ✅ Helper function to get access token from cookies (client-side only)
@@ -42,6 +42,17 @@ export interface GetMembersParams {
   page?: number;
   size?: number;
 }
+
+export const userService = {
+  // Existing methods...
+  
+  // Forgot Password Flow
+  sendVerificationCode: (payload: { email: string }, request?: Request) =>
+    apiClient.post(USER_ENDPOINTS.USER.SEND_VERIFICATION_CODE, payload, request),
+
+  resetPassword: (payload: { email: string; randomCode: string; newPassword: string }, request?: Request) =>
+    apiClient.post(USER_ENDPOINTS.USER.RESET_PASSWORD, payload, request),
+} as const;
 
 /**
  * 멤버 조회 API 서비스
