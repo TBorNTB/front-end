@@ -1,9 +1,5 @@
 import { NextResponse } from 'next/server';
-<<<<<<< HEAD
-import { getApiUrl, API_ENDPOINTS } from '@/lib/api/config';
-=======
-import { getApiUrl, API_ENDPOINTS } from '@/lib/api/endpoints/user';
->>>>>>> api-merge
+import { getUserApiUrl, USER_ENDPOINTS } from '@/lib/api/endpoints/user';
 
 export async function POST(request: Request) {
   try {
@@ -19,7 +15,7 @@ export async function POST(request: Request) {
     });
 
     // ✅ Create user account
-    const signupApiUrl = getApiUrl(API_ENDPOINTS.USERS.SIGNUP);
+    const signupApiUrl = getUserApiUrl(USER_ENDPOINTS.USER.SIGNUP);
     console.log('🌐 Signup API URL:', signupApiUrl);
     
     const controller = new AbortController();

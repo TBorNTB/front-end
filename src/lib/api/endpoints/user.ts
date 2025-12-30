@@ -6,19 +6,22 @@ export const USER_ENDPOINTS = {
 
   // User-service endpoints
   USER: {
-    // Authentication endpoints
+    //user endpoints
     LOGIN: '/user-service/users/login',
     SIGNUP: '/user-service/users',
     LOGOUT: '/user-service/users/logout',
     ROLE: '/user-service/users/role/one',
     PROFILE: '/user-service/users/profile',
 
-    // User management endpoints
+    //admin endpoints
     GET_ALL: '/user-service/users',
+    GET_PAGED: '/user-service/users/page',
     DELETE_USER: '/user-service/users',
     UPDATE_USER: '/user-service/users',
     CONFIRM_USER: '/user-service/users/{username}/confirm',
     GRANT_ADMIN: '/user-service/users/{grantedUsername}/admin',
+    SEND_VERIFICATION_CODE: '/user-service/users/auth/verification-code',                                     
+    RESET_PASSWORD: '/user-service/users/auth/reset-password', 
   },
 
   // Token management
@@ -37,14 +40,10 @@ export const USER_ENDPOINTS = {
     RECEIVED: '/user-service/alarm/received',
   },
 
-  // RAG Service endpoints
-  RAG: {
-    QUERY: '/elastic-service/api/v1/rag/query',
-  },
 } as const;
 
 // ✅ Helper function with environment logging
-export const getApiUrl = (endpoint: string) => {
+export const getUserApiUrl = (endpoint: string) => {
   const url = `${BASE_URL}${endpoint}`;
 
   if (process.env.NODE_ENV === 'development') {
