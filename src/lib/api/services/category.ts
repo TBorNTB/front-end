@@ -2,7 +2,7 @@
 // 보안 학습 주제 조회 관련 API 서비스
 
 import { BASE_URL } from '@/lib/api/config';
-import { PROJECT_ENDPOINTS as API_ENDPOINTS } from '@/lib/api/endpoints/project';
+import { PROJECT_ENDPOINTS} from '@/lib/api/endpoints';
 
 // API 응답 타입 정의
 export interface CategoryItem {
@@ -27,7 +27,7 @@ export const categoryService = {
    */
   getCategories: async (): Promise<CategoryResponse> => {
     try {
-      const url = `${BASE_URL}${API_ENDPOINTS.PROJECT.GET_CATEGORIES}`;
+      const url = `${BASE_URL}${PROJECT_ENDPOINTS.PROJECT.GET_CATEGORIES}`;
 
       const response = await fetch(url, {
         method: 'GET',

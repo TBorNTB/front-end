@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import * as LabelPrimitive from "@radix-ui/react-label"
 import { Slot } from "@radix-ui/react-slot"
 import {
   Controller,
@@ -14,7 +13,8 @@ import {
 } from "react-hook-form"
 
 import { cn } from "@/lib/utils"
-import { Label } from "@/components/ui/label"
+import { Label, type LabelProps } from "@/components/ui/label"
+
 
 const Form = FormProvider
 
@@ -87,20 +87,35 @@ function FormItem({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+type FormLabelProps = Omit<LabelProps, "htmlFor"> & {
+  children?: React.ReactNode
+  htmlFor?: string
+  className?: string
+}
+
 function FormLabel({
   className,
+  children,
+  htmlFor,
   ...props
-}: React.ComponentProps<typeof LabelPrimitive.Root>) {
+}: FormLabelProps) {
   const { error, formItemId } = useFormField()
 
   return (
-    <Label
-      data-slot="form-label"
+    <label
+      // `htmlFor` should be linked to the form item id when not explicitly set
+      htmlFor={htmlFor ?? formItemId}
+      data-slot="label"
       data-error={!!error}
-      className={cn("data-[error=true]:text-destructive", className)}
-      htmlFor={formItemId}
+      className={cn(
+        "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+        error && "text-destructive",
+        className
+      )}
       {...props}
-    />
+    >
+      {children}
+    </label>
   )
 }
 

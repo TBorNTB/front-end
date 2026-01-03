@@ -1,13 +1,8 @@
 // app/(main)/(auth)/components/OTPInput.tsx
 "use client";
 
-<<<<<<< HEAD
-import { getOTPInputClassName } from '@/lib/form-utils';
-import { useEffect, useRef, useState } from 'react';
-=======
 import { useState, useRef, useEffect } from 'react';
 import { getOTPInputClassName } from '@/lib/form-utils';
->>>>>>> api-merge
 
 interface OTPInputProps {
   length?: number;
@@ -37,29 +32,17 @@ export function OTPInput({
     }
   }, [autoFocus]);
 
-<<<<<<< HEAD
   const handleChange = (index: number, char: string) => {
     if (!/^[a-zA-Z0-9]*$/.test(char)) return; // Allow alphanumeric
 
     const newValue = value.split('');
     newValue[index] = char.toUpperCase(); // 대문자로 변환
-=======
-  const handleChange = (index: number, digit: string) => {
-    if (!/^\d*$/.test(digit)) return; // Only allow digits
-    
-    const newValue = value.split('');
-    newValue[index] = digit;
->>>>>>> api-merge
     const updatedValue = newValue.join('').slice(0, length);
     
     onChange(updatedValue);
     
     // Auto-focus next input
-<<<<<<< HEAD
     if (char && index < length - 1) {
-=======
-    if (digit && index < length - 1) {
->>>>>>> api-merge
       inputRefs.current[index + 1]?.focus();
       setActiveIndex(index + 1);
     }
@@ -89,11 +72,7 @@ export function OTPInput({
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-<<<<<<< HEAD
     const pastedData = e.clipboardData.getData('text').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, length);
-=======
-    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, length);
->>>>>>> api-merge
     onChange(pastedData);
     
     // Focus the next empty input or the last input
@@ -113,13 +92,8 @@ export function OTPInput({
           key={index}
           ref={(el) => { inputRefs.current[index] = el }}
           type="text"
-<<<<<<< HEAD
           inputMode="text"
           pattern="[a-zA-Z0-9]*"
-=======
-          inputMode="numeric"
-          pattern="\d*"
->>>>>>> api-merge
           maxLength={1}
           value={value[index] || ''}
           onChange={(e) => handleChange(index, e.target.value)}

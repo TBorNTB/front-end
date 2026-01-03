@@ -1,5 +1,6 @@
-// src/lib/api/client.ts
-// HTTP client for browser-side usage (no next/headers import)
+// src/lib/api/client.server.ts
+// Server-side HTTP client (Next.js RSC/API routes) that can read cookies via next/headers
+import { cookies } from 'next/headers';
 import { BASE_URL } from './config';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
@@ -19,28 +20,27 @@ interface GatewayResult<T = unknown> {
   status: number;
 }
 
-export class GatewayAPIClient {
+export class GatewayAPIServerClient {
   private baseURL: string;
 
   constructor() {
     this.baseURL = BASE_URL;
   }
 
-  // Extract cookies for authorization (client/env-agnostic, no next/headers)
+  // Extract cookies (server-only)
   private async getCookieHeader(request?: Request): Promise<string | null> {
     try {
       if (request?.headers) {
         return request.headers.get('cookie');
       }
 
-      // Client-side: document.cookie (httpOnly cookies still ride along with credentials)
-      if (typeof document !== 'undefined') {
-        return document.cookie || null;
-      }
-
-      return null; // SSR without request: caller should supply headers or use server client
+      const cookieStore = cookies();
+      const allCookies = (await cookieStore).getAll();
+      return allCookies.length
+        ? allCookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ')
+        : null;
     } catch (error) {
-      console.error('Error extracting cookies:', error);
+      console.error('Error extracting cookies (server client):', error);
       return null;
     }
   }
@@ -54,7 +54,6 @@ export class GatewayAPIClient {
     );
   }
 
-  // Core request method to gateway
   async request<T = unknown>(
     endpoint: string,
     options: RequestOptions = {}
@@ -70,7 +69,6 @@ export class GatewayAPIClient {
     try {
       const cookieHeader = await this.getCookieHeader(request);
 
-      // Pre-check only if we actually have readable cookies in this environment
       if (requireAuth && !this.hasAuthCookies(cookieHeader)) {
         return {
           success: false,
@@ -120,7 +118,7 @@ export class GatewayAPIClient {
         status: res.status,
       };
     } catch (error) {
-      console.error('Gateway API request error:', error);
+      console.error('Gateway API request error (server client):', error);
       return {
         success: false,
         error: 'Network error',
@@ -151,5 +149,5 @@ export class GatewayAPIClient {
   }
 }
 
-// Export single instance bound to BASE_URL
-export const apiClient = new GatewayAPIClient();
+// Export single instance for server usage
+export const serverApiClient = new GatewayAPIServerClient();

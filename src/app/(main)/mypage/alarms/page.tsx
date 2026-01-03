@@ -5,11 +5,7 @@ import { Alarm, AlarmType } from '@/types/alarm';
 import { Bell, MessageSquare, Reply, Heart, UserPlus, ChevronRight, Clock, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { UserRole } from '@/types/core';
-<<<<<<< HEAD
-import { alarmService, AlarmResponse } from '@/lib/api/services/alarm-service';
-=======
-import { alarmService, AlarmResponse } from '@/lib/api/endpoints/alarm';
->>>>>>> api-merge
+import { alarmService, AlarmResponse } from '@/lib/api/services/alarm';
 
 // API 응답을 Alarm 인터페이스로 변환
 const mapAlarmResponseToAlarm = (response: AlarmResponse): Alarm => {

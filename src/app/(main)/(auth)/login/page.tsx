@@ -242,11 +242,7 @@ export default function LogInPage() {
                 name="email"
                 render={({ field, fieldState }) => (
                   <FormItem>
-<<<<<<< HEAD
                     <FormLabel className="text-sm font-medium text-primary-600">이메일</FormLabel>
-=======
-                    <label className="text-sm font-medium text-primary-600">이메일</label>
->>>>>>> api-merge
                     <FormControl>
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -269,11 +265,7 @@ export default function LogInPage() {
                 name="password"
                 render={({ field, fieldState }) => (
                   <FormItem>
-<<<<<<< HEAD
                     <FormLabel className="text-sm font-medium text-primary-600">패스워드</FormLabel>
-=======
-                    <label className="text-sm font-medium text-primary-600">패스워드</label>
->>>>>>> api-merge
                     <FormControl>
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />

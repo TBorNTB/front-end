@@ -203,7 +203,6 @@ export default function ForgotPasswordPage() {
                 name="email"
                 render={({ field, fieldState }) => (
                   <FormItem>
-                    {/* @ts-expect-error - Type inference issue with FormLabel */}
                     <FormLabel className="text-sm font-medium text-primary-600">이메일 주소</FormLabel>
                     <FormControl>
                       <div className="relative">
@@ -396,7 +395,6 @@ export default function ForgotPasswordPage() {
                 name="newPassword"
                 render={({ field, fieldState }) => (
                   <FormItem>
-                    {/* @ts-expect-error - Type inference issue with FormLabel children prop */}
                     <FormLabel className="text-sm font-medium text-primary-600">새 비밀번호</FormLabel>
                     <FormControl>
                       <div className="relative">
@@ -456,7 +454,6 @@ export default function ForgotPasswordPage() {
                 name="confirmPassword"
                 render={({ field, fieldState }) => (
                   <FormItem>
-                    {/* @ts-expect-error - Type inference issue with FormLabel children prop */}
                     <FormLabel className="text-sm font-medium text-primary-600">비밀번호 확인</FormLabel>
                     <FormControl>
                       <div className="relative">

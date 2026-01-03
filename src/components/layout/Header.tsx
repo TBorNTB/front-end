@@ -7,11 +7,8 @@ import { useAuth } from "@/context/AuthContext";
 import { ChevronDownIcon, BellIcon, Search, X, Menu, Shield } from "lucide-react";
 import { UserRoleDisplay, UserRole } from "@/types/core";
 import AlarmPopup from "./AlarmPopup";
-<<<<<<< HEAD
 import { profileService, UserResponse } from "@/lib/api/services/user";
 import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
-=======
->>>>>>> api-merge
 
 const navList = [
   { 
@@ -41,10 +38,7 @@ const Header = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAlarmPopupOpen, setIsAlarmPopupOpen] = useState(false);
-<<<<<<< HEAD
   const [profileData, setProfileData] = useState<UserResponse | null>(null);
-=======
->>>>>>> api-merge
   
   const dropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -75,7 +69,6 @@ const Header = () => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
-<<<<<<< HEAD
   // 프로필 정보 로드
   useEffect(() => {
     if (isAuthenticated) {
@@ -92,8 +85,6 @@ const Header = () => {
     }
   }, [isAuthenticated]);
 
-=======
->>>>>>> api-merge
   const toggleDropdown = (slug: string) => {
     setDropdowns(prev => ({
       ...prev,
@@ -164,7 +155,6 @@ const Header = () => {
   };
 
 
-<<<<<<< HEAD
   // URL 유효성 검사 함수
   const isValidImageUrl = (url: string | null | undefined): string | null => {
     if (!url || typeof url !== 'string') return null;
@@ -201,13 +191,6 @@ const Header = () => {
     ? getDisplayRole(profileData.role)
     : (user?.role ? getDisplayRole(user.role) : '외부인');
   const userInitial = displayName?.charAt(0)?.toUpperCase() || displayEmail?.charAt(0)?.toUpperCase() || '?';
-=======
-  // Better user data handling with debugging
-  const displayName = user?.nickname || user?.full_name || '김민준';
-  const displayEmail = user?.email || 'kdr123@naver.com';
-  const displayRole = user?.role ? UserRoleDisplay[user.role as UserRole] : '외부인';  
-  const userInitial = displayName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || '?';
->>>>>>> api-merge
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
@@ -349,7 +332,6 @@ const Header = () => {
                     onClick={() => toggleDropdown('userProfile')}
                     className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
                   >
-<<<<<<< HEAD
                     {profileImageUrl ? (
                       <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-primary-200">
                         <ImageWithFallback
@@ -366,11 +348,6 @@ const Header = () => {
                         {userInitial}
                       </div>
                     )}
-=======
-                    <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                      {userInitial}
-                    </div>
->>>>>>> api-merge
                     <ChevronDownIcon className={`w-4 h-4 text-gray-400 transition-transform ${dropdowns.userProfile ? 'rotate-180' : ''}`} />
                   </button>
 
@@ -378,7 +355,6 @@ const Header = () => {
                     <div className="absolute top-full right-0 mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                       <div className="px-4 py-3 border-b border-gray-100">
                         <div className="flex items-center space-x-3">
-<<<<<<< HEAD
                           {profileImageUrl ? (
                             <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-200 flex-shrink-0">
                               <ImageWithFallback
@@ -398,14 +374,6 @@ const Header = () => {
                           <div className="min-w-0 flex-1">
                             <p className="font-medium text-gray-900 truncate">{displayName}</p>
                             <p className="text-sm text-gray-600 truncate">{displayEmail}</p>
-=======
-                          <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-medium">
-                            {userInitial}
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900">{displayName}</p>
-                            <p className="text-sm text-gray-600">{displayEmail}</p>
->>>>>>> api-merge
                           </div>
                         </div>
                         <div className="mt-2 text-xs text-gray-600">
@@ -511,7 +479,6 @@ const Header = () => {
                 ) : (
                   <div className="space-y-2">
                     <div className="flex items-center space-x-3 pb-3">
-<<<<<<< HEAD
                       {profileImageUrl ? (
                         <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-200 flex-shrink-0">
                           <ImageWithFallback
@@ -530,13 +497,6 @@ const Header = () => {
                       )}
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-gray-900 truncate">{displayName}</p>
-=======
-                      <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-medium">
-                        {userInitial}
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{displayName}</p>
->>>>>>> api-merge
                         <p className="text-sm text-gray-500">권한: {displayRole}</p>
                       </div>
                     </div>

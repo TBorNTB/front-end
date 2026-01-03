@@ -4,10 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, ArrowRight, Code, Search, Lock, Shield, Wifi, Cpu, Key } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-<<<<<<< HEAD
-import { categoryService, CategoryItem } from '@/lib/api/services/category-service';
-=======
->>>>>>> api-merge
+import { categoryService, CategoryItem } from '@/lib/api/services/category';
 
 // Define CategoryType enum inline
 enum CategoryType {
@@ -80,7 +77,6 @@ const CategoryHelpers = {
     };
     return slugs[type];
   },
-<<<<<<< HEAD
 
   // 카테고리 이름으로 CategoryType 찾기
   getTypeByName: (name: string): CategoryType | null => {
@@ -127,11 +123,6 @@ const transformApiResponseToTopics = (apiCategories: CategoryItem[]): Topic[] =>
 };
 
 // Fallback: 목 데이터 (API 실패 시 사용)
-=======
-};
-
-// Convert your category data to Topic format
->>>>>>> api-merge
 const getTopicsData = (): Topic[] => {
   const baseTopics: Array<{
     type: CategoryType;
@@ -149,11 +140,7 @@ const getTopicsData = (): Topic[] => {
 
   return baseTopics.map((topic, index) => ({
     id: `topic-${index + 1}`,
-<<<<<<< HEAD
     name: CategoryHelpers.getDisplayName(topic.type),
-=======
-    name: CategoryHelpers.getDisplayName(topic.type), // Korean name
->>>>>>> api-merge
     slug: CategoryHelpers.getSlug(topic.type),
     description: getCategoryDescription(topic.type),
     type: topic.type,
@@ -192,7 +179,6 @@ export default function TopicsSection({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-<<<<<<< HEAD
   const [topicsData, setTopicsData] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -222,11 +208,6 @@ export default function TopicsSection({
 
     fetchCategories();
   }, [externalTopics]);
-=======
-  
-  // Use external topics or fallback to static data
-  const topicsData = externalTopics || getTopicsData();
->>>>>>> api-merge
   
   const itemsPerPage = 8; // 4x2 grid (4 columns, 2 rows)
   const totalPages = Math.ceil(topicsData.length / itemsPerPage);
@@ -272,7 +253,6 @@ export default function TopicsSection({
     return topicsData.slice(startIndex, startIndex + itemsPerPage);
   };
 
-<<<<<<< HEAD
   // 로딩 상태
   if (loading) {
     return (
@@ -303,8 +283,6 @@ export default function TopicsSection({
     );
   }
 
-=======
->>>>>>> api-merge
   return (
     <section id="topics" className={`section bg-background ${className}`}>
       <div className="container">
