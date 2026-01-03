@@ -5,7 +5,7 @@ import { Mail, CheckCircle2, AlertCircle, Loader2, ArrowLeft } from 'lucide-reac
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { newsletterService, EmailFrequency } from '@/lib/api/services/newsletter-service';
+import { newsletterService, EmailFrequency } from '@/lib/api/services/newsletter';
 import { CategoryType, CategoryDisplayNames } from '@/app/(main)/topics/types/category';
 
 interface NewsletterSubscribeProps {
@@ -350,4 +350,3 @@ export default function NewsletterSubscribe({ className = "" }: NewsletterSubscr
     </div>
   );
 }
-

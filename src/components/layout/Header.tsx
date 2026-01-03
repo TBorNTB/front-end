@@ -7,7 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { ChevronDownIcon, BellIcon, Search, X, Menu, Shield } from "lucide-react";
 import { UserRoleDisplay, UserRole } from "@/types/core";
 import AlarmPopup from "./AlarmPopup";
-import { profileService, UserResponse } from "@/lib/api/services/user-service";
+import { profileService, UserResponse } from "@/lib/api/services/user";
 import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 
 const navList = [

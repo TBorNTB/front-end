@@ -1,5 +1,6 @@
-// src/lib/api/services/alarm-service.ts
-import { BASE_URL, API_ENDPOINTS } from '@/lib/api/config';
+// lib/api/services/alarm-service.ts
+import { BASE_URL } from '@/lib/api/config';
+import { USER_ENDPOINTS } from '@/lib/api/endpoints';
 import { AlarmType } from '@/types/alarm';
 
 // Get access token from cookies
@@ -48,7 +49,7 @@ export const alarmService = {
         throw new Error('Authentication required');
       }
 
-      const url = new URL(`${BASE_URL}${API_ENDPOINTS.ALARM.RECEIVED}`);
+      const url = new URL(`${BASE_URL}${USER_ENDPOINTS.ALARM.RECEIVED}`);
       if (alarmType) {
         url.searchParams.append('alarmType', alarmType);
       }

@@ -837,4 +837,3 @@ export default function NewsContent() {
     </div>
   );
 }
-

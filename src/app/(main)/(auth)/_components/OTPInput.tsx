@@ -1,8 +1,8 @@
 // app/(main)/(auth)/components/OTPInput.tsx
 "use client";
 
+import { useState, useRef, useEffect } from 'react';
 import { getOTPInputClassName } from '@/lib/form-utils';
-import { useEffect, useRef, useState } from 'react';
 
 interface OTPInputProps {
   length?: number;

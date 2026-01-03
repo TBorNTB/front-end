@@ -3,7 +3,7 @@
 import { Dialog, Transition } from '@headlessui/react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useState, useMemo } from 'react';
 
 interface DocumentModalProps {
   isOpen: boolean;

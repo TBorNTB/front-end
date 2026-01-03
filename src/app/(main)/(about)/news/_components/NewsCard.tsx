@@ -136,4 +136,3 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
     </article>
   );
 }
-

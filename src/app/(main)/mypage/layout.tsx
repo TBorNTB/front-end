@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { User, Settings, Award, Activity, Bell } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
-import { profileService, UserResponse } from '@/lib/api/services/user-service';
+import { profileService, UserResponse } from '@/lib/api/services/user';
 
 const menuItems = [
   { 

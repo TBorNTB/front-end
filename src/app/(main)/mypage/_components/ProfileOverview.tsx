@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { profileService, s3Service, UserResponse } from '@/lib/api/services/user-service';
+import { profileService, s3Service, UserResponse } from '@/lib/api/services/user';
 import { useAuth } from '@/context/AuthContext';
 import { validateImageFile } from '@/lib/form-utils';
 

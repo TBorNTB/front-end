@@ -28,48 +28,67 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   useEffect(() => {
     params.then((resolvedParams) => {
       setProjectId(resolvedParams.id);
-      setIsLoading(false);
+      fetchProjectData(resolvedParams.id);
     });
   }, [params]);
 
-  // TODO: Replace with actual API call
-  const [project, setProject] = useState({
-    id: projectId,
-    title: 'XSS 필터 규칙 테스트 스크립트',
-    subtitle: 'Python 기반으로 작성된 URL에서 반사(Reflected) XSS 취약점을 자동으로 테스트 스크립트',
-    category: '프로젝트',
-    author: {
-      username: 'kimdonghyun',
-      name: '김동현',
-      avatar: null,
-    },
-    createdAt: '2024-02-20',
-    updatedAt: '2024-03-15',
-    period: '2025-03 ~ 2025-05-31',
-    github: 'https://github.com/username/xss-filter-test',
-    tags: ['웹 해킹', '보안', '프로젝트'],
-    technologies: ['Python', 'Scanner', 'XSS'],
-    stats: {
-      views: 126,
-      likes: 10,
-      comments: 2,
-    },
-    description: `이 프로젝트는 웹 애플리케이션의 XSS(Cross-Site Scripting) 취약점을 테스트하기 위한 자동화 도구입니다.`,
-    team: [
-      { name: '김동현', role: 'Team Leader', username: 'kimdonghyun' },
-      { name: '이진우', role: 'Backend Developer', username: 'leejinwoo' },
-    ],
-    documents: [
-      { id: '1', name: '프로젝트 기획서', type: 'pdf', size: '2.5MB', uploadedAt: '2025-03-01', createdBy: '김동현' },
-      { id: '2', name: '1주차 회의록', type: 'pdf', size: '1.2MB', uploadedAt: '2025-03-08', createdBy: '이진우' },
-      { id: '3', name: 'API 명세서', type: 'pdf', size: '3.1MB', uploadedAt: '2025-03-15', createdBy: '김동현' },
-      { id: '4', name: 'Final-Report.pdf', type: 'pdf', size: '4.8MB', uploadedAt: '2025-05-31', createdBy: '김동현' },
-    ],
-    relatedProjects: [
-      { id: '2', title: '새로운 프로젝트', version: 'v1.1 업데이트 개발 중' },
-      { id: '3', title: 'v1.2 DCM기반 탐지 v1', version: 'v1.2 DCM기반 탐지 v1 추가' },
-    ],
-  });
+  const [project, setProject] = useState<any>(null);
+
+  const fetchProjectData = async (id: string) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/projects/${id}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch project');
+      }
+      
+      const data = await response.json();
+      setProject(data);
+    } catch (error) {
+      console.error('Error fetching project:', error);
+      // Fallback to default/mock data if API fails
+      setProject({
+        id: id,
+        title: 'XSS 필터 규칙 테스트 스크립트',
+        subtitle: 'Python 기반으로 작성된 URL에서 반사(Reflected) XSS 취약점을 자동으로 테스트 스크립트',
+        category: '프로젝트',
+        author: {
+          username: 'kimdonghyun',
+          name: '김동현',
+          avatar: null,
+        },
+        createdAt: '2024-02-20',
+        updatedAt: '2024-03-15',
+        period: '2025-03 ~ 2025-05-31',
+        github: 'https://github.com/username/xss-filter-test',
+        tags: ['웹 해킹', '보안', '프로젝트'],
+        technologies: ['Python', 'Scanner', 'XSS'],
+        stats: {
+          views: 126,
+          likes: 10,
+          comments: 2,
+        },
+        description: `이 프로젝트는 웹 애플리케이션의 XSS(Cross-Site Scripting) 취약점을 테스트하기 위한 자동화 도구입니다.`,
+        team: [
+          { name: '김동현', role: 'Team Leader', username: 'kimdonghyun' },
+          { name: '이진우', role: 'Backend Developer', username: 'leejinwoo' },
+        ],
+        documents: [
+          { id: '1', name: '프로젝트 기획서', type: 'pdf', size: '2.5MB', uploadedAt: '2025-03-01', createdBy: '김동현' },
+          { id: '2', name: '1주차 회의록', type: 'pdf', size: '1.2MB', uploadedAt: '2025-03-08', createdBy: '이진우' },
+          { id: '3', name: 'API 명세서', type: 'pdf', size: '3.1MB', uploadedAt: '2025-03-15', createdBy: '김동현' },
+          { id: '4', name: 'Final-Report.pdf', type: 'pdf', size: '4.8MB', uploadedAt: '2025-05-31', createdBy: '김동현' },
+        ],
+        relatedProjects: [
+          { id: '2', title: '새로운 프로젝트', version: 'v1.1 업데이트 개발 중' },
+          { id: '3', title: 'v1.2 DCM기반 탐지 v1', version: 'v1.2 DCM기반 탐지 v1 추가' },
+        ],
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
@@ -96,9 +115,9 @@ export default function ProjectPage({ params }: ProjectPageProps) {
           try {
             await fetch(`/api/documents/${docId}`, { method: 'DELETE' });
             // Refresh documents list
-            setProject(prev => ({
+            setProject((prev: any) => ({
               ...prev,
-              documents: prev.documents.filter(doc => doc.id !== docId)
+              documents: prev.documents.filter((doc: any) => doc.id !== docId)
             }));
           } catch (error) {
             console.error('Delete error:', error);
@@ -185,7 +204,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                       <div>
                         <p className="text-gray-600 mb-1">사용 기술</p>
                         <div className="flex flex-wrap gap-1">
-                          {project.technologies.map((tech, idx) => (
+                          {project.technologies.map((tech: string, idx: number) => (
                             <span key={idx} className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-700">
                               {tech}
                             </span>
@@ -231,7 +250,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   
                   {openSections.team && (
                     <div className="p-4 space-y-3">
-                      {project.team.map((member, idx) => (
+                      {project.team.map((member: any, idx: number) => (
                         <div key={idx} className="flex items-center gap-3">
                           <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
                             <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-500">
@@ -278,7 +297,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     <div className="p-4">
                       {/* Document List */}
                       <div className="space-y-1 mb-3">
-                        {project.documents.map((doc) => (
+                        {project.documents.map((doc: any) => (
                           <div
                             key={doc.id}
                             className="group flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 transition-colors"
@@ -442,7 +461,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   
                   {openSections.related && (
                     <div className="p-4 space-y-2">
-                      {project.relatedProjects.map((related) => (
+                      {project.relatedProjects.map((related: any) => (
                         <Link
                           key={related.id}
                           href={`/projects/${related.id}`}
@@ -515,7 +534,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                 {/* Tags */}
                 <section className="mb-12">
                   <div className="flex flex-wrap gap-2">
-                    {project.tags.map((tag, index) => (
+                    {project.tags.map((tag: string, index: number) => (
                       <span
                         key={index}
                         className="px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors cursor-pointer"

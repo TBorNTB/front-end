@@ -1,6 +1,6 @@
 // app/profile/settings/page.tsx
 import { Metadata } from 'next';
-import ProfileEditForm from './components/ProfileEditForm';
+import ProfileEditForm from './_components/ProfileEditForm';
 
 export const metadata: Metadata = {
   title: '프로필 편집 - SSG',

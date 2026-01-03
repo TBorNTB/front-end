@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Star, Users, Clock, ArrowRight, Globe, Shield, Code, Lock, Search, Wifi, Cpu, Key } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { categoryService, CategoryItem } from '@/lib/api/services/category-service';
+import { categoryService, CategoryItem } from '@/lib/api/services/category';
 import { CategoryType, CategorySlugs, CategoryDisplayNames, CategoryDescriptions } from './types/category';
 
 // Icon mapping for each category

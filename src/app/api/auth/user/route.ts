@@ -1,6 +1,8 @@
 // src/app/api/auth/user/route.ts
 import { NextResponse } from 'next/server';
-import { BASE_URL, API_ENDPOINTS } from '@/lib/api/config';
+import { BASE_URL} from '@/lib/api/config';
+import { USER_ENDPOINTS } from '@/lib/api/endpoints/user';
+import { serverApiClient } from '@/lib/api/client-server';
 //import { validateUserRole } from '@/lib/role-utils';
 
 export async function GET(request: Request) {
@@ -27,18 +29,19 @@ export async function GET(request: Request) {
 
     try {
       // Fetch profile data
-      const profileResponse = await fetch(`${BASE_URL}${API_ENDPOINTS.USERS.PROFILE}`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Cookie': cookieHeader,
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include', // ✅ Add credentials
-        cache: 'no-store'
-      });
+      const profileResponse = await serverApiClient.request(
+        `${USER_ENDPOINTS.USER.PROFILE}`,
+        {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+          request,
+        }
+      );
 
-      if (!profileResponse.ok) {
+      if (!profileResponse.success) {
         if (profileResponse.status === 401 || profileResponse.status === 403) {
           return NextResponse.json({
             authenticated: false,
@@ -61,7 +64,7 @@ export async function GET(request: Request) {
         }, { status: 503 });
       }
 
-      const profileData = await profileResponse.json();
+      const profileData = profileResponse.data as any;
       console.log('✅ Profile data retrieved:', {
         nickname: profileData.nickname,
         role: profileData.role
@@ -70,19 +73,20 @@ export async function GET(request: Request) {
       // ✅ Fetch role data (optional)
       let roleData = null;
       try {
-        const roleResponse = await fetch(`${BASE_URL}${API_ENDPOINTS.USERS.ROLE}`, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Cookie': cookieHeader,
-            'Content-Type': 'application/json'
-          },
-          credentials: 'include', // ✅ Add credentials
-          cache: 'no-store'
-        });
+        const roleResponse = await serverApiClient.request(
+          `${USER_ENDPOINTS.USER.ROLE}`,
+          {
+            method: 'GET',
+            headers: {
+              Accept: 'application/json',
+              'Content-Type': 'application/json',
+            },
+            request,
+          }
+        );
 
-        if (roleResponse.ok) {
-          roleData = await roleResponse.json();
+        if (roleResponse.success) {
+          roleData = roleResponse.data as any;
           console.log('✅ Role data retrieved:', roleData);
         } else {
           console.warn('⚠️ Role endpoint failed, using profile role');

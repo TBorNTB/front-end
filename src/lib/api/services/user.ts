@@ -1,7 +1,7 @@
 // src/lib/api/services/user-service.ts
 // User 관련 API 서비스 함수
-
-import { API_ENDPOINTS, getApiUrl } from '@/lib/api/config';
+import { apiClient } from '@/lib/api/client';
+import { USER_ENDPOINTS, getUserApiUrl } from '@/lib/api/endpoints/user';
 
 // ✅ Helper function to get access token from cookies (client-side only)
 export const getAccessTokenFromCookies = (): string | null => {
@@ -43,6 +43,17 @@ export interface GetMembersParams {
   size?: number;
 }
 
+export const userService = {
+  // Existing methods...
+  
+  // Forgot Password Flow
+  sendVerificationCode: (payload: { email: string }, request?: Request) =>
+    apiClient.post(USER_ENDPOINTS.USER.SEND_VERIFICATION_CODE, payload, request),
+
+  resetPassword: (payload: { email: string; randomCode: string; newPassword: string }, request?: Request) =>
+    apiClient.post(USER_ENDPOINTS.USER.RESET_PASSWORD, payload, request),
+} as const;
+
 /**
  * 멤버 조회 API 서비스
  */
@@ -56,7 +67,7 @@ export const memberService = {
   getMembers: async (params: GetMembersParams = {}): Promise<MembersPageResponse> => {
     try {
       const { page = 0, size = 6 } = params;
-      const url = `${getApiUrl(API_ENDPOINTS.USERS.GET_PAGED)}?size=${size}&page=${page}`;
+      const url = `${getUserApiUrl(USER_ENDPOINTS.USER.GET_PAGED)}?size=${size}&page=${page}`;
 
       const response = await fetch(url, {
         method: 'GET',
@@ -112,7 +123,7 @@ export const profileService = {
    */
   getProfile: async (): Promise<UserResponse> => {
     try {
-      const url = getApiUrl(API_ENDPOINTS.USERS.PROFILE);
+      const url = getUserApiUrl(USER_ENDPOINTS.USER.PROFILE);
       
       // 쿠키에서 accessToken 추출
       const accessToken = getAccessTokenFromCookies();
@@ -183,7 +194,7 @@ export const profileService = {
     profileImageUrl: string;
   }>): Promise<UserResponse> => {
     try {
-      const url = getApiUrl(API_ENDPOINTS.USERS.UPDATE_USER);
+      const url = getUserApiUrl(USER_ENDPOINTS.USER.UPDATE_USER);
       
       // 쿠키에서 accessToken 추출
       const accessToken = getAccessTokenFromCookies();
@@ -277,7 +288,7 @@ export const s3Service = {
     fileUrl?: string;
   }> => {
     try {
-      const url = getApiUrl(API_ENDPOINTS.S3.PRESIGNED_URL);
+      const url = getUserApiUrl(USER_ENDPOINTS.S3.PRESIGNED_URL);
       
       // 쿠키에서 accessToken 추출
       const accessToken = getAccessTokenFromCookies();
