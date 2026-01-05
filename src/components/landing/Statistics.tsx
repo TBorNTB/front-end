@@ -172,7 +172,29 @@ export default function StatisticsSection({ className = "" }: StatisticsSectionP
         ]);
       } catch (error) {
         console.error('Error fetching statistics:', error);
-        // 에러 발생 시 기본값 유지
+        // Fall back to mock data on error
+        setStatistics([
+          {
+            number: formatNumber(MOCK_PROJECTS.length),
+            label: 'Active Projects',
+            description: '활성 프로젝트'
+          },
+          {
+            number: formatNumber(MOCK_ARTICLES.length),
+            label: 'Articles Published',
+            description: '게시된 아티클'
+          },
+          {
+            number: formatNumber(120), // mock members
+            label: '함께 멤버',
+            description: '활발한 커뮤니티'
+          },
+          {
+            number: formatNumber(MOCK_CATEGORIES.length),
+            label: 'Learning Topics',
+            description: '학습 주제'
+          }
+        ]);
       } finally {
         setLoading(false);
       }

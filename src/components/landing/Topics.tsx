@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, ArrowRight, Code, Search, Lock, Shield, Wifi, Cpu, Key } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { categoryService, CategoryItem } from '@/lib/api/services/category-service';
-import { USE_MOCK_DATA } from '@/lib/api/env';
-import { MOCK_CATEGORIES, MOCK_PROJECTS, MOCK_ARTICLES } from '@/lib/mock-data';
 
 // Define CategoryType enum inline
 enum CategoryType {
