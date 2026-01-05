@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { getArticles, type Article } from '@/lib/mock-data';
 import {
   Search,
   Plus,
@@ -16,131 +17,6 @@ import {
 import ArticleCard from './_components/ArticleCard';
 
 const ARTICLES_PER_PAGE = 6;
-
-const articles = [
-  {
-    id: 1,
-    title: '워크플로 분석 실제 가이드',
-    excerpt: '워크플로를 체계적으로 분석하고 최적화하는 방법에 대해 알아보겠습니다.',
-    content: '워크플로 분석은 업무 프로세스를 개선하는데 필수적인...',
-    category: '웹 해킹',
-    topicSlug: 'web-hacking',
-    author: '김민수',
-    date: '2024.03.15',
-    readTime: '8분',
-    views: 342,
-    likes: 23,
-    comments: 5,
-    tags: ['워크플로', '분석', '최적화', '프로세스'],
-    image: '/api/placeholder/400/250',
-  },
-  {
-    id: 2,
-    title: 'OSINT를 활용한 디지털 포렌식',
-    excerpt:
-      '공개된 정보를 활용하여 디지털 포렌식 조사를 수행하는 방법과 주요 도구들을 소개합니다.',
-    content:
-      'OSINT(Open Source Intelligence)는 공개적으로 이용 가능한 정보를 수집하고 분석하는...',
-    category: '웹 해킹',
-    topicSlug: 'web-hacking',
-    author: '최수진',
-    date: '2024.03.08',
-    readTime: '10분',
-    views: 198,
-    likes: 15,
-    comments: 6,
-    tags: ['OSINT', 'Digital Forensics', 'Investigation', 'Maltego'],
-    image: '/api/placeholder/400/250',
-  },
-  {
-    id: 3,
-    title: '리버싱 기초 가이드',
-    excerpt:
-      'IDA Pro와 Ghidra를 활용한 바이너리 분석의 기초를 학습해보겠습니다.',
-    content: '리버싱(역공학)은 컴파일된 바이너리 파일을 분석하여...',
-    category: '리버싱',
-    topicSlug: 'reversing',
-    author: '박지영',
-    date: '2024.03.12',
-    readTime: '12분',
-    views: 156,
-    likes: 18,
-    comments: 8,
-    tags: ['리버싱', 'IDA Pro', 'Ghidra', '바이너리 분석'],
-    image: '/api/placeholder/400/250',
-  },
-  {
-    id: 4,
-    title: '시스템 해킹 실전 기법',
-    excerpt:
-      'Buffer Overflow와 ROP 체인을 활용한 시스템 익스플로잇 기법을 다룹니다.',
-    content: '시스템 해킹은 운영체제와 시스템 레벨에서 발생하는...',
-    category: '시스템 해킹',
-    topicSlug: 'system-hacking',
-    author: '이준호',
-    date: '2024.03.10',
-    readTime: '15분',
-    views: 289,
-    likes: 31,
-    comments: 12,
-    tags: ['시스템 해킹', 'Buffer Overflow', 'ROP', '익스플로잇'],
-    image: '/api/placeholder/400/250',
-  },
-  {
-    id: 5,
-    title: '디지털 포렌식 도구 활용법',
-    excerpt:
-      'Volatility와 Autopsy를 사용한 메모리 덤프와 디스크 이미지 분석 방법을 설명합니다.',
-    content:
-      '디지털 포렌식은 사이버 범죄나 보안 사고 발생 시...',
-    category: '디지털 포렌식',
-    topicSlug: 'digital-forensics',
-    author: '정우현',
-    date: '2024.03.05',
-    readTime: '11분',
-    views: 234,
-    likes: 19,
-    comments: 9,
-    tags: ['디지털 포렌식', 'Volatility', 'Autopsy', '메모리 분석'],
-    image: '/api/placeholder/400/250',
-  },
-  {
-    id: 7,
-    title: '네트워크 보안 모니터링',
-    excerpt:
-      'Wireshark와 Suricata를 활용한 네트워크 트래픽 분석과 침입 탐지 시스템 구축',
-    content:
-      '네트워크 보안에서 실시간 모니터링은 매우 중요한...',
-    category: '네트워크 보안',
-    topicSlug: 'network-security',
-    author: '강예린',
-    date: '2024.03.02',
-    readTime: '14분',
-    views: 167,
-    likes: 22,
-    comments: 4,
-    tags: ['네트워크 보안', 'Wireshark', 'Suricata', 'IDS'],
-    image: '/api/placeholder/400/250',
-  },
-    {
-    id: 8,
-    title: '네트워크 보안 모니터링',
-    excerpt:
-      'Wireshark와 Suricata를 활용한 네트워크 트래픽 분석과 침입 탐지 시스템 구축',
-    content:
-      '네트워크 보안에서 실시간 모니터링은 매우 중요한...',
-    category: '네트워크 보안',
-    topicSlug: 'network-security',
-    author: '강예린',
-    date: '2024.03.02',
-    readTime: '14분',
-    views: 167,
-    likes: 22,
-    comments: 4,
-    tags: ['네트워크 보안', 'Wireshark', 'Suricata', 'IDS'],
-    image: '/api/placeholder/400/250',
-  },
-];
 
 const categories = [
   { name: '전체', slug: 'all' },
@@ -157,6 +33,9 @@ function ArticlesContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  const [articlesData, setArticlesData] = useState<Article[]>([]);
+  const [articlesLoading, setArticlesLoading] = useState(true);
+  const [articlesError, setArticlesError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -183,16 +62,33 @@ function ArticlesContent() {
     }
   }, [searchParams]);
 
+  // Load articles (mock-aware)
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setArticlesLoading(true);
+        setArticlesError(null);
+        const data = await getArticles();
+        setArticlesData(data);
+      } catch (err) {
+        console.error('Failed to load articles', err);
+        setArticlesError('아티클을 불러오는 데 실패했습니다.');
+      } finally {
+        setArticlesLoading(false);
+      }
+    };
+
+    load();
+  }, []);
+
   // 필터링
-  let filteredArticles = articles.filter((article) => {
+  let filteredArticles = articlesData.filter((article) => {
     const matchesCategory =
-      selectedCategory === 'all' || article.topicSlug === selectedCategory;
+      selectedCategory === 'all' || article.content.category === selectedCategory || article.topicSlug === selectedCategory;
     const matchesSearch =
-      article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      article.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      article.tags.some((tag: string) =>
-        tag.toLowerCase().includes(searchTerm.toLowerCase()),
-      );
+      article.content.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      article.content.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      article.tags.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
 
     return matchesCategory && matchesSearch;
   });
@@ -201,9 +97,9 @@ function ArticlesContent() {
   filteredArticles = filteredArticles.sort((a, b) => {
     switch (sortBy) {
       case '인기순':
-        return b.likes - a.likes;
+        return (b.likeCount || 0) - (a.likeCount || 0);
       case '조회순':
-        return b.views - a.views;
+        return (b.viewCount || 0) - (a.viewCount || 0);
       case '최신순':
       default:
         return 0;
@@ -264,6 +160,13 @@ function ArticlesContent() {
           </div>
         </section>
 
+        {articlesLoading && (
+          <div className="text-center py-8 text-gray-600">아티클을 불러오는 중...</div>
+        )}
+        {articlesError && !articlesLoading && (
+          <div className="text-center py-8 text-red-500">{articlesError}</div>
+        )}
+
         {/* 검색/뷰모드/새 글 쓰기 – 기존 디자인에 맞게 배치 */}
         <section className="flex flex-col md:flex-row gap-4 mb-6">
           {/* 검색 인풋 */}
@@ -304,9 +207,9 @@ function ArticlesContent() {
               <div className="space-y-1">
                 {categories.map((cat) => {
                   const isActive = selectedCategory === cat.slug;
-                  const count = articles.filter(
+                  const count = articlesData.filter(
                     (a) =>
-                      cat.slug === 'all' || a.topicSlug === cat.slug,
+                      cat.slug === 'all' || a.content.category === cat.slug,
                   ).length;
 
                   return (
@@ -425,19 +328,35 @@ function ArticlesContent() {
                   : 'space-y-6'
               }
             >
-              {currentArticles.map((article) => (
-                <ArticleCard
-                  key={article.id}
-                  article={{
-                    ...article,
-                    author: {
-                      nickname: article.author,
-                      bio: '',
-                    },
-                  }}
-                  viewMode={viewMode}
-                />
-              ))}
+              {currentArticles.map((article) => {
+                const mapped = {
+                  id: Number(article.id) || 0,
+                  title: article.content.title,
+                  excerpt: article.content.summary,
+                  content: article.content.content,
+                  category: article.content.category,
+                  topicSlug: article.content.category,
+                  author: {
+                    nickname: article.writerId || '작성자',
+                    bio: '',
+                  },
+                  date: new Date(article.createdAt).toLocaleDateString('ko-KR'),
+                  readTime: '5분',
+                  views: article.viewCount || 0,
+                  likes: article.likeCount || 0,
+                  comments: 0,
+                  tags: article.tags || [],
+                  image: article.thumbnailPath || '/api/placeholder/400/250',
+                };
+
+                return (
+                  <ArticleCard
+                    key={article.id}
+                    article={mapped}
+                    viewMode={viewMode}
+                  />
+                );
+              })}
             </div>
 
 

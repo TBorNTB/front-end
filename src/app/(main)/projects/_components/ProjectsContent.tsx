@@ -7,6 +7,8 @@ import { ExternalLink, Github, Grid, List, Plus, Search, ChevronDown, X, Chevron
 import { CategoryHelpers, CategoryType, CategoryDisplayNames } from '@/app/(main)/topics/types/category';
 import Image from 'next/image';
 import { BASE_URL } from '@/lib/api/config';
+import { USE_MOCK_DATA } from '@/lib/api/env';
+import { getProjects as getMockProjects, type Project } from '@/lib/mock-data';
 
 // Elasticsearch API 호출 함수 - 검색 제안
 const fetchElasticSearchSuggestions = async (query: string): Promise<string[]> => {
@@ -291,22 +293,73 @@ export default function ProjectsContent() {
   // 프로젝트 검색 API 호출
   const loadProjects = async (page: number = 0) => {
     setIsLoading(true);
-    
     try {
-      // 필터 파라미터 구성
+      const defaultImageUrl = 'https://images.pexels.com/photos/577585/pexels-photo-577585.jpeg?auto=compress&cs=tinysrgb&w=800';
+      const getValidImageUrl = (url: string | null | undefined): string => {
+        if (!url || typeof url !== 'string' || url.trim() === '') return defaultImageUrl;
+        if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/')) return url;
+        return defaultImageUrl;
+      };
+
       const categoriesParam = selectedCategories.length > 0
         ? selectedCategories.map(cat => categoryToEnglish(cat)).filter(Boolean).join(',')
         : undefined;
-      
-      // 프로젝트 상태: 선택되지 않았을 때는 undefined로 전송 (파라미터 생략)
       const statusParam = selectedStatuses.length > 0
         ? selectedStatuses.map(status => statusToEnglish(status)).join(',')
         : undefined;
+      const searchQuery = searchTerm.trim().toLowerCase();
 
-      const searchQuery = searchTerm.trim() || ' ';
+      if (USE_MOCK_DATA) {
+        const data = await getMockProjects();
+        const filtered = data.filter((item: Project) => {
+          const matchesCategory = categoriesParam
+            ? item.projectCategories.some(cat => categoriesParam.split(',').includes(cat))
+            : true;
+          const matchesStatus = statusParam
+            ? statusParam.split(',').includes(item.projectStatus)
+            : true;
+          const matchesSearch = searchQuery
+            ? item.title.toLowerCase().includes(searchQuery) || item.description.toLowerCase().includes(searchQuery)
+            : true;
+          return matchesCategory && matchesStatus && matchesSearch;
+        });
+
+        const start = page * PAGE_SIZE;
+        const pageItems = filtered.slice(start, start + PAGE_SIZE);
+        const transformedProjects = pageItems.map((item: Project) => ({
+          id: item.id,
+          title: item.title || '제목 없음',
+          description: item.description || '',
+          image: getValidImageUrl(item.thumbnailUrl),
+          tags: item.projectTechStacks || [],
+          category: item.projectCategories?.[0] ?
+            CategoryDisplayNames[item.projectCategories[0] as CategoryType] || item.projectCategories[0] :
+            '',
+          topicSlug: item.projectCategories?.[0] ?
+            CategoryHelpers.getSlug(item.projectCategories[0] as CategoryType) :
+            '',
+          status: item.projectStatus === 'IN_PROGRESS' ? '진행중' :
+                  item.projectStatus === 'COMPLETED' ? '완료' :
+                  item.projectStatus === 'ARCHIVED' || item.projectStatus === 'PLANNING' ? '계획중' : '진행중',
+          stars: item.likeCount || 0,
+          likeCount: item.likeCount || 0,
+          viewCount: item.viewCount || 0,
+          creator: { name: 'Unknown', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face' },
+          contributors: [],
+          lastUpdate: item.updatedAt || item.createdAt || '',
+          github: '',
+          demo: null
+        }));
+
+        setProjects(transformedProjects);
+        setTotalPages(Math.ceil(filtered.length / PAGE_SIZE));
+        setTotalElements(filtered.length);
+        setCurrentPage(page);
+        return;
+      }
 
       const response = await fetchProjects({
-        query: searchQuery,
+        query: searchQuery || ' ',
         projectStatus: statusParam,
         categories: categoriesParam,
         projectSortType: sortToEnglish(sortBy),
@@ -314,23 +367,6 @@ export default function ProjectsContent() {
         page: page
       });
 
-      // 기본 이미지 URL
-      const defaultImageUrl = 'https://images.pexels.com/photos/577585/pexels-photo-577585.jpeg?auto=compress&cs=tinysrgb&w=800';
-      
-      // 이미지 URL 검증 함수
-      const getValidImageUrl = (url: string | null | undefined): string => {
-        if (!url || typeof url !== 'string' || url.trim() === '') {
-          return defaultImageUrl;
-        }
-        // 유효한 URL인지 확인 (http:// 또는 https://로 시작)
-        if (url.startsWith('http://') || url.startsWith('https://')) {
-          return url;
-        }
-        // 상대 경로인 경우 기본 이미지 사용
-        return defaultImageUrl;
-      };
-
-      // API 응답을 기존 프로젝트 형식으로 변환
       const transformedProjects = response.content.map((item: any) => ({
         id: item.id,
         title: item.title || '제목 없음',

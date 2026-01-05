@@ -6,7 +6,9 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Star, Users, Clock, ArrowRight, Globe, Shield, Code, Lock, Search, Wifi, Cpu, Key } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { categoryService, CategoryItem } from '@/lib/api/services/category-service';
-import { CategoryType, CategorySlugs, CategoryDisplayNames, CategoryDescriptions } from './types/category';
+import { CategoryType, CategorySlugs, CategoryDisplayNames, CategoryDescriptions, CategoryHelpers } from './types/category';
+import { USE_MOCK_DATA } from '@/lib/api/env';
+import { MOCK_PROJECTS, MOCK_ARTICLES } from '@/lib/mock-data';
 
 // Icon mapping for each category
 const CategoryIcons: Record<CategoryType, LucideIcon> = {
@@ -115,81 +117,37 @@ const transformCategoryData = (apiCategory: CategoryItem): CategoryDisplayData |
   };
 };
 
-// Mock data for projects and articles
-const projects = [
-  {
-    id: 1,
-    title: 'SQL 인젝션 취약점 스캐너',
-    description: '자동화된 SQL 인젝션 취약점 탐지 도구',
-    category: '웹 해킹',
-    status: 'In Progress',
-    tags: ['Python', 'Security'],
-    stars: 7,
+// Mock data for projects and articles (derived from shared mocks for consistency)
+const topicProjects = (USE_MOCK_DATA ? MOCK_PROJECTS : MOCK_PROJECTS).map((project, idx) => {
+  const cat = project.projectCategories[0] as CategoryType | undefined;
+  const slug = cat ? CategoryHelpers.getSlug(cat) : '';
+  return {
+    id: idx + 1,
+    title: project.title,
+    description: project.description,
+    category: cat ? CategoryDisplayNames[cat] : '기타',
+    status: project.projectStatus === 'IN_PROGRESS' ? 'In Progress'
+      : project.projectStatus === 'COMPLETED' ? 'Completed'
+      : 'Planning',
+    tags: project.projectTechStacks || [],
+    stars: project.likeCount || 0,
     contributors: 2,
-    categorySlug: 'web-hacking'
-  },
-  {
-    id: 2,
-    title: 'XSS 방어 라이브러리',
-    description: 'Cross-Site Scripting 공격을 방어하는 JavaScript 라이브러리',
-    category: '웹 해킹',
-    status: 'Planning',
-    tags: ['JavaScript', 'Web'],
-    stars: 7,
-    contributors: 2,
-    categorySlug: 'web-hacking'
-  },
-  {
-    id: 3,
-    title: '웹 보안 테스트 프레임워크',
-    description: '종합적인 웹 애플리케이션 보안 테스트 도구',
-    category: '웹 해킹',
-    status: 'Completed',
-    tags: ['Go', 'Testing'],
-    stars: 7,
-    contributors: 2,
-    categorySlug: 'web-hacking'
-  }
-];
+    categorySlug: slug,
+  };
+});
 
-const articles = [
-  {
-    id: 1,
-    title: 'OWASP Top 10 2024 분석',
-    description: '최신 웹 애플리케이션 보안 위험 분석',
-    category: '웹 해킹',
-    author: '김보안',
-    publishDate: '2024-01-20',
-    readTime: '5분 읽기',
-    views: 35,
-    comments: 4,
-    categorySlug: 'web-hacking'
-  },
-  {
-    id: 2,
-    title: 'JWT 토큰 보안 가이드',
-    description: 'JSON Web Token의 안전한 구현 방법',
-    category: '웹 해킹',
-    author: '임해커',
-    publishDate: '2024-01-18',
-    readTime: '8분 읽기',
-    views: 35,
-    comments: 4,
-    categorySlug: 'web-hacking'
-  },
-  {
-    id: 3,
-    title: 'CSP 헤더 설정 완벽 가이드',
-    description: 'Content Security Policy를 통한 XSS 방어',
-    category: '웹 해킹',
-    author: '김민준',
-    publishDate: '2024-01-15',
-    readTime: '12분 읽기',
-    views: 35,
-    comments: 4,
-    categorySlug: 'web-hacking'
-  }
-];
+const topicArticles = (USE_MOCK_DATA ? MOCK_ARTICLES : MOCK_ARTICLES).map((article, idx) => ({
+  id: idx + 1,
+  title: article.content.title,
+  description: article.content.summary,
+  category: article.content.category,
+  author: article.writerId,
+  publishDate: new Date(article.createdAt).toISOString().split('T')[0],
+  readTime: '5분 읽기',
+  views: article.viewCount || 0,
+  comments: 0,
+  categorySlug: article.content.category,
+}));
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -252,12 +210,12 @@ export function LearningTopics() {
 
   // Filter projects and articles based on selected category
   const filteredProjects = selectedCategory 
-    ? projects.filter(project => project.categorySlug === selectedCategory)
-    : projects;
+    ? topicProjects.filter(project => project.categorySlug === selectedCategory)
+    : topicProjects;
     
   const filteredArticles = selectedCategory 
-    ? articles.filter(article => article.categorySlug === selectedCategory)
-    : articles;
+    ? topicArticles.filter(article => article.categorySlug === selectedCategory)
+    : topicArticles;
 
   const currentCategory = categories.find(cat => cat.slug === selectedCategory);
   

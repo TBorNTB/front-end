@@ -8,43 +8,11 @@ import StatisticsSection from "@/components/landing/Statistics";
 import Topics from "@/components/landing/Topics";
 import Footer from "@/components/layout/Footer";
 import Header from "@/components/layout/Header";
-import { BASE_URL } from "@/lib/api/config";
+import { useLandingData } from "@/hooks/useLandingData";
 import ChatBot from "@/app/(main)/chatbot/ChatBot";
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from "react";
-
-// API Response Types
-interface ApiProject {
-  id: string;
-  title: string;
-  description: string;
-  thumbnailUrl: string;
-  projectStatus: string;
-  projectCategories: string[];
-  projectTechStacks: string[];
-  createdAt: string;
-  updatedAt: string;
-  likeCount: number;
-  viewCount: number;
-}
-
-interface ApiArticle {
-  id: string;
-  content: {
-    title: string;
-    summary: string;
-    content: string;
-    category: string;
-  };
-  thumbnailPath: string;
-  writerId: string;
-  participantIds: string[];
-  tags: string[];
-  createdAt: string;
-  updatedAt: string;
-  likeCount: number;
-  viewCount: number;
-}
+import Link from "next/link";
 
 // Component Data Types
 interface FeaturedProject {
@@ -123,14 +91,13 @@ export default function Home() {
   const [featuredProject, setFeaturedProject] = useState<FeaturedProject | null>(null);
   const [allProjects, setAllProjects] = useState<ProjectCard[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   // Articles state
   const [allArticles, setAllArticles] = useState<ArticleCard[]>([]);
   const [articleIndex, setArticleIndex] = useState(0);
-  const [articlesLoading, setArticlesLoading] = useState(true);
-  const [articlesError, setArticlesError] = useState<string | null>(null);
+
+  const { projects, articles, topics, loading: landingLoading, error: landingError } = useLandingData();
   
   // 현재 표시할 프로젝트들 (3개씩)
   const projectsData = allProjects.slice(currentIndex, currentIndex + 3);
@@ -183,140 +150,78 @@ export default function Home() {
 
   // Fetch latest projects from API
   useEffect(() => {
-    const fetchLatestProjects = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+    if (landingError) setError('프로젝트를 불러오는 중 오류가 발생했습니다.');
+  }, [landingError]);
 
-        const response = await fetch(
-          `${BASE_URL}/elastic-service/api/elastic/project/search/latest?size=10&page=0`,
-          {
-            method: 'GET',
-            headers: {
-              'accept': 'application/json',
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch latest projects');
-        }
-
-        const data: ApiProject[] = await response.json();
-
-        if (data && data.length > 0) {
-          // Set featured project (first one)
-          const firstProject = data[0];
-          const validThumbnail = isValidImageUrl(firstProject.thumbnailUrl);
-          setFeaturedProject({
-            id: firstProject.id,
-            title: firstProject.title,
-            description: firstProject.description,
-            category: firstProject.projectCategories?.[0] || '프로젝트',
-            status: 'LATEST PROJECT',
-            technologies: firstProject.projectTechStacks || [],
-            thumbnailImage: validThumbnail || '',
-            viewText: '자세히 보기',
-            likes: firstProject.likeCount,
-            views: firstProject.viewCount,
-          });
-
-          // Set all projects (remaining projects after featured, max 9)
-          const remainingProjects = data.slice(1, 10).map((project) => ({
-            id: project.id,
-            title: project.title,
-            description: project.description,
-            status: convertStatus(project.projectStatus),
-            category: project.projectCategories?.[0] || '프로젝트',
-            collaborators: [], // API에 없으므로 빈 배열
-            likes: project.likeCount || 0,
-            views: project.viewCount,
-            techStacks: project.projectTechStacks || [],
-          }));
-
-          setAllProjects(remainingProjects);
-          setCurrentIndex(0);
-        }
-      } catch (err) {
-        console.error('Error fetching latest projects:', err);
-        setError('프로젝트를 불러오는 중 오류가 발생했습니다.');
-        
-        // Fallback to default data on error
-        setFeaturedProject({
-          id: "featured-1",
-          title: "Open Source Intelligence (OSINT) Dashboard",
-          description: "A web-based dashboard that aggregates and visualizes publicly available data from various online sources",
-          category: "오픈소스",
-          status: "LATEST PROJECT",
-          technologies: ["Python", "Elasticsearch", "React", "MongoDB"],
-          thumbnailImage: "/images/projects/osint-dashboard.jpg",
-          viewText: "자세히 보기"
-        });
-        setAllProjects([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLatestProjects();
-  }, []);
-
-  // Fetch latest articles from API
+  // Derive featured/remaining projects once landing data is available
   useEffect(() => {
-    const fetchLatestArticles = async () => {
-      try {
-        setArticlesLoading(true);
-        setArticlesError(null);
+    if (landingLoading) return;
+    if (!projects || projects.length === 0) {
+      setFeaturedProject(null);
+      setAllProjects([]);
+      return;
+    }
 
-        const response = await fetch(
-          `${BASE_URL}/elastic-service/api/elastic/news/search/latest?page=0&size=10`,
-          {
-            method: 'GET',
-            headers: {
-              'accept': 'application/json',
-            },
-          }
-        );
+    const firstProject = projects[0];
+    const validThumbnail = isValidImageUrl(firstProject.thumbnailUrl);
+    setFeaturedProject({
+      id: firstProject.id,
+      title: firstProject.title,
+      description: firstProject.description,
+      category: firstProject.projectCategories?.[0] || '프로젝트',
+      status: 'LATEST PROJECT',
+      technologies: firstProject.projectTechStacks || [],
+      thumbnailImage: validThumbnail || '',
+      viewText: '자세히 보기',
+      likes: firstProject.likeCount,
+      views: firstProject.viewCount,
+    });
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch latest articles');
-        }
+    const remainingProjects = projects.slice(1, 10).map((project) => ({
+      id: project.id,
+      title: project.title,
+      description: project.description,
+      status: convertStatus(project.projectStatus),
+      category: project.projectCategories?.[0] || '프로젝트',
+      collaborators: [],
+      likes: project.likeCount || 0,
+      views: project.viewCount,
+      techStacks: project.projectTechStacks || [],
+    }));
 
-        const data: ApiArticle[] = await response.json();
+    setAllProjects(remainingProjects);
+    setCurrentIndex(0);
+  }, [projects, landingLoading]);
 
-        if (data && data.length > 0) {
-          const articles = data.map((article) => {
-            const validThumbnail = isValidImageUrl(article.thumbnailPath);
-            return {
-              id: article.id,
-              title: article.content.title,
-              description: article.content.summary || article.content.content?.substring(0, 150) || '',
-              author: {
-                name: article.writerId || '작성자',
-                profileImage: '', // API에 프로필 이미지가 없음
-              },
-              category: article.content.category || '기타',
-              thumbnailImage: validThumbnail || '',
-              likes: article.likeCount || 0,
-              views: article.viewCount || 0,
-              tags: article.tags || [],
-            };
-          });
+  // Derive article cards once landing data is available
+  useEffect(() => {
+    if (landingLoading) return;
+    if (!articles || articles.length === 0) {
+      setAllArticles([]);
+      return;
+    }
 
-          setAllArticles(articles);
-          setArticleIndex(0);
-        }
-      } catch (err) {
-        console.error('Error fetching latest articles:', err);
-        setArticlesError('아티클을 불러오는 중 오류가 발생했습니다.');
-        setAllArticles([]);
-      } finally {
-        setArticlesLoading(false);
-      }
-    };
+    const mapped = articles.map((article) => {
+      const validThumbnail = isValidImageUrl(article.thumbnailPath);
+      return {
+        id: article.id,
+        title: article.content.title,
+        description: article.content.summary || article.content.content?.substring(0, 150) || '',
+        author: {
+          name: article.writerId || '작성자',
+          profileImage: '',
+        },
+        category: article.content.category || '기타',
+        thumbnailImage: validThumbnail || '',
+        likes: article.likeCount || 0,
+        views: article.viewCount || 0,
+        tags: article.tags || [],
+      };
+    });
 
-    fetchLatestArticles();
-  }, []);
+    setAllArticles(mapped);
+    setArticleIndex(0);
+  }, [articles, landingLoading]);
 
   useEffect(() => {
     // Check if there's a hash in the URL
@@ -353,12 +258,12 @@ export default function Home() {
         <StatisticsSection />
 
         {/* ✅ Make sure Topics component has id="topics" */}
-        <Topics />
+        <Topics topics={topics} />
 
         {/* Latest Project Section */}
         <section className="section bg-gray-50">
           <div className="container">
-            {loading ? (
+            {landingLoading ? (
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
                 <p className="mt-4 text-gray-600">프로젝트를 불러오는 중...</p>
@@ -380,9 +285,9 @@ export default function Home() {
                       최신의 보안 기술과 오픈소스를 활용한<br />
                       실무에 적용 가능한 솔루션입니다.
                     </p>
-                    <button className="btn btn-primary btn-lg">
+                    <Link href="/projects" className="btn btn-primary btn-lg">
                       프로젝트 더보기
-                    </button>
+                    </Link>
                   </div>
 
                   {/* Right Side - Featured Project Card */}
@@ -419,7 +324,7 @@ export default function Home() {
                           </button>
                         </>
                       )}
-                      
+
                       {/* Projects Grid */}
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {projectsData.map((project) => (
@@ -486,14 +391,10 @@ export default function Home() {
             <h2 className="text-3xl font-bold text-gray-900 mb-8">Latest Articles</h2>
             <p className="text-gray-600 mb-12">Stay informed with expert insights</p>
             
-            {articlesLoading ? (
+            {landingLoading ? (
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
                 <p className="mt-4 text-gray-600">아티클을 불러오는 중...</p>
-              </div>
-            ) : articlesError ? (
-              <div className="text-center py-12">
-                <p className="text-red-500">{articlesError}</p>
               </div>
             ) : allArticles.length > 0 ? (
               <div>
