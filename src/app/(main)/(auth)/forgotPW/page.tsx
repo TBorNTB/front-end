@@ -1,38 +1,37 @@
 // app/(main)/(auth)/forgot-password/page.tsx
 "use client";
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Mail, X, ArrowLeft, Send, Lock, Eye, EyeOff, CheckCircle, Timer } from "lucide-react";
-import Link from "next/link";
 import {
   Form,
+  FormControl,
   FormField,
   FormItem,
   FormLabel,
-  FormControl,
   FormMessage,
 } from "@/components/ui/form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowLeft, CheckCircle, Eye, EyeOff, Lock, Mail, Send, Timer, X } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 
 // Import co-located types and components
-import { 
-  forgotPasswordSchema,
-  verifyCodeSchema,
-  resetPasswordSchema,
+import {
   ForgotPasswordFormData,
-  VerifyCodeFormData,
+  forgotPasswordSchema,
+  PasswordResetStep,
   ResetPasswordFormData,
-  PasswordResetStep
+  resetPasswordSchema,
+  VerifyCodeFormData,
+  verifyCodeSchema
 } from "../types/forgot-pw";
 
 // Import form utilities
-import { 
+import {
   getIconInputClassName,
   getPasswordInputClassName,
-  useAuthFormState, 
-  makeAuthenticatedRequest,
+  useAuthFormState,
   validatePasswordStrength
 } from "@/lib/form-utils";
 
@@ -80,15 +79,16 @@ export default function ForgotPasswordPage() {
     }, 1000);
   };
 
-  // Step 1: Send password reset email
+  // Step 1: Send password reset email - NOW CALLS YOUR API
   const handleEmailSubmit = async (values: ForgotPasswordFormData) => {
     setIsLoading(true);
     resetStates();
 
     try {
-      const response = await makeAuthenticatedRequest("/api/auth/forgot-password", {
+      const response = await fetch('/api/auth/forgot-password', {
         method: "POST",
-        body: JSON.stringify(values),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: values.email }),
       });
 
       const data = await response.json();
@@ -108,41 +108,21 @@ export default function ForgotPasswordPage() {
     }
   };
 
-  // Step 2: Verify code
   const handleCodeSubmit = async (values: VerifyCodeFormData) => {
-    setIsLoading(true);
-    resetStates();
-
-    try {
-      const response = await makeAuthenticatedRequest("/api/auth/verify-reset-code", {
-        method: "POST",
-        body: JSON.stringify(values),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setCurrentStep('reset');
-        resetForm.setValue('email', values.email);
-        resetForm.setValue('verificationCode', values.verificationCode);
-      } else {
-        handleError(new Error(data.message || "인증코드가 올바르지 않습니다."));
-      }
-    } catch (err) {
-      handleError(err, "인증 중 오류가 발생했습니다.");
-    } finally {
-      setIsLoading(false);
-    }
+    setCurrentStep('reset');
+    resetForm.setValue('email', values.email);
+    resetForm.setValue('verificationCode', values.verificationCode);
   };
 
-  // Step 3: Reset password
+  // Step 3: Reset password - NOW CALLS YOUR API
   const handlePasswordReset = async (values: ResetPasswordFormData) => {
     setIsLoading(true);
     resetStates();
 
     try {
-      const response = await makeAuthenticatedRequest("/api/auth/reset-password", {
+      const response = await fetch('/api/auth/reset-password', {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: values.email,
           verificationCode: values.verificationCode,
@@ -170,7 +150,7 @@ export default function ForgotPasswordPage() {
     
     setIsLoading(true);
     try {
-      await handleEmailSubmit({ email });
+      await handleEmailSubmit({ email } as ForgotPasswordFormData);
     } catch (err) {
       handleError(err, "재전송에 실패했습니다.");
     }
@@ -283,7 +263,7 @@ export default function ForgotPasswordPage() {
         <div className="flex flex-col items-center justify-center w-1/3 bg-gradient-to-br from-blue-500 to-blue-700 p-10 text-center">
           <Send className="w-16 h-16 text-white mb-4" />
           <h2 className="mb-2 text-2xl font-bold text-white">인증코드 입력</h2>
-          <p className="mb-6 text-blue-100">이메일로 발송된 6자리 코드를 입력하세요</p>
+          <p className="mb-6 text-blue-100">이메일로 발송된 8자리 코드를 입력하세요</p>
           <div className="px-4 py-2 bg-white/20 rounded-lg text-white text-sm">
             2단계 / 3단계
           </div>
@@ -305,7 +285,7 @@ export default function ForgotPasswordPage() {
             <p className="text-gray-600 mb-2">
               <span className="font-semibold text-primary-600">{email}</span>로 발송된
             </p>
-            <p className="text-gray-600">6자리 인증코드를 입력해주세요</p>
+            <p className="text-gray-600">8자리 인증코드를 입력해주세요</p>
           </div>
 
           <Form {...codeForm}>
@@ -318,13 +298,13 @@ export default function ForgotPasswordPage() {
                     <FormControl>
                       <div className="space-y-4">
                         <OTPInput
-                          length={6}
+                          length={8}
                           value={field.value || ''}
                           onChange={field.onChange}
                           onComplete={(code) => {
                             field.onChange(code);
                             // Auto-submit when code is complete (optional)
-                            if (code.length === 6) {
+                            if (code.length === 8) {
                               setTimeout(() => {
                                 codeForm.handleSubmit(handleCodeSubmit)();
                               }, 500);
@@ -363,7 +343,7 @@ export default function ForgotPasswordPage() {
               <button 
                 type="submit" 
                 className="btn btn-primary btn-lg w-full" 
-                disabled={isLoading || codeForm.watch('verificationCode')?.length !== 6}
+                disabled={isLoading || codeForm.watch('verificationCode')?.length !== 8}
               >
                 {isLoading ? "확인 중..." : "인증코드 확인"}
               </button>
@@ -420,6 +400,7 @@ export default function ForgotPasswordPage() {
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                         <input
+                          id="newPassword"
                           type={showPassword ? "text" : "password"}
                           placeholder="새 비밀번호 입력"
                           className={getPasswordInputClassName(!!fieldState.error)}
@@ -478,6 +459,7 @@ export default function ForgotPasswordPage() {
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                         <input
+                          id="confirmPassword"
                           type={showConfirmPassword ? "text" : "password"}
                           placeholder="비밀번호 다시 입력"
                           className={getPasswordInputClassName(!!fieldState.error)}

@@ -10,6 +10,23 @@ interface ImageWithFallbackProps extends Omit<ImageProps, 'src'> {
   showPlaceholder?: boolean;
 }
 
+// URL 유효성 검사 함수
+const isValidUrl = (url: string | null | undefined): boolean => {
+  if (!url || typeof url !== 'string') return false;
+  if (url.trim() === '' || url === 'string' || url === 'null' || url === 'undefined') return false;
+  
+  // 상대 경로는 유효함 (/, /images/...)
+  if (url.startsWith('/')) return true;
+  
+  // 절대 URL 검사
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   src,
   fallbackSrc = '/images/placeholder.jpg', // Default fallback image
@@ -19,16 +36,19 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   onError,
   ...props
 }) => {
-  const [imgSrc, setImgSrc] = useState<string>(src);
+  // 유효한 URL인지 확인
+  const validSrc = isValidUrl(src) ? src : null;
+  const [imgSrc, setImgSrc] = useState<string>(validSrc || fallbackSrc);
   const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
+  const [hasError, setHasError] = useState(!validSrc);
 
   // Reset states when src changes
   useEffect(() => {
-    setImgSrc(src);
+    const newValidSrc = isValidUrl(src) ? src : null;
+    setImgSrc(newValidSrc || fallbackSrc);
     setIsLoading(true);
-    setHasError(false);
-  }, [src]);
+    setHasError(!newValidSrc);
+  }, [src, fallbackSrc]);
 
   const handleError = (error: React.SyntheticEvent<HTMLImageElement, Event>) => {
     if (!hasError) {
@@ -42,13 +62,13 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     setIsLoading(false);
   };
 
-  // If no src provided and showPlaceholder is false, don't render anything
-  if (!src && !showPlaceholder) {
+  // If no valid src provided and showPlaceholder is false, don't render anything
+  if (!validSrc && !showPlaceholder) {
     return null;
   }
 
   // If both src and fallbackSrc fail, show a placeholder div
-  if (hasError && imgSrc === fallbackSrc) {
+  if (hasError && (imgSrc === fallbackSrc || !validSrc)) {
     return (
       <div
         className={cn(

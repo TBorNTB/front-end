@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, ArrowRight, Code, Search, Lock, Shield, Wifi, Cpu, Key } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { categoryService, CategoryItem } from '@/lib/api/services/category-service';
 
 // Define CategoryType enum inline
 enum CategoryType {
@@ -76,9 +77,52 @@ const CategoryHelpers = {
     };
     return slugs[type];
   },
+
+  // 카테고리 이름으로 CategoryType 찾기
+  getTypeByName: (name: string): CategoryType | null => {
+    const displayNames: Record<CategoryType, string> = {
+      [CategoryType.WEB_HACKING]: '웹 해킹',
+      [CategoryType.REVERSING]: '리버싱',
+      [CategoryType.SYSTEM_HACKING]: '시스템 해킹',
+      [CategoryType.DIGITAL_FORENSICS]: '디지털 포렌식',
+      [CategoryType.NETWORK_SECURITY]: '네트워크 보안',
+      [CategoryType.IOT_SECURITY]: 'IoT보안',
+      [CategoryType.CRYPTOGRAPHY]: '암호학',
+    };
+    
+    const entry = Object.entries(displayNames).find(([_, displayName]) => displayName === name);
+    return entry ? (entry[0] as CategoryType) : null;
+  },
 };
 
-// Convert your category data to Topic format
+// API 응답을 Topic 형식으로 변환
+const transformApiResponseToTopics = (apiCategories: CategoryItem[]): Topic[] => {
+  return apiCategories
+    .map((category) => {
+      // API 응답의 name을 제목으로 직접 사용
+      const type = CategoryHelpers.getTypeByName(category.name);
+      
+      // 타입을 찾지 못해도 기본값으로 처리 (name은 API에서 받은 값 사용)
+      const defaultType = type || CategoryType.WEB_HACKING; // 기본값
+      
+      // slug 생성: 타입이 있으면 해당 slug, 없으면 name 기반으로 생성
+      const slug = type 
+        ? CategoryHelpers.getSlug(type)
+        : category.name.toLowerCase().replace(/\s+/g, '-');
+
+      return {
+        id: `topic-${category.id}`,
+        name: category.name, // API 응답의 name을 제목으로 사용
+        slug: slug,
+        description: category.description || (type ? getCategoryDescription(type) : category.description || ''),
+        type: defaultType,
+        projectCount: 0, // API에서 제공되지 않으면 기본값 0
+        articleCount: 0, // API에서 제공되지 않으면 기본값 0
+      };
+    });
+};
+
+// Fallback: 목 데이터 (API 실패 시 사용)
 const getTopicsData = (): Topic[] => {
   const baseTopics: Array<{
     type: CategoryType;
@@ -96,7 +140,7 @@ const getTopicsData = (): Topic[] => {
 
   return baseTopics.map((topic, index) => ({
     id: `topic-${index + 1}`,
-    name: CategoryHelpers.getDisplayName(topic.type), // Korean name
+    name: CategoryHelpers.getDisplayName(topic.type),
     slug: CategoryHelpers.getSlug(topic.type),
     description: getCategoryDescription(topic.type),
     type: topic.type,
@@ -135,9 +179,35 @@ export default function TopicsSection({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [topicsData, setTopicsData] = useState<Topic[]>([]);
+  const [loading, setLoading] = useState(true);
   
-  // Use external topics or fallback to static data
-  const topicsData = externalTopics || getTopicsData();
+  // API에서 카테고리 데이터 가져오기
+  useEffect(() => {
+    // 외부에서 topics가 전달되면 사용, 아니면 API 호출
+    if (externalTopics) {
+      setTopicsData(externalTopics);
+      setLoading(false);
+      return;
+    }
+
+    const fetchCategories = async () => {
+      try {
+        setLoading(true);
+        const response = await categoryService.getCategories();
+        const transformedTopics = transformApiResponseToTopics(response.categories);
+        setTopicsData(transformedTopics);
+      } catch (error) {
+        console.error('Failed to fetch categories, using fallback data:', error);
+        // API 실패 시 목 데이터 사용
+        setTopicsData(getTopicsData());
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, [externalTopics]);
   
   const itemsPerPage = 8; // 4x2 grid (4 columns, 2 rows)
   const totalPages = Math.ceil(topicsData.length / itemsPerPage);
@@ -182,6 +252,36 @@ export default function TopicsSection({
     const startIndex = currentIndex * itemsPerPage;
     return topicsData.slice(startIndex, startIndex + itemsPerPage);
   };
+
+  // 로딩 상태
+  if (loading) {
+    return (
+      <section id="topics" className={`section bg-background ${className}`}>
+        <div className="container">
+          {showHeader && (
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold text-primary mb-4">
+                보안 학습 주제
+              </h2>
+              <p className="text-lg text-gray-800 max-w-2xl mx-auto">
+                사이버 보안 전문 지식을 체계적으로 학습할 수 있는 주제들을 탐색하세요
+              </p>
+            </div>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="card bg-white animate-pulse">
+                <div className="h-12 w-12 bg-gray-200 rounded-xl mb-4"></div>
+                <div className="h-6 bg-gray-200 rounded mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded mb-4"></div>
+                <div className="h-4 bg-gray-200 rounded"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="topics" className={`section bg-background ${className}`}>

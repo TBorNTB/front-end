@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { BASE_URL, API_ENDPOINTS } from '@/lib/api/services/user-service';
+import { BASE_URL } from '@/lib/api/config';
+import { USER_ENDPOINTS} from '@/lib/api/endpoints/user-endpoints';
 
 export async function POST(request: Request) {
   try {
@@ -8,7 +9,7 @@ export async function POST(request: Request) {
 
     console.log('🔓 Logging out user...');
     
-    const backendResponse = await fetch(`${BASE_URL}${API_ENDPOINTS.USERS.LOGOUT}`, {
+    const backendResponse = await fetch(`${BASE_URL}${USER_ENDPOINTS.USER.LOGOUT}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

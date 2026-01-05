@@ -10,7 +10,7 @@ import { LucideProps, LucideIcon } from "lucide-react";
 import { DynamicIcon, IconName } from "lucide-react/dynamic";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { iconsData } from "./icons-data";
-import { useVirtualizer, VirtualItem } from "@tanstack/react-virtual";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { Skeleton } from "@/components/ui/skeleton";
 import Fuse from "fuse.js";
 import { useDebounceValue } from "usehooks-ts";
@@ -31,6 +31,7 @@ interface IconPickerProps
   iconsList?: IconData[];
   categorized?: boolean;
   modal?: boolean;
+  children?: React.ReactNode;
 }
 
 const IconRenderer = React.memo(({ name }: { name: IconName }) => {
@@ -200,7 +201,7 @@ const IconPicker = React.forwardRef<React.ComponentRef<typeof PopoverTrigger>, I
     const virtualizer = useVirtualizer({
       count: virtualItems.length,
       getScrollElement: () => parentRef.current,
-      estimateSize: (index) => (virtualItems[index].type === "category" ? 25 : 40),
+      estimateSize: (index: number) => (virtualItems[index].type === "category" ? 25 : 40),
       paddingEnd: 2,
       gap: 10,
       overscan: 5,
@@ -295,14 +296,16 @@ const IconPicker = React.forwardRef<React.ComponentRef<typeof PopoverTrigger>, I
       (icon: IconData) => (
         <TooltipProvider key={icon.name}>
           <Tooltip>
-            <TooltipTrigger
-              className={cn(
-                "hover:bg-foreground/10 rounded-md border p-2 transition",
-                "flex items-center justify-center",
-              )}
-              onClick={() => handleIconClick(icon.name as IconName)}
-            >
-              <IconRenderer name={icon.name as IconName} />
+            <TooltipTrigger>
+              <button
+                className={cn(
+                  "hover:bg-foreground/10 rounded-md border p-2 transition",
+                  "flex items-center justify-center",
+                )}
+                onClick={() => handleIconClick(icon.name as IconName)}
+              >
+                <IconRenderer name={icon.name as IconName} />
+              </button>
             </TooltipTrigger>
             <TooltipContent>
               <p>{icon.name}</p>
@@ -325,8 +328,8 @@ const IconPicker = React.forwardRef<React.ComponentRef<typeof PopoverTrigger>, I
             height: `${virtualizer.getTotalSize()}px`,
           }}
         >
-          {virtualizer.getVirtualItems().map((virtualItem: VirtualItem) => {
-            const item = virtualItems[virtualItem.index];
+          {virtualizer.getVirtualItems().map((virtualItem: { index: string | number; size: any; start: any; key: React.Key | null | undefined; }) => {
+            const item = virtualItems[virtualItem.index as number];
 
             if (!item) return null;
 
@@ -383,7 +386,7 @@ const IconPicker = React.forwardRef<React.ComponentRef<typeof PopoverTrigger>, I
 
     return (
       <Popover open={open ?? isOpen} onOpenChange={handleOpenChange} modal={modal}>
-        <PopoverTrigger ref={ref} asChild {...props}>
+        <PopoverTrigger>
           {children || (
             <Button variant="outline">
               {value || selectedIcon ? (

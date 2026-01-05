@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import ChatWindow from "./ChatWindow";
-import ChatBotCharacter from "./ChatBotCharacter";
+import ChatWindow from "./_components/ChatWindow";
+import ChatBotCharacter from "./_components/ChatBotCharacter";
 
 const ChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);

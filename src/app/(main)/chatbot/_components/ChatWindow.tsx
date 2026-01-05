@@ -6,7 +6,7 @@ import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
 import { Message } from "@/types";
 import ChatBotCharacter from "./ChatBotCharacter";
-import { queryRAG } from "./api";
+import { queryRAG } from "../api";
 import toast from "react-hot-toast";
 
 interface ChatWindowProps {

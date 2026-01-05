@@ -9,10 +9,13 @@ import {
   MapPin,
   Loader2,
   AlertCircle,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
+import { memberService, UserResponse } from '@/lib/api/services/user-service';
 
 // Types for member data
 interface Member {
@@ -33,108 +36,38 @@ interface Member {
   lastActive?: string;
 }
 
-// Mock member data with updated levels
-const mockMembers: Member[] = [
-  {
-    id: 1,
-    name: '김민준',
-    email: 'song54@gmail.com',
-    role: 'Security Researcher',
-    level: 'SENIOR',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face',
-    bio: '웹 보안과 침투 테스팅 전문가',
-    location: '서울',
-    joinDate: '2023.03.15',
-    skills: ['React', 'TypeScript', 'Next.js'],
-    projects: 5,
-    articles: 12,
-    badges: 8,
-    isOnline: true
-  },
-  {
-    id: 2,
-    name: '박지원',
-    email: 'jiwon.park@gmail.com',
-    role: 'Frontend Developer',
-    level: 'REGULAR',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face',
-    bio: 'React 기반 프론트엔드 개발자',
-    location: '부산',
-    joinDate: '2023.06.20',
-    skills: ['React', 'TypeScript', 'Next.js'],
-    projects: 3,
-    articles: 8,
-    badges: 5,
-    isOnline: false,
-    lastActive: '2시간 전'
-  },
-  {
-    id: 3,
-    name: '이수현',
-    email: 'suhyun.lee@gmail.com',
-    role: 'Backend Developer',
-    level: 'REGULAR',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop&crop=face',
-    bio: 'Node.js와 Python 백엔드 개발',
-    location: '대구',
-    joinDate: '2023.08.10',
-    skills: ['Python', 'Node.js', 'Docker'],
-    projects: 4,
-    articles: 6,
-    badges: 4,
-    isOnline: true
-  },
-  {
-    id: 4,
-    name: '최민서',
-    email: 'minseo.choi@gmail.com',
-    role: 'Security Analyst',
-    level: 'ASSOCIATE',
-    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b05b?w=400&h=400&fit=crop&crop=face',
-    bio: '보안 분석 및 취약점 연구',
-    location: '광주',
-    joinDate: '2024.01.05',
-    skills: ['Python', 'Wireshark', 'Burp Suite'],
-    projects: 2,
-    articles: 4,
-    badges: 2,
-    isOnline: false,
-    lastActive: '1일 전'
-  },
-  {
-    id: 5,
-    name: '강태현',
-    email: 'taehyun.kang@gmail.com',
-    role: 'Full Stack Developer',
-    level: 'ADMIN',
-    avatar: 'https://images.unsplash.com/photo-1519244703995-f4e0f30006d5?w=400&h=400&fit=crop&crop=face',
-    bio: '풀스택 개발 및 아키텍처 설계',
-    location: '인천',
-    joinDate: '2022.09.12',
-    skills: ['React', 'Node.js', 'PostgreSQL'],
-    projects: 8,
-    articles: 15,
-    badges: 12,
-    isOnline: true
-  },
-  {
-    id: 6,
-    name: '윤하영',
-    email: 'hayoung.yoon@gmail.com',
-    role: 'DevOps Engineer',
-    level: 'SENIOR',
-    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop&crop=face',
-    bio: 'CI/CD 파이프라인 및 인프라 관리',
-    location: '울산',
-    joinDate: '2023.02.28',
-    skills: ['Docker', 'Kubernetes', 'AWS'],
-    projects: 6,
-    articles: 9,
-    badges: 7,
-    isOnline: false,
-    lastActive: '30분 전'
-  }
-];
+// API 응답을 Member 형식으로 변환하는 헬퍼 함수
+const transformUserToMember = (user: UserResponse): Member => {
+  // role을 기반으로 level 매핑 (API 응답의 role 필드 사용)
+  const roleToLevelMap: Record<string, 'ASSOCIATE' | 'REGULAR' | 'SENIOR' | 'ADMIN'> = {
+    'ASSOCIATE': 'ASSOCIATE',
+    'REGULAR': 'REGULAR',
+    'SENIOR': 'SENIOR',
+    'ADMIN': 'ADMIN',
+  };
+
+  // 날짜 포맷팅
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
+  };
+
+  return {
+    id: user.id,
+    name: user.realName || user.nickname || user.username,
+    email: user.email,
+    role: user.role || 'Member',
+    level: roleToLevelMap[user.role] || 'ASSOCIATE',
+    avatar: user.profileImageUrl || undefined,
+    bio: user.description || undefined,
+    location: '', // API 응답에 없으므로 빈 문자열
+    joinDate: formatDate(user.createdAt),
+    skills: [], // API 응답에 없으므로 빈 배열 (필터는 클라이언트에서 처리)
+    projects: 0, // API 응답에 없으므로 0
+    articles: 0, // API 응답에 없으므로 0
+    badges: 0, // API 응답에 없으므로 0
+  };
+};
 
 // Updated member levels with your UserRole system
 const memberLevels = [
@@ -158,27 +91,45 @@ export default function MembersPage() {
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // 페이지네이션 상태
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize] = useState(6);
+  const [totalElements, setTotalElements] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   // Load members data
   useEffect(() => {
     const loadMembers = async () => {
       try {
         setIsLoading(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setMembers(mockMembers);
-        setFilteredMembers(mockMembers);
-      } catch (_err) {
-        setError('멤버 정보를 불러올 수 없습니다.');
+        setError(null);
+        
+        const response = await memberService.getMembers({
+          page: currentPage,
+          size: pageSize,
+        });
+
+        const transformedMembers = response.userResponses.map(transformUserToMember);
+        setMembers(transformedMembers);
+        setTotalElements(response.totalElements);
+        setTotalPages(Math.ceil(response.totalElements / pageSize));
+      } catch (err: any) {
+        console.error('Failed to load members:', err);
+        setError(err.message || '멤버 정보를 불러올 수 없습니다.');
+        // 에러 발생 시 빈 배열로 설정
+        setMembers([]);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadMembers();
-  }, []);
+  }, [currentPage, pageSize]);
 
   // Filter members based on search term, levels, and skills
+  // Note: 현재는 클라이언트 사이드 필터링만 지원합니다.
+  // 서버 사이드 필터링이 필요한 경우 API를 수정해야 합니다.
   useEffect(() => {
     let filtered = members;
 
@@ -394,7 +345,12 @@ export default function MembersPage() {
                 {/* Results Header */}
                 <div className="flex items-center justify-between mb-8">
                   <p className="text-gray-600">
-                    총 <span className="font-semibold text-primary-700">{filteredMembers.length}</span>명의 멤버
+                    총 <span className="font-semibold text-primary-700">{totalElements}</span>명의 멤버
+                    {filteredMembers.length !== totalElements && (
+                      <span className="ml-2 text-sm text-gray-500">
+                        (현재 페이지: {filteredMembers.length}명)
+                      </span>
+                    )}
                   </p>
                   
                   {/* Active Filters */}
@@ -533,6 +489,62 @@ export default function MembersPage() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 mt-8">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+                      disabled={currentPage === 0}
+                      className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i).map((page) => {
+                        // 현재 페이지 주변 2페이지씩만 표시
+                        if (
+                          page === 0 ||
+                          page === totalPages - 1 ||
+                          (page >= currentPage - 2 && page <= currentPage + 2)
+                        ) {
+                          return (
+                            <button
+                              key={page}
+                              onClick={() => setCurrentPage(page)}
+                              className={`px-4 py-2 rounded-lg border transition-colors ${
+                                currentPage === page
+                                  ? 'bg-primary-600 text-white border-primary-600'
+                                  : 'border-gray-300 hover:bg-gray-50'
+                              }`}
+                            >
+                              {page + 1}
+                            </button>
+                          );
+                        } else if (
+                          page === currentPage - 3 ||
+                          page === currentPage + 3
+                        ) {
+                          return (
+                            <span key={page} className="px-2 text-gray-500">
+                              ...
+                            </span>
+                          );
+                        }
+                        return null;
+                      })}
+                    </div>
+
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+                      disabled={currentPage >= totalPages - 1}
+                      className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
                   </div>
                 )}
               </main>

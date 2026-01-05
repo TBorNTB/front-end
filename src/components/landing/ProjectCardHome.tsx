@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Heart } from 'lucide-react';
+import { Heart, Eye } from 'lucide-react';
 
 interface ProjectCardHomeProps {
   project: {
@@ -13,6 +13,8 @@ interface ProjectCardHomeProps {
     category: string;
     collaborators: { profileImage: string }[];
     likes: number;
+    views?: number;
+    techStacks?: string[];
   };
 }
 
@@ -33,9 +35,17 @@ export function ProjectCardHome({ project }: ProjectCardHomeProps) {
         <span className={`px-3 py-1 rounded-full text-xs font-medium text-white ${getStatusColor(project.status)}`}>
           {project.status}
         </span>
-        <div className="flex items-center text-gray-400">
-          <Heart className="w-4 h-4 mr-1" />
-          <span className="text-sm">{project.likes}</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 text-red-400">
+            <Heart className="w-4 h-4 fill-red-400" />
+            <span className="text-sm font-medium">{project.likes}</span>
+          </div>
+          {project.views !== undefined && (
+            <div className="flex items-center gap-1 text-blue-400">
+              <Eye className="w-4 h-4 fill-blue-400" />
+              <span className="text-sm font-medium">{project.views}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -50,6 +60,25 @@ export function ProjectCardHome({ project }: ProjectCardHomeProps) {
       <p className="text-gray-300 text-sm mb-4 line-clamp-2">
         {project.description}
       </p>
+
+      {/* Tech Stacks */}
+      {project.techStacks && project.techStacks.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {project.techStacks.slice(0, 4).map((tech, index) => (
+            <span
+              key={index}
+              className="px-2 py-1 bg-slate-700 text-gray-300 text-xs rounded-md"
+            >
+              {tech}
+            </span>
+          ))}
+          {project.techStacks.length > 4 && (
+            <span className="px-2 py-1 bg-slate-700 text-gray-300 text-xs rounded-md">
+              +{project.techStacks.length - 4}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Bottom Section */}
       <div className="flex items-center justify-between">

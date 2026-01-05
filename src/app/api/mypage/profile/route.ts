@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getApiUrl, API_ENDPOINTS } from '@/lib/api/services/user-service';
+import { getUserApiUrl, USER_ENDPOINTS } from '@/lib/api/endpoints/user-endpoints';
 
 export async function POST(request: Request) {
   try {
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
           fileType: body.fileType,
         };
         
-        const s3ApiUrl = getApiUrl(API_ENDPOINTS.S3.PRESIGNED_URL);
+        const s3ApiUrl = getUserApiUrl(USER_ENDPOINTS.S3.PRESIGNED_URL);
         console.log('🌐 S3 API URL:', s3ApiUrl);
         
         const s3Response = await fetch(s3ApiUrl, {
@@ -123,7 +123,7 @@ export async function POST(request: Request) {
     console.log('👤 Creating user account...');
 
     // Create user account
-    const signupApiUrl = getApiUrl(API_ENDPOINTS.USERS.SIGNUP);
+    const signupApiUrl = getUserApiUrl(USER_ENDPOINTS.USER.SIGNUP);
     console.log('Signup API URL:', signupApiUrl);
     
     const controller = new AbortController();
