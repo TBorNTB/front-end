@@ -8,7 +8,7 @@ import {
   AuthContextType, 
   mapUserToAuthUser,
   AuthResponse 
-} from '@/app/(main)/(auth)/types/auth';
+} from '@/app/(auth)/types/auth';
 import { handleAuthError } from '@/lib/form-utils';
 
 // ✅ Unified User type (extends both)

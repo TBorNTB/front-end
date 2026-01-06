@@ -1,7 +1,5 @@
 // app/(pages)/topics/page.tsx
 import { Suspense } from 'react';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
 import { LearningTopics as TopicsClient } from './LearningTopics';
 
 function TopicsLoading() {
@@ -33,11 +31,9 @@ function TopicsLoading() {
 export default function TopicsPage() {
   return (
     <>
-      <Header />
       <Suspense fallback={<TopicsLoading />}>
         <TopicsClient />
       </Suspense>
-      <Footer />
     </>
   );
 }

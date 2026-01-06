@@ -240,12 +240,17 @@ export function LearningTopics() {
 
   // Common Header Component
   const renderHeader = () => (
-    <div className="text-center mb-4">
-      <h1 className="text-4xl font-bold text-primary-600 mb-2">Learning Topics</h1>
-      <p className="text-gray-600 text-lg max-w-3xl mx-auto mb-8">
-        사이버보안의 다양한 분야를 탐구하고 실무 경험을 쌓을 수 있는 학습 주제들을 확인하세요.
-      </p>
-    </div>
+          <div className="relative overflow-hidden rounded-2xl bg-black px-6 py-10 sm:px-10 flex justify-center bg-gradient-to-r from-primary-600/40 via-primary-500 to-secondary-500/10">
+            <div className="relative z-10 text-center max-w-3xl">
+              <h1 className="mt-2 text-3xl sm:text-4xl font-bold text-white">
+                Learning Topics
+              </h1>
+              <p className="mt-3 text-primary-100 text-base sm:text-lg">
+                  사이버보안의 다양한 분야를 탐구하고 실무 경험을 쌓을 수 있는 학습 주제들을 확인하세요.
+              </p>
+            </div>
+          </div> 
+
   );
 
   const renderAllCategories = () => (

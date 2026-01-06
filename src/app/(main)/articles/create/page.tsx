@@ -1,5 +1,3 @@
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
 import NewArticleForm from '../_components/NewArticleForm';
 
 export const metadata = {

@@ -3,13 +3,12 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import ChatBot from '@/app/(main)/chatbot/ChatBot';
 import Topics from '@/components/landing/Topics';
-import{ HeroBanner, StatisticsSection, FeaturedProjectCard, ProjectCardHome, ArticleCardHome } from '@/components/landing';
+import{ HeroBanner, StatisticsSection, FeaturedProjectCard, ProjectCardHome, ArticleCardHome, QuickActions } from '@/components/landing';
 import { useLandingData } from '@/hooks/useLandingData';
 import { convertStatus, normalizeImageUrl } from '@/lib/landing-utils';
 import type {
@@ -34,6 +33,7 @@ export default function Home() {
 
   const [allArticles, setAllArticles] = useState<ArticleCardData[]>([]);
   const [articleIndex, setArticleIndex] = useState(0);
+  const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
   // Derive project data from hook
   useEffect(() => {
@@ -168,6 +168,29 @@ export default function Home() {
     }
   };
 
+  const toggleFaq = (index: number) => {
+    setExpandedFaq(expandedFaq === index ? null : index);
+  };
+
+  const faqs = [
+    {
+      question: 'SSG는 무엇인가요?',
+      answer: '세종대학교 정보보안동아리(SSG)는 사이버보안에 대한 열정을 가진 학생들이 모여 함께 성장하는 동아리입니다. 실무 기술 학습과 보안 프로젝트를 진행합니다.'
+    },
+    {
+      question: '동아리에 가입하려면 어떻게 하나요?',
+      answer: '매 학기 신입생 모집 기간에 SSG에 지원하실 수 있습니다. 보안에 대한 관심과 학습 의욕이 있다면 누구나 환영합니다.'
+    },
+    {
+      question: '활동에 참여하려면 사전 지식이 필요한가요?',
+      answer: '초보자부터 경험자까지 모두 환영합니다. 체계적인 교육과 멘토링을 통해 함께 성장하는 것이 목표입니다.'
+    },
+    {
+      question: '프로젝트는 어떻게 진행되나요?',
+      answer: '팀 기반의 보안 프로젝트를 진행합니다. 웹해킹, 리버싱, 포렌식 등 다양한 분야에서 실무 기술을 익힐 수 있습니다.'
+    }
+  ];
+
   return (
     <>
       <div className="min-h-screen bg-background">
@@ -208,9 +231,12 @@ export default function Home() {
           onPrev={goPrevArticles}
           onPageClick={(page) => setArticleIndex(page * 2)}
         />
+
+        <FAQsSection faqs={faqs} expandedFaq={expandedFaq} onToggleFaq={toggleFaq} />
+
+        <QuickActions />
       </div>
 
-      <ChatBot />
       <Footer />
     </>
   );
@@ -526,6 +552,47 @@ function ArticlesSection({
             </button>
           </div>
         )}
+      </div>
+    </section>
+  );
+}
+
+interface FAQsSectionProps {
+  faqs: Array<{ question: string; answer: string }>;
+  expandedFaq: number | null;
+  onToggleFaq: (index: number) => void;
+}
+
+function FAQsSection({ faqs, expandedFaq, onToggleFaq }: FAQsSectionProps) {
+  return (
+    <section className="section py-20 bg-gray-50">
+      <div className="container">
+        <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
+          자주 묻는 질문
+        </h2>
+
+        <div className="max-w-3xl mx-auto space-y-4">
+          {faqs.map((faq, index) => (
+            <div key={index} className="bg-white rounded-lg overflow-hidden border border-gray-200">
+              <button
+                onClick={() => onToggleFaq(index)}
+                className="w-full p-6 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+              >
+                <span className="font-semibold text-gray-900">{faq.question}</span>
+                {expandedFaq === index ? (
+                  <ChevronDown className="w-5 h-5 text-primary-600 flex-shrink-0 rotate-180" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-primary-600 flex-shrink-0" />
+                )}
+              </button>
+              {expandedFaq === index && (
+                <div className="px-6 pb-6 border-t border-gray-100">
+                  <p className="text-gray-700 leading-relaxed pt-4">{faq.answer}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

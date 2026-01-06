@@ -517,36 +517,24 @@ export default function ProjectsContent() {
   return (
     <div className="min-h-screen bg-background">
       <div className="w-full px-3 sm:px-4 lg:px-10 py-10">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-4 mb-4">
-            <h1 className="text-4xl font-bold text-primary-600">Projects</h1>
-          </div>
-          <p className="text-gray-600 text-lg max-w-3xl mx-auto">
-            동아리 멤버들이 만들어낸 결과물을 만나보세요.
-          </p>
-          {/* Breadcrumb for filtered topic */}
-          {currentTopicName && (
-            <div className="mt-4">
-              <div className="inline-flex items-center space-x-2 bg-primary-50 text-primary-700 px-4 py-2 rounded-lg border border-primary-200">
-                <span className="text-sm">필터링된 주제:</span>
-                <span className="font-semibold">{currentTopicName}</span>
-                <button
-                  onClick={clearAllFilters}
-                  className="ml-2 hover:text-primary-900"
-                >
-                  <X size={16} />
-                </button>
-              </div>
+        {/* Hero Section */}
+        <section className="mb-8">
+          <div className="relative overflow-hidden rounded-2xl bg-black px-6 py-10 sm:px-10 flex justify-center bg-gradient-to-r from-primary-600/40 via-primary-500 to-secondary-500/10">
+            <div className="relative z-10 text-center max-w-3xl">
+              <h1 className="mt-2 text-3xl sm:text-4xl font-bold text-white">Projects</h1>
+              <p className="mt-3 text-primary-100 text-base sm:text-lg">
+                동아리 멤버들이 만들어낸 프로젝트를 만나보세요.
+              </p>
             </div>
-          )}
-        </div>
+          </div>
+        </section>
 
-        {/* Top Controls with Card Background */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8 bg-white rounded-xl p-6 shadow-lg border border-gray-200">
-          <div className="flex items-center justify-between w-full">
-            {/* Search Bar */}
-            <div className="relative flex-1 max-w-md">
-              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${isSearching ? 'text-primary animate-pulse' : 'text-gray-400'}`} />
+        {/* Search/View Mode/Create Button Section */}
+        <section className="flex flex-col md:flex-row gap-4 mb-6">
+          {/* Search Input */}
+          <div className="flex-1">
+            <div className="relative">
+              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isSearching ? 'text-primary animate-pulse' : 'text-gray-400'}`} />
               <input
                 ref={searchInputRef}
                 type="text"
@@ -565,15 +553,15 @@ export default function ProjectsContent() {
                     setShowSuggestions(true);
                   }
                 }}
-                className="w-full h-10 pl-10 pr-4 text-sm bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                className="w-full h-11 pl-10 pr-4 rounded-xl border border-gray-200 bg-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
               {isSearching && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
                   <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
                 </div>
               )}
-              
-              {/* 검색 제안 드롭다운 */}
+
+              {/* Search Suggestions */}
               {showSuggestions && searchSuggestions.length > 0 && searchTerm.length > 0 && (
                 <div
                   ref={suggestionsRef}
@@ -581,7 +569,6 @@ export default function ProjectsContent() {
                 >
                   <div className="py-2">
                     {searchSuggestions.map((suggestion, index) => {
-                      // 검색어와 일치하는 부분을 하이라이트
                       const parts = suggestion.split(new RegExp(`(${searchTerm})`, 'gi'));
                       return (
                         <button
@@ -608,124 +595,91 @@ export default function ProjectsContent() {
                 </div>
               )}
             </div>
-
-            {/* Controls Group */}
-            <div className="flex items-center gap-3">
-              {/* View Mode Toggle */}
-              <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 ${viewMode === 'grid' ? 'bg-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                  title="Grid View"
-                >
-                  <Grid size={16} />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 ${viewMode === 'list' ? 'bg-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                  title="List View"
-                >
-                  <List size={16} />
-                </button>
-              </div>
-
-              {/* Create Project Button */}
-              <Link href="/projects/create" className="bg-primary text-white px-6 py-2 rounded-lg font-semibold hover:bg-primary-700 transition-colors flex items-center gap-2 whitespace-nowrap">
-                  <Plus size={16} />
-                <span>새 프로젝트 만들기</span>
-              </Link>
-            </div>
           </div>
-        </div>
+
+          {/* Right Section: Create Button */}
+          <div className="flex items-center justify-end gap-3">
+            <Link href="/projects/create" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700">
+              <Plus className="w-4 h-4" />
+              새 프로젝트
+            </Link>
+          </div>
+        </section>
 
         {/* Main Content with Sidebar */}
-        <div className="flex gap-8">
+        <section className="flex gap-8">
           {/* Sidebar Filter */}
-          <div className="w-64 flex-shrink-0">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 sticky top-8">
-              <div className="p-4 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900">필터</h3>
-                  {(selectedCategories.length > 0 || selectedStatuses.length > 0) && (
-                    <button
-                      onClick={clearAllFilters}
-                      className="text-sm text-primary hover:underline"
-                    >
-                      전체 초기화
-                    </button>
-                  )}
-                </div>
+          <aside className="w-64 flex-shrink-0 hidden md:block">
+            <div className="bg-white rounded-2xl border border-gray-200 p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold text-gray-900">
+                  필터
+                </h3>
+                {(selectedCategories.length > 0 || selectedStatuses.length > 0) && (
+                  <button
+                    onClick={clearAllFilters}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    초기화
+                  </button>
+                )}
               </div>
 
-              <div className="p-4">
-                {/* Status Filters - 라디오 버튼 스타일 (항상 하나만 선택) */}
-                <div className="space-y-3 mb-6">
-                  <h4 className="text-base font-semibold text-gray-900">프로젝트 상태</h4>
-                  {statuses.map((status) => (
-                    <label key={status} className="flex items-center cursor-pointer">
-                      <input
-                        type="radio"
-                        name="projectStatus"
-                        checked={selectedStatuses.includes(status)}
-                        onChange={() => handleStatusToggle(status)}
-                        className="sr-only"
-                      />
-                      <div className={`w-4 h-4 border-2 rounded mr-3 flex items-center justify-center ${
-                        selectedStatuses.includes(status)
-                          ? 'bg-primary border-primary'
-                          : 'border-gray-300'
-                      }`}>
-                        {selectedStatuses.includes(status) && (
-                          <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </div>
-                      <span className="text-gray-700">{status}</span>
-                    </label>
-                  ))}
-                </div>
+              {/* Status Filters */}
+              <div className="space-y-3 mb-6">
+                <h4 className="text-xs font-semibold text-gray-900 uppercase">프로젝트 상태</h4>
+                {statuses.map((status) => (
+                  <label key={status} className="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="projectStatus"
+                      checked={selectedStatuses.includes(status)}
+                      onChange={() => handleStatusToggle(status)}
+                      className="sr-only"
+                    />
+                    <div className={`w-4 h-4 border-2 rounded mr-3 flex items-center justify-center ${
+                      selectedStatuses.includes(status)
+                        ? 'bg-primary border-primary'
+                        : 'border-gray-300'
+                    }`}>
+                      {selectedStatuses.includes(status) && (
+                        <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </div>
+                    <span className="text-sm text-gray-700">{status}</span>
+                  </label>
+                ))}
+              </div>
 
-                {/* Category Filters */}
-                <h4 className="text-base font-semibold text-gray-900 mb-3">학습 주제</h4>
-                <div className="space-y-3">
-                  {categories.map((category) => (
-                    <label key={category} className="flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedCategories.includes(category)}
-                        onChange={() => handleCategoryToggle(category)}
-                        className="sr-only"
-                      />
-                      <div className={`w-4 h-4 border-2 rounded mr-3 flex items-center justify-center ${
-                        selectedCategories.includes(category)
-                          ? 'bg-primary border-primary'
-                          : 'border-gray-300'
-                      }`}>
-                        {selectedCategories.includes(category) && (
-                          <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </div>
-                      <span className="text-gray-700">{category}</span>
-                    </label>
-                  ))}
-                </div>
+              {/* Category Filters */}
+              <h4 className="text-xs font-semibold text-gray-900 uppercase mb-3">학습 주제</h4>
+              <div className="space-y-1">
+                {categories.map((category) => (
+                  <button
+                    key={category}
+                    onClick={() => handleCategoryToggle(category)}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm ${
+                      selectedCategories.includes(category)
+                        ? 'bg-primary-600 text-white'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <span>{category}</span>
+                  </button>
+                ))}
               </div>
             </div>
-          </div>
+          </aside>
 
           {/* Main Content */}
           <div className="flex-1">
             {/* Sort and Results Count */}
             <div className="flex items-center justify-between mb-6">
-              <p className="text-gray-600">
+              <p className="text-sm text-gray-600">
                 <span className="font-semibold text-primary">{filteredProjects.length}</span>개의 프로젝트
                 {searchTerm && ` (검색어: "${searchTerm}")`}
-                {elasticSearchTerm && elasticSearchTerm !== searchTerm && (
-                  <span className="text-xs text-gray-500 ml-1">→ "{elasticSearchTerm}"</span>
-                )}
                 {currentTopicName && ` (주제: ${currentTopicName})`}
               </p>
 
@@ -733,7 +687,7 @@ export default function ProjectsContent() {
               <div className="relative">
                 <button
                   onClick={() => setShowSortDropdown(!showSortDropdown)}
-                  className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   {sortBy}
                   <ChevronDown size={16} className={`transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
@@ -775,18 +729,17 @@ export default function ProjectsContent() {
                 : "space-y-6"
               }>
                 {filteredProjects.map((project) => (
-                <div key={project.id} className={`group ${viewMode === 'list' ? 'flex gap-6' : ''}`}>
-                  <div className={`bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-primary hover:shadow-lg transition-all duration-200 hover:-translate-y-1 ${
-                    viewMode === 'list' ? 'flex flex-1' : ''
+                  <div key={project.id} className={`bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-primary-300 hover:shadow-md transition-all duration-200 flex flex-col h-full ${
+                    viewMode === 'list' ? 'flex-row' : ''
                   }`}>
                     {/* Image */}
-                    <div className={`relative ${viewMode === 'list' ? 'w-64 flex-shrink-0' : ''}`}>
+                    <div className={`relative ${viewMode === 'list' ? 'w-56 flex-shrink-0 overflow-hidden' : 'overflow-hidden'}`}>
                       <Image
                         src={project.image}
                         alt={project.title}
-                        width={viewMode === 'list' ? 256 : 400}
-                        height={viewMode === 'list' ? 300 : 192}
-                        className={`w-full object-cover ${viewMode === 'list' ? 'h-full' : 'h-48'}`}
+                        width={viewMode === 'list' ? 224 : 400}
+                        height={viewMode === 'list' ? 224 : 240}
+                        className={`w-full object-cover ${viewMode === 'list' ? 'h-full' : 'h-56'} group-hover:scale-105 transition-transform duration-200`}
                       />
                       <div className="absolute top-3 left-3">
                         <span className="bg-white/90 backdrop-blur-sm border border-gray-200 text-primary px-2 py-1 rounded-full text-xs font-medium">
@@ -801,22 +754,22 @@ export default function ProjectsContent() {
                     </div>
 
                     {/* Content */}
-                    <div className="p-5 flex-1">
-                      <h3 className={`font-bold text-gray-900 mb-2 line-clamp-2 ${
-                        viewMode === 'list' ? 'text-xl' : 'text-lg'
+                    <div className="p-5 flex-1 flex flex-col">
+                      <h3 className={`font-semibold text-gray-900 mb-2 line-clamp-2 ${
+                        viewMode === 'list' ? 'text-lg' : 'text-base'
                       }`}>
                         {project.title}
                       </h3>
-                      <p className={`text-gray-600 mb-3 leading-relaxed ${
-                        viewMode === 'list' ? 'line-clamp-2' : 'line-clamp-3 text-sm'
+                      <p className={`text-sm text-gray-600 mb-3 ${
+                        viewMode === 'list' ? 'line-clamp-2' : 'line-clamp-3'
                       }`}>
                         {project.description}
                       </p>
 
                       {/* 기술 스택 태그 */}
                       {project.tags && project.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {project.tags.slice(0, 5).map((tag: string, index: number) => (
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                          {project.tags.slice(0, 3).map((tag: string, index: number) => (
                             <span
                               key={index}
                               className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md border border-gray-200"
@@ -824,24 +777,16 @@ export default function ProjectsContent() {
                               {tag}
                             </span>
                           ))}
-                          {project.tags.length > 5 && (
+                          {project.tags.length > 3 && (
                             <span className="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded-md border border-gray-200">
-                              +{project.tags.length - 5}
+                              +{project.tags.length - 3}
                             </span>
                           )}
                         </div>
                       )}
 
-                      {/* Contributors Avatar Stack */}
-                      <div className="mb-3">
-                        <AvatarStack
-                          creator={project.creator}
-                          contributors={project.contributors}
-                        />
-                      </div>
-
-                      {/* 좋아요 수와 조회수 */}
-                      <div className="flex items-center gap-4 mb-3 text-sm">
+                      {/* Engagement Stats */}
+                      <div className="flex items-center gap-4 mb-4 text-sm border-t border-gray-100 pt-3">
                         <div className="flex items-center gap-1 text-gray-700 font-medium">
                           <Heart size={16} className="text-red-500 fill-red-500" />
                           <span>{project.likeCount || 0}</span>
@@ -852,40 +797,42 @@ export default function ProjectsContent() {
                         </div>
                       </div>
 
-                      <div className="flex justify-between items-center">
+                      {/* Action Buttons */}
+                      <div className="flex justify-between items-center gap-2 mt-auto">
                         <div className="flex space-x-2">
-                          <a
-                            href={project.github}
-                            className="text-gray-400 hover:text-primary transition-colors"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <Github size={18} />
-                          </a>
+                          {project.github && (
+                            <a
+                              href={project.github}
+                              className="text-gray-400 hover:text-primary transition-colors"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="GitHub"
+                            >
+                              <Github size={18} />
+                            </a>
+                          )}
                           {project.demo && (
                             <a
                               href={project.demo}
                               className="text-gray-400 hover:text-primary transition-colors"
                               target="_blank"
                               rel="noopener noreferrer"
+                              title="Demo"
                             >
                               <ExternalLink size={18} />
                             </a>
                           )}
                         </div>
 
-                        {/* 여기서부터: 자세히 보기 -> Link */}
                         <Link
                           href={`/projects/${project.id}`}
                           className="bg-primary text-white px-4 py-1.5 rounded-lg text-xs font-medium hover:bg-primary-700 transition-colors"
                         >
                           자세히 보기
                         </Link>
-                        {/* 여기까지 */}
                       </div>
                     </div>
                   </div>
-                </div>
                 ))}
               </div>
             )}
@@ -966,7 +913,7 @@ export default function ProjectsContent() {
               </div>
             )}
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );

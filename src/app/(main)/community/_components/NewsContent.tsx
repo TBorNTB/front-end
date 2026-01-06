@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Grid, List, Search, ChevronDown, X, ChevronLeft, ChevronRight, Heart, Eye, Calendar, User } from 'lucide-react';
+import { Grid, List, Search, ChevronDown, X, ChevronLeft, ChevronRight, Heart, Eye, Calendar, User, Plus } from 'lucide-react';
 import { NewsCard } from './NewsCard';
-import Image from 'next/image';
+import Link from 'next/link';
 import { BASE_URL } from '@/lib/api/config';
 
 // News API Response Types
@@ -293,7 +293,9 @@ const mockNewsData: NewsItem[] = [
   }
 ];
 
-export default function NewsContent() {
+type NewsContentProps = { createHref?: string };
+
+export default function NewsContent({ createHref = '/news/new' }: NewsContentProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [news, setNews] = useState<NewsItem[]>([]);
@@ -545,15 +547,11 @@ export default function NewsContent() {
   }));
 
   return (
-    <div className="w-full px-3 sm:px-4 lg:px-10 py-10">
+    <div className="w-full">
       {/* Header Section */}
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-primary-600 mb-4">SSG News</h1>
-        <p className="text-gray-600 text-lg max-w-3xl mx-auto">
-          세종대학교 정보보안 동아리 SSG의 최신 소식과 활동을 확인하세요
-        </p>
+      <div className="text-center mb-0">
         {(searchTerm || selectedCategory !== 'all') && (
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+          <div className="flex-wrap items-center justify-center gap-2">
             {searchTerm && (
               <div className="inline-flex items-center space-x-2 bg-primary-50 text-primary-700 px-4 py-2 rounded-lg border border-primary-200">
                 <span className="text-sm">검색어:</span>
@@ -597,8 +595,8 @@ export default function NewsContent() {
         )}
       </div>
 
-      {/* Top Controls with Card Background */}
-      <div className="flex flex-col md:flex-row gap-4 mb-8 bg-white rounded-xl p-6 shadow-lg border border-gray-200">
+      {/* Top Controls - aligned with Articles styling */}
+      <section className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="flex items-center justify-between w-full">
           {/* Search Bar */}
           <div className="relative flex-1 max-w-md">
@@ -615,7 +613,7 @@ export default function NewsContent() {
                   setShowSuggestions(false);
                 }
               }}
-              className="w-full h-10 pl-10 pr-4 text-sm bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+              className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
             
             {/* Search Suggestions */}
@@ -637,6 +635,62 @@ export default function NewsContent() {
             )}
           </div>
 
+          {/* Controls */}
+          <div className="flex items-center gap-3">
+            {/* New Post Button */}
+            <Link
+              href={createHref}
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary-600 px-4 text-white hover:bg-primary-700 transition-colors"
+            >
+              <Plus size={16} />
+              <span className="text-sm font-medium">새 글 쓰기</span>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Main Content with Sidebar */}
+      <div className="flex gap-8">
+        {/* Sidebar Filter - aligned with Articles styling */}
+        <aside className="w-64 flex-shrink-0 hidden md:block">
+          <div className="bg-white rounded-2xl border border-gray-200 p-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-4">카테고리</h3>
+            <div className="space-y-1">
+              {newsCategories.map((category) => {
+                const isActive = selectedCategory === category.value;
+                // 목 데이터에서 카운트 계산
+                const categoryCount = category.value === 'all'
+                  ? mockNewsData.length
+                  : mockNewsData.filter(n => n.content.category === category.value).length;
+
+                return (
+                  <button
+                    key={category.value}
+                    onClick={() => handleCategoryChange(category.value)}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all ${
+                      isActive ? 'bg-primary-600 text-white' : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <span>{category.name}</span>
+                    <span className={`${isActive ? 'text-primary-50' : 'text-gray-400'} text-xs`}>
+                      {categoryCount}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <div className="flex-1">
+          {/* Results Count */}
+          <div className="flex items-center justify-between mb-6">
+            <p className="text-sm text-gray-600">
+              총 <span className="font-semibold text-primary">{totalElements}</span>개의 뉴스
+              {searchTerm && ` (검색어: "${searchTerm}")`}
+              {selectedCategory !== 'all' && ` (카테고리: ${newsCategories.find(c => c.value === selectedCategory)?.name})`}
+            </p>
           {/* Controls */}
           <div className="flex items-center gap-3">
             {/* View Mode Toggle */}
@@ -685,60 +739,9 @@ export default function NewsContent() {
               )}
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Main Content with Sidebar */}
-      <div className="flex gap-8">
-        {/* Sidebar Filter */}
-        <div className="w-64 flex-shrink-0">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 sticky top-8">
-            <div className="p-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">카테고리</h3>
-            </div>
-            <div className="p-2">
-              {newsCategories.map((category) => {
-                const isActive = selectedCategory === category.value;
-                // 목 데이터에서 카운트 계산
-                const categoryCount = category.value === 'all' 
-                  ? mockNewsData.length 
-                  : mockNewsData.filter(n => n.content.category === category.value).length;
-                
-                return (
-                  <button
-                    key={category.value}
-                    onClick={() => handleCategoryChange(category.value)}
-                    className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-sm transition-all ${
-                      isActive
-                        ? 'bg-primary-600 text-white font-medium'
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <span>{category.name}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-xs ${
-                      isActive
-                        ? 'bg-white bg-opacity-20 text-white'
-                        : 'bg-gray-200 text-gray-600'
-                    }`}>
-                      {categoryCount}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
           </div>
-        </div>
 
-        {/* Main Content */}
-        <div className="flex-1">
-          {/* Results Count */}
-          <div className="flex items-center justify-between mb-6">
-            <p className="text-gray-600">
-              총 <span className="font-semibold text-primary">{totalElements}</span>개의 뉴스
-              {searchTerm && ` (검색어: "${searchTerm}")`}
-              {selectedCategory !== 'all' && ` (카테고리: ${newsCategories.find(c => c.value === selectedCategory)?.name})`}
-            </p>
-          </div>
+        
 
         {/* Loading State */}
         {loading ? (
@@ -774,8 +777,8 @@ export default function NewsContent() {
         ) : (
           <>
             {/* News Grid/List */}
-            <div className={viewMode === 'grid' 
-              ? "grid grid-cols-1 md:grid-cols-2 gap-6" 
+            <div className={viewMode === 'grid'
+              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
               : "space-y-6"
             }>
               {transformedNews.map((item) => (

@@ -11,8 +11,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 
 const navList = [
-  { 
-    name: "About", 
+  { name: "About", 
     slug: "about",
     hasDropdown: true,
     dropdownItems: [
@@ -23,9 +22,10 @@ const navList = [
       { name: "FAQs", slug: "faqs", href: "/faqs" },
     ]
   },
-  { name: "Topics", slug: "topics", href: "/topics", scrollToSection: "topics" }, // ✅ Added scrollToSection
+  { name: "Topics", slug: "topics", href: "/topics" },
   { name: "Projects", slug: "projects", href: "/projects" },
   { name: "Articles", slug: "articles", href: "/articles" },
+  { name: "Community", slug: "community", href: "/community" },
   { name: "Newsletter", slug: "newsletter", href: "/newsletter" },
 ];
 
@@ -111,32 +111,6 @@ const Header = () => {
     e.preventDefault();
     if (searchQuery.trim()) {
       console.log("Searching for:", searchQuery);
-    }
-  };
-
-  // ✅  Handle navigation with scroll and offset
-  const handleNavClick = (e: React.MouseEvent, navItem: any) => {
-    // If it has a scrollToSection property
-    if (navItem.scrollToSection) {
-      e.preventDefault();
-      
-      // If we're on homepage, scroll to section
-      if (pathname === '/') {
-        const section = document.getElementById(navItem.scrollToSection);
-        if (section) {
-          const headerOffset = 80; // Height of sticky header
-          const elementPosition = section.getBoundingClientRect().top;
-          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-
-          window.scrollTo({
-            top: offsetPosition,
-            behavior: 'smooth'
-          });
-        }
-      } else {
-        // If we're on another page, navigate to homepage with hash
-        router.push('/#' + navItem.scrollToSection);
-      }
     }
   };
 
@@ -230,7 +204,6 @@ const Header = () => {
                   ) : (
                     <Link 
                       href={navItem.href!}
-                      onClick={(e) => handleNavClick(e, navItem)}
                       className={`py-2 px-1 transition-all duration-200 relative cursor-pointer inline-block ${
                         isActive(navItem.href!) 
                           ? "text-primary-600 font-bold" 
@@ -442,10 +415,7 @@ const Header = () => {
                   ) : (
                     <Link
                       href={navItem.href!}
-                      onClick={(e) => {
-                        handleNavClick(e, navItem);
-                        setIsMobileMenuOpen(false);
-                      }}
+                      onClick={() => setIsMobileMenuOpen(false)}
                       className="block py-2 text-gray-900 hover:text-primary-600 cursor-pointer"
                     >
                       {navItem.name}

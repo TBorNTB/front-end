@@ -16,6 +16,7 @@ export type Project = {
 };
 
 export type Article = {
+  topicSlug: string;
   id: string;
   content: {
     title: string;
