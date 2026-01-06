@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { categoryService } from '@/lib/api/services/category-service';
-import { CategoryType, CategorySlugs, CategoryDescriptions, CategoryHelpers } from '@/app/(main)/topics/types/category';
-import { getProjects, getArticles, type Project, type Article, getCategories, type CategoryItem } from '@/lib/mock-data';
+import { CategoryType, CategorySlugs, CategoryDescriptions, CategoryHelpers } from '@/types/category';
+import { getProjects, getArticles, getCategories, getTopics, type Project, type Article, type CategoryItem } from '@/lib/mock-data';
 
 export interface LandingTopic {
   id: string;
@@ -16,7 +16,7 @@ export interface LandingTopic {
 interface LandingDataState {
   projects: Project[];
   articles: Article[];
-  topics: LandingTopic[];
+  topics: LandingTopic[]; // Same structure as Topic from mock-data
   loading: boolean;
   error: string | null;
 }
@@ -51,21 +51,27 @@ export const useLandingData = (): LandingDataState => {
 
     const load = async () => {
       try {
-        const [projectsRes, articlesRes, categoriesRes] = await Promise.all([
+        console.log('useLandingData: Starting load...');
+        const [projectsRes, articlesRes, topicsRes] = await Promise.all([
           getProjects(),
           getArticles(),
-          // categoryService already respects mock flag; fallback to mock getter if needed
-          categoryService.getCategories().catch(async () => ({ categories: await getCategories() })),
+          getTopics(),
         ]);
+
+        console.log('useLandingData: Loaded data', {
+          projects: projectsRes.length,
+          articles: articlesRes.length,
+          topics: topicsRes?.length || 0
+        });
+        console.log('Topics data:', topicsRes);
 
         if (!isMounted) return;
 
-        const topics = mapCategoriesToTopics(categoriesRes.categories);
-
+        // topicsRes should already be LandingTopic[] compatible
         setState({
           projects: projectsRes,
           articles: articlesRes,
-          topics,
+          topics: topicsRes as LandingTopic[],
           loading: false,
           error: null,
         });

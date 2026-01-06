@@ -7,7 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { ChevronDownIcon, BellIcon, Search, X, Menu, Shield } from "lucide-react";
 import { UserRoleDisplay, UserRole } from "@/types/core";
 import AlarmPopup from "./AlarmPopup";
-import { profileService, UserResponse } from "@/lib/api/services/user-service";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 
 const navList = [
@@ -38,7 +38,7 @@ const Header = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAlarmPopupOpen, setIsAlarmPopupOpen] = useState(false);
-  const [profileData, setProfileData] = useState<UserResponse | null>(null);
+  const { user:profileData } = useCurrentUser();
   
   const dropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -69,17 +69,7 @@ const Header = () => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
-  // 프로필 정보 로드
-  useEffect(() => {
-  if (isAuthenticated) {
-    profileService.getProfile()
-      .then(setProfileData)
-      .catch(error => {
-        console.error('Profile load failed:', error);
-        // Keep AuthContext user as fallback ✅
-      });
-  }
-}, [isAuthenticated]);
+  // 프로필 정보는 hooks에서 로드 (useProfileData)
 
   const toggleDropdown = (slug: string) => {
     setDropdowns(prev => ({

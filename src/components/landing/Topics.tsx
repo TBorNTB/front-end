@@ -167,7 +167,7 @@ const getCategoryDescription = (type: CategoryType): string => {
 interface TopicsSectionProps {
   showHeader?: boolean;
   className?: string;
-  topics?: Topic[]; // Optional prop for external data
+  topics?: any[]; // Accept both Topic and LandingTopic types (same structure)
 }
 
 export default function TopicsSection({ 
@@ -184,29 +184,21 @@ export default function TopicsSection({
   
   // API에서 카테고리 데이터 가져오기
   useEffect(() => {
-    // 외부에서 topics가 전달되면 사용, 아니면 API 호출
-    if (externalTopics) {
-      setTopicsData(externalTopics);
+    console.log('Topics component received:', externalTopics);
+    
+    // 외부에서 topics가 전달되고 empty가 아니면 사용
+    if (externalTopics && Array.isArray(externalTopics) && externalTopics.length > 0) {
+      console.log('Using external topics with length:', externalTopics.length);
+      // Cast to Topic (same structure)
+      setTopicsData(externalTopics as Topic[]);
       setLoading(false);
       return;
     }
 
-    const fetchCategories = async () => {
-      try {
-        setLoading(true);
-        const response = await categoryService.getCategories();
-        const transformedTopics = transformApiResponseToTopics(response.categories);
-        setTopicsData(transformedTopics);
-      } catch (error) {
-        console.error('Failed to fetch categories, using fallback data:', error);
-        // API 실패 시 목 데이터 사용
-        setTopicsData(getTopicsData());
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCategories();
+    // No external topics, use fallback mock data
+    console.log('No external topics, using fallback mock data');
+    setTopicsData(getTopicsData());
+    setLoading(false);
   }, [externalTopics]);
   
   const itemsPerPage = 8; // 4x2 grid (4 columns, 2 rows)

@@ -1,12 +1,13 @@
-// src/lib/hooks/useCurrentUser.ts
-'use client';
-import useSWR from 'swr'; 
+// useCurrentUser (SWR-gated variant)
+import useSWR from 'swr';
+import { useAuth } from '@/context/AuthContext';
 import { profileService, type UserResponse } from '@/lib/api/services/user-service';
 
 export function useCurrentUser() {
-  const { data, error, isLoading } = useSWR<UserResponse>(
-    '/api/auth/user', // Your route handler!
+  const { isAuthenticated } = useAuth();
+  const { data, error, isLoading, mutate } = useSWR<UserResponse>(
+    isAuthenticated ? '/api/auth/user' : null,
     () => profileService.getProfile()
   );
-  return { user: data, error, isLoading };
+  return { user: data ?? null, error, isLoading, refresh: () => mutate() };
 }

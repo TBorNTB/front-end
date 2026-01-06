@@ -1,5 +1,5 @@
 import { USE_MOCK_DATA } from '@/lib/api/env';
-import { CategoryType, CategoryDisplayNames, CategoryDescriptions } from '@/app/(main)/topics/types/category';
+import { CategoryType, CategoryDisplayNames, CategoryDescriptions } from '@/types/category';
 
 export type Project = {
   id: string;
@@ -44,6 +44,16 @@ export type Statistics = {
   articleCount: number;
   userCount: number;
   csCount: number;
+};
+
+export type Topic = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  type: CategoryType;
+  projectCount: number;
+  articleCount: number;
 };
 
 const now = new Date().toISOString();
@@ -180,6 +190,72 @@ export const MOCK_CATEGORIES: CategoryItem[] = Object.values(CategoryType).map((
   description: CategoryDescriptions[type],
 }));
 
+export const MOCK_TOPICS: Topic[] = [
+  {
+    id: 'topic-1',
+    name: CategoryDisplayNames[CategoryType.WEB_HACKING],
+    slug: 'web-hacking',
+    description: CategoryDescriptions[CategoryType.WEB_HACKING],
+    type: CategoryType.WEB_HACKING,
+    projectCount: 24,
+    articleCount: 18,
+  },
+  {
+    id: 'topic-2',
+    name: CategoryDisplayNames[CategoryType.REVERSING],
+    slug: 'reversing',
+    description: CategoryDescriptions[CategoryType.REVERSING],
+    type: CategoryType.REVERSING,
+    projectCount: 18,
+    articleCount: 14,
+  },
+  {
+    id: 'topic-3',
+    name: CategoryDisplayNames[CategoryType.SYSTEM_HACKING],
+    slug: 'system-hacking',
+    description: CategoryDescriptions[CategoryType.SYSTEM_HACKING],
+    type: CategoryType.SYSTEM_HACKING,
+    projectCount: 31,
+    articleCount: 22,
+  },
+  {
+    id: 'topic-4',
+    name: CategoryDisplayNames[CategoryType.DIGITAL_FORENSICS],
+    slug: 'digital-forensics',
+    description: CategoryDescriptions[CategoryType.DIGITAL_FORENSICS],
+    type: CategoryType.DIGITAL_FORENSICS,
+    projectCount: 16,
+    articleCount: 12,
+  },
+  {
+    id: 'topic-5',
+    name: CategoryDisplayNames[CategoryType.NETWORK_SECURITY],
+    slug: 'network-security',
+    description: CategoryDescriptions[CategoryType.NETWORK_SECURITY],
+    type: CategoryType.NETWORK_SECURITY,
+    projectCount: 28,
+    articleCount: 20,
+  },
+  {
+    id: 'topic-6',
+    name: CategoryDisplayNames[CategoryType.IOT_SECURITY],
+    slug: 'iot-security',
+    description: CategoryDescriptions[CategoryType.IOT_SECURITY],
+    type: CategoryType.IOT_SECURITY,
+    projectCount: 21,
+    articleCount: 17,
+  },
+  {
+    id: 'topic-7',
+    name: CategoryDisplayNames[CategoryType.CRYPTOGRAPHY],
+    slug: 'cryptography',
+    description: CategoryDescriptions[CategoryType.CRYPTOGRAPHY],
+    type: CategoryType.CRYPTOGRAPHY,
+    projectCount: 19,
+    articleCount: 15,
+  },
+];
+
 export const MOCK_STATISTICS: Statistics = {
   projectCount: MOCK_PROJECTS.length,
   articleCount: MOCK_ARTICLES.length,
@@ -217,4 +293,13 @@ export async function getStatistics(): Promise<Statistics> {
     return MOCK_STATISTICS;
   }
   return MOCK_STATISTICS;
+}
+
+export async function getTopics(): Promise<Topic[]> {
+  console.log('getTopics() called, returning', MOCK_TOPICS.length, 'topics');
+  if (USE_MOCK_DATA) {
+    await new Promise((r) => setTimeout(r, 200));
+    return MOCK_TOPICS;
+  }
+  return MOCK_TOPICS;
 }

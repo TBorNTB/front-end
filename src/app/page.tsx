@@ -21,6 +21,12 @@ import type {
 export default function Home() {
   const { projects, articles, topics, loading: landingLoading, error: landingError } = useLandingData();
 
+  // Debug log
+  useEffect(() => {
+    console.log('Home page - topics from hook:', topics);
+    console.log('Topics length:', topics?.length);
+  }, [topics]);
+
   const [featuredProject, setFeaturedProject] = useState<FeaturedProject | null>(null);
   const [allProjects, setAllProjects] = useState<ProjectCardData[]>([]);
   const [currentProjectIndex, setCurrentProjectIndex] = useState(0);
@@ -143,22 +149,22 @@ export default function Home() {
   };
 
   // Article pagination
-  const visibleArticles = allArticles.slice(articleIndex, articleIndex + 2);
-  const canGoNextArticles = articleIndex + 2 < allArticles.length;
+  const visibleArticles = allArticles.slice(articleIndex, articleIndex + 3);
+  const canGoNextArticles = articleIndex + 3 < allArticles.length;
   const canGoPrevArticles = articleIndex > 0;
 
   const goNextArticles = () => {
-    const next = articleIndex + 2;
+    const next = articleIndex + 3;
     setArticleIndex(next < allArticles.length ? next : 0);
   };
 
   const goPrevArticles = () => {
-    const prev = articleIndex - 2;
+    const prev = articleIndex - 3;
     if (prev >= 0) {
       setArticleIndex(prev);
     } else {
-      const lastPage = Math.floor((allArticles.length - 1) / 2) * 2;
-      setArticleIndex(lastPage);
+      const lastPage = Math.floor((allArticles.length - 1) / 3) * 3;
+      setArticleIndex(Math.max(0, lastPage));
     }
   };
 
@@ -293,7 +299,7 @@ function ProjectsSection({
         {totalProjects > 0 && (
           <div className="mt-16">
             <div className="relative px-12 lg:px-16">
-              {totalProjects > 3 && (
+                {totalProjects > 3 && (
                 <>
                   <button
                     onClick={onPrev}
@@ -439,7 +445,7 @@ function ArticlesSection({
         <p className="text-gray-600 mb-12">Stay informed with expert insights</p>
 
         <div className="relative px-12 lg:px-16">
-          {totalArticles > 2 && (
+            {totalArticles > 3 && (
             <>
               <button
                 onClick={onPrev}
@@ -459,14 +465,14 @@ function ArticlesSection({
             </>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {articles.map((article) => (
               <ArticleCardHome key={article.id} article={article} />
             ))}
           </div>
         </div>
 
-        {totalArticles > 2 && (
+        {totalArticles > 3 && (
           <div className="mt-8 flex justify-center items-center gap-3">
             <button
               onClick={onPrev}

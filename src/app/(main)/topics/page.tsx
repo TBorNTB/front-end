@@ -2,7 +2,7 @@
 import { Suspense } from 'react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { LearningTopics } from './LearningTopics';
+import { LearningTopics as TopicsClient } from './LearningTopics';
 
 function TopicsLoading() {
   return (
@@ -35,7 +35,7 @@ export default function TopicsPage() {
     <>
       <Header />
       <Suspense fallback={<TopicsLoading />}>
-        <LearningTopics />
+        <TopicsClient />
       </Suspense>
       <Footer />
     </>
