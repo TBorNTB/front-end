@@ -565,7 +565,7 @@ interface FAQsSectionProps {
 
 function FAQsSection({ faqs, expandedFaq, onToggleFaq }: FAQsSectionProps) {
   return (
-    <section className="section py-20 bg-gray-50">
+    <section className="section py-20 bg-gray-100">
       <div className="container">
         <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
           자주 묻는 질문
@@ -573,10 +573,10 @@ function FAQsSection({ faqs, expandedFaq, onToggleFaq }: FAQsSectionProps) {
 
         <div className="max-w-3xl mx-auto space-y-4">
           {faqs.map((faq, index) => (
-            <div key={index} className="bg-white rounded-lg overflow-hidden border border-gray-200">
+            <div key={index} className="bg-white rounded-lg overflow-hidden border border-primary-600">
               <button
                 onClick={() => onToggleFaq(index)}
-                className="w-full p-6 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+                className="w-full p-6 text-left flex items-center justify-between hover:bg-primary-100 transition-colors"
               >
                 <span className="font-semibold text-gray-900">{faq.question}</span>
                 {expandedFaq === index ? (
