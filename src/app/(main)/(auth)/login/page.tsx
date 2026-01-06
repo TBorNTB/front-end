@@ -306,7 +306,7 @@ export default function LogInPage() {
                   <span className="text-gray-600 select-none text-sm">로그인 상태 유지</span>
                 </label>
                 <Link
-                  href="/forgotPW"
+                  href="/forgot-password"
                   className="text-primary-600 text-sm font-medium no-underline hover:text-primary-700"
                 >
                   비밀번호 찾기

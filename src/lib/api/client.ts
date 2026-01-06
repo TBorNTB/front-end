@@ -13,6 +13,8 @@ interface RequestOptions {
 }
 
 interface GatewayResult<T = unknown> {
+  ok: any;
+  json(): unknown;
   success: boolean;
   data?: T;
   error?: string;
@@ -130,24 +132,24 @@ export class GatewayAPIClient {
   }
 
   // Convenience methods
-  get<T>(endpoint: string, request?: Request) {
-    return this.request<T>(endpoint, { method: 'GET', request });
+  get<T>(endpoint: string, request?: Request, options?: Partial<RequestOptions>) {
+    return this.request<T>(endpoint, { method: 'GET', request, ...(options || {}) });
   }
 
-  post<T>(endpoint: string, body?: any, request?: Request) {
-    return this.request<T>(endpoint, { method: 'POST', body, request });
+  post<T>(endpoint: string, body?: any, request?: Request, options?: Partial<RequestOptions>) {
+    return this.request<T>(endpoint, { method: 'POST', body, request, ...(options || {}) });
   }
 
-  put<T>(endpoint: string, body?: any, request?: Request) {
-    return this.request<T>(endpoint, { method: 'PUT', body, request });
+  put<T>(endpoint: string, body?: any, request?: Request, options?: Partial<RequestOptions>) {
+    return this.request<T>(endpoint, { method: 'PUT', body, request, ...(options || {}) });
   }
 
-  delete<T>(endpoint: string, request?: Request) {
-    return this.request<T>(endpoint, { method: 'DELETE', request });
+  delete<T>(endpoint: string, request?: Request, options?: Partial<RequestOptions>) {
+    return this.request<T>(endpoint, { method: 'DELETE', request, ...(options || {}) });
   }
 
-  patch<T>(endpoint: string, body?: any, request?: Request) {
-    return this.request<T>(endpoint, { method: 'PATCH', body, request });
+  patch<T>(endpoint: string, body?: any, request?: Request, options?: Partial<RequestOptions>) {
+    return this.request<T>(endpoint, { method: 'PATCH', body, request, ...(options || {}) });
   }
 }
 

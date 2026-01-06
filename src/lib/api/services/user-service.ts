@@ -62,10 +62,10 @@ export interface GetMembersParams {
 // ✅ userService (apiClient - simple)
 export const userService = {
   sendVerificationCode: (payload: { email: string }, request?: Request) =>
-    apiClient.post(USER_ENDPOINTS.USER.SEND_VERIFICATION_CODE, payload, request),
+    apiClient.post(USER_ENDPOINTS.USER.SEND_VERIFICATION_CODE, payload, request, { requireAuth: false }),
 
   resetPassword: (payload: { email: string; randomCode: string; newPassword: string }, request?: Request) =>
-    apiClient.post(USER_ENDPOINTS.USER.RESET_PASSWORD, payload, request),
+    apiClient.post(USER_ENDPOINTS.USER.RESET_PASSWORD, payload, request, { requireAuth: false }),
 } as const;
 
 // ✅ memberService

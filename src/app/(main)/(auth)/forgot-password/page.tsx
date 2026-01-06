@@ -85,7 +85,7 @@ export default function ForgotPasswordPage() {
     resetStates();
 
     try {
-      const response = await fetch('/api/auth/forgot-password', {
+      const response = await fetch('/api/password/forgot-password', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: values.email }),
@@ -109,9 +109,33 @@ export default function ForgotPasswordPage() {
   };
 
   const handleCodeSubmit = async (values: VerifyCodeFormData) => {
-    setCurrentStep('reset');
-    resetForm.setValue('email', values.email);
-    resetForm.setValue('verificationCode', values.verificationCode);
+    setIsLoading(true);
+    resetStates();
+
+    try {
+      const response = await fetch('/api/password/verify-code', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: values.email,
+          verificationCode: values.verificationCode,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setCurrentStep('reset');
+        resetForm.setValue('email', values.email);
+        resetForm.setValue('verificationCode', values.verificationCode);
+      } else {
+        handleError(new Error(data.message || "인증코드가 올바르지 않습니다."));
+      }
+    } catch (err) {
+      handleError(err, "인증코드 확인 중 오류가 발생했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Step 3: Reset password - NOW CALLS YOUR API
@@ -120,7 +144,7 @@ export default function ForgotPasswordPage() {
     resetStates();
 
     try {
-      const response = await fetch('/api/auth/reset-password', {
+      const response = await fetch('/api/password/reset-password', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -208,6 +232,7 @@ export default function ForgotPasswordPage() {
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                         <input
+                          id="email"
                           type="email"
                           placeholder="가입 시 사용한 이메일 주소"
                           className={getIconInputClassName(!!fieldState.error)}
@@ -260,7 +285,7 @@ export default function ForgotPasswordPage() {
       <div className="flex h-[550px] w-[850px] rounded-xl bg-white shadow-xl shadow-primary-500/10 overflow-hidden z-10 border border-gray-200">
         
         {/* Left Panel */}
-        <div className="flex flex-col items-center justify-center w-1/3 bg-gradient-to-br from-blue-500 to-blue-700 p-10 text-center">
+        <div className="flex flex-col items-center justify-center w-1/3 bg-gradient-to-br from-primary-500 to-primary-700 p-10 text-center">
           <Send className="w-16 h-16 text-white mb-4" />
           <h2 className="mb-2 text-2xl font-bold text-white">인증코드 입력</h2>
           <p className="mb-6 text-blue-100">이메일로 발송된 8자리 코드를 입력하세요</p>
@@ -366,7 +391,7 @@ export default function ForgotPasswordPage() {
       <div className="flex h-[550px] w-[850px] rounded-xl bg-white shadow-xl shadow-primary-500/10 overflow-hidden z-10 border border-gray-200">
         
         {/* Left Panel */}
-        <div className="flex flex-col items-center justify-center w-1/3 bg-gradient-to-br from-green-500 to-green-700 p-10 text-center">
+        <div className="flex flex-col items-center justify-center w-1/3 bg-gradient-to-br from-primary-500 to-primary-700 p-10 text-center">
           <Lock className="w-16 h-16 text-white mb-4" />
           <h2 className="mb-2 text-2xl font-bold text-white">새 비밀번호</h2>
           <p className="mb-6 text-green-100">안전한 새 비밀번호를 설정하세요</p>

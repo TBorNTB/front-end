@@ -20,6 +20,7 @@ export const USER_ENDPOINTS = {
     CONFIRM_USER: '/user-service/users/{username}/confirm',
     GRANT_ADMIN: '/user-service/users/{grantedUsername}/admin',
     SEND_VERIFICATION_CODE: '/user-service/users/auth/verification-code', 
+    VERIFY_CODE: '/user-service/users/auth/verify-code',
     RESET_PASSWORD: '/user-service/users/auth/reset-password', 
   },
 
