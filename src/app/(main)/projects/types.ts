@@ -268,3 +268,62 @@ export interface ProjectStatsResponse {
   activeCollaborators: number;
   totalDocuments: number;
 }
+
+// API Response Types (matching backend API structure)
+export interface SubGoalDto {
+  id: number;
+  content: string;
+  completed: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CategoryDto {
+  id: number;
+  name: string;
+  description: string;
+}
+
+export interface TechStackDto {
+  id: number;
+  name: string;
+}
+
+export interface CollaboratorDto {
+  id: number;
+  username: string;
+  nickname: string;
+  realname: string;
+}
+
+export interface DocumentDto {
+  id: number;
+  title: string;
+  content: string;
+  description: string;
+  thumbnailUrl: string;
+  createdAt: string;
+  updatedAt: string;
+  projectId: number;
+}
+
+export interface ProjectDetailResponse {
+  id: number;
+  title: string;
+  description: string;
+  username: string;
+  ownerNickname: string;
+  ownerRealname: string;
+  projectStatus: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED';
+  createdAt: string;
+  updatedAt: string;
+  endedAt: string;
+  thumbnailUrl: string;
+  content: string;
+  contentJson?: string; // Keep for backward compatibility
+  subGoalDtos: SubGoalDto[];
+  categories: CategoryDto[];
+  techStackDtos: TechStackDto[];
+  collaborators: CollaboratorDto[];
+  documentDtos: DocumentDto[];
+}

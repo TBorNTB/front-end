@@ -2,11 +2,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+<<<<<<< HEAD
+=======
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
+>>>>>>> aebe966a022d56dd3e46f8da60a71fa1d06f9b71
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { User, Settings, Award, Activity, Bell } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
+<<<<<<< HEAD
 import { profileService, UserResponse } from '@/lib/api/services/user-service';
+=======
+import { profileService, UserResponse } from '@/lib/api/services/user';
+>>>>>>> aebe966a022d56dd3e46f8da60a71fa1d06f9b71
 
 const menuItems = [
   { 

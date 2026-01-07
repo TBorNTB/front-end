@@ -134,6 +134,9 @@ export default function StatisticsSection({ className = "" }: StatisticsSectionP
       try {
         const response = await fetch(
           `${BASE_URL}/meta-service/api/meta/count`,
+      try {
+        const response = await fetch(
+          `${BASE_URL}/user-service/api/meta/count`,
           {
             method: 'GET',
             headers: {
@@ -195,6 +198,7 @@ export default function StatisticsSection({ className = "" }: StatisticsSectionP
             description: '학습 주제'
           }
         ]);
+        // 에러 발생 시 기본값 유지
       } finally {
         setLoading(false);
       }

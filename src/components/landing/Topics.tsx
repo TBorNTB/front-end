@@ -191,6 +191,9 @@ export default function TopicsSection({
       console.log('Using external topics with length:', externalTopics.length);
       // Cast to Topic (same structure)
       setTopicsData(externalTopics as Topic[]);
+    // 외부에서 topics가 전달되면 사용, 아니면 API 호출
+    if (externalTopics) {
+      setTopicsData(externalTopics);
       setLoading(false);
       return;
     }
@@ -199,6 +202,22 @@ export default function TopicsSection({
     console.log('No external topics, using fallback mock data');
     setTopicsData(getTopicsData());
     setLoading(false);
+    const fetchCategories = async () => {
+      try {
+        setLoading(true);
+        const response = await categoryService.getCategories();
+        const transformedTopics = transformApiResponseToTopics(response.categories);
+        setTopicsData(transformedTopics);
+      } catch (error) {
+        console.error('Failed to fetch categories, using fallback data:', error);
+        // API 실패 시 목 데이터 사용
+        setTopicsData(getTopicsData());
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategories();
   }, [externalTopics]);
   
   const itemsPerPage = 8; // 4x2 grid (4 columns, 2 rows)

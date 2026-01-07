@@ -206,35 +206,233 @@ export default function Home() {
         {/* Topics (with data from hook) */}
         <Topics topics={topics} />
 
-        <ProjectsSection
-          loading={landingLoading}
-          error={projectError}
-          featuredProject={featuredProject}
-          projects={visibleProjects}
-          totalProjects={allProjects.length}
-          currentIndex={currentProjectIndex}
-          canGoNext={canGoNextProjects}
-          canGoPrev={canGoPrevProjects}
-          onNext={goNextProjects}
-          onPrev={goPrevProjects}
-          onPageClick={(page) => setCurrentProjectIndex(page * 3)}
-        />
+        {/* Latest Project Section */}
+        <section className="section bg-gray-50">
+          <div className="container">
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+                <p className="mt-4 text-gray-600">프로젝트를 불러오는 중...</p>
+              </div>
+            ) : error ? (
+              <div className="text-center py-12">
+                <p className="text-red-500">{error}</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                  {/* Left Side - Text Content */}
+                  <div>
+                    <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                      LATEST<br />
+                      PROJECT
+                    </h2>
+                    <p className="text-gray-600 text-lg mb-6">
+                      최신의 보안 기술과 오픈소스를 활용한<br />
+                      실무에 적용 가능한 솔루션입니다.
+                    </p>
+                    <button className="btn btn-primary btn-lg">
+                      프로젝트 더보기
+                    </button>
+                  </div>
 
-        <ArticlesSection
-          loading={landingLoading}
-          articles={visibleArticles}
-          totalArticles={allArticles.length}
-          currentIndex={articleIndex}
-          canGoNext={canGoNextArticles}
-          canGoPrev={canGoPrevArticles}
-          onNext={goNextArticles}
-          onPrev={goPrevArticles}
-          onPageClick={(page) => setArticleIndex(page * 2)}
-        />
+                  {/* Right Side - Featured Project Card */}
+                  <div>
+                    {featuredProject && (
+                      <FeaturedProjectCard project={featuredProject} />
+                    )}
+                  </div>
+                </div>
 
-        <FAQsSection faqs={faqs} expandedFaq={expandedFaq} onToggleFaq={toggleFaq} />
+                {/* Projects Grid */}
+                {allProjects.length > 0 && (
+                  <div className="mt-16">
+                    <div className="relative px-12 lg:px-16">
+                      {/* Navigation Buttons - Desktop */}
+                      {allProjects.length > 3 && (
+                        <>
+                          {/* Previous Button */}
+                          <button
+                            onClick={handlePrevious}
+                            className="hidden lg:flex absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white border border-primary-300 items-center justify-center hover:bg-primary-50 hover:border-primary-500 transition-all shadow-sm hover:shadow-md z-10"
+                            aria-label="이전 프로젝트 보기"
+                          >
+                            <ChevronLeft className="w-6 h-6 text-primary-600" />
+                          </button>
+                          
+                          {/* Next Button */}
+                          <button
+                            onClick={handleNext}
+                            className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white border border-primary-300 items-center justify-center hover:bg-primary-50 hover:border-primary-500 transition-all shadow-sm hover:shadow-md z-10"
+                            aria-label="다음 프로젝트 보기"
+                          >
+                            <ChevronRight className="w-6 h-6 text-primary-600" />
+                          </button>
+                        </>
+                      )}
+                      
+                      {/* Projects Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {projectsData.map((project) => (
+                          <ProjectCardHome key={project.id} project={project} />
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Page Indicator */}
+                    {allProjects.length > 3 && (
+                      <div className="mt-8 flex justify-center items-center gap-3">
+                        <button
+                          onClick={handlePrevious}
+                          disabled={!hasPrevious}
+                          className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all ${
+                            hasPrevious
+                              ? 'bg-white border-primary-300 hover:bg-primary-50 hover:border-primary-500 cursor-pointer'
+                              : 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-50'
+                          }`}
+                          aria-label="이전"
+                        >
+                          <ChevronLeft className={`w-5 h-5 ${hasPrevious ? 'text-primary-600' : 'text-gray-400'}`} />
+                        </button>
+                        
+                        <div className="flex gap-2">
+                          {Array.from({ length: Math.ceil(allProjects.length / 3) }).map((_, index) => (
+                            <button
+                              key={index}
+                              onClick={() => setCurrentIndex(index * 3)}
+                              className={`h-2 rounded-full transition-all ${
+                                Math.floor(currentIndex / 3) === index
+                                  ? 'bg-primary-500 w-8'
+                                  : 'bg-gray-300 hover:bg-gray-400 w-2'
+                              }`}
+                              aria-label={`페이지 ${index + 1}`}
+                            />
+                          ))}
+                        </div>
+                        
+                        <button
+                          onClick={handleNext}
+                          disabled={!hasMore && currentIndex === 0}
+                          className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all ${
+                            hasMore || currentIndex > 0
+                              ? 'bg-white border-primary-300 hover:bg-primary-50 hover:border-primary-500 cursor-pointer'
+                              : 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-50'
+                          }`}
+                          aria-label="다음"
+                        >
+                          <ChevronRight className={`w-5 h-5 ${hasMore || currentIndex > 0 ? 'text-primary-600' : 'text-gray-400'}`} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </section>
 
-        <QuickActions />
+        {/* Latest Articles Section */}
+        <section className="section bg-background">
+          <div className="container">
+            <h2 className="text-3xl font-bold text-gray-900 mb-8">Latest Articles</h2>
+            <p className="text-gray-600 mb-12">Stay informed with expert insights</p>
+            
+            {articlesLoading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+                <p className="mt-4 text-gray-600">아티클을 불러오는 중...</p>
+              </div>
+            ) : articlesError ? (
+              <div className="text-center py-12">
+                <p className="text-red-500">{articlesError}</p>
+              </div>
+            ) : allArticles.length > 0 ? (
+              <div>
+                <div className="relative px-12 lg:px-16">
+                  {/* Navigation Buttons - Desktop */}
+                  {allArticles.length > 2 && (
+                    <>
+                      {/* Previous Button */}
+                      <button
+                        onClick={handlePreviousArticle}
+                        className="hidden lg:flex absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white border border-primary-300 items-center justify-center hover:bg-primary-50 hover:border-primary-500 transition-all shadow-sm hover:shadow-md z-10"
+                        aria-label="이전 아티클 보기"
+                      >
+                        <ChevronLeft className="w-6 h-6 text-primary-600" />
+                      </button>
+                      
+                      {/* Next Button */}
+                      <button
+                        onClick={handleNextArticle}
+                        className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white border border-primary-300 items-center justify-center hover:bg-primary-50 hover:border-primary-500 transition-all shadow-sm hover:shadow-md z-10"
+                        aria-label="다음 아티클 보기"
+                      >
+                        <ChevronRight className="w-6 h-6 text-primary-600" />
+                      </button>
+                    </>
+                  )}
+                  
+                  {/* Articles Grid */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {articlesData.map((article) => (
+                      <ArticleCardHome key={article.id} article={article} />
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Page Indicator */}
+                {allArticles.length > 2 && (
+                  <div className="mt-8 flex justify-center items-center gap-3">
+                    <button
+                      onClick={handlePreviousArticle}
+                      disabled={!hasPreviousArticles}
+                      className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all ${
+                        hasPreviousArticles
+                          ? 'bg-white border-primary-300 hover:bg-primary-50 hover:border-primary-500 cursor-pointer'
+                          : 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-50'
+                      }`}
+                      aria-label="이전"
+                    >
+                      <ChevronLeft className={`w-5 h-5 ${hasPreviousArticles ? 'text-primary-600' : 'text-gray-400'}`} />
+                    </button>
+                    
+                    <div className="flex gap-2">
+                      {Array.from({ length: Math.ceil(allArticles.length / 2) }).map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setArticleIndex(index * 2)}
+                          className={`h-2 rounded-full transition-all ${
+                            Math.floor(articleIndex / 2) === index
+                              ? 'bg-primary-500 w-8'
+                              : 'bg-gray-300 hover:bg-gray-400 w-2'
+                          }`}
+                          aria-label={`페이지 ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                    
+                    <button
+                      onClick={handleNextArticle}
+                      disabled={!hasMoreArticles && articleIndex === 0}
+                      className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all ${
+                        hasMoreArticles || articleIndex > 0
+                          ? 'bg-white border-primary-300 hover:bg-primary-50 hover:border-primary-500 cursor-pointer'
+                          : 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-50'
+                      }`}
+                      aria-label="다음"
+                    >
+                      <ChevronRight className={`w-5 h-5 ${hasMoreArticles || articleIndex > 0 ? 'text-primary-600' : 'text-gray-400'}`} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-500">표시할 아티클이 없습니다.</p>
+              </div>
+            )}
+          </div>
+        </section>
       </div>
 
       <Footer />

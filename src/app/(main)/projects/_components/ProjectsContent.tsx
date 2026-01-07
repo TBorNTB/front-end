@@ -7,8 +7,11 @@ import { ExternalLink, Github, Grid, List, Plus, Search, ChevronDown, X, Chevron
 import { CategoryHelpers, CategoryType, CategoryDisplayNames } from '@/app/(main)/topics/types/category';
 import Image from 'next/image';
 import { BASE_URL } from '@/lib/api/config';
+<<<<<<< HEAD
 import { USE_MOCK_DATA } from '@/lib/api/env';
 import { getProjects as getMockProjects, type Project } from '@/lib/mock-data';
+=======
+>>>>>>> aebe966a022d56dd3e46f8da60a71fa1d06f9b71
 
 // Elasticsearch API 호출 함수 - 검색 제안
 const fetchElasticSearchSuggestions = async (query: string): Promise<string[]> => {
@@ -360,6 +363,22 @@ export default function ProjectsContent() {
 
       const response = await fetchProjects({
         query: searchQuery || ' ',
+    
+    try {
+      // 필터 파라미터 구성
+      const categoriesParam = selectedCategories.length > 0
+        ? selectedCategories.map(cat => categoryToEnglish(cat)).filter(Boolean).join(',')
+        : undefined;
+      
+      // 프로젝트 상태: 선택되지 않았을 때는 undefined로 전송 (파라미터 생략)
+      const statusParam = selectedStatuses.length > 0
+        ? selectedStatuses.map(status => statusToEnglish(status)).join(',')
+        : undefined;
+
+      const searchQuery = searchTerm.trim() || ' ';
+
+      const response = await fetchProjects({
+        query: searchQuery,
         projectStatus: statusParam,
         categories: categoriesParam,
         projectSortType: sortToEnglish(sortBy),
@@ -367,6 +386,23 @@ export default function ProjectsContent() {
         page: page
       });
 
+      // 기본 이미지 URL
+      const defaultImageUrl = 'https://images.pexels.com/photos/577585/pexels-photo-577585.jpeg?auto=compress&cs=tinysrgb&w=800';
+      
+      // 이미지 URL 검증 함수
+      const getValidImageUrl = (url: string | null | undefined): string => {
+        if (!url || typeof url !== 'string' || url.trim() === '') {
+          return defaultImageUrl;
+        }
+        // 유효한 URL인지 확인 (http:// 또는 https://로 시작)
+        if (url.startsWith('http://') || url.startsWith('https://')) {
+          return url;
+        }
+        // 상대 경로인 경우 기본 이미지 사용
+        return defaultImageUrl;
+      };
+
+      // API 응답을 기존 프로젝트 형식으로 변환
       const transformedProjects = response.content.map((item: any) => ({
         id: item.id,
         title: item.title || '제목 없음',
@@ -529,12 +565,12 @@ export default function ProjectsContent() {
           </div>
         </section>
 
-        {/* Search/View Mode/Create Button Section */}
-        <section className="flex flex-col md:flex-row gap-4 mb-6">
-          {/* Search Input */}
-          <div className="flex-1">
-            <div className="relative">
-              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isSearching ? 'text-primary animate-pulse' : 'text-gray-400'}`} />
+        {/* Top Controls with Card Background */}
+        <div className="flex flex-col md:flex-row gap-4 mb-8 bg-white rounded-xl p-6 shadow-lg border border-gray-200">
+          <div className="flex items-center justify-between w-full">
+            {/* Search Bar */}
+            <div className="relative flex-1 max-w-md">
+              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${isSearching ? 'text-primary animate-pulse' : 'text-gray-400'}`} />
               <input
                 ref={searchInputRef}
                 type="text"
@@ -553,15 +589,15 @@ export default function ProjectsContent() {
                     setShowSuggestions(true);
                   }
                 }}
-                className="w-full h-11 pl-10 pr-4 rounded-xl border border-gray-200 bg-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="w-full h-10 pl-10 pr-4 text-sm bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
               />
               {isSearching && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
                   <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
                 </div>
               )}
-
-              {/* Search Suggestions */}
+              
+              {/* 검색 제안 드롭다운 */}
               {showSuggestions && searchSuggestions.length > 0 && searchTerm.length > 0 && (
                 <div
                   ref={suggestionsRef}
@@ -569,6 +605,7 @@ export default function ProjectsContent() {
                 >
                   <div className="py-2">
                     {searchSuggestions.map((suggestion, index) => {
+                      // 검색어와 일치하는 부분을 하이라이트
                       const parts = suggestion.split(new RegExp(`(${searchTerm})`, 'gi'));
                       return (
                         <button
@@ -594,6 +631,30 @@ export default function ProjectsContent() {
                   </div>
                 </div>
               )}
+            </div>
+
+              {/* Search Suggestions */}
+              {showSuggestions && searchSuggestions.length > 0 && searchTerm.length > 0 && (
+                <div
+                  ref={suggestionsRef}
+                  className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto"
+                >
+                  <Grid size={16} />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 ${viewMode === 'list' ? 'bg-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                  title="List View"
+                >
+                  <List size={16} />
+                </button>
+              </div>
+
+              {/* Create Project Button */}
+              <Link href="/projects/create" className="bg-primary text-white px-6 py-2 rounded-lg font-semibold hover:bg-primary-700 transition-colors flex items-center gap-2 whitespace-nowrap">
+                  <Plus size={16} />
+                <span>새 프로젝트 만들기</span>
+              </Link>
             </div>
           </div>
 
@@ -625,33 +686,34 @@ export default function ProjectsContent() {
                 )}
               </div>
 
-              {/* Status Filters */}
-              <div className="space-y-3 mb-6">
-                <h4 className="text-xs font-semibold text-gray-900 uppercase">프로젝트 상태</h4>
-                {statuses.map((status) => (
-                  <label key={status} className="flex items-center cursor-pointer">
-                    <input
-                      type="radio"
-                      name="projectStatus"
-                      checked={selectedStatuses.includes(status)}
-                      onChange={() => handleStatusToggle(status)}
-                      className="sr-only"
-                    />
-                    <div className={`w-4 h-4 border-2 rounded mr-3 flex items-center justify-center ${
-                      selectedStatuses.includes(status)
-                        ? 'bg-primary border-primary'
-                        : 'border-gray-300'
-                    }`}>
-                      {selectedStatuses.includes(status) && (
-                        <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </div>
-                    <span className="text-sm text-gray-700">{status}</span>
-                  </label>
-                ))}
-              </div>
+              <div className="p-4">
+                {/* Status Filters - 라디오 버튼 스타일 (항상 하나만 선택) */}
+                <div className="space-y-3 mb-6">
+                  <h4 className="text-base font-semibold text-gray-900">프로젝트 상태</h4>
+                  {statuses.map((status) => (
+                    <label key={status} className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="projectStatus"
+                        checked={selectedStatuses.includes(status)}
+                        onChange={() => handleStatusToggle(status)}
+                        className="sr-only"
+                      />
+                      <div className={`w-4 h-4 border-2 rounded mr-3 flex items-center justify-center ${
+                        selectedStatuses.includes(status)
+                          ? 'bg-primary border-primary'
+                          : 'border-gray-300'
+                      }`}>
+                        {selectedStatuses.includes(status) && (
+                          <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </div>
+                      <span className="text-gray-700">{status}</span>
+                    </label>
+                  ))}
+                </div>
 
               {/* Category Filters */}
               <h4 className="text-xs font-semibold text-gray-900 uppercase mb-3">학습 주제</h4>
@@ -680,6 +742,9 @@ export default function ProjectsContent() {
               <p className="text-sm text-gray-600">
                 <span className="font-semibold text-primary">{filteredProjects.length}</span>개의 프로젝트
                 {searchTerm && ` (검색어: "${searchTerm}")`}
+                {elasticSearchTerm && elasticSearchTerm !== searchTerm && (
+                  <span className="text-xs text-gray-500 ml-1">→ "{elasticSearchTerm}"</span>
+                )}
                 {currentTopicName && ` (주제: ${currentTopicName})`}
               </p>
 
@@ -729,8 +794,9 @@ export default function ProjectsContent() {
                 : "space-y-6"
               }>
                 {filteredProjects.map((project) => (
-                  <div key={project.id} className={`bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-primary-300 hover:shadow-md transition-all duration-200 flex flex-col h-full ${
-                    viewMode === 'list' ? 'flex-row' : ''
+                <div key={project.id} className={`group ${viewMode === 'list' ? 'flex gap-6' : ''}`}>
+                  <div className={`bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-primary hover:shadow-lg transition-all duration-200 hover:-translate-y-1 ${
+                    viewMode === 'list' ? 'flex flex-1' : ''
                   }`}>
                     {/* Image */}
                     <div className={`relative ${viewMode === 'list' ? 'w-56 flex-shrink-0 overflow-hidden' : 'overflow-hidden'}`}>
@@ -760,16 +826,16 @@ export default function ProjectsContent() {
                       }`}>
                         {project.title}
                       </h3>
-                      <p className={`text-sm text-gray-600 mb-3 ${
-                        viewMode === 'list' ? 'line-clamp-2' : 'line-clamp-3'
+                      <p className={`text-gray-600 mb-3 leading-relaxed ${
+                        viewMode === 'list' ? 'line-clamp-2' : 'line-clamp-3 text-sm'
                       }`}>
                         {project.description}
                       </p>
 
                       {/* 기술 스택 태그 */}
                       {project.tags && project.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mb-3">
-                          {project.tags.slice(0, 3).map((tag: string, index: number) => (
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {project.tags.slice(0, 5).map((tag: string, index: number) => (
                             <span
                               key={index}
                               className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md border border-gray-200"
@@ -777,16 +843,24 @@ export default function ProjectsContent() {
                               {tag}
                             </span>
                           ))}
-                          {project.tags.length > 3 && (
+                          {project.tags.length > 5 && (
                             <span className="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded-md border border-gray-200">
-                              +{project.tags.length - 3}
+                              +{project.tags.length - 5}
                             </span>
                           )}
                         </div>
                       )}
 
-                      {/* Engagement Stats */}
-                      <div className="flex items-center gap-4 mb-4 text-sm border-t border-gray-100 pt-3">
+                      {/* Contributors Avatar Stack */}
+                      <div className="mb-3">
+                        <AvatarStack
+                          creator={project.creator}
+                          contributors={project.contributors}
+                        />
+                      </div>
+
+                      {/* 좋아요 수와 조회수 */}
+                      <div className="flex items-center gap-4 mb-3 text-sm">
                         <div className="flex items-center gap-1 text-gray-700 font-medium">
                           <Heart size={16} className="text-red-500 fill-red-500" />
                           <span>{project.likeCount || 0}</span>
@@ -797,8 +871,7 @@ export default function ProjectsContent() {
                         </div>
                       </div>
 
-                      {/* Action Buttons */}
-                      <div className="flex justify-between items-center gap-2 mt-auto">
+                      <div className="flex justify-between items-center">
                         <div className="flex space-x-2">
                           {project.github && (
                             <a
@@ -833,6 +906,7 @@ export default function ProjectsContent() {
                       </div>
                     </div>
                   </div>
+                </div>
                 ))}
               </div>
             )}

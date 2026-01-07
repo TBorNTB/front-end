@@ -255,7 +255,7 @@ export default function ForgotPasswordPage() {
         <div className="flex flex-col items-center justify-center w-1/3 bg-gradient-to-br from-primary-500 to-primary-700 p-10 text-center">
           <Lock className="w-16 h-16 text-white mb-4" />
           <h2 className="mb-2 text-2xl font-bold text-white">비밀번호 재설정</h2>
-          <p className="mb-6 text-green-100">인증코드와 새 비밀번호를 입력하세요</p>
+          <p className="mb-6 text-green-100">인증코드이메일로 발송된 8자리 인증코드와 새 비밀번호를 입력하세요</p>
           <div className="px-4 py-2 bg-white/20 rounded-lg text-white text-sm">
             2단계 / 2단계
           </div>

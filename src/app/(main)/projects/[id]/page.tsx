@@ -2,12 +2,71 @@
 
 import { notFound, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect, Fragment, useRef } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import DocumentModal from '../_components/DocumentModal';
+import { fetchProjectDetail, deleteDocument } from '@/lib/api/endpoints/project';
+import { 
+  fetchViewCount, 
+  fetchLikeCount,
+  fetchComments,
+  createComment,
+  createReply,
+  updateComment,
+  deleteComment,
+  fetchReplies,
+  Comment,
+  CommentListResponse
+} from '@/lib/api/endpoints/user';
+import { ProjectDetailResponse } from '../types';
 
 interface ProjectPageProps {
   params: Promise<{ id: string }>;
+}
+
+// UI에 맞게 변환된 프로젝트 데이터 타입
+interface MappedProject {
+  id: string;
+  title: string;
+  subtitle: string;
+  author: {
+    username: string;
+    name: string;
+    avatar: string | null;
+  };
+  createdAt: string;
+  updatedAt: string;
+  period: string;
+  github?: string;
+  tags: string[];
+  technologies: string[];
+  stats: {
+    views: number;
+    likes: number;
+    comments: number;
+  };
+  description: string;
+  content: string;
+  team: Array<{
+    name: string;
+    role: string;
+    username: string;
+  }>;
+  documents: Array<{
+    id: string;
+    name: string;
+    type: string;
+    size?: string;
+    uploadedAt: string;
+    createdBy: string;
+  }>;
+  relatedProjects: Array<{
+    id: string;
+    title: string;
+    version: string;
+  }>;
+  projectStatus: string;
+  thumbnailUrl?: string;
 }
 
 export default function ProjectPage({ params }: ProjectPageProps) {
@@ -16,6 +75,24 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isDocModalOpen, setIsDocModalOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
+  
+  // Comment states
+  const [comments, setComments] = useState<Comment[]>([]);
+  const commentsRef = useRef<Comment[]>([]); // 현재 댓글 목록 추적용
+  const [commentContent, setCommentContent] = useState('');
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [isLoadingMoreComments, setIsLoadingMoreComments] = useState(false);
+  const [commentSortDirection, setCommentSortDirection] = useState<'ASC' | 'DESC'>('DESC');
+  const [nextCursorId, setNextCursorId] = useState<number>(0);
+  const nextCursorIdRef = useRef<number>(0); // 최신 cursorId를 추적하기 위한 ref
+  const [hasNextComments, setHasNextComments] = useState<boolean>(false);
+  const [expandedReplies, setExpandedReplies] = useState<Set<number>>(new Set());
+  const [replies, setReplies] = useState<Record<number, Comment[]>>({});
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [replyingToId, setReplyingToId] = useState<number | null>(null);
+  const [replyContent, setReplyContent] = useState('');
   
   // Dropdown states
   const [openSections, setOpenSections] = useState<{[key: string]: boolean}>({
@@ -25,18 +102,173 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     related: false,
   });
 
+  const [project, setProject] = useState<MappedProject | null>(null);
+
+  // Comment functions - useEffect보다 먼저 정의
+  const loadComments = async (postId: string, direction: 'ASC' | 'DESC', reset: boolean = true) => {
+    try {
+      if (reset) {
+        setIsLoadingComments(true);
+        setNextCursorId(0);
+        nextCursorIdRef.current = 0;
+      } else {
+        setIsLoadingMoreComments(true);
+      }
+      
+      // reset이 false일 때는 ref에서 최신 cursorId를 가져옴
+      const cursorId = reset ? 0 : nextCursorIdRef.current;
+      
+      console.log(`[loadComments] reset=${reset}, cursorId=${cursorId}, direction=${direction}`);
+      
+      const response = await fetchComments(postId, 'PROJECT', cursorId, 5, direction);
+      
+      console.log(`[API 응답] content.length=${response.content.length}, nextCursorId=${response.nextCursorId}, hasNext=${response.hasNext}`);
+      
+      if (reset) {
+        // 초기 로드: 첫 5개만 표시
+        setComments(response.content);
+        commentsRef.current = response.content; // ref도 업데이트
+      } else {
+        // 더 보기: 기존 댓글은 유지하고 아래에 새로운 댓글 5개 추가
+        // 상태 업데이트 함수를 사용하여 최신 상태를 가져옴
+        setComments(prevComments => {
+          const existingIds = new Set(prevComments.map(c => c.id));
+          const newComments = response.content.filter(c => !existingIds.has(c.id));
+          const updated = [...prevComments, ...newComments];
+          
+          commentsRef.current = updated; // ref도 업데이트
+          console.log(`[더 보기] 기존 ${prevComments.length}개 + 새로운 ${newComments.length}개 = 총 ${updated.length}개`);
+          
+          return updated;
+        });
+      }
+      
+      // cursorId와 ref 모두 업데이트
+      setNextCursorId(response.nextCursorId);
+      nextCursorIdRef.current = response.nextCursorId;
+      setHasNextComments(response.hasNext);
+      
+      // Update comment count in project stats (total count including all pages)
+      // Note: API doesn't return total count, so we use current page count
+      // If you need accurate total count, you may need a separate API endpoint
+      if (project && reset) {
+        setProject({
+          ...project,
+          stats: {
+            ...project.stats,
+            comments: response.content.length,
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Error loading comments:', error);
+    } finally {
+      setIsLoadingComments(false);
+      setIsLoadingMoreComments(false);
+    }
+  };
+
+  const loadMoreComments = async () => {
+    if (projectId && hasNextComments && !isLoadingMoreComments) {
+      console.log(`[더 보기 클릭] 현재 댓글 수: ${comments.length}개, cursorId: ${nextCursorIdRef.current}, 다음 5개 로드 예정`);
+      // 명시적으로 direction을 전달하고 reset=false로 설정
+      await loadComments(projectId, commentSortDirection, false);
+    }
+  };
+
   useEffect(() => {
     params.then((resolvedParams) => {
       setProjectId(resolvedParams.id);
       fetchProjectData(resolvedParams.id);
+<<<<<<< HEAD
     });
   }, [params]);
 
   const [project, setProject] = useState<any>(null);
+=======
+      // 초기 로드 시 최신순(DESC)으로 댓글 로드
+      loadComments(resolvedParams.id, 'DESC');
+    });
+  }, [params]);
+
+  // Load comments when sort direction changes
+  useEffect(() => {
+    if (projectId) {
+      loadComments(projectId, commentSortDirection, true);
+    }
+  }, [commentSortDirection]);
+
+  // API 응답을 UI에 맞게 매핑하는 함수
+  const mapApiResponseToUI = (apiData: ProjectDetailResponse): MappedProject => {
+    // 날짜 포맷팅
+    const formatDate = (dateString: string) => {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    };
+
+    // 프로젝트 상태 한글 변환
+    const statusMap: Record<string, string> = {
+      'PLANNING': '기획중',
+      'IN_PROGRESS': '진행중',
+      'COMPLETED': '완료',
+    };
+
+    // 기간 계산 (생성일 ~ 종료일)
+    const createdDate = new Date(apiData.createdAt);
+    const endedDate = apiData.endedAt ? new Date(apiData.endedAt) : new Date(apiData.updatedAt);
+    const period = `${createdDate.getFullYear()}-${String(createdDate.getMonth() + 1).padStart(2, '0')}-${String(createdDate.getDate()).padStart(2, '0')} ~ ${endedDate.getFullYear()}-${String(endedDate.getMonth() + 1).padStart(2, '0')}-${String(endedDate.getDate()).padStart(2, '0')}`;
+
+    return {
+      id: String(apiData.id),
+      title: apiData.title,
+      subtitle: apiData.description || '',
+      author: {
+        username: apiData.username,
+        name: apiData.ownerRealname || apiData.ownerNickname || apiData.username,
+        avatar: null,
+      },
+      createdAt: formatDate(apiData.createdAt),
+      updatedAt: formatDate(apiData.updatedAt),
+      period,
+      tags: apiData.categories.map(cat => cat.name),
+      technologies: apiData.techStackDtos.map(tech => tech.name),
+      stats: {
+        views: 0, // fetchProjectData에서 실제 API로 업데이트됨
+        likes: 0, // fetchProjectData에서 실제 API로 업데이트됨
+        comments: 0, // TODO: 댓글 수 API 필요
+      },
+      description: apiData.description || '',
+      content: apiData.content || apiData.contentJson || '',
+      team: [
+        {
+          name: apiData.ownerRealname || apiData.ownerNickname || apiData.username,
+          role: 'Owner',
+          username: apiData.username,
+        },
+        ...apiData.collaborators.map(collab => ({
+          name: collab.realname || collab.nickname || collab.username,
+          role: 'Collaborator',
+          username: collab.username,
+        })),
+      ],
+      documents: apiData.documentDtos.map(doc => ({
+        id: String(doc.id),
+        name: doc.title,
+        type: 'document',
+        uploadedAt: formatDate(doc.createdAt),
+        createdBy: doc.description || 'Unknown',
+      })),
+      relatedProjects: [], // TODO: 연관 프로젝트 API 필요
+      projectStatus: statusMap[apiData.projectStatus] || apiData.projectStatus,
+      thumbnailUrl: apiData.thumbnailUrl,
+    };
+  };
+>>>>>>> aebe966a022d56dd3e46f8da60a71fa1d06f9b71
 
   const fetchProjectData = async (id: string) => {
     try {
       setIsLoading(true);
+<<<<<<< HEAD
       const response = await fetch(`/api/projects/${id}`);
       
       if (!response.ok) {
@@ -85,13 +317,45 @@ export default function ProjectPage({ params }: ProjectPageProps) {
           { id: '3', title: 'v1.2 DCM기반 탐지 v1', version: 'v1.2 DCM기반 탐지 v1 추가' },
         ],
       });
+=======
+      setImageError(false); // 이미지 에러 상태 초기화
+      
+      // 프로젝트 상세 정보와 통계 정보를 병렬로 가져오기
+      const [apiData, viewCountData, likeCountData] = await Promise.all([
+        fetchProjectDetail(id),
+        fetchViewCount(id, 'PROJECT').catch(() => ({ viewCount: 0 })), // 에러 시 기본값 0
+        fetchLikeCount(id, 'PROJECT').catch(() => ({ likedCount: 0 })), // 에러 시 기본값 0
+      ]);
+      
+      const mappedData = mapApiResponseToUI(apiData);
+      
+      // 통계 정보 업데이트
+      mappedData.stats = {
+        views: viewCountData.viewCount,
+        likes: likeCountData.likedCount,
+        comments: 0, // TODO: 댓글 수 API 필요
+      };
+      
+      setProject(mappedData);
+    } catch (error) {
+      console.error('Error fetching project:', error);
+      // 에러 발생 시 notFound 처리
+      setProject(null);
+>>>>>>> aebe966a022d56dd3e46f8da60a71fa1d06f9b71
     } finally {
       setIsLoading(false);
     }
   };
 
   if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">프로젝트를 불러오는 중...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!project) {
@@ -113,15 +377,17 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       case 'delete':
         if (confirm('이 문서를 삭제하시겠습니까?')) {
           try {
-            await fetch(`/api/documents/${docId}`, { method: 'DELETE' });
+            await deleteDocument(docId);
             // Refresh documents list
             setProject((prev: any) => ({
               ...prev,
               documents: prev.documents.filter((doc: any) => doc.id !== docId)
             }));
-          } catch (error) {
+            // Refresh project data to get updated document list
+            await fetchProjectData(projectId);
+          } catch (error: any) {
             console.error('Delete error:', error);
-            alert('문서 삭제에 실패했습니다.');
+            alert(error.message || '문서 삭제에 실패했습니다.');
           }
         }
         break;
@@ -144,6 +410,129 @@ export default function ProjectPage({ params }: ProjectPageProps) {
 
   const handleAddFullDocument = () => {
     router.push(`/projects/${projectId}/documents/new`);
+  };
+
+  const handleSubmitComment = async () => {
+    if (!commentContent.trim() || !projectId) return;
+    
+    try {
+      await createComment(projectId, 'PROJECT', { content: commentContent });
+      setCommentContent('');
+      await loadComments(projectId, commentSortDirection, true);
+      // Refresh project stats to update comment count
+      if (project) {
+        const response = await fetchComments(projectId, 'PROJECT', 0, 5, commentSortDirection);
+        setProject({
+          ...project,
+          stats: {
+            ...project.stats,
+            comments: response.content.length,
+          },
+        });
+      }
+    } catch (error: any) {
+      console.error('Error creating comment:', error);
+      alert(error.message || '댓글 작성에 실패했습니다.');
+    }
+  };
+
+  const handleEditComment = async (commentId: number) => {
+    if (!editContent.trim()) return;
+    
+    try {
+      await updateComment(commentId, { content: editContent });
+      setEditingCommentId(null);
+      setEditContent('');
+      await loadComments(projectId, commentSortDirection, true);
+    } catch (error: any) {
+      console.error('Error updating comment:', error);
+      alert(error.message || '댓글 수정에 실패했습니다.');
+    }
+  };
+
+  const handleDeleteComment = async (commentId: number) => {
+    if (!confirm('댓글을 삭제하시겠습니까?')) return;
+    
+    try {
+      await deleteComment(commentId);
+      await loadComments(projectId, commentSortDirection, true);
+      // Also remove from expanded replies if it was a reply
+      const newReplies = { ...replies };
+      Object.keys(newReplies).forEach(parentId => {
+        newReplies[Number(parentId)] = newReplies[Number(parentId)].filter(
+          reply => reply.id !== commentId
+        );
+      });
+      setReplies(newReplies);
+      // Refresh project stats to update comment count
+      if (project) {
+        const response = await fetchComments(projectId, 'PROJECT', 0, 5, commentSortDirection);
+        setProject({
+          ...project,
+          stats: {
+            ...project.stats,
+            comments: response.content.length,
+          },
+        });
+      }
+    } catch (error: any) {
+      console.error('Error deleting comment:', error);
+      alert(error.message || '댓글 삭제에 실패했습니다.');
+    }
+  };
+
+  const handleLoadReplies = async (commentId: number) => {
+    if (expandedReplies.has(commentId)) {
+      // Collapse
+      setExpandedReplies(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(commentId);
+        return newSet;
+      });
+      return;
+    }
+
+    try {
+      const response = await fetchReplies(commentId, 0, 5, commentSortDirection);
+      setReplies(prev => ({
+        ...prev,
+        [commentId]: response.content,
+      }));
+      setExpandedReplies(prev => new Set(prev).add(commentId));
+    } catch (error) {
+      console.error('Error loading replies:', error);
+    }
+  };
+
+  const handleSubmitReply = async (parentId: number) => {
+    if (!replyContent.trim() || !projectId) return;
+    
+    try {
+      await createReply(projectId, parentId, 'PROJECT', { content: replyContent });
+      setReplyingToId(null);
+      setReplyContent('');
+      await handleLoadReplies(parentId);
+      // Reload to update reply count
+      await loadComments(projectId, commentSortDirection, true);
+    } catch (error: any) {
+      console.error('Error creating reply:', error);
+      alert(error.message || '대댓글 작성에 실패했습니다.');
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return '방금 전';
+    if (minutes < 60) return `${minutes}분 전`;
+    if (hours < 24) return `${hours}시간 전`;
+    if (days < 7) return `${days}일 전`;
+    return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
   };
 
   return (
@@ -193,8 +582,14 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     <div className="p-4 space-y-3 text-sm">
                       <div>
                         <p className="text-gray-600 mb-1">상태</p>
-                        <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-700">
-                          진행중
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          project.projectStatus === '진행중' 
+                            ? 'bg-green-100 text-green-700'
+                            : project.projectStatus === '완료'
+                            ? 'bg-blue-100 text-blue-700'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {project.projectStatus}
                         </span>
                       </div>
                       <div>
@@ -204,27 +599,41 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                       <div>
                         <p className="text-gray-600 mb-1">사용 기술</p>
                         <div className="flex flex-wrap gap-1">
+<<<<<<< HEAD
                           {project.technologies.map((tech: string, idx: number) => (
                             <span key={idx} className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-700">
                               {tech}
                             </span>
                           ))}
+=======
+                          {project.technologies.length > 0 ? (
+                            project.technologies.map((tech: string, idx: number) => (
+                              <span key={idx} className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-700">
+                                {tech}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-xs text-gray-400">기술 스택 정보가 없습니다</span>
+                          )}
+>>>>>>> aebe966a022d56dd3e46f8da60a71fa1d06f9b71
                         </div>
                       </div>
-                      <div>
-                        <p className="text-gray-600 mb-1">링크</p>
-                        <a
-                          href={project.github}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2 text-primary-600 hover:text-primary-700"
-                        >
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                          </svg>
-                          <span className="text-xs">GitHub</span>
-                        </a>
-                      </div>
+                      {project.github && (
+                        <div>
+                          <p className="text-gray-600 mb-1">링크</p>
+                          <a
+                            href={project.github}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-primary-600 hover:text-primary-700"
+                          >
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                            </svg>
+                            <span className="text-xs">GitHub</span>
+                          </a>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -297,7 +706,12 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     <div className="p-4">
                       {/* Document List */}
                       <div className="space-y-1 mb-3">
+<<<<<<< HEAD
                         {project.documents.map((doc: any) => (
+=======
+                        {project.documents.length > 0 ? (
+                          project.documents.map((doc: any) => (
+>>>>>>> aebe966a022d56dd3e46f8da60a71fa1d06f9b71
                           <div
                             key={doc.id}
                             className="group flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 transition-colors"
@@ -421,7 +835,12 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                               </Transition>
                             </Menu>
                           </div>
-                        ))}
+                          ))
+                        ) : (
+                          <p className="text-sm text-gray-500 text-center py-4">
+                            문서가 없습니다
+                          </p>
+                        )}
                       </div>
 
                       {/* Add Document Buttons */}
@@ -461,6 +880,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   
                   {openSections.related && (
                     <div className="p-4 space-y-2">
+<<<<<<< HEAD
                       {project.relatedProjects.map((related: any) => (
                         <Link
                           key={related.id}
@@ -475,6 +895,28 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           </p>
                         </Link>
                       ))}
+=======
+                      {project.relatedProjects.length > 0 ? (
+                        project.relatedProjects.map((related: any) => (
+                          <Link
+                            key={related.id}
+                            href={`/projects/${related.id}`}
+                            className="block p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                          >
+                            <p className="text-sm font-medium text-gray-900 mb-1">
+                              {related.title}
+                            </p>
+                            <p className="text-xs text-gray-600">
+                              {related.version}
+                            </p>
+                          </Link>
+                        ))
+                      ) : (
+                        <p className="text-sm text-gray-500 text-center py-4">
+                          연관 프로젝트가 없습니다
+                        </p>
+                      )}
+>>>>>>> aebe966a022d56dd3e46f8da60a71fa1d06f9b71
                     </div>
                   )}
                 </div>
@@ -510,28 +952,53 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                 </header>
 
                 {/* Featured Image */}
-                <div className="relative w-full h-96 mb-8 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-300">
-                  <div className="text-center">
-                    <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-200 flex items-center justify-center">
-                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <p className="text-gray-500">프로젝트 스크린샷</p>
+                {project.thumbnailUrl && !imageError ? (
+                  <div className="relative w-full h-96 mb-8 rounded-xl overflow-hidden bg-gray-100 border border-gray-300">
+                    <img 
+                      src={project.thumbnailUrl} 
+                      alt={project.title}
+                      className="w-full h-full object-cover"
+                      onError={() => setImageError(true)}
+                    />
                   </div>
-                </div>
+                ) : (
+                  <div className="relative w-full h-96 mb-8 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-300">
+                    <div className="text-center">
+                      <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-200 flex items-center justify-center">
+                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <p className="text-gray-500">프로젝트 스크린샷</p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Description */}
-                <section className="mb-12">
-                  <h2 className="text-2xl font-bold text-foreground mb-4">프로젝트 개요</h2>
-                  <div className="prose prose-lg max-w-none">
-                    <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                      {project.description}
-                    </p>
-                  </div>
-                </section>
+                {project.description && (
+                  <section className="mb-12">
+                    <h2 className="text-2xl font-bold text-foreground mb-4">프로젝트 개요</h2>
+                    <div className="prose prose-lg max-w-none">
+                      <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                        {project.description}
+                      </p>
+                    </div>
+                  </section>
+                )}
+
+                {/* Content */}
+                {project.content && (
+                  <section className="mb-12">
+                    <h2 className="text-2xl font-bold text-foreground mb-4">상세 내용</h2>
+                    <div 
+                      className="prose prose-lg max-w-none prose-headings:text-foreground prose-p:text-gray-700 prose-a:text-primary-600 prose-strong:text-foreground prose-code:text-primary-600"
+                      dangerouslySetInnerHTML={{ __html: project.content }}
+                    />
+                  </section>
+                )}
 
                 {/* Tags */}
+<<<<<<< HEAD
                 <section className="mb-12">
                   <div className="flex flex-wrap gap-2">
                     {project.tags.map((tag: string, index: number) => (
@@ -544,6 +1011,22 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     ))}
                   </div>
                 </section>
+=======
+                {project.tags.length > 0 && (
+                  <section className="mb-12">
+                    <div className="flex flex-wrap gap-2">
+                      {project.tags.map((tag: string, index: number) => (
+                        <span
+                          key={index}
+                          className="px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors cursor-pointer"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  </section>
+                )}
+>>>>>>> aebe966a022d56dd3e46f8da60a71fa1d06f9b71
 
                 {/* Like Button */}
                 <section className="mb-12 flex justify-center py-4">
@@ -559,67 +1042,353 @@ export default function ProjectPage({ params }: ProjectPageProps) {
 
                 {/* Comments Section */}
                 <section>
-                  <h2 className="text-2xl font-bold text-foreground mb-6">
-                    댓글 ({project.stats.comments})
-                  </h2>
-
-                  {/* Comments List */}
-                  <div className="space-y-4 mb-8">
-                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                      <div className="flex gap-4">
-                        <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                          <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-500">
-                            프
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-gray-900">프로젝트명</span>
-                              <span className="text-sm text-gray-500">2024-05-18</span>
-                            </div>
-                            <span className="text-sm text-gray-500">👍 12</span>
-                          </div>
-                          <p className="text-gray-700">
-                            프로젝트 업무 맡지만 열심히 잘 합시다!!
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                      <div className="flex gap-4">
-                        <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                          <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-500">
-                            기
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-gray-900">기술 스택 선택</span>
-                              <span className="text-sm text-gray-500">2024-05-17</span>
-                            </div>
-                            <span className="text-sm text-gray-500">👍 1</span>
-                          </div>
-                          <p className="text-gray-700">
-                            기술 스택 선택 이유가 궁금해요!
-                          </p>
-                        </div>
-                      </div>
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-foreground">
+                      댓글 {comments.length > 0 && `(${comments.length}${hasNextComments ? '+' : ''})`}
+                    </h2>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setCommentSortDirection('DESC')}
+                        className={`px-3 py-1 text-sm rounded-lg transition-colors ${
+                          commentSortDirection === 'DESC'
+                            ? 'bg-primary-100 text-primary-700 font-medium'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        최신순
+                      </button>
+                      <button
+                        onClick={() => setCommentSortDirection('ASC')}
+                        className={`px-3 py-1 text-sm rounded-lg transition-colors ${
+                          commentSortDirection === 'ASC'
+                            ? 'bg-primary-100 text-primary-700 font-medium'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        오래된순
+                      </button>
                     </div>
                   </div>
 
                   {/* Comment Input */}
-                  <div>
+                  <div className="mb-8">
                     <textarea
+                      value={commentContent}
+                      onChange={(e) => setCommentContent(e.target.value)}
                       placeholder="댓글을 작성해주세요..."
                       className="w-full min-h-[120px] p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none bg-white mb-3"
                     />
                     <div className="flex justify-end">
-                      <button className="btn btn-primary">댓글 등록</button>
+                      <button
+                        onClick={handleSubmitComment}
+                        disabled={!commentContent.trim() || isLoadingComments}
+                        className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        댓글 등록
+                      </button>
                     </div>
                   </div>
+
+                  {/* Comments List */}
+                  {isLoadingComments ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+                      <p className="text-gray-500 mt-2">댓글을 불러오는 중...</p>
+                    </div>
+                  ) : comments.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      아직 댓글이 없습니다. 첫 댓글을 작성해보세요!
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {comments.map((comment) => (
+                        <div key={`comment-${comment.id}`} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                          <div className="flex gap-4">
+                            <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                              <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-500">
+                                {comment.username.charAt(0).toUpperCase()}
+                              </div>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-gray-900">{comment.username}</span>
+                                  <span className="text-sm text-gray-500">{formatDate(comment.createdAt)}</span>
+                                  {comment.updatedAt !== comment.createdAt && (
+                                    <span className="text-xs text-gray-400">(수정됨)</span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Menu as="div" className="relative">
+                                    <Menu.Button className="p-1 hover:bg-gray-200 rounded-full">
+                                      <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                      </svg>
+                                    </Menu.Button>
+                                    <Transition
+                                      as={Fragment}
+                                      enter="transition ease-out duration-100"
+                                      enterFrom="transform opacity-0 scale-95"
+                                      enterTo="transform opacity-100 scale-100"
+                                      leave="transition ease-in duration-75"
+                                      leaveFrom="transform opacity-100 scale-100"
+                                      leaveTo="transform opacity-0 scale-95"
+                                    >
+                                      <Menu.Items className="absolute right-0 mt-2 w-32 origin-top-right bg-white divide-y divide-gray-100 rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+                                        <div className="p-1">
+                                          <Menu.Item>
+                                            {({ active }: { active: boolean }) => (
+                                              <button
+                                                onClick={() => {
+                                                  setEditingCommentId(comment.id);
+                                                  setEditContent(comment.content);
+                                                }}
+                                                className={`${
+                                                  active ? 'bg-gray-100' : ''
+                                                } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-700`}
+                                              >
+                                                편집
+                                              </button>
+                                            )}
+                                          </Menu.Item>
+                                          <Menu.Item>
+                                            {({ active }: { active: boolean }) => (
+                                              <button
+                                                onClick={() => handleDeleteComment(comment.id)}
+                                                className={`${
+                                                  active ? 'bg-red-50' : ''
+                                                } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-red-600`}
+                                              >
+                                                삭제
+                                              </button>
+                                            )}
+                                          </Menu.Item>
+                                        </div>
+                                      </Menu.Items>
+                                    </Transition>
+                                  </Menu>
+                                </div>
+                              </div>
+                              
+                              {editingCommentId === comment.id ? (
+                                <div className="space-y-2">
+                                  <textarea
+                                    value={editContent}
+                                    onChange={(e) => setEditContent(e.target.value)}
+                                    className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                                    rows={3}
+                                  />
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => handleEditComment(comment.id)}
+                                      className="px-4 py-1.5 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700"
+                                    >
+                                      저장
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setEditingCommentId(null);
+                                        setEditContent('');
+                                      }}
+                                      className="px-4 py-1.5 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300"
+                                    >
+                                      취소
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  <p className="text-gray-700 whitespace-pre-wrap break-words">{comment.content}</p>
+                                  
+                                  {/* Reply button */}
+                                  <div className="mt-3 flex items-center gap-4">
+                                    <button
+                                      onClick={() => {
+                                        if (replyingToId === comment.id) {
+                                          setReplyingToId(null);
+                                          setReplyContent('');
+                                        } else {
+                                          setReplyingToId(comment.id);
+                                          setReplyContent('');
+                                        }
+                                      }}
+                                      className="text-sm text-gray-600 hover:text-primary-600"
+                                    >
+                                      답글
+                                    </button>
+                                    {comment.replyCount > 0 && (
+                                      <button
+                                        onClick={() => handleLoadReplies(comment.id)}
+                                        className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                                      >
+                                        {expandedReplies.has(comment.id) ? '답글 숨기기' : `답글 ${comment.replyCount}개 보기`}
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  {/* Reply input */}
+                                  {replyingToId === comment.id && (
+                                    <div className="mt-3 pl-4 border-l-2 border-primary-200">
+                                      <textarea
+                                        value={replyContent}
+                                        onChange={(e) => setReplyContent(e.target.value)}
+                                        placeholder="대댓글을 작성해주세요..."
+                                        className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none mb-2"
+                                        rows={2}
+                                      />
+                                      <div className="flex gap-2">
+                                        <button
+                                          onClick={() => handleSubmitReply(comment.id)}
+                                          disabled={!replyContent.trim()}
+                                          className="px-4 py-1.5 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                          등록
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            setReplyingToId(null);
+                                            setReplyContent('');
+                                          }}
+                                          className="px-4 py-1.5 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300"
+                                        >
+                                          취소
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Replies */}
+                                  {expandedReplies.has(comment.id) && replies[comment.id] && (
+                                    <div className="mt-4 space-y-3 pl-4 border-l-2 border-gray-200">
+                                      {replies[comment.id].map((reply) => (
+                                        <div key={`reply-${comment.id}-${reply.id}`} className="bg-white rounded-lg p-3 border border-gray-200">
+                                          <div className="flex gap-3">
+                                            <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                                              <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
+                                                {reply.username.charAt(0).toUpperCase()}
+                                              </div>
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                              <div className="flex items-center justify-between mb-1">
+                                                <div className="flex items-center gap-2">
+                                                  <span className="text-sm font-medium text-gray-900">{reply.username}</span>
+                                                  <span className="text-xs text-gray-500">{formatDate(reply.createdAt)}</span>
+                                                  {reply.updatedAt !== reply.createdAt && (
+                                                    <span className="text-xs text-gray-400">(수정됨)</span>
+                                                  )}
+                                                </div>
+                                                <Menu as="div" className="relative">
+                                                  <Menu.Button className="p-1 hover:bg-gray-200 rounded-full">
+                                                    <svg className="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                                    </svg>
+                                                  </Menu.Button>
+                                                  <Transition
+                                                    as={Fragment}
+                                                    enter="transition ease-out duration-100"
+                                                    enterFrom="transform opacity-0 scale-95"
+                                                    enterTo="transform opacity-100 scale-100"
+                                                    leave="transition ease-in duration-75"
+                                                    leaveFrom="transform opacity-100 scale-100"
+                                                    leaveTo="transform opacity-0 scale-95"
+                                                  >
+                                                    <Menu.Items className="absolute right-0 mt-2 w-32 origin-top-right bg-white divide-y divide-gray-100 rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+                                                      <div className="p-1">
+                                                        <Menu.Item>
+                                                          {({ active }: { active: boolean }) => (
+                                                            <button
+                                                              onClick={() => {
+                                                                setEditingCommentId(reply.id);
+                                                                setEditContent(reply.content);
+                                                              }}
+                                                              className={`${
+                                                                active ? 'bg-gray-100' : ''
+                                                              } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-700`}
+                                                            >
+                                                              편집
+                                                            </button>
+                                                          )}
+                                                        </Menu.Item>
+                                                        <Menu.Item>
+                                                          {({ active }: { active: boolean }) => (
+                                                            <button
+                                                              onClick={() => handleDeleteComment(reply.id)}
+                                                              className={`${
+                                                                active ? 'bg-red-50' : ''
+                                                              } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-red-600`}
+                                                            >
+                                                              삭제
+                                                            </button>
+                                                          )}
+                                                        </Menu.Item>
+                                                      </div>
+                                                    </Menu.Items>
+                                                  </Transition>
+                                                </Menu>
+                                              </div>
+                                              {editingCommentId === reply.id ? (
+                                                <div className="space-y-2">
+                                                  <textarea
+                                                    value={editContent}
+                                                    onChange={(e) => setEditContent(e.target.value)}
+                                                    className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                                                    rows={2}
+                                                  />
+                                                  <div className="flex gap-2">
+                                                    <button
+                                                      onClick={() => handleEditComment(reply.id)}
+                                                      className="px-3 py-1 bg-primary-600 text-white rounded-lg text-xs hover:bg-primary-700"
+                                                    >
+                                                      저장
+                                                    </button>
+                                                    <button
+                                                      onClick={() => {
+                                                        setEditingCommentId(null);
+                                                        setEditContent('');
+                                                      }}
+                                                      className="px-3 py-1 bg-gray-200 text-gray-700 rounded-lg text-xs hover:bg-gray-300"
+                                                    >
+                                                      취소
+                                                    </button>
+                                                  </div>
+                                                </div>
+                                              ) : (
+                                                <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">{reply.content}</p>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {/* Load More Button */}
+                      {hasNextComments && (
+                        <div className="flex justify-center mt-6">
+                          <button
+                            onClick={loadMoreComments}
+                            disabled={isLoadingMoreComments}
+                            className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                          >
+                            {isLoadingMoreComments ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                                <span>불러오는 중...</span>
+                              </>
+                            ) : (
+                              <span>댓글 더 보기</span>
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </section>
               </div>
             </main>
@@ -632,9 +1401,11 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         isOpen={isDocModalOpen}
         onClose={() => setIsDocModalOpen(false)}
         projectId={projectId}
-        onSuccess={() => {
-          // Optionally refresh documents list
-          console.log('Document created successfully');
+        onSuccess={async () => {
+          // Refresh project data to get updated document list
+          if (projectId) {
+            await fetchProjectData(projectId);
+          }
         }}
       />
     </>
