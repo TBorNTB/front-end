@@ -4,13 +4,13 @@ import { BASE_URL } from '@/lib/api/config'; // <-- use the shared gateway base 
 // Feature-specific endpoints matching microservices
 export const META_ENDPOINTS = {
 
-  // Meta-service endpoints
+  // User-service endpoints
   META: {
-    COUNT: '/meta-service/api/meta/count',
-    COMMENTS: '/meta-service/comments',
-    COMMENTS_BY_POST: '/meta-service/comments/post/:postId',
-    LIKES: '/meta-service/likes',
-    LIKE_POST: '/meta-service/likes/post/:postId',
+    COUNT: '/user-service/api/meta/count',
+    COMMENTS: '/user-service/comments',
+    COMMENTS_BY_POST: '/user-service/comments/post/:postId',
+    LIKES: '/user-service/likes',
+    LIKE_POST: '/user-service/likes/post/:postId',
   },
 } as const;
 

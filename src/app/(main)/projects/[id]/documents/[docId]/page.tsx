@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import { fetchDocument } from '@/lib/api/endpoints/project';
 
 interface DocumentViewerProps {
   params: Promise<{ id: string; docId: string }>;
@@ -33,19 +34,17 @@ export default function DocumentViewer({ params }: DocumentViewerProps) {
       setProjectId(resolvedParams.id);
       setDocId(resolvedParams.docId);
       
-      fetchDocument(resolvedParams.docId);
+      loadDocument(resolvedParams.docId);
     });
   }, [params]);
 
-  const fetchDocument = async (documentId: string) => {
+  const loadDocument = async (documentId: string) => {
     try {
-      const response = await fetch(`/api/documents/${documentId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setDocument(data);
-      }
-    } catch (error) {
+      const doc = await fetchDocument(documentId);
+      setDocument(doc);
+    } catch (error: any) {
       console.error('Fetch error:', error);
+      alert(error.message || '문서를 불러오는데 실패했습니다.');
     } finally {
       setIsLoading(false);
     }
@@ -105,16 +104,13 @@ export default function DocumentViewer({ params }: DocumentViewerProps) {
 
             {/* Metadata */}
             <div className="flex items-center gap-4 text-sm text-gray-500 mb-8 pb-8 border-b border-gray-200">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold">
-                  {document.createdBy?.charAt(0) || 'U'}
-                </div>
-                <span>{document.createdBy || '작성자'}</span>
-              </div>
-              <span>•</span>
-              <span>{document.createdAt}</span>
-              <span>•</span>
-              <span>👁 {document.views || 0} 조회</span>
+              <span>생성일: {new Date(document.createdAt).toLocaleDateString('ko-KR')}</span>
+              {document.updatedAt !== document.createdAt && (
+                <>
+                  <span>•</span>
+                  <span>수정일: {new Date(document.updatedAt).toLocaleDateString('ko-KR')}</span>
+                </>
+              )}
             </div>
 
             {/* Content */}

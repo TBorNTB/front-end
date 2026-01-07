@@ -103,7 +103,7 @@ export default function StatisticsSection({ className = "" }: StatisticsSectionP
     const fetchStatistics = async () => {
       try {
         const response = await fetch(
-          `${BASE_URL}/meta-service/api/meta/count`,
+          `${BASE_URL}/user-service/api/meta/count`,
           {
             method: 'GET',
             headers: {
