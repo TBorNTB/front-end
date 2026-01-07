@@ -268,7 +268,7 @@ function ArticlesContent() {
 
   // 검색 결과를 Article 형식으로 변환
   const apiResultsAsArticles = searchResults?.content.map((item) => ({
-    id: item.id,
+    id: Number(item.id),
     title: item.title,
     excerpt: item.content.length > 100 ? item.content.substring(0, 100) + '...' : item.content,
     content: item.content,
