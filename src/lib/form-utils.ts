@@ -53,7 +53,7 @@ export const getTextareaClassName = (hasError: boolean): string => {
  * Used for 6-digit verification code inputs
  */
 export const getOTPInputClassName = (hasError: boolean, isActive?: boolean): string => {
-  const baseClasses = "w-12 h-12 text-center text-lg font-semibold bg-gray-50 rounded-lg focus:outline-none transition-all duration-200";
+  const baseClasses = "w-12 h-12 text-center text-lg font-semibold text-gray-900 bg-white rounded-lg focus:outline-none transition-all duration-200";
   const errorClasses = hasError 
     ? 'border-2 border-error focus:border-error focus:ring-2 focus:ring-error/20'
     : 'border-2 border-gray-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20';

@@ -55,31 +55,12 @@ export default function ForgotPasswordPage() {
     defaultValues: { email: "" },
   });
 
-  const codeForm = useForm<VerifyCodeFormData>({
-    resolver: zodResolver(verifyCodeSchema),
-    defaultValues: { email: "", verificationCode: "" },
-  });
-
   const resetForm = useForm<ResetPasswordFormData>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: { email: "", verificationCode: "", newPassword: "", confirmPassword: "" },
   });
 
-  // Timer for resend functionality
-  const startTimer = (seconds: number = 300) => { // 5 minutes default
-    setTimeLeft(seconds);
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  // Step 1: Send password reset email - NOW CALLS YOUR API
+  // Step 1: Send password reset email
   const handleEmailSubmit = async (values: ForgotPasswordFormData) => {
     setIsLoading(true);
     resetStates();
@@ -95,9 +76,9 @@ export default function ForgotPasswordPage() {
 
       if (response.ok) {
         setEmail(values.email);
-        setCurrentStep('verification');
+        setCurrentStep('reset');
         startTimer(300); // 5 minutes
-        codeForm.setValue('email', values.email);
+        resetForm.setValue('email', values.email);
       } else {
         handleError(new Error(data.message || "이메일 발송에 실패했습니다."));
       }
@@ -108,37 +89,40 @@ export default function ForgotPasswordPage() {
     }
   };
 
-  const handleCodeSubmit = async (values: VerifyCodeFormData) => {
-    setIsLoading(true);
-    resetStates();
-
-    try {
-      const response = await fetch('/api/password/verify-code', {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: values.email,
-          verificationCode: values.verificationCode,
-        }),
+  // Timer for resend functionality
+  const startTimer = (seconds: number = 300) => {
+    setTimeLeft(seconds);
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
       });
+    }, 1000);
+  };
 
-      const data = await response.json();
+  // Format timer display
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
-      if (response.ok) {
-        setCurrentStep('reset');
-        resetForm.setValue('email', values.email);
-        resetForm.setValue('verificationCode', values.verificationCode);
-      } else {
-        handleError(new Error(data.message || "인증코드가 올바르지 않습니다."));
-      }
+  // Resend verification code
+  const handleResendCode = async () => {
+    if (timeLeft > 0) return;
+    
+    setIsLoading(true);
+    try {
+      await handleEmailSubmit({ email } as ForgotPasswordFormData);
     } catch (err) {
-      handleError(err, "인증코드 확인 중 오류가 발생했습니다.");
-    } finally {
-      setIsLoading(false);
+      handleError(err, "재전송에 실패했습니다.");
     }
   };
 
-  // Step 3: Reset password - NOW CALLS YOUR API
+  // Step 2: Combined code verification + password reset
   const handlePasswordReset = async (values: ResetPasswordFormData) => {
     setIsLoading(true);
     resetStates();
@@ -149,7 +133,7 @@ export default function ForgotPasswordPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: values.email,
-          verificationCode: values.verificationCode,
+          randomCode: values.verificationCode,
           newPassword: values.newPassword,
         }),
       });
@@ -166,25 +150,6 @@ export default function ForgotPasswordPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Resend verification code
-  const handleResendCode = async () => {
-    if (timeLeft > 0) return;
-    
-    setIsLoading(true);
-    try {
-      await handleEmailSubmit({ email } as ForgotPasswordFormData);
-    } catch (err) {
-      handleError(err, "재전송에 실패했습니다.");
-    }
-  };
-
-  // Format timer display
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   // Get password strength for display
@@ -204,7 +169,7 @@ export default function ForgotPasswordPage() {
           <h2 className="mb-2 text-2xl font-bold text-white">비밀번호 찾기</h2>
           <p className="mb-6 text-primary-100">가입 시 사용한 이메일을 입력하세요</p>
           <div className="px-4 py-2 bg-white/20 rounded-lg text-white text-sm">
-            1단계 / 3단계
+            1단계 / 2단계
           </div>
         </div>
 
@@ -279,23 +244,25 @@ export default function ForgotPasswordPage() {
     </div>
   );
 
-  const renderVerificationStep = () => (
+  const renderVerificationStep = () => null;
+
+  const renderResetStep = () => (
     <div className="flex h-screen w-full items-center justify-center bg-gradient-background">
       <div className="absolute top-0 left-0 h-full w-full bg-[radial-gradient(circle_at_center,_rgba(58,_77,_161,_0.08)_0,_transparent_30%)]" />
-      <div className="flex h-[550px] w-[850px] rounded-xl bg-white shadow-xl shadow-primary-500/10 overflow-hidden z-10 border border-gray-200">
+      <div className="flex h-[650px] w-[850px] rounded-xl bg-white shadow-xl shadow-primary-500/10 overflow-hidden z-10 border border-gray-200">
         
         {/* Left Panel */}
         <div className="flex flex-col items-center justify-center w-1/3 bg-gradient-to-br from-primary-500 to-primary-700 p-10 text-center">
-          <Send className="w-16 h-16 text-white mb-4" />
-          <h2 className="mb-2 text-2xl font-bold text-white">인증코드 입력</h2>
-          <p className="mb-6 text-blue-100">이메일로 발송된 8자리 코드를 입력하세요</p>
+          <Lock className="w-16 h-16 text-white mb-4" />
+          <h2 className="mb-2 text-2xl font-bold text-white">비밀번호 재설정</h2>
+          <p className="mb-6 text-green-100">인증코드와 새 비밀번호를 입력하세요</p>
           <div className="px-4 py-2 bg-white/20 rounded-lg text-white text-sm">
-            2단계 / 3단계
+            2단계 / 2단계
           </div>
         </div>
 
         {/* Right Panel */}
-        <div className="flex flex-col justify-center p-10 w-2/3 bg-white relative">
+        <div className="flex flex-col justify-center p-10 w-2/3 bg-white relative overflow-y-auto">
           <button
             type="button"
             onClick={() => setCurrentStep('email')}
@@ -304,37 +271,23 @@ export default function ForgotPasswordPage() {
             <ArrowLeft size={20} />
           </button>
 
-          <h2 className="mb-6 text-3xl font-bold text-primary-600 text-center">인증코드 확인</h2>
+          <h2 className="mb-6 text-3xl font-bold text-primary-600 text-center">비밀번호 재설정</h2>
 
-          <div className="text-center mb-6">
-            <p className="text-gray-600 mb-2">
-              <span className="font-semibold text-primary-600">{email}</span>로 발송된
-            </p>
-            <p className="text-gray-600">8자리 인증코드를 입력해주세요</p>
-          </div>
-
-          <Form {...codeForm}>
-            <form onSubmit={codeForm.handleSubmit(handleCodeSubmit)} className="space-y-6">
+          <Form {...resetForm}>
+            <form onSubmit={resetForm.handleSubmit(handlePasswordReset)} className="space-y-5">
+              {/* Verification Code */}
               <FormField
-                control={codeForm.control}
+                control={resetForm.control}
                 name="verificationCode"
                 render={({ field, fieldState }) => (
                   <FormItem>
+                    <FormLabel className="text-sm font-medium text-primary-600">인증코드</FormLabel>
                     <FormControl>
                       <div className="space-y-4">
                         <OTPInput
                           length={8}
                           value={field.value || ''}
                           onChange={field.onChange}
-                          onComplete={(code) => {
-                            field.onChange(code);
-                            // Auto-submit when code is complete (optional)
-                            if (code.length === 8) {
-                              setTimeout(() => {
-                                codeForm.handleSubmit(handleCodeSubmit)();
-                              }, 500);
-                            }
-                          }}
                           hasError={!!fieldState.error}
                           disabled={isLoading}
                           autoFocus
@@ -365,55 +318,6 @@ export default function ForgotPasswordPage() {
                 )}
               </div>
 
-              <button 
-                type="submit" 
-                className="btn btn-primary btn-lg w-full" 
-                disabled={isLoading || codeForm.watch('verificationCode')?.length !== 8}
-              >
-                {isLoading ? "확인 중..." : "인증코드 확인"}
-              </button>
-
-              {error && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-sm text-red-600">{error}</p>
-                </div>
-              )}
-            </form>
-          </Form>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderResetStep = () => (
-    <div className="flex h-screen w-full items-center justify-center bg-gradient-background">
-      <div className="absolute top-0 left-0 h-full w-full bg-[radial-gradient(circle_at_center,_rgba(58,_77,_161,_0.08)_0,_transparent_30%)]" />
-      <div className="flex h-[550px] w-[850px] rounded-xl bg-white shadow-xl shadow-primary-500/10 overflow-hidden z-10 border border-gray-200">
-        
-        {/* Left Panel */}
-        <div className="flex flex-col items-center justify-center w-1/3 bg-gradient-to-br from-primary-500 to-primary-700 p-10 text-center">
-          <Lock className="w-16 h-16 text-white mb-4" />
-          <h2 className="mb-2 text-2xl font-bold text-white">새 비밀번호</h2>
-          <p className="mb-6 text-green-100">안전한 새 비밀번호를 설정하세요</p>
-          <div className="px-4 py-2 bg-white/20 rounded-lg text-white text-sm">
-            3단계 / 3단계
-          </div>
-        </div>
-
-        {/* Right Panel */}
-        <div className="flex flex-col justify-center p-10 w-2/3 bg-white relative">
-          <button
-            type="button"
-            onClick={() => setCurrentStep('verification')}
-            className="absolute top-4 right-4 text-gray-400 hover:text-primary-600 transition-colors"
-          >
-            <ArrowLeft size={20} />
-          </button>
-
-          <h2 className="mb-6 text-3xl font-bold text-primary-600 text-center">새 비밀번호 설정</h2>
-
-          <Form {...resetForm}>
-            <form onSubmit={resetForm.handleSubmit(handlePasswordReset)} className="space-y-5">
               {/* New Password */}
               <FormField
                 control={resetForm.control}
@@ -441,34 +345,6 @@ export default function ForgotPasswordPage() {
                       </div>
                     </FormControl>
                     <FormMessage className="text-error" />
-                    
-                    {/* Password Strength Indicator */}
-                    {passwordStrength && field.value && (
-                      <div className="mt-2 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-500">강도:</span>
-                          <span className={`text-xs font-medium ${passwordStrength.color}`}>
-                            {passwordStrength.level}
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-1">
-                          <div 
-                            className={`h-1 rounded-full transition-all duration-300 ${
-                              passwordStrength.strength >= 4 ? 'bg-green-500' :
-                              passwordStrength.strength >= 3 ? 'bg-blue-500' :
-                              passwordStrength.strength >= 2 ? 'bg-yellow-500' :
-                              'bg-red-500'
-                            }`}
-                            style={{ width: `${(passwordStrength.strength / 5) * 100}%` }}
-                          />
-                        </div>
-                        {passwordStrength.feedback.length > 0 && (
-                          <div className="text-xs text-gray-500">
-                            추천: {passwordStrength.feedback.join(', ')}
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </FormItem>
                 )}
               />
@@ -507,7 +383,7 @@ export default function ForgotPasswordPage() {
               <button 
                 type="submit" 
                 className="btn btn-primary btn-lg w-full mt-6" 
-                disabled={isLoading || !passwordStrength?.isStrong}
+                disabled={isLoading || resetForm.watch('verificationCode')?.length !== 8}
               >
                 {isLoading ? "설정 중..." : "비밀번호 재설정"}
               </button>
@@ -576,8 +452,6 @@ export default function ForgotPasswordPage() {
   switch (currentStep) {
     case 'email':
       return renderEmailStep();
-    case 'verification':
-      return renderVerificationStep();
     case 'reset':
       return renderResetStep();
     case 'success':

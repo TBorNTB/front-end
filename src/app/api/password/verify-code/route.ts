@@ -6,9 +6,9 @@ import { USER_ENDPOINTS } from '@/lib/api/endpoints/user-endpoints';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, verificationCode } = body;
+    const { email, randomCode } = body;
 
-    if (!email || !verificationCode || verificationCode.length !== 8) {
+    if (!email || !randomCode || randomCode.length !== 8) {
       return NextResponse.json(
         { message: '이메일과 8자리 인증코드를 입력해주세요.' },
         { status: 400 }
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({ 
         email, 
-        randomCode: verificationCode 
+        randomCode
       }),
       cache: 'no-store',
     });

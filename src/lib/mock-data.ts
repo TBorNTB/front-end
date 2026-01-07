@@ -116,6 +116,7 @@ export const MOCK_PROJECTS: Project[] = [
 
 export const MOCK_ARTICLES: Article[] = [
   {
+    topicSlug: 'web-hacking',
     id: 'art-1',
     content: {
       title: '워크플로 분석 실제 가이드',
@@ -133,6 +134,7 @@ export const MOCK_ARTICLES: Article[] = [
     viewCount: 342,
   },
   {
+    topicSlug: 'digital-forensics',
     id: 'art-2',
     content: {
       title: 'OSINT를 활용한 디지털 포렌식',
@@ -150,6 +152,7 @@ export const MOCK_ARTICLES: Article[] = [
     viewCount: 198,
   },
   {
+    topicSlug: 'reversing',
     id: 'art-3',
     content: {
       title: '리버싱 기초 가이드',
@@ -167,6 +170,7 @@ export const MOCK_ARTICLES: Article[] = [
     viewCount: 156,
   },
   {
+    topicSlug: 'system-hacking',
     id: 'art-4',
     content: {
       title: '시스템 해킹 실전 기법',
