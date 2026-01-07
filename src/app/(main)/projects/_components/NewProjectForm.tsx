@@ -1,23 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, X, Upload, FileText, User } from 'lucide-react';
+import { ArrowLeft, Plus, X, Upload, FileText, User, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import TipTapEditor from '@/components/editor/TipTapEditor';
 import Image from 'next/image';
-
-const PROJECT_CATEGORIES = [
-  '웹 해킹',
-  '시스템 보안',
-  '암호화',
-  '네트워크 보안',
-  '모바일 보안',
-  '기타',
-];
+import { fetchCategories, createProject } from '@/lib/api/endpoints/project';
+import { fetchUsers, User as UserType } from '@/lib/api/endpoints/user';
 
 const TECH_STACK_CATEGORIES = [
   'LANGUAGE',
@@ -29,10 +22,11 @@ const TECH_STACK_CATEGORIES = [
 
 interface FormData {
   title: string;
-  category: string;
+  categories: string[];
   description: string;
   details: string;
   tags: string[];
+  subGoals: string[];
   projectUrl: string;
   repositoryUrl: string;
   status: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED';
@@ -51,16 +45,27 @@ export default function NewProjectForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [tagInput, setTagInput] = useState('');
+  const [subGoalInput, setSubGoalInput] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
   const [thumbnailPreview, setThumbnailPreview] = useState<string>('');
   const [collaboratorInput, setCollaboratorInput] = useState({ name: '', email: '', role: 'CONTRIBUTOR' });
   
+  // API data states
+  const [categories, setCategories] = useState<Array<{ id: number; name: string; description: string }>>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+  const [users, setUsers] = useState<UserType[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const userSearchRef = useRef<HTMLDivElement>(null);
+  
   const [formData, setFormData] = useState<FormData>({
     title: '',
-    category: '',
+    categories: [],
     description: '',
     details: '',
     tags: [],
+    subGoals: [],
     projectUrl: '',
     repositoryUrl: '',
     status: 'PLANNING',
@@ -71,6 +76,65 @@ export default function NewProjectForm() {
     collaborators: [],
   });
 
+  // Load categories on mount
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        setIsLoadingCategories(true);
+        const response = await fetchCategories();
+        setCategories(response.categories);
+      } catch (error) {
+        console.error('Failed to load categories:', error);
+      } finally {
+        setIsLoadingCategories(false);
+      }
+    };
+    loadCategories();
+  }, []);
+
+  // Load users when search query changes
+  useEffect(() => {
+    const loadUsers = async () => {
+      if (!userSearchQuery.trim()) {
+        setUsers([]);
+        return;
+      }
+
+      try {
+        setIsLoadingUsers(true);
+        const response = await fetchUsers(0, 100, 'ASC', 'createdAt');
+        // Filter users by search query (name, nickname, username)
+        const filtered = response.data.filter(
+          (user) =>
+            user.realName?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+            user.nickname?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+            user.username?.toLowerCase().includes(userSearchQuery.toLowerCase())
+        );
+        setUsers(filtered);
+        setShowUserDropdown(true);
+      } catch (error) {
+        console.error('Failed to load users:', error);
+      } finally {
+        setIsLoadingUsers(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(loadUsers, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [userSearchQuery]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userSearchRef.current && !userSearchRef.current.contains(event.target as Node)) {
+        setShowUserDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
@@ -78,8 +142,8 @@ export default function NewProjectForm() {
       newErrors.title = '프로젝트 이름을 입력해주세요.';
     }
 
-    if (!formData.category) {
-      newErrors.category = '카테고리를 선택해주세요.';
+    if (formData.categories.length === 0) {
+      newErrors.categories = '최소 하나의 카테고리를 선택해주세요.';
     }
 
     if (!formData.description.trim()) {
@@ -151,6 +215,42 @@ export default function NewProjectForm() {
     }));
   };
 
+  const toggleCategory = (categoryName: string) => {
+    setFormData((prev) => {
+      const isSelected = prev.categories.includes(categoryName);
+      return {
+        ...prev,
+        categories: isSelected
+          ? prev.categories.filter((c) => c !== categoryName)
+          : [...prev.categories, categoryName],
+      };
+    });
+    // Clear error for this field
+    if (errors.categories) {
+      setErrors((prev) => ({
+        ...prev,
+        categories: '',
+      }));
+    }
+  };
+
+  const addSubGoal = () => {
+    if (subGoalInput.trim() && !formData.subGoals.includes(subGoalInput.trim())) {
+      setFormData((prev) => ({
+        ...prev,
+        subGoals: [...prev.subGoals, subGoalInput.trim()],
+      }));
+      setSubGoalInput('');
+    }
+  };
+
+  const removeSubGoal = (goal: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      subGoals: prev.subGoals.filter((g) => g !== goal),
+    }));
+  };
+
   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -183,13 +283,26 @@ export default function NewProjectForm() {
     }));
   };
 
-  const addCollaborator = () => {
-    if (collaboratorInput.name && collaboratorInput.email) {
+  const addCollaborator = (user: UserType) => {
+    // Check if user is already added
+    const isAlreadyAdded = formData.collaborators.some(
+      (collab) => collab.email === user.email || collab.name === user.username
+    );
+
+    if (!isAlreadyAdded) {
       setFormData((prev) => ({
         ...prev,
-        collaborators: [...prev.collaborators, collaboratorInput],
+        collaborators: [
+          ...prev.collaborators,
+          {
+            name: user.realName || user.nickname || user.username,
+            email: user.username, // Store username in email field for API
+            role: 'CONTRIBUTOR',
+          },
+        ],
       }));
-      setCollaboratorInput({ name: '', email: '', role: 'CONTRIBUTOR' });
+      setUserSearchQuery('');
+      setShowUserDropdown(false);
     }
   };
 
@@ -217,24 +330,26 @@ export default function NewProjectForm() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/projects/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      // Prepare data according to API spec
+      const projectData = {
+        title: formData.title,
+        description: formData.description,
+        thumbnail: formData.thumbnailUrl || 'string',
+        content: formData.details || '',
+        projectStatus: formData.status,
+        categories: formData.categories,
+        collaborators: formData.collaborators.map((collab) => collab.email), // email field contains username
+        techStacks: formData.tags,
+        subGoals: formData.subGoals,
+        createdAt: formData.startDate ? new Date(formData.startDate).toISOString() : new Date().toISOString(),
+        endedAt: formData.endDate ? new Date(formData.endDate).toISOString() : new Date().toISOString(),
+      };
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || '프로젝트 생성에 실패했습니다.');
-      }
-
-      const data = await response.json();
-      alert('프로젝트가 성공적으로 생성되었습니다!');
-      router.push(`/projects/${data.id}`);
-    } catch (error) {
-      alert(error instanceof Error ? error.message : '프로젝트 생성에 실패했습니다.');
+      const response = await createProject(projectData);
+      alert(response.message || '프로젝트가 성공적으로 생성되었습니다!');
+      router.push('/projects');
+    } catch (error: any) {
+      alert(error.message || '프로젝트 생성에 실패했습니다.');
     } finally {
       setLoading(false);
     }
@@ -274,28 +389,75 @@ export default function NewProjectForm() {
             {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
           </div>
 
-          {/* Category */}
+          {/* Categories */}
           <div>
-            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               카테고리 <span className="text-red-500">*</span>
             </label>
-            <select
-              id="category"
-              name="category"
-              value={formData.category}
-              onChange={handleInputChange}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.category ? 'border-red-500' : 'border-gray-300'
-              }`}
-            >
-              <option value="">카테고리를 선택하세요</option>
-              {PROJECT_CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-            {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
+            {isLoadingCategories ? (
+              <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50">
+                <span className="text-gray-500">카테고리 로딩 중...</span>
+              </div>
+            ) : (
+              <>
+                <div className={`border rounded-lg p-3 min-h-[120px] max-h-[200px] overflow-y-auto ${
+                  errors.categories ? 'border-red-500' : 'border-gray-300'
+                }`}>
+                  {categories.length === 0 ? (
+                    <p className="text-gray-500 text-sm">카테고리가 없습니다</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {categories.map((cat) => {
+                        const isSelected = formData.categories.includes(cat.name);
+                        return (
+                          <label
+                            key={cat.id}
+                            className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleCategory(cat.name)}
+                              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            />
+                            <div className="flex-1">
+                              <span className="text-sm font-medium text-gray-900">{cat.name}</span>
+                              {cat.description && (
+                                <p className="text-xs text-gray-500 mt-0.5">{cat.description}</p>
+                              )}
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+                {/* Selected Categories Display */}
+                {formData.categories.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-xs text-gray-600 mb-2">선택된 카테고리:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.categories.map((categoryName) => (
+                        <span
+                          key={categoryName}
+                          className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium"
+                        >
+                          {categoryName}
+                          <button
+                            type="button"
+                            onClick={() => toggleCategory(categoryName)}
+                            className="hover:text-blue-900"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+            {errors.categories && <p className="text-red-500 text-sm mt-1">{errors.categories}</p>}
           </div>
 
           {/* Status */}
@@ -465,6 +627,53 @@ export default function NewProjectForm() {
               ))}
             </div>
           </div>
+
+          {/* Sub Goals */}
+          <div>
+            <label htmlFor="subGoals" className="block text-sm font-medium text-gray-700 mb-2">
+              서브 목표
+            </label>
+            <div className="flex gap-2 mb-3">
+              <Input
+                id="subGoals"
+                value={subGoalInput}
+                onChange={(e) => setSubGoalInput(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addSubGoal();
+                  }
+                }}
+                placeholder="서브 목표를 입력하고 Enter를 누르세요"
+              />
+              <Button
+                type="button"
+                onClick={addSubGoal}
+                className="bg-blue-500 hover:bg-blue-600 text-white"
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+
+            {/* Sub Goals Display */}
+            <div className="flex flex-wrap gap-2">
+              {formData.subGoals.map((goal) => (
+                <span
+                  key={goal}
+                  className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium"
+                >
+                  {goal}
+                  <button
+                    type="button"
+                    onClick={() => removeSubGoal(goal)}
+                    className="hover:text-green-900"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Team Members */}
@@ -472,37 +681,56 @@ export default function NewProjectForm() {
           <h2 className="text-xl font-semibold text-gray-900">팀원</h2>
 
           <div className="space-y-3">
-            <div className="grid grid-cols-3 gap-3">
-              <Input
-                placeholder="이름"
-                value={collaboratorInput.name}
-                onChange={(e) => setCollaboratorInput({ ...collaboratorInput, name: e.target.value })}
-              />
-              <Input
-                placeholder="이메일"
-                type="email"
-                value={collaboratorInput.email}
-                onChange={(e) => setCollaboratorInput({ ...collaboratorInput, email: e.target.value })}
-              />
-              <div className="flex gap-2">
-                <select
-                  value={collaboratorInput.role}
-                  onChange={(e) => setCollaboratorInput({ ...collaboratorInput, role: e.target.value })}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="OWNER">소유자</option>
-                  <option value="ADMIN">관리자</option>
-                  <option value="CONTRIBUTOR">기여자</option>
-                  <option value="VIEWER">뷰어</option>
-                </select>
-                <Button
-                  type="button"
-                  onClick={addCollaborator}
-                  className="bg-blue-500 hover:bg-blue-600 text-white"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
+            {/* User Search */}
+            <div className="relative" ref={userSearchRef}>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="이름 또는 닉네임으로 검색..."
+                  value={userSearchQuery}
+                  onChange={(e) => setUserSearchQuery(e.target.value)}
+                  onFocus={() => userSearchQuery && setShowUserDropdown(true)}
+                  className="pl-10"
+                />
               </div>
+
+              {/* User Dropdown */}
+              {showUserDropdown && (userSearchQuery.trim() || users.length > 0) && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {isLoadingUsers ? (
+                    <div className="p-4 text-center text-gray-500">검색 중...</div>
+                  ) : users.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500">검색 결과가 없습니다.</div>
+                  ) : (
+                    users.map((user) => (
+                      <button
+                        key={user.id}
+                        type="button"
+                        onClick={() => addCollaborator(user)}
+                        className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 flex items-center gap-3"
+                      >
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          {user.profileImageUrl ? (
+                            <img
+                              src={user.profileImageUrl}
+                              alt={user.nickname}
+                              className="w-full h-full rounded-full object-cover"
+                            />
+                          ) : (
+                            <User className="w-4 h-4 text-blue-600" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 truncate">
+                            {user.realName || user.nickname || user.username}
+                          </p>
+                          <p className="text-sm text-gray-500 truncate">@{user.username}</p>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Collaborators List */}
@@ -518,7 +746,7 @@ export default function NewProjectForm() {
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">{collaborator.name}</p>
-                      <p className="text-sm text-gray-500">{collaborator.email}</p>
+                      <p className="text-sm text-gray-500">@{collaborator.email}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">

@@ -17,7 +17,7 @@ export const getBaseUrl = () => {
   return API_CONFIG.STAGING;
 };
 
-export const BASE_URL = getBaseUrl();
+export const BASE_URL = 'http://localhost:8000';
 
 export const getApiUrl = (endpoint: string) => {
   const url = `${BASE_URL}${endpoint}`;

@@ -1,21 +1,22 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { createDocument } from '@/lib/api/endpoints/project';
+import { fetchDocument, updateDocument } from '@/lib/api/endpoints/project';
 
-interface NewDocumentPageProps {
-  params: Promise<{ id: string }>;
+interface EditDocumentPageProps {
+  params: Promise<{ id: string; docId: string }>;
 }
 
-export default function NewDocumentPage({ params }: NewDocumentPageProps) {
+export default function EditDocumentPage({ params }: EditDocumentPageProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [projectId, setProjectId] = useState<string>('');
+  const [docId, setDocId] = useState<string>('');
   const [documentTitle, setDocumentTitle] = useState('');
-  const [documentContent, setDocumentContent] = useState(''); // Changed to string
+  const [documentContent, setDocumentContent] = useState('');
   const [documentDescription, setDocumentDescription] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
 
@@ -35,25 +36,23 @@ export default function NewDocumentPage({ params }: NewDocumentPageProps) {
   );
 
   useEffect(() => {
-    params.then((resolvedParams) => {
+    params.then(async (resolvedParams) => {
       setProjectId(resolvedParams.id);
+      setDocId(resolvedParams.docId);
+      
+      try {
+        const doc = await fetchDocument(resolvedParams.docId);
+        setDocumentTitle(doc.title);
+        setDocumentContent(doc.content);
+        setDocumentDescription(doc.description);
+        setIsLoading(false);
+      } catch (error: any) {
+        console.error('Fetch error:', error);
+        alert(error.message || '문서를 불러오는데 실패했습니다.');
+        setIsLoading(false);
+      }
     });
-
-    // Load draft from localStorage
-    const draft = localStorage.getItem('documentDraft');
-    if (draft) {
-      const { title, content } = JSON.parse(draft);
-      setDocumentTitle(title || '');
-      setDocumentContent(content || '');
-      localStorage.removeItem('documentDraft');
-    }
-
-    // Get title from URL params
-    const titleParam = searchParams.get('title');
-    if (titleParam) {
-      setDocumentTitle(titleParam);
-    }
-  }, [params, searchParams]);
+  }, [params]);
 
   // Auto-save functionality
   useEffect(() => {
@@ -61,16 +60,17 @@ export default function NewDocumentPage({ params }: NewDocumentPageProps) {
 
     const autoSaveTimer = setTimeout(() => {
       setAutoSaveStatus('saving');
-      localStorage.setItem('documentDraft', JSON.stringify({
+      localStorage.setItem(`documentDraft_${docId}`, JSON.stringify({
         title: documentTitle,
-        content: documentContent
+        content: documentContent,
+        description: documentDescription
       }));
       setTimeout(() => setAutoSaveStatus('saved'), 500);
     }, 2000);
 
     setAutoSaveStatus('unsaved');
     return () => clearTimeout(autoSaveTimer);
-  }, [documentTitle, documentContent]);
+  }, [documentTitle, documentContent, documentDescription, docId]);
 
   const handleContentChange = (html: string) => {
     setDocumentContent(html);
@@ -82,22 +82,22 @@ export default function NewDocumentPage({ params }: NewDocumentPageProps) {
       return;
     }
 
-    if (!projectId) {
-      alert('프로젝트 ID가 없습니다.');
+    if (!docId) {
+      alert('문서 ID가 없습니다.');
       return;
     }
 
     setIsSaving(true);
     try {
-      const document = await createDocument(projectId, {
+      await updateDocument(docId, {
         title: documentTitle,
         content: documentContent,
         description: documentDescription || documentTitle,
         thumbnailUrl: '',
       });
       
-      localStorage.removeItem('documentDraft');
-      router.push(`/projects/${projectId}/documents/${document.id}`);
+      localStorage.removeItem(`documentDraft_${docId}`);
+      router.push(`/projects/${projectId}/documents/${docId}`);
     } catch (error: any) {
       console.error('Save error:', error);
       alert(error.message || '문서 저장에 실패했습니다.');
@@ -109,13 +109,24 @@ export default function NewDocumentPage({ params }: NewDocumentPageProps) {
   const handleCancel = () => {
     if (documentTitle || documentContent) {
       if (confirm('작성 중인 내용이 있습니다. 정말 나가시겠습니까?')) {
-        localStorage.removeItem('documentDraft');
-        router.push(`/projects/${projectId}`);
+        localStorage.removeItem(`documentDraft_${docId}`);
+        router.push(`/projects/${projectId}/documents/${docId}`);
       }
     } else {
-      router.push(`/projects/${projectId}`);
+      router.push(`/projects/${projectId}/documents/${docId}`);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-2">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600" />
+          <p className="text-gray-500">문서를 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -130,7 +141,7 @@ export default function NewDocumentPage({ params }: NewDocumentPageProps) {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              <span className="text-sm font-medium">프로젝트로 돌아가기</span>
+              <span className="text-sm font-medium">문서 보기로 돌아가기</span>
             </button>
 
             {/* Auto-save Status */}
@@ -214,11 +225,7 @@ export default function NewDocumentPage({ params }: NewDocumentPageProps) {
 
             {/* Metadata Info */}
             <div className="flex items-center gap-4 text-sm text-gray-500 mb-8 pb-8 border-b border-gray-200">
-              <span>작성자: 김동현</span>
-              <span>•</span>
-              <span>프로젝트: XSS 필터 규칙 테스트</span>
-              <span>•</span>
-              <span>{new Date().toLocaleDateString('ko-KR')}</span>
+              <span>편집 중</span>
             </div>
 
             {/* TipTap Editor */}
@@ -245,3 +252,4 @@ export default function NewDocumentPage({ params }: NewDocumentPageProps) {
     </div>
   );
 }
+

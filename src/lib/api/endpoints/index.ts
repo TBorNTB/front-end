@@ -5,3 +5,4 @@ export * from './project';
 export * from './meta';
 export * from './elastic';
 export * from './newsletter';
+export * from './article';
