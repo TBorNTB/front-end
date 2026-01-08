@@ -130,10 +130,6 @@ export default function StatisticsSection({ className = "" }: StatisticsSectionP
         setLoading(false);
         return;
       }
-
-      try {
-        const response = await fetch(
-          `${BASE_URL}/meta-service/api/meta/count`,
       try {
         const response = await fetch(
           `${BASE_URL}/user-service/api/meta/count`,

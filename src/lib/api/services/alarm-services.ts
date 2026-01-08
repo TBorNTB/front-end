@@ -1,7 +1,7 @@
 // lib/api/services/alarm-service.ts
 import { BASE_URL } from '@/lib/api/config';
 import { USER_ENDPOINTS } from '@/lib/api/endpoints';
-import { AlarmType } from '@/types/alarm';
+import { AlarmType } from '@/types/services/alarm';
 
 // Get access token from cookies
 const getAccessToken = (): string | null => {

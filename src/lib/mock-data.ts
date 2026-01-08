@@ -1,5 +1,5 @@
 import { USE_MOCK_DATA } from '@/lib/api/env';
-import { CategoryType, CategoryDisplayNames, CategoryDescriptions } from '@/types/category';
+import { CategoryType, CategoryDisplayNames, CategoryDescriptions } from '@/types/services/category';
 
 export type Project = {
   id: string;

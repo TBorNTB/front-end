@@ -33,6 +33,8 @@ export default function Home() {
 
   const [allArticles, setAllArticles] = useState<ArticleCardData[]>([]);
   const [articleIndex, setArticleIndex] = useState(0);
+  const [articlesLoading, setArticlesLoading] = useState(false);
+  const [articlesError, setArticlesError] = useState<string | null>(null);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
   // Derive project data from hook
@@ -83,7 +85,16 @@ export default function Home() {
 
   // Derive article data from hook
   useEffect(() => {
-    if (landingLoading) return;
+    if (landingLoading) {
+      setArticlesLoading(true);
+      return;
+    }
+
+    setArticlesLoading(false);
+    
+    if (landingError) {
+      setArticlesError('아티클을 불러오는 중 오류가 발생했습니다.');
+    }
 
     if (!articles || articles.length === 0) {
       setAllArticles([]);
@@ -209,14 +220,14 @@ export default function Home() {
         {/* Latest Project Section */}
         <section className="section bg-gray-50">
           <div className="container">
-            {loading ? (
+            {landingLoading || projectError ? (
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
                 <p className="mt-4 text-gray-600">프로젝트를 불러오는 중...</p>
               </div>
-            ) : error ? (
+            ) : projectError ? (
               <div className="text-center py-12">
-                <p className="text-red-500">{error}</p>
+                <p className="text-red-500">{projectError}</p>
               </div>
             ) : (
               <>
@@ -253,7 +264,7 @@ export default function Home() {
                         <>
                           {/* Previous Button */}
                           <button
-                            onClick={handlePrevious}
+                            onClick={goPrevProjects}
                             className="hidden lg:flex absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white border border-primary-300 items-center justify-center hover:bg-primary-50 hover:border-primary-500 transition-all shadow-sm hover:shadow-md z-10"
                             aria-label="이전 프로젝트 보기"
                           >
@@ -262,7 +273,7 @@ export default function Home() {
                           
                           {/* Next Button */}
                           <button
-                            onClick={handleNext}
+                            onClick={goNextProjects}
                             className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white border border-primary-300 items-center justify-center hover:bg-primary-50 hover:border-primary-500 transition-all shadow-sm hover:shadow-md z-10"
                             aria-label="다음 프로젝트 보기"
                           >
@@ -273,7 +284,7 @@ export default function Home() {
                       
                       {/* Projects Grid */}
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {projectsData.map((project) => (
+                        {visibleProjects.map((project) => (
                           <ProjectCardHome key={project.id} project={project} />
                         ))}
                       </div>
@@ -283,25 +294,25 @@ export default function Home() {
                     {allProjects.length > 3 && (
                       <div className="mt-8 flex justify-center items-center gap-3">
                         <button
-                          onClick={handlePrevious}
-                          disabled={!hasPrevious}
+                          onClick={goPrevProjects}
+                          disabled={!canGoPrevProjects}
                           className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all ${
-                            hasPrevious
+                            canGoPrevProjects
                               ? 'bg-white border-primary-300 hover:bg-primary-50 hover:border-primary-500 cursor-pointer'
                               : 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-50'
                           }`}
                           aria-label="이전"
                         >
-                          <ChevronLeft className={`w-5 h-5 ${hasPrevious ? 'text-primary-600' : 'text-gray-400'}`} />
+                          <ChevronLeft className={`w-5 h-5 ${canGoPrevProjects ? 'text-primary-600' : 'text-gray-400'}`} />
                         </button>
                         
                         <div className="flex gap-2">
                           {Array.from({ length: Math.ceil(allProjects.length / 3) }).map((_, index) => (
                             <button
                               key={index}
-                              onClick={() => setCurrentIndex(index * 3)}
+                              onClick={() => setCurrentProjectIndex(index * 3)}
                               className={`h-2 rounded-full transition-all ${
-                                Math.floor(currentIndex / 3) === index
+                                Math.floor(currentProjectIndex / 3) === index
                                   ? 'bg-primary-500 w-8'
                                   : 'bg-gray-300 hover:bg-gray-400 w-2'
                               }`}
@@ -311,16 +322,16 @@ export default function Home() {
                         </div>
                         
                         <button
-                          onClick={handleNext}
-                          disabled={!hasMore && currentIndex === 0}
+                          onClick={goNextProjects}
+                          disabled={!canGoNextProjects && currentProjectIndex === 0}
                           className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all ${
-                            hasMore || currentIndex > 0
+                            canGoNextProjects || currentProjectIndex > 0
                               ? 'bg-white border-primary-300 hover:bg-primary-50 hover:border-primary-500 cursor-pointer'
                               : 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-50'
                           }`}
                           aria-label="다음"
                         >
-                          <ChevronRight className={`w-5 h-5 ${hasMore || currentIndex > 0 ? 'text-primary-600' : 'text-gray-400'}`} />
+                          <ChevronRight className={`w-5 h-5 ${canGoNextProjects || currentProjectIndex > 0 ? 'text-primary-600' : 'text-gray-400'}`} />
                         </button>
                       </div>
                     )}
@@ -354,7 +365,7 @@ export default function Home() {
                     <>
                       {/* Previous Button */}
                       <button
-                        onClick={handlePreviousArticle}
+                        onClick={goPrevArticles}
                         className="hidden lg:flex absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white border border-primary-300 items-center justify-center hover:bg-primary-50 hover:border-primary-500 transition-all shadow-sm hover:shadow-md z-10"
                         aria-label="이전 아티클 보기"
                       >
@@ -363,7 +374,7 @@ export default function Home() {
                       
                       {/* Next Button */}
                       <button
-                        onClick={handleNextArticle}
+                        onClick={goNextArticles}
                         className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white border border-primary-300 items-center justify-center hover:bg-primary-50 hover:border-primary-500 transition-all shadow-sm hover:shadow-md z-10"
                         aria-label="다음 아티클 보기"
                       >
@@ -374,7 +385,7 @@ export default function Home() {
                   
                   {/* Articles Grid */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {articlesData.map((article) => (
+                    {visibleArticles.map((article) => (
                       <ArticleCardHome key={article.id} article={article} />
                     ))}
                   </div>
@@ -384,25 +395,25 @@ export default function Home() {
                 {allArticles.length > 2 && (
                   <div className="mt-8 flex justify-center items-center gap-3">
                     <button
-                      onClick={handlePreviousArticle}
-                      disabled={!hasPreviousArticles}
+                      onClick={goPrevArticles}
+                      disabled={!canGoPrevArticles}
                       className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all ${
-                        hasPreviousArticles
+                        canGoPrevArticles
                           ? 'bg-white border-primary-300 hover:bg-primary-50 hover:border-primary-500 cursor-pointer'
                           : 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-50'
                       }`}
                       aria-label="이전"
                     >
-                      <ChevronLeft className={`w-5 h-5 ${hasPreviousArticles ? 'text-primary-600' : 'text-gray-400'}`} />
+                      <ChevronLeft className={`w-5 h-5 ${canGoPrevArticles ? 'text-primary-600' : 'text-gray-400'}`} />
                     </button>
                     
                     <div className="flex gap-2">
-                      {Array.from({ length: Math.ceil(allArticles.length / 2) }).map((_, index) => (
+                      {Array.from({ length: Math.ceil(allArticles.length / 3) }).map((_, index) => (
                         <button
                           key={index}
-                          onClick={() => setArticleIndex(index * 2)}
+                          onClick={() => setArticleIndex(index * 3)}
                           className={`h-2 rounded-full transition-all ${
-                            Math.floor(articleIndex / 2) === index
+                            Math.floor(articleIndex / 3) === index
                               ? 'bg-primary-500 w-8'
                               : 'bg-gray-300 hover:bg-gray-400 w-2'
                           }`}
@@ -412,16 +423,16 @@ export default function Home() {
                     </div>
                     
                     <button
-                      onClick={handleNextArticle}
-                      disabled={!hasMoreArticles && articleIndex === 0}
+                      onClick={goNextArticles}
+                      disabled={!canGoNextArticles && articleIndex === 0}
                       className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all ${
-                        hasMoreArticles || articleIndex > 0
+                        canGoNextArticles || articleIndex > 0
                           ? 'bg-white border-primary-300 hover:bg-primary-50 hover:border-primary-500 cursor-pointer'
                           : 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-50'
                       }`}
                       aria-label="다음"
                     >
-                      <ChevronRight className={`w-5 h-5 ${hasMoreArticles || articleIndex > 0 ? 'text-primary-600' : 'text-gray-400'}`} />
+                      <ChevronRight className={`w-5 h-5 ${canGoNextArticles || articleIndex > 0 ? 'text-primary-600' : 'text-gray-400'}`} />
                     </button>
                   </div>
                 )}

@@ -13,8 +13,6 @@ interface RequestOptions {
 }
 
 interface GatewayResult<T = unknown> {
-  ok: any;
-  json(): unknown;
   success: boolean;
   data?: T;
   error?: string;

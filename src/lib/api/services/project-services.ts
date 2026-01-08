@@ -1,42 +1,5 @@
-// src/lib/user-service.ts
-import { BASE_URL } from '@/lib/api/config'; // <-- use the shared gateway base URL
 import { ProjectDetailResponse } from '@/app/(main)/projects/types';
-
-// Feature-specific endpoints matching microservices
-export const PROJECT_ENDPOINTS = {
-
-  // Project-service endpoints
-  PROJECT: {
-    GET_ALL: '/project-service/projects',
-    GET_BY_ID: '/project-service/api/project/:id', // Updated to match actual API path
-    GET_BY_CATEGORY: '/project-service/projects/category/:category',
-    CREATE: '/project-service/api/project',
-    UPDATE: '/project-service/projects/:id',
-    DELETE: '/project-service/projects/:id',
-    GET_COLLABORATORS: '/project-service/projects/:id/collaborators',
-    GET_CATEGORIES: '/project-service/api/category',
-  },
-
-  // Document endpoints
-  DOCUMENT: {
-    CREATE: '/project-service/api/document/:projectId',
-    GET_BY_ID: '/project-service/api/document/:id',
-    UPDATE: '/project-service/api/document/:id',
-    DELETE: '/project-service/api/document/:id',
-  },
-} as const;
-
-// ✅ Helper function with environment logging
-export const getProjectApiUrl = (endpoint: string) => {
-  const url = `${BASE_URL}${endpoint}`;
-
-  if (process.env.NODE_ENV === 'development') {
-    // Avoid noisy logs in production
-    console.log(`🔗 API Request: ${url}`);
-  }
-
-  return url;
-};
+import { PROJECT_ENDPOINTS, getProjectApiUrl } from '../endpoints/project-endpoints';
 
 // Get access token from cookies
 const getAccessToken = (): string | null => {

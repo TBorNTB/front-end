@@ -5,8 +5,8 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Star, Users, Clock, ArrowRight, Globe, Shield, Code, Lock, Search, Wifi, Cpu, Key } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { categoryService, CategoryItem } from '@/lib/api/services/category';
-import { CategoryType, CategorySlugs, CategoryDisplayNames, CategoryDescriptions } from './types/category';
+import { categoryService, CategoryItem } from '@/lib/api/services/category-service';
+import { CategoryType, CategorySlugs, CategoryDisplayNames, CategoryDescriptions } from '@/types/services/category';
 
 // Icon mapping for each category
 const CategoryIcons: Record<CategoryType, LucideIcon> = {
@@ -268,17 +268,16 @@ export function LearningTopics() {
 
   // Common Header Component
   const renderHeader = () => (
-          <div className="relative overflow-hidden rounded-2xl bg-black px-6 py-10 sm:px-10 flex justify-center bg-gradient-to-r from-primary-600/40 via-primary-500 to-secondary-500/10">
-            <div className="relative z-10 text-center max-w-3xl">
-              <h1 className="mt-2 text-3xl sm:text-4xl font-bold text-white">
-                Learning Topics
-              </h1>
-              <p className="mt-3 text-primary-100 text-base sm:text-lg">
-                  사이버보안의 다양한 분야를 탐구하고 실무 경험을 쌓을 수 있는 학습 주제들을 확인하세요.
-              </p>
-            </div>
-          </div> 
-
+    <div className="relative overflow-hidden rounded-2xl bg-black px-6 py-10 sm:px-10 flex justify-center bg-gradient-to-r from-primary-600/40 via-primary-500 to-secondary-500/10">
+      <div className="relative z-10 text-center max-w-3xl">
+        <h1 className="mt-2 text-3xl sm:text-4xl font-bold text-white">
+          Learning Topics
+        </h1>
+        <p className="mt-3 text-primary-100 text-base sm:text-lg">
+          사이버보안의 다양한 분야를 탐구하고 실무 경험을 쌓을 수 있는 학습 주제들을 확인하세요.
+        </p>
+      </div>
+    </div>
   );
 
   const renderAllCategories = () => (
@@ -332,214 +331,213 @@ export function LearningTopics() {
     </div>
   );
 
-  const renderCategoryDetail = () => (
-    <div className="space-y-6">
-      {/* Header Section */}
-      {renderHeader()}
+  const renderCategoryDetail = () => {
+    const cat = currentCategory;
+    return (
+      <div className="space-y-6">
+        {/* Header Section */}
+        {renderHeader()}
 
-      <div className="flex gap-8 items-start">
-        {/* Sidebar - Sticky */}
-        <div className="w-64 flex-shrink-0">
-          <div className="sticky top-8 bg-white rounded-xl shadow-sm border border-gray-200">
-            <button
-              onClick={() => router.push('/topics')}
-              className="w-full p-4 border-b border-gray-200 text-left hover:bg-gray-50 transition-colors cursor-pointer"
-            >
-              <h3 className="text-base font-semibold text-gray-900">전체 카테고리</h3>
-            </button>
-            <div className="p-2 max-h-[calc(100vh-10rem)] overflow-y-auto">
-              {categories.map((category) => {
-                const isActive = selectedCategory === category.slug;
-                
-                return (
-                  <button
-                    key={category.slug}
-                    onClick={() => handleCategoryClick(category.slug)}
-                    className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-sm transition-all ${
-                      isActive
-                        ? 'bg-primary-600 text-white font-medium'
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <span>{category.name}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-xs ${
-                      isActive
-                        ? 'bg-white bg-opacity-20 text-white'
-                        : 'bg-gray-200 text-gray-600'
-                    }`}>
-                      {category.articles + category.projects}
+        <div className="flex gap-8 items-start">
+          {/* Sidebar - Sticky */}
+          <div className="w-64 flex-shrink-0">
+            <div className="sticky top-8 bg-white rounded-xl shadow-sm border border-gray-200">
+              <button
+                onClick={() => router.push('/topics')}
+                className="w-full p-4 border-b border-gray-200 text-left hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                <h3 className="text-base font-semibold text-gray-900">전체 카테고리</h3>
+              </button>
+              <div className="p-2 max-h-[calc(100vh-10rem)] overflow-y-auto">
+                {categories.map((category) => {
+                  const isActive = selectedCategory === category.slug;
+                  return (
+                    <button
+                      key={category.slug}
+                      onClick={() => handleCategoryClick(category.slug)}
+                      className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-sm transition-all ${
+                        isActive
+                          ? 'bg-primary-600 text-white font-medium'
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span>{category.name}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs ${
+                        isActive
+                          ? 'bg-white bg-opacity-20 text-white'
+                          : 'bg-gray-200 text-gray-600'
+                      }`}>
+                        {category.articles + category.projects}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Side Content */}
+          <div className="flex-1 space-y-6">
+            {/* Category Header - Without background */}
+            {cat ? (
+              <div className="pb-4 border-b border-gray-200">
+                <div className="flex items-start space-x-4">
+                  <div className={`w-14 h-14 rounded-xl ${CategoryColors[cat.type]} flex items-center justify-center flex-shrink-0`}>
+                    {(() => {
+                      const Icon = CategoryIcons[cat.type];
+                      return <Icon className="w-7 h-7 text-white" />;
+                    })()}
+                  </div>
+                  <div className="flex-1">
+                    <h1 className="text-2xl font-bold text-foreground mb-2">{cat.name}</h1>
+                    <p className="text-sm text-gray-900 leading-relaxed whitespace-pre-line">
+                      {cat.longDescription}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="pb-6 mb-6 border-b border-gray-200">
+                <div className="flex items-start space-x-4">
+                  <div className="w-14 h-14 rounded-xl bg-gray-400 flex items-center justify-center flex-shrink-0">
+                    <Shield className="w-7 h-7 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h1 className="text-2xl font-bold text-foreground mb-2">카테고리를 찾을 수 없습니다</h1>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      선택하신 카테고리 정보를 불러올 수 없습니다.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Content Area with white background */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+              {/* Content Sections */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Projects Section */}
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-bold text-foreground">프로젝트</h2>
+                    <span className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium">
+                      {filteredProjects.length}개
                     </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-        
-        {/* Right Side Content */}
-        <div className="flex-1 space-y-6">
-          {/* Category Header - Without background */}
-          <div className="pb-4 border-b border-gray-200">
-            <div className="flex items-start space-x-4">
-              <div className={`w-14 h-14 rounded-xl ${CategoryColors[currentCategory!.type]} flex items-center justify-center flex-shrink-0`}>
-                {(() => {
-                  const IconComponent = CategoryIcons[currentCategory!.type];
-                  return <IconComponent className="w-7 h-7 text-white" />;
-                })()}
-              </div>
-              <div className="flex-1">
-                <h1 className="text-2xl font-bold text-foreground mb-2">{currentCategory?.name}</h1>
-                <p className="text-sm text-gray-900 leading-relaxed whitespace-pre-line">
-                  {currentCategory?.longDescription}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="pb-6 mb-6 border-b border-gray-200">
-              <div className="flex items-start space-x-4">
-                <div className="w-14 h-14 rounded-xl bg-gray-400 flex items-center justify-center flex-shrink-0">
-                  <Shield className="w-7 h-7 text-white" />
-                </div>
-                <div className="flex-1">
-                  <h1 className="text-2xl font-bold text-foreground mb-2">카테고리를 찾을 수 없습니다</h1>
-                  <p className="text-sm text-gray-600 leading-relaxed">
-                    선택하신 카테고리 정보를 불러올 수 없습니다.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
+                  </div>
 
-          {/* Content Area with white background */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-          {/* Content Sections */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Projects Section */}
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-foreground">프로젝트</h2>
-                <span className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium">
-                  {filteredProjects.length}개
-                </span>
-              </div>
-              
-              <div className="space-y-4">
-                {filteredProjects.length > 0 ? (
-                  filteredProjects.map((project) => (
-                    <div key={project.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-200">
-                      <div className="flex items-start justify-between mb-3">
-                        <h3 className="text-base font-bold text-foreground flex-1">{project.title}</h3>
-                        <span className={`px-2 py-1 rounded-full text-xs border ml-3 flex-shrink-0 ${getStatusColor(project.status)}`}>
-                          {getStatusText(project.status)}
-                        </span>
-                      </div>
-                      
-                      <p className="text-gray-600 text-sm mb-4">{project.description}</p>
-                      
-                      <div className="flex items-center space-x-2 mb-4">
-                        {project.tags.map((tag, index) => (
-                          <span key={index} className="bg-white text-gray-700 px-2 py-1 rounded text-xs border border-gray-200">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3 text-xs text-gray-500">
-                          <div className="flex items-center space-x-1">
-                            <Star size={12} />
-                            <span>{project.stars}</span>
+                  <div className="space-y-4">
+                    {filteredProjects.length > 0 ? (
+                      filteredProjects.map((project) => (
+                        <div key={project.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-200">
+                          <div className="flex items-start justify-between mb-3">
+                            <h3 className="text-base font-bold text-foreground flex-1">{project.title}</h3>
+                            <span className={`px-2 py-1 rounded-full text-xs border ml-3 flex-shrink-0 ${getStatusColor(project.status)}`}>
+                              {getStatusText(project.status)}
+                            </span>
                           </div>
-                          <div className="flex items-center space-x-1">
-                            <Users size={12} />
-                            <span>{project.contributors}</span>
+                          <p className="text-gray-600 text-sm mb-4">{project.description}</p>
+                          <div className="flex items-center space-x-2 mb-4">
+                            {project.tags.map((tag, index) => (
+                              <span key={index} className="bg-white text-gray-700 px-2 py-1 rounded text-xs border border-gray-200">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3 text-xs text-gray-500">
+                              <div className="flex items-center space-x-1">
+                                <Star size={12} />
+                                <span>{project.stars}</span>
+                              </div>
+                              <div className="flex items-center space-x-1">
+                                <Users size={12} />
+                                <span>{project.contributors}</span>
+                              </div>
+                            </div>
+                            <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                              자세히 보기 →
+                            </button>
                           </div>
                         </div>
-                        <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
-                          자세히 보기 →
-                        </button>
+                      ))
+                    ) : (
+                      <div className="bg-gray-50 rounded-lg p-8 text-center border border-gray-200">
+                        <p className="text-gray-600">이 카테고리에 등록된 프로젝트가 없습니다.</p>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="bg-gray-50 rounded-lg p-8 text-center border border-gray-200">
-                    <p className="text-gray-600">이 카테고리에 등록된 프로젝트가 없습니다.</p>
+                    )}
                   </div>
-                )}
-              </div>
-              
-              <div className="text-center">
-                <button 
-                  onClick={() => router.push(`/projects?topic=${currentCategory?.slug}`)}
-                  className="text-primary-600 hover:text-primary-700 font-medium flex items-center space-x-2 mx-auto text-sm"
-                >
-                  <span>모든 프로젝트 보기</span>
-                  <ArrowRight size={16} />
-                </button>
-              </div>
-            </div>
 
-            {/* Articles Section */}
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-foreground">아티클</h2>
-                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
-                  {filteredArticles.length}개
-                </span>
-              </div>
-              
-              <div className="space-y-4">
-                {filteredArticles.length > 0 ? (
-                  filteredArticles.map((article) => (
-                    <div key={article.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-200">
-                      <h3 className="text-base font-bold text-foreground mb-2">{article.title}</h3>
-                      <p className="text-gray-600 text-sm mb-4">{article.description}</p>
-                      
-                      <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                        <span>by {article.author}</span>
-                        <span>{article.publishDate}</span>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4 text-xs text-gray-500">
-                          <div className="flex items-center space-x-1">
-                            <Globe size={12} />
-                            <span>{article.views}</span>
+                  <div className="text-center">
+                    <button
+                      onClick={() => router.push(`/projects?topic=${cat?.slug}`)}
+                      className="text-primary-600 hover:text-primary-700 font-medium flex items-center space-x-2 mx-auto text-sm"
+                    >
+                      <span>모든 프로젝트 보기</span>
+                      <ArrowRight size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Articles Section */}
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-bold text-foreground">아티클</h2>
+                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+                      {filteredArticles.length}개
+                    </span>
+                  </div>
+
+                  <div className="space-y-4">
+                    {filteredArticles.length > 0 ? (
+                      filteredArticles.map((article) => (
+                        <div key={article.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-200">
+                          <h3 className="text-base font-bold text-foreground mb-2">{article.title}</h3>
+                          <p className="text-gray-600 text-sm mb-4">{article.description}</p>
+                          <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                            <span>by {article.author}</span>
+                            <span>{article.publishDate}</span>
                           </div>
-                          <div className="flex items-center space-x-1">
-                            <Clock size={12} />
-                            <span>{article.readTime}</span>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-4 text-xs text-gray-500">
+                              <div className="flex items-center space-x-1">
+                                <Globe size={12} />
+                                <span>{article.views}</span>
+                              </div>
+                              <div className="flex items-center space-x-1">
+                                <Clock size={12} />
+                                <span>{article.readTime}</span>
+                              </div>
+                            </div>
+                            <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                              읽어보기 →
+                            </button>
                           </div>
                         </div>
-                        <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
-                          읽어보기 →
-                        </button>
+                      ))
+                    ) : (
+                      <div className="bg-gray-50 rounded-lg p-8 text-center border border-gray-200">
+                        <p className="text-gray-600">이 카테고리에 등록된 CS지식이 없습니다.</p>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="bg-gray-50 rounded-lg p-8 text-center border border-gray-200">
-                    <p className="text-gray-600">이 카테고리에 등록된 CS지식이 없습니다.</p>
+                    )}
                   </div>
-                )}
-              </div>
-              
-              <div className="text-center">
-                <button 
-                  onClick={() => router.push(`/articles?topic=${currentCategory?.slug}`)}
-                  className="text-green-600 hover:text-green-700 font-medium flex items-center space-x-2 mx-auto text-sm"
-                >
-                  <span>모든 CS지식 보기</span>
-                  <ArrowRight size={16} />
-                </button>
+
+                  <div className="text-center">
+                    <button
+                      onClick={() => router.push(`/articles?topic=${cat?.slug}`)}
+                      className="text-green-600 hover:text-green-700 font-medium flex items-center space-x-2 mx-auto text-sm"
+                    >
+                      <span>모든 CS지식 보기</span>
+                      <ArrowRight size={16} />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
 
   // 로딩 상태

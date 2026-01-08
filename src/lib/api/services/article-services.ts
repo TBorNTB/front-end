@@ -1,6 +1,5 @@
 // src/lib/api/services/article.ts
-import { BASE_URL } from '@/lib/api/config';
-import { ARTICLE_ENDPOINTS, getArticleApiUrl } from '@/lib/api/endpoints/article';
+import { ARTICLE_ENDPOINTS, getArticleApiUrl } from '@/lib/api/endpoints/article-endpoints';
 
 export interface ArticleResponse {
   id: number;

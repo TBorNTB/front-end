@@ -74,15 +74,21 @@ export default function ForgotPasswordPage() {
 
       const data = await response.json();
 
-      if (response.ok) {
+      console.log('Frontend email response:', { status: response.status, data });
+
+      if (response.ok && data.success !== false) {
         setEmail(values.email);
         setCurrentStep('reset');
         startTimer(300); // 5 minutes
         resetForm.setValue('email', values.email);
+        console.log('✅ Email verified. Code should be sent to:', values.email);
       } else {
-        handleError(new Error(data.message || "이메일 발송에 실패했습니다."));
+        const errorMsg = data.message || "이메일 발송에 실패했습니다.";
+        console.error('❌ Email send failed:', errorMsg);
+        handleError(new Error(errorMsg));
       }
     } catch (err) {
+      console.error('❌ Network error:', err);
       handleError(err, "네트워크 오류가 발생했습니다.");
     } finally {
       setIsLoading(false);
@@ -114,11 +120,34 @@ export default function ForgotPasswordPage() {
   const handleResendCode = async () => {
     if (timeLeft > 0) return;
     
+    if (!email) {
+      handleError(new Error("이메일 주소가 없습니다. 처음부터 시작해주세요."));
+      setCurrentStep('email');
+      return;
+    }
+
     setIsLoading(true);
+    resetStates();
     try {
-      await handleEmailSubmit({ email } as ForgotPasswordFormData);
+      const response = await fetch('/api/password/forgot-password', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success !== false) {
+        startTimer(300); // 5 minutes
+        // Show success message
+        console.log('✅ Verification code resent to:', email);
+      } else {
+        handleError(new Error(data.message || "인증코드 재전송에 실패했습니다. 다시 시도해주세요."));
+      }
     } catch (err) {
-      handleError(err, "재전송에 실패했습니다.");
+      handleError(err, "네트워크 오류가 발생했습니다.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -300,7 +329,11 @@ export default function ForgotPasswordPage() {
               />
 
               {/* Timer and Resend */}
-              <div className="text-center">
+              <div className="text-center space-y-3">
+                <p className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+                  📧 인증코드를 <span className="font-semibold">{email}</span>로 발송했습니다.
+                  <br />스팸 폴더도 확인해주세요.
+                </p>
                 {timeLeft > 0 ? (
                   <p className="text-sm text-gray-500 flex items-center justify-center gap-1">
                     <Timer size={14} />
@@ -310,7 +343,7 @@ export default function ForgotPasswordPage() {
                   <button
                     type="button"
                     onClick={handleResendCode}
-                    className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                    className="text-sm text-primary-600 hover:text-primary-700 font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed w-full"
                     disabled={isLoading}
                   >
                     인증코드 재발송
@@ -382,8 +415,8 @@ export default function ForgotPasswordPage() {
 
               <button 
                 type="submit" 
-                className="btn btn-primary btn-lg w-full mt-6" 
-                disabled={isLoading || resetForm.watch('verificationCode')?.length !== 8}
+                className="btn btn-primary btn-lg w-full mt-6 disabled:opacity-50 disabled:cursor-not-allowed" 
+                disabled={isLoading || resetForm.watch('verificationCode')?.length !== 8 || resetForm.watch('newPassword')?.length === 0 || resetForm.watch('confirmPassword')?.length === 0}
               >
                 {isLoading ? "설정 중..." : "비밀번호 재설정"}
               </button>

@@ -1,5 +1,5 @@
 // src/lib/env.ts
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 export const ENABLE_DEV_BYPASS = process.env.NEXT_PUBLIC_ENABLE_DEV_BYPASS === "true";
 export const USE_MOCK_DATA = process.env.NEXT_PUBLIC_MOCK_DATA === "true";
 

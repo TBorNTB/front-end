@@ -3,24 +3,24 @@ import { getApiUrl } from '@/lib/api/config'; // Shared gateway (unchanged)
 
 // Feature-specific endpoints (unchanged - perfect!)
 export const USER_ENDPOINTS = {
+
   // User-service endpoints
   USER: {
-    // user endpoints
+    //user endpoints
     LOGIN: '/user-service/users/login',
     SIGNUP: '/user-service/users',
     LOGOUT: '/user-service/users/logout',
     ROLE: '/user-service/users/role/one',
     PROFILE: '/user-service/users/profile',
 
-    // admin endpoints
+    //admin endpoints
     GET_ALL: '/user-service/users',
     GET_PAGED: '/user-service/users/page',
     DELETE_USER: '/user-service/users',
     UPDATE_USER: '/user-service/users',
     CONFIRM_USER: '/user-service/users/{username}/confirm',
     GRANT_ADMIN: '/user-service/users/{grantedUsername}/admin',
-    SEND_VERIFICATION_CODE: '/user-service/users/auth/verification-code', 
-    VERIFY_CODE: '/user-service/users/auth/verify-code',
+    SEND_VERIFICATION_CODE: '/user-service/users/auth/verification-code',                                     
     RESET_PASSWORD: '/user-service/users/auth/reset-password', 
   },
 
@@ -39,6 +39,25 @@ export const USER_ENDPOINTS = {
   ALARM: {
     RECEIVED: '/user-service/alarm/received',
   },
+
+  // View & Like endpoints
+  VIEW: {
+    COUNT: '/user-service/api/view/:id/count',
+  },
+  LIKE: {
+    COUNT: '/user-service/api/like/:id/count',
+  },
+
+  // Comment endpoints
+  COMMENT: {
+    CREATE: '/user-service/api/comment/:postId',
+    UPDATE: '/user-service/api/comment/:commentId',
+    DELETE: '/user-service/api/comment/:commentId',
+    GET_LIST: '/user-service/api/comment/:postId',
+    CREATE_REPLY: '/user-service/api/comment/:postId/reply/:parentId',
+    GET_REPLIES: '/user-service/api/comment/:commentId/replies',
+  },
+
 } as const;
 
 // Use shared logging from config, no process.env duplication

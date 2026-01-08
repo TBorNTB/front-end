@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Alarm, AlarmType } from '@/types/alarm';
+import { Alarm, AlarmType } from '@/types/services/alarm';
 import { Bell, MessageSquare, Reply, Heart, UserPlus, ChevronRight, Clock, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { UserRole } from '@/types/core';
-import { alarmService, AlarmResponse } from '@/lib/api/services/alarm';
+import { alarmService, AlarmResponse } from '@/lib/api/services/alarm-services';
 
 // API 응답을 Alarm 인터페이스로 변환
 const mapAlarmResponseToAlarm = (response: AlarmResponse): Alarm => {

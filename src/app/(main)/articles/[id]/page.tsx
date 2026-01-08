@@ -1,12 +1,10 @@
 // app/(main)/articles/[id]/page.tsx
 'use client';
-
-import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, createElement, useRef, JSX } from 'react';
 import { Heart, Eye, MessageCircle, Share2, Edit, Clock, ArrowLeft, Code, FileText, Trash2 } from 'lucide-react';
-import { fetchArticleById, updateArticle, deleteArticle, type ArticleResponse } from '@/lib/api/services/article';
+import { fetchArticleById, updateArticle, deleteArticle, type ArticleResponse } from '@/lib/api/services/article-services';
 import { useRouter } from 'next/navigation';
 import TipTapEditor from '@/components/editor/TipTapEditor';
 import { 
@@ -20,7 +18,7 @@ import {
   fetchReplies,
   Comment,
   CommentListResponse
-} from '@/lib/api/endpoints/user';
+} from '@/lib/api/services/user-services';
 
 interface BlogPostPageProps {
   params: Promise<{ id: string }>;
@@ -153,7 +151,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
         // 상태 업데이트 함수를 사용하여 최신 상태를 가져옴
         setComments(prevComments => {
           const existingIds = new Set(prevComments.map(c => c.id));
-          const newComments = response.content.filter(c => !existingIds.has(c.id));
+          const newComments = response.content.filter((c: { id: any; }) => !existingIds.has(c.id));
           const updated = [...prevComments, ...newComments];
           
           commentsRef.current = updated; // ref도 업데이트

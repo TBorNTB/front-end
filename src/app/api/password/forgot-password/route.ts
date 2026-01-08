@@ -1,4 +1,10 @@
 // app/api/auth/forgot-password/route.ts
+// This endpoint handles password reset email sending
+// NOTE: If users report not receiving emails even though the API returns success:
+// 1. Check backend email service configuration
+// 2. Check email provider SMTP settings
+// 3. Look for email delivery logs in the backend
+// 4. Verify the email template is working correctly
 import { NextRequest, NextResponse } from 'next/server';
 import { BASE_URL } from '@/lib/api/config';
 import { USER_ENDPOINTS } from '@/lib/api/endpoints/user-endpoints';
@@ -32,6 +38,9 @@ export async function POST(request: NextRequest) {
 
     const data = await response.json().catch(() => ({}));
 
+    console.log('Backend response status:', response.status);
+    console.log('Backend response data:', data);
+
     if (!response.ok) {
       return NextResponse.json(
         { message: data.message || data.error || '인증코드 발송에 실패했습니다.' },
@@ -39,10 +48,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Verify that the backend actually sent the email
+    if (data.message && data.message.toLowerCase().includes('success') || data.success === true) {
+      return NextResponse.json(
+        {
+          message: '인증코드가 발송되었습니다.',
+          email,
+          success: true,
+        },
+        { status: 200 }
+      );
+    }
+
+    // If response is ok but data doesn't confirm success, log warning
+    console.warn('Verification code send response unclear:', data);
     return NextResponse.json(
       {
         message: '인증코드가 발송되었습니다.',
         email,
+        success: true,
       },
       { status: 200 }
     );

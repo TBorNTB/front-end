@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { categoryService } from '@/lib/api/services/category-service';
-import { CategoryType, CategorySlugs, CategoryDescriptions, CategoryHelpers } from '@/types/category';
+import { CategoryType, CategorySlugs, CategoryDescriptions, CategoryHelpers } from '@/types/services/category';
 import { getProjects, getArticles, getCategories, getTopics, type Project, type Article, type CategoryItem } from '@/lib/mock-data';
 
 export interface LandingTopic {

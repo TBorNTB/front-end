@@ -17,11 +17,7 @@ import {
   AlertCircle,
   CheckCircle
 } from 'lucide-react';
-<<<<<<< HEAD
 import { profileService, s3Service, UserResponse } from '@/lib/api/services/user-service';
-=======
-import { profileService, s3Service, UserResponse } from '@/lib/api/services/user';
->>>>>>> aebe966a022d56dd3e46f8da60a71fa1d06f9b71
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { validateImageFile } from '@/lib/form-utils';
 import { Upload, X as XIcon } from 'lucide-react';

@@ -127,12 +127,7 @@ export default function LogInPage() {
       // ✅ Better error handling with detailed messages
       if (!response.ok) {
         const errorMessage = data?.message || data?.error || "로그인에 실패했습니다.";
-        console.error('❌ Login failed:', {
-          status: response.status,
-          statusText: response.statusText,
-          message: errorMessage,
-          data
-        });
+        console.error('❌ Login failed: status=' + response.status + ', message=' + errorMessage);
         throw new Error(errorMessage);
       }
 

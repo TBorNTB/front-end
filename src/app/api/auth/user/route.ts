@@ -20,21 +20,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ authenticated: false, user: null }, { status: 200 });
     }
 
-<<<<<<< HEAD
-    const profile = profileRes.value.data;
-    const role = roleRes.status === 'fulfilled' && roleRes.value.success ? roleRes.value.data?.role : profile.role;
-
-    return NextResponse.json({
-      authenticated: true,
-      user: {
-        id: profile.id,
-        nickname: profile.nickname || profile.username,
-        role, // ✅ roleData > profile.role priority
-        email: profile.email,
-        // ... rest
-      },
-    });
-=======
     try {
       // Fetch profile data
       const profileResponse = await serverApiClient.request(
@@ -136,7 +121,6 @@ export async function GET(request: Request) {
         error: 'Network error'
       }, { status: 503 });
     }
->>>>>>> aebe966a022d56dd3e46f8da60a71fa1d06f9b71
 
   } catch (error) {
     console.error('Auth check failed:', error);

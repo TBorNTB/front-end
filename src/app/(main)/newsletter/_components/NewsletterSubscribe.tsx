@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { newsletterService, EmailFrequency } from '@/lib/api/services/newsletter-service';
-import { CategoryType, CategoryDisplayNames } from '@/app/(main)/topics/types/category';
+import { CategoryType, CategoryDisplayNames } from '@/types/services/category';
 
 interface NewsletterSubscribeProps {
   className?: string;

@@ -9,8 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import TipTapEditor from '@/components/editor/TipTapEditor';
 import Image from 'next/image';
-import { fetchCategories, createProject } from '@/lib/api/endpoints/project';
-import { fetchUsers, User as UserType } from '@/lib/api/endpoints/user';
+import { fetchCategories, createProject } from '@/lib/api/services/project-services';
+import { UserResponse, memberService } from '@/lib/api/services/user-service';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 const TECH_STACK_CATEGORIES = [
   'LANGUAGE',
@@ -43,6 +44,7 @@ interface FormErrors {
 
 export default function NewProjectForm() {
   const router = useRouter();
+  const { user: currentUser, isLoading: userLoading } = useCurrentUser();
   const [loading, setLoading] = useState(false);
   const [tagInput, setTagInput] = useState('');
   const [subGoalInput, setSubGoalInput] = useState('');
@@ -53,7 +55,7 @@ export default function NewProjectForm() {
   // API data states
   const [categories, setCategories] = useState<Array<{ id: number; name: string; description: string }>>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
-  const [users, setUsers] = useState<UserType[]>([]);
+  const [users, setUsers] = useState<UserResponse[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -92,6 +94,25 @@ export default function NewProjectForm() {
     loadCategories();
   }, []);
 
+  // Initialize collaborators with current user as owner
+  useEffect(() => {
+    if (currentUser && !userLoading) {
+      // Only set if not already set
+      if (formData.collaborators.length === 0) {
+        setFormData((prev) => ({
+          ...prev,
+          collaborators: [
+            {
+              name: currentUser.realName || currentUser.nickname || currentUser.username,
+              email: currentUser.username,
+              role: 'OWNER',
+            },
+          ],
+        }));
+      }
+    }
+  }, [currentUser, userLoading]);
+
   // Load users when search query changes
   useEffect(() => {
     const loadUsers = async () => {
@@ -102,10 +123,10 @@ export default function NewProjectForm() {
 
       try {
         setIsLoadingUsers(true);
-        const response = await fetchUsers(0, 100, 'ASC', 'createdAt');
+        const response = await memberService.getMembers({ size: 100 });
         // Filter users by search query (name, nickname, username)
-        const filtered = response.data.filter(
-          (user) =>
+        const filtered = response.userResponses.filter(
+          (user: UserResponse) =>
             user.realName?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
             user.nickname?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
             user.username?.toLowerCase().includes(userSearchQuery.toLowerCase())
@@ -283,7 +304,7 @@ export default function NewProjectForm() {
     }));
   };
 
-  const addCollaborator = (user: UserType) => {
+  const addCollaborator = (user: UserResponse) => {
     // Check if user is already added
     const isAlreadyAdded = formData.collaborators.some(
       (collab) => collab.email === user.email || collab.name === user.username
@@ -330,24 +351,6 @@ export default function NewProjectForm() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/projects/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || '프로젝트 생성에 실패했습니다.');
-      }
-
-      const data = await response.json();
-      alert('프로젝트가 성공적으로 생성되었습니다!');
-      router.push(`/projects/${data.id}`);
-    } catch (error) {
-      alert(error instanceof Error ? error.message : '프로젝트 생성에 실패했습니다.');
       // Prepare data according to API spec
       const projectData = {
         title: formData.title,
@@ -375,16 +378,43 @@ export default function NewProjectForm() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <Link href="/projects" className="text-gray-600 hover:text-gray-900">
-          <ArrowLeft className="w-5 h-5" />
-        </Link>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">새 프로젝트 만들기</h1>
-          <p className="text-gray-600 mt-1">새로운 프로젝트를 등록하고 협력자들과 함께 작업하세요.</p>
+      {/* Loading state for user authentication */}
+      {userLoading && (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+            <p className="text-gray-600">로딩 중...</p>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Not authenticated state */}
+      {!userLoading && !currentUser && (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <p className="text-gray-600 mb-4">프로젝트를 생성하려면 먼저 로그인해주세요.</p>
+            <Link href="/login">
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                로그인
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Main form - only show when user is loaded and authenticated */}
+      {!userLoading && currentUser && (
+        <>
+          {/* Header */}
+          <div className="flex items-center gap-4 mb-8">
+            <Link href="/projects" className="text-gray-600 hover:text-gray-900">
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">새 프로젝트 만들기</h1>
+              <p className="text-gray-600 mt-1">새로운 프로젝트를 등록하고 협력자들과 함께 작업하세요.</p>
+            </div>
+          </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Information */}
@@ -724,12 +754,28 @@ export default function NewProjectForm() {
                 </select>
                 <Button
                   type="button"
-                  onClick={addCollaborator}
+                  onClick={() => {
+                    if (collaboratorInput.name && collaboratorInput.email) {
+                      setFormData((prev) => ({
+                        ...prev,
+                        collaborators: [
+                          ...prev.collaborators,
+                          {
+                            name: collaboratorInput.name,
+                            email: collaboratorInput.email,
+                            role: collaboratorInput.role,
+                          },
+                        ],
+                      }));
+                      setCollaboratorInput({ name: '', email: '', role: 'CONTRIBUTOR' });
+                    }
+                  }}
                   className="bg-blue-500 hover:bg-blue-600 text-white"
                 >
                   <Plus className="w-4 h-4" />
                 </Button>
               </div>
+            </div>
             {/* User Search */}
             <div className="relative" ref={userSearchRef}>
               <div className="relative">
@@ -917,6 +963,8 @@ export default function NewProjectForm() {
           </Button>
         </div>
       </form>
+        </>
+      )}
     </div>
   );
 }

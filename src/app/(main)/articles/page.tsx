@@ -13,9 +13,9 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import ArticleCard from './_components/ArticleCard';
-import { getCSKnowledgeSuggestion, searchCSKnowledge, type CSKnowledgeSearchResponse } from '@/lib/api/services/elastic';
-import { categoryService, type CategoryItem } from '@/lib/api/services/category';
-import { CategoryType, CategoryDisplayNames, CategorySlugs } from '@/app/(main)/topics/types/category';
+import { searchCSKnowledge, type CSKnowledgeSearchResponse } from '@/lib/api/services/elastic-services';
+import { categoryService, type CategoryItem } from '@/lib/api/services/category-service';
+import { CategoryType, CategoryDisplayNames, CategorySlugs } from '@/types/services/category';
 
 const ARTICLES_PER_PAGE = 6;
 
@@ -78,6 +78,9 @@ function ArticlesContent() {
 
   const [categories, setCategories] = useState<Category[]>([{ name: '전체', slug: 'all' }]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [articlesData, setArticlesData] = useState<Article[]>([]);
+  const [articlesLoading, setArticlesLoading] = useState(true);
+  const [articlesError, setArticlesError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeSearchTerm, setActiveSearchTerm] = useState(''); // 실제 검색에 사용되는 검색어
@@ -192,6 +195,23 @@ function ArticlesContent() {
       article.content.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       article.content.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
       article.tags.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    return matchesCategory && matchesSearch;
+  });
+
+  // 정렬 (원래 디자인 상, 아직 날짜 파싱이 없으므로 no-op)
+  filteredArticles = filteredArticles.sort((a, b) => {
+    switch (sortBy) {
+      case '인기순':
+        return (b.likeCount || 0) - (a.likeCount || 0);
+      case '조회순':
+        return (b.viewCount || 0) - (a.viewCount || 0);
+      case '최신순':
+      default:
+        return 0;
+    }
+  });
+
   // 검색어 suggestion API 호출
   useEffect(() => {
     const fetchSuggestions = async () => {
@@ -217,16 +237,6 @@ function ArticlesContent() {
       }
     };
 
-  // 정렬 (원래 디자인 상, 아직 날짜 파싱이 없으므로 no-op)
-  filteredArticles = filteredArticles.sort((a, b) => {
-    switch (sortBy) {
-      case '인기순':
-        return (b.likeCount || 0) - (a.likeCount || 0);
-      case '조회순':
-        return (b.viewCount || 0) - (a.viewCount || 0);
-      case '최신순':
-      default:
-        return 0;
     // 디바운싱: 300ms 후에 API 호출
     const timer = setTimeout(() => {
       fetchSuggestions();
@@ -303,7 +313,22 @@ function ArticlesContent() {
   }, [categoriesLoading, performSearch, selectedCategory, page, sortBy]);
 
   // 검색 결과를 Article 형식으로 변환
-  const apiResultsAsArticles = searchResults?.content.map((item) => ({
+  const apiResultsAsArticles: Array<{
+    id: number;
+    title: string;
+    excerpt: string;
+    content: string;
+    category: string;
+    topicSlug: string;
+    author: { nickname: string; bio: string };
+    date: string;
+    readTime: string;
+    views: number;
+    likes: number;
+    comments: number;
+    tags: string[];
+    image: string;
+  }> = searchResults?.content.map((item) => ({
     id: Number(item.id),
     title: item.title,
     excerpt: item.content.length > 100 ? item.content.substring(0, 100) + '...' : item.content,
@@ -312,7 +337,10 @@ function ArticlesContent() {
       ? categories.find((cat) => cat.slug === selectedCategory)?.name || ''
       : 'CS 지식'),
     topicSlug: selectedCategory !== 'all' ? selectedCategory : 'all',
-    author: '시스템',
+    author: {
+      nickname: '시스템',
+      bio: '',
+    },
     date: item.createdAt ? new Date(item.createdAt).toLocaleDateString('ko-KR') : new Date().toLocaleDateString('ko-KR'),
     readTime: '5분',
     views: item.viewCount || 0,
@@ -605,60 +633,14 @@ function ArticlesContent() {
                   : 'space-y-6'
               }
             >
-              {currentArticles.map((article) => {
-                const mapped = {
-                  id: Number(article.id) || 0,
-                  title: article.content.title,
-                  excerpt: article.content.summary,
-                  content: article.content.content,
-                  category: article.content.category,
-                  topicSlug: article.content.category,
-                  author: {
-                    nickname: article.writerId || '작성자',
-                    bio: '',
-                  },
-                  date: new Date(article.createdAt).toLocaleDateString('ko-KR'),
-                  readTime: '5분',
-                  views: article.viewCount || 0,
-                  likes: article.likeCount || 0,
-                  comments: 0,
-                  tags: article.tags || [],
-                  image: article.thumbnailPath || '/api/placeholder/400/250',
-                };
-
-                return (
-                  <ArticleCard
-                    key={article.id}
-                    article={mapped}
-                    viewMode={viewMode}
-                  />
-                );
-              })}
+              {currentArticles.map((article) => (
+                <ArticleCard
+                  key={article.id}
+                  article={article}
+                  viewMode={viewMode}
+                />
+              ))}
             </div>
-            {!isSearching && (
-              <div
-                className={
-                  viewMode === 'grid'
-                    ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6'
-                    : 'space-y-6'
-                }
-              >
-                {currentArticles.map((article) => (
-                  <ArticleCard
-                    key={article.id}
-                    article={{
-                      ...article,
-                      author: {
-                        nickname: article.author,
-                        bio: '',
-                      },
-                    }}
-                    viewMode={viewMode}
-                  />
-                ))}
-              </div>
-            )}
-
 
             {/* 페이지네이션 */}
             {totalPages > 1 && (
@@ -713,3 +695,9 @@ export default function ArticlesPage() {
     </Suspense>
   );
 }
+async function getCSKnowledgeSuggestion(arg0: { query: string; }): Promise<string[]> {
+  // TODO: Implement API call to fetch suggestions
+  // For now, return empty array as placeholder
+  return [];
+}
+

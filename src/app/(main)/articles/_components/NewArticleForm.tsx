@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import TipTapEditor from '@/components/editor/TipTapEditor';
 import Image from 'next/image';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 const ARTICLE_CATEGORIES = [
   '웹 해킹',
@@ -34,6 +35,7 @@ interface FormErrors {
 
 export default function NewArticleForm() {
   const router = useRouter();
+  const { user: currentUser, isLoading: userLoading } = useCurrentUser();
   const [loading, setLoading] = useState(false);
   const [tagInput, setTagInput] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
@@ -178,16 +180,43 @@ export default function NewArticleForm() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <Link href="/articles" className="text-gray-600 hover:text-gray-900">
-          <ArrowLeft className="w-5 h-5" />
-        </Link>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">새 글 쓰기</h1>
-          <p className="text-gray-600 mt-1">지식과 경험을 공유해주세요.</p>
+      {/* Loading state for user authentication */}
+      {userLoading && (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+            <p className="text-gray-600">로딩 중...</p>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Not authenticated state */}
+      {!userLoading && !currentUser && (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <p className="text-gray-600 mb-4">글을 작성하려면 먼저 로그인해주세요.</p>
+            <Link href="/login">
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                로그인
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Main form - only show when user is loaded and authenticated */}
+      {!userLoading && currentUser && (
+        <>
+          {/* Header */}
+          <div className="flex items-center gap-4 mb-8">
+            <Link href="/articles" className="text-gray-600 hover:text-gray-900">
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">새 글 쓰기</h1>
+              <p className="text-gray-600 mt-1">지식과 경험을 공유해주세요.</p>
+            </div>
+          </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Information */}
@@ -371,6 +400,8 @@ export default function NewArticleForm() {
           </Button>
         </div>
       </form>
+        </>
+      )}
     </div>
   );
 }

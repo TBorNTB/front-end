@@ -8,13 +8,11 @@ export const metadata = {
 export default function CreateArticlePage() {
   return (
     <>
-      <Header />
       <div className="min-h-screen bg-background py-10">
         <div className="w-full px-3 sm:px-4 lg:px-10">
           <NewArticleForm />
         </div>
       </div>
-      <Footer />
     </>
   );
 }

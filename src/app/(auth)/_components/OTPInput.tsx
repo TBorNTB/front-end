@@ -92,8 +92,8 @@ export function OTPInput({
           key={index}
           ref={(el) => { inputRefs.current[index] = el }}
           type="text"
-          inputMode="text"
-          pattern="[a-zA-Z0-9]*"
+          inputMode="numeric"
+          pattern="[0-9a-zA-Z]*"
           maxLength={1}
           value={value[index] || ''}
           onChange={(e) => handleChange(index, e.target.value)}
@@ -103,6 +103,7 @@ export function OTPInput({
           disabled={disabled}
           className={getOTPInputClassName(hasError, activeIndex === index)}
           autoComplete="one-time-code"
+          placeholder="0"
         />
       ))}
     </div>

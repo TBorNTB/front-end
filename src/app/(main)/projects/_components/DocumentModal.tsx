@@ -4,7 +4,7 @@ import { Dialog, Transition } from '@headlessui/react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { Fragment, useState, useMemo } from 'react';
-import { createDocument } from '@/lib/api/endpoints/project';
+import { createDocument } from '@/lib/api/services/project-services';
 
 interface DocumentModalProps {
   isOpen: boolean;

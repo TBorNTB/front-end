@@ -186,22 +186,16 @@ export default function TopicsSection({
   useEffect(() => {
     console.log('Topics component received:', externalTopics);
     
-    // 외부에서 topics가 전달되고 empty가 아니면 사용
+    // 외부에서 topics가 전달되면 사용
     if (externalTopics && Array.isArray(externalTopics) && externalTopics.length > 0) {
       console.log('Using external topics with length:', externalTopics.length);
       // Cast to Topic (same structure)
       setTopicsData(externalTopics as Topic[]);
-    // 외부에서 topics가 전달되면 사용, 아니면 API 호출
-    if (externalTopics) {
-      setTopicsData(externalTopics);
       setLoading(false);
       return;
     }
 
-    // No external topics, use fallback mock data
-    console.log('No external topics, using fallback mock data');
-    setTopicsData(getTopicsData());
-    setLoading(false);
+    // No external topics, use API
     const fetchCategories = async () => {
       try {
         setLoading(true);

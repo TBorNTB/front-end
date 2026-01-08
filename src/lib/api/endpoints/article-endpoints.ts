@@ -1,5 +1,5 @@
 // src/lib/api/endpoints/article.ts
-import { BASE_URL } from '@/lib/api/config';
+import { getApiUrl } from '@/lib/api/config';
 
 // CS Knowledge (Article) endpoints
 export const ARTICLE_ENDPOINTS = {
@@ -12,14 +12,4 @@ export const ARTICLE_ENDPOINTS = {
   },
 } as const;
 
-// Helper function with environment logging
-export const getArticleApiUrl = (endpoint: string) => {
-  const url = `${BASE_URL}${endpoint}`;
-
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`🔗 API Request: ${url}`);
-  }
-
-  return url;
-};
-
+export const getArticleApiUrl = (endpoint: string) => getApiUrl(endpoint);

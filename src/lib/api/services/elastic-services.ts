@@ -1,6 +1,5 @@
 // lib/api/services/elastic.ts
-import { BASE_URL } from '@/lib/api/config';
-import { ELASTIC_ENDPOINTS, getElasticApiUrl } from '@/lib/api/endpoints/elastic';
+import { ELASTIC_ENDPOINTS, getElasticApiUrl } from '@/lib/api/endpoints';
 
 export interface CSKnowledgeSuggestionParams {
   query: string; // 검색어
@@ -33,43 +32,6 @@ export interface CSKnowledgeSearchResponse {
 }
 
 /**
- * CS 지식 검색어 제안 API 호출
- * @param params 검색 파라미터
- * @returns 제안 결과 배열
- */
-export const getCSKnowledgeSuggestion = async (
-  params: CSKnowledgeSuggestionParams
-): Promise<string[]> => {
-  try {
-    const url = new URL(
-      getElasticApiUrl(ELASTIC_ENDPOINTS.ELASTIC.CSKNOWLEDGE_SUGGESTION)
-    );
-
-    // 쿼리 파라미터 추가
-    url.searchParams.append('query', params.query);
-
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-      },
-      credentials: 'include',
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to get CS knowledge suggestions: ${response.status}`);
-    }
-
-    const data: string[] = await response.json();
-    return Array.isArray(data) ? data : [];
-  } catch (error) {
-    console.error('Error getting CS knowledge suggestions:', error);
-    throw error;
-  }
-};
-
-/**
  * CS 지식 검색 API 호출
  * @param params 검색 파라미터
  * @returns 검색 결과 (페이지네이션 포함)
@@ -97,7 +59,7 @@ export const searchCSKnowledge = async (
     queryParams.append('size', (params.size || 6).toString());
     queryParams.append('page', (params.page !== undefined ? params.page : 0).toString());
 
-    const url = `${getElasticApiUrl(ELASTIC_ENDPOINTS.ELASTIC.CSKNOWLEDGE_SEARCH)}?${queryParams.toString()}`;
+    const url = `${getElasticApiUrl(ELASTIC_ENDPOINTS.ELASTIC.ARTICLE_SEARCH)}?${queryParams.toString()}`;
 
     const response = await fetch(url, {
       method: 'GET',
@@ -121,7 +83,6 @@ export const searchCSKnowledge = async (
 };
 
 export const elasticService = {
-  getCSKnowledgeSuggestion,
   searchCSKnowledge,
 };
 
