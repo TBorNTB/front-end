@@ -75,13 +75,13 @@ export const fetchArticleById = async (id: string | number): Promise<ArticleResp
 export const updateArticle = async (id: string | number, data: ArticleUpdateRequest): Promise<ArticleResponse> => {
   const endpoint = ARTICLE_ENDPOINTS.ARTICLE.UPDATE.replace(':id', String(id));
   const url = getArticleApiUrl(endpoint);
-  
+
   const accessToken = getAccessToken();
   const headers: HeadersInit = {
     'accept': 'application/json',
     'Content-Type': 'application/json',
   };
-  
+
   if (accessToken) {
     headers['Authorization'] = `Bearer ${accessToken}`;
   }
@@ -108,12 +108,12 @@ export const updateArticle = async (id: string | number, data: ArticleUpdateRequ
 export const deleteArticle = async (id: string | number): Promise<void> => {
   const endpoint = ARTICLE_ENDPOINTS.ARTICLE.DELETE.replace(':id', String(id));
   const url = getArticleApiUrl(endpoint);
-  
+
   const accessToken = getAccessToken();
   const headers: HeadersInit = {
     'accept': '*/*',
   };
-  
+
   if (accessToken) {
     headers['Authorization'] = `Bearer ${accessToken}`;
   }
@@ -135,4 +135,3 @@ export const articleService = {
   updateArticle,
   deleteArticle,
 };
-

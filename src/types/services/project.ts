@@ -1,4 +1,4 @@
-import { CategoryType } from '@/app/(main)/topics/types/category';
+import { CategoryType } from'./category';
 
 // Enums for project-related constants
 export enum ProjectStatus {

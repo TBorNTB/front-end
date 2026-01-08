@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
-import { memberService, UserResponse } from '@/lib/api/services/user-service';
+import { memberService, UserResponse } from '@/lib/api/services/user-services';
 
 // Types for member data
 interface Member {

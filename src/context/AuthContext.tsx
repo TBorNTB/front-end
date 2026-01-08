@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { profileService, UserResponse } from '@/lib/api/services/user-service';
+import { profileService, UserResponse } from '@/lib/api/services/user-services';
 import { 
   AuthUser, 
   AuthContextType, 

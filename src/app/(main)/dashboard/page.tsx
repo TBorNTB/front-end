@@ -2,7 +2,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getUserApiUrl, USER_ENDPOINTS } from '@/lib/api/endpoints/user-endpoints';
-import { type UserResponse } from '@/lib/api/services/user-service';
+import { type UserResponse } from '@/lib/api/services/user-services';
 
 async function getCurrentUser() {
   const cookieStore = cookies();

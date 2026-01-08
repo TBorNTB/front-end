@@ -23,8 +23,6 @@ import {
   PasswordResetStep,
   ResetPasswordFormData,
   resetPasswordSchema,
-  VerifyCodeFormData,
-  verifyCodeSchema
 } from "../types/forgot-pw";
 
 // Import form utilities
@@ -59,6 +57,17 @@ export default function ForgotPasswordPage() {
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: { email: "", verificationCode: "", newPassword: "", confirmPassword: "" },
   });
+
+  // Derived values for reset step
+  const verificationCode = (resetForm.watch('verificationCode') ?? '').replace(/\D/g, '');
+  const newPassword = resetForm.watch('newPassword') ?? '';
+  const confirmPassword = resetForm.watch('confirmPassword') ?? '';
+  const isResetDisabled =
+    isLoading ||
+    verificationCode.length !== 8 ||
+    !newPassword ||
+    !confirmPassword ||
+    newPassword !== confirmPassword;
 
   // Step 1: Send password reset email
   const handleEmailSubmit = async (values: ForgotPasswordFormData) => {
@@ -156,13 +165,20 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
     resetStates();
 
+    const code = (values.verificationCode ?? '').replace(/\D/g, '');
+    if (code.length !== 8) {
+      handleError(new Error("인증코드를 정확히 8자리 입력해주세요."));
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch('/api/password/reset-password', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: values.email,
-          randomCode: values.verificationCode,
+          randomCode: code,
           newPassword: values.newPassword,
         }),
       });
@@ -312,11 +328,11 @@ export default function ForgotPasswordPage() {
                   <FormItem>
                     <FormLabel className="text-sm font-medium text-primary-600">인증코드</FormLabel>
                     <FormControl>
-                      <div className="space-y-4">
+                      <div className="space-y-2">
                         <OTPInput
                           length={8}
                           value={field.value || ''}
-                          onChange={field.onChange}
+                          onChange={(val) => field.onChange((val || '').replace(/\D/g, ''))}
                           hasError={!!fieldState.error}
                           disabled={isLoading}
                           autoFocus
@@ -416,7 +432,7 @@ export default function ForgotPasswordPage() {
               <button 
                 type="submit" 
                 className="btn btn-primary btn-lg w-full mt-6 disabled:opacity-50 disabled:cursor-not-allowed" 
-                disabled={isLoading || resetForm.watch('verificationCode')?.length !== 8 || resetForm.watch('newPassword')?.length === 0 || resetForm.watch('confirmPassword')?.length === 0}
+                disabled={isResetDisabled}
               >
                 {isLoading ? "설정 중..." : "비밀번호 재설정"}
               </button>

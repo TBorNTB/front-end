@@ -1,6 +1,6 @@
 // src/app/api/auth/user/route.ts
 import { NextResponse } from 'next/server';
-import { getUserApiUrl, USER_ENDPOINTS } from '@/lib/api/endpoints/user-endpoints'; // ✅ Use your endpoints!
+import { USER_ENDPOINTS } from '@/lib/api/endpoints/user-endpoints'; 
 import { serverApiClient } from '@/lib/api/client-server';
 
 export async function GET(request: Request) {
@@ -10,10 +10,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ authenticated: false, user: null }, { status: 200 });
     }
 
-    // Parallel profile + role calls (faster!)
+    // Parallel profile + role calls
     const [profileRes, roleRes] = await Promise.allSettled([
-      serverApiClient.request(getUserApiUrl(USER_ENDPOINTS.USER.PROFILE), { request }),
-      serverApiClient.request(getUserApiUrl(USER_ENDPOINTS.USER.ROLE), { request }),
+      serverApiClient.request(USER_ENDPOINTS.USER.PROFILE, { request }),
+      serverApiClient.request(USER_ENDPOINTS.USER.ROLE, { request }),
     ]);
 
     if (profileRes.status === 'rejected' || !profileRes.value?.success) {

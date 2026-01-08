@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { categoryService } from '@/lib/api/services/category-service';
+import { categoryService } from '@/lib/api/services/category-services';
 import { CategoryType, CategorySlugs, CategoryDescriptions, CategoryHelpers } from '@/types/services/category';
 import { getProjects, getArticles, getCategories, getTopics, type Project, type Article, type CategoryItem } from '@/lib/mock-data';
 

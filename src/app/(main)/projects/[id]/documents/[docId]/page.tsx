@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { fetchDocument } from '@/lib/api/endpoints/project';
+import { fetchDocument } from '@/lib/api/services/project-services';
 
 interface DocumentViewerProps {
   params: Promise<{ id: string; docId: string }>;

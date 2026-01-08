@@ -1,4 +1,4 @@
-// app/api/auth/reset-password/route.ts
+// app/api/password/reset-password/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { BASE_URL } from '@/lib/api/config';
 import { USER_ENDPOINTS } from '@/lib/api/endpoints/user-endpoints';
@@ -6,25 +6,17 @@ import { USER_ENDPOINTS } from '@/lib/api/endpoints/user-endpoints';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, verificationCode, newPassword } = body;
+    const { email, randomCode, newPassword } = body;
 
-    if (
-      !email ||
-      !verificationCode ||
-      verificationCode.length !== 8 ||
-      !newPassword ||
-      newPassword.length < 6
-    ) {
+    if (!email || !randomCode || (randomCode as string).length !== 8 || !newPassword || newPassword.length < 6) {
       return NextResponse.json(
         { message: '모든 필수 필드를 올바르게 입력해주세요.' },
         { status: 400 }
       );
     }
 
-    // Get cookie header from incoming request
     const cookieHeader = request.headers.get('cookie');
 
-    // Call backend API directly
     const response = await fetch(`${BASE_URL}${USER_ENDPOINTS.USER.RESET_PASSWORD}`, {
       method: 'POST',
       headers: {
@@ -32,11 +24,7 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
         ...(cookieHeader && { 'Cookie': cookieHeader }),
       },
-      body: JSON.stringify({ 
-        email, 
-        randomCode: verificationCode, 
-        newPassword 
-      }),
+      body: JSON.stringify({ email, randomCode, newPassword }),
       cache: 'no-store',
     });
 

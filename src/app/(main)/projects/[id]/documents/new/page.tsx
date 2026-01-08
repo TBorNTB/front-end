@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { createDocument } from '@/lib/api/endpoints/project';
+import { createDocument } from '@/lib/api/services/project-services';
 
 interface NewDocumentPageProps {
   params: Promise<{ id: string }>;

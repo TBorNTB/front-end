@@ -1,4 +1,4 @@
-import { ProjectDetailResponse } from '@/app/(main)/projects/types';
+import { ProjectDetailResponse } from '@/types/services/project';
 import { PROJECT_ENDPOINTS, getProjectApiUrl } from '../endpoints/project-endpoints';
 
 // Get access token from cookies

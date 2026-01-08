@@ -68,9 +68,22 @@ const fetchProjects = async (params: ProjectSearchParams): Promise<ProjectSearch
     const response = await fetch(url);
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('API Error:', errorData);
-      throw new Error(errorData.message || `API error: ${response.status}`);
+      // Safe-parsed error payload plus status context for debugging
+      const errorData = await response.json().catch(() => ({} as Record<string, unknown>));
+      const message = (errorData as { message?: string; error?: string })?.message
+        || (errorData as { error?: string })?.error
+        || response.statusText
+        || `API error: ${response.status}`;
+
+      console.error('API Error', {
+        status: response.status,
+        statusText: response.statusText,
+        url,
+        params,
+        data: errorData,
+      });
+
+      throw new Error(message);
     }
 
     return await response.json();

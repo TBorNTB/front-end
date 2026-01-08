@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import ArticleCard from './_components/ArticleCard';
 import { searchCSKnowledge, type CSKnowledgeSearchResponse } from '@/lib/api/services/elastic-services';
-import { categoryService, type CategoryItem } from '@/lib/api/services/category-service';
+import { categoryService, type CategoryItem } from '@/lib/api/services/category-services';
 import { CategoryType, CategoryDisplayNames, CategorySlugs } from '@/types/services/category';
 
 const ARTICLES_PER_PAGE = 6;

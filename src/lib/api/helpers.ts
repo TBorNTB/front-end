@@ -4,7 +4,7 @@
  * Handles: headers, auth, error handling, response normalization
  */
 
-import { UserResponse } from '@/lib/api/services/user-service'; // Adjust import path
+import { UserResponse } from '@/lib/api/services/user-services'; // Adjust import path
 
 // ============================================================================
 // 🔐 Authentication Helpers

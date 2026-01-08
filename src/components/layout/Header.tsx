@@ -5,10 +5,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { ChevronDownIcon, BellIcon, Search, X, Menu, Shield } from "lucide-react";
-import { UserRoleDisplay, UserRole } from "@/types/core";
 import AlarmPopup from "./AlarmPopup";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
+import { getRoleDisplayLabel, hasAdminAccess, pickRole } from "@/lib/role-utils";
 
 const navList = [
   { name: "About", 
@@ -134,22 +134,12 @@ const Header = () => {
   const displayName = profileData?.realName || profileData?.nickname || user?.nickname || user?.full_name || '사용자';
   const displayEmail = profileData?.email || user?.email || '';
   const profileImageUrl = isValidImageUrl(profileData?.profileImageUrl) || isValidImageUrl(user?.profile_image) || null;
-  
-  // Role 매핑: API 응답의 role을 UserRoleDisplay로 변환
-  const getDisplayRole = (role?: string): string => {
-    if (!role) return '외부인';
-    // UserRole enum 값과 매칭 시도
-    const roleKey = role.toUpperCase() as UserRole;
-    if (roleKey in UserRoleDisplay) {
-      return UserRoleDisplay[roleKey];
-    }
-    // 매칭되지 않으면 원본 role 반환
-    return role;
-  };
-  
-  const displayRole = profileData?.role 
-    ? getDisplayRole(profileData.role)
-    : (user?.role ? getDisplayRole(user.role) : '외부인');
+
+  // Role handling
+  const combinedRole = pickRole(profileData?.role, user?.role);
+  const displayRole = getRoleDisplayLabel(combinedRole);
+  const isAdmin = hasAdminAccess(combinedRole);
+
   const userInitial = displayName?.charAt(0)?.toUpperCase() || displayEmail?.charAt(0)?.toUpperCase() || '?';
 
   return (
@@ -349,7 +339,7 @@ const Header = () => {
                           마이페이지
                         </Link>
                         
-                        {user?.role === UserRole.ADMIN && (
+                        {isAdmin && (
                           <Link
                             href="/admin/dashboard"
                             className="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
@@ -465,7 +455,7 @@ const Header = () => {
                       마이페이지
                     </Link>
 
-                    {user?.role === UserRole.ADMIN && (
+                    {isAdmin && (
                       <Link
                         href="/admin/dashboard"
                         className="flex items-center gap-2 py-2 text-gray-700 hover:text-primary-600 transition-colors cursor-pointer"

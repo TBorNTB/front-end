@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useState, useEffect, Fragment, useRef } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import DocumentModal from '../_components/DocumentModal';
-import { fetchProjectDetail, deleteDocument } from '@/lib/api/endpoints/project';
+import { fetchProjectDetail, deleteDocument } from '@/lib/api/services/project-services';
 import { 
   fetchViewCount, 
   fetchLikeCount,
@@ -17,8 +17,8 @@ import {
   fetchReplies,
   Comment,
   CommentListResponse
-} from '@/lib/api/endpoints/user';
-import { ProjectDetailResponse } from '../types';
+} from '@/lib/api/services/user-services';
+import { ProjectDetailResponse } from '../../../../types/services/project';
 
 interface ProjectPageProps {
   params: Promise<{ id: string }>;
@@ -29,6 +29,7 @@ interface MappedProject {
   id: string;
   title: string;
   subtitle: string;
+  category?: string;
   author: {
     username: string;
     name: string;
@@ -180,12 +181,6 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     params.then((resolvedParams) => {
       setProjectId(resolvedParams.id);
       fetchProjectData(resolvedParams.id);
-<<<<<<< HEAD
-    });
-  }, [params]);
-
-  const [project, setProject] = useState<any>(null);
-=======
       // 초기 로드 시 최신순(DESC)으로 댓글 로드
       loadComments(resolvedParams.id, 'DESC');
     });
@@ -263,45 +258,34 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       thumbnailUrl: apiData.thumbnailUrl,
     };
   };
->>>>>>> aebe966a022d56dd3e46f8da60a71fa1d06f9b71
 
   const fetchProjectData = async (id: string) => {
+    setIsLoading(true);
+
+    // 1) 기본 프로젝트 데이터 가져오기 (실패 시 Fallback)
     try {
-      setIsLoading(true);
-<<<<<<< HEAD
       const response = await fetch(`/api/projects/${id}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch project');
-      }
-      
+      if (!response.ok) throw new Error('Failed to fetch project');
       const data = await response.json();
       setProject(data);
     } catch (error) {
       console.error('Error fetching project:', error);
       // Fallback to default/mock data if API fails
       setProject({
-        id: id,
+        id,
         title: 'XSS 필터 규칙 테스트 스크립트',
         subtitle: 'Python 기반으로 작성된 URL에서 반사(Reflected) XSS 취약점을 자동으로 테스트 스크립트',
         category: '프로젝트',
-        author: {
-          username: 'kimdonghyun',
-          name: '김동현',
-          avatar: null,
-        },
+        author: { username: 'kimdonghyun', name: '김동현', avatar: null },
         createdAt: '2024-02-20',
         updatedAt: '2024-03-15',
         period: '2025-03 ~ 2025-05-31',
         github: 'https://github.com/username/xss-filter-test',
         tags: ['웹 해킹', '보안', '프로젝트'],
         technologies: ['Python', 'Scanner', 'XSS'],
-        stats: {
-          views: 126,
-          likes: 10,
-          comments: 2,
-        },
+        stats: { views: 126, likes: 10, comments: 2 },
         description: `이 프로젝트는 웹 애플리케이션의 XSS(Cross-Site Scripting) 취약점을 테스트하기 위한 자동화 도구입니다.`,
+        content: '',
         team: [
           { name: '김동현', role: 'Team Leader', username: 'kimdonghyun' },
           { name: '이진우', role: 'Backend Developer', username: 'leejinwoo' },
@@ -316,32 +300,29 @@ export default function ProjectPage({ params }: ProjectPageProps) {
           { id: '2', title: '새로운 프로젝트', version: 'v1.1 업데이트 개발 중' },
           { id: '3', title: 'v1.2 DCM기반 탐지 v1', version: 'v1.2 DCM기반 탐지 v1 추가' },
         ],
+        projectStatus: '진행중',
       });
-=======
-      setImageError(false); // 이미지 에러 상태 초기화
-      
-      // 프로젝트 상세 정보와 통계 정보를 병렬로 가져오기
+      setImageError(false);
+    }
+
+    // 2) 상세/통계 합치기 (항상 시도)
+    try {
       const [apiData, viewCountData, likeCountData] = await Promise.all([
         fetchProjectDetail(id),
-        fetchViewCount(id, 'PROJECT').catch(() => ({ viewCount: 0 })), // 에러 시 기본값 0
-        fetchLikeCount(id, 'PROJECT').catch(() => ({ likedCount: 0 })), // 에러 시 기본값 0
+        fetchViewCount(id, 'PROJECT').catch(() => ({ viewCount: 0 })),
+        fetchLikeCount(id, 'PROJECT').catch(() => ({ likedCount: 0 })),
       ]);
-      
+
       const mappedData = mapApiResponseToUI(apiData);
-      
-      // 통계 정보 업데이트
       mappedData.stats = {
         views: viewCountData.viewCount,
         likes: likeCountData.likedCount,
-        comments: 0, // TODO: 댓글 수 API 필요
+        comments: 0,
       };
-      
       setProject(mappedData);
     } catch (error) {
-      console.error('Error fetching project:', error);
-      // 에러 발생 시 notFound 처리
-      setProject(null);
->>>>>>> aebe966a022d56dd3e46f8da60a71fa1d06f9b71
+      console.error('Error fetching project details:', error);
+      setProject((prev) => prev); // keep whatever was set above
     } finally {
       setIsLoading(false);
     }
@@ -599,13 +580,6 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                       <div>
                         <p className="text-gray-600 mb-1">사용 기술</p>
                         <div className="flex flex-wrap gap-1">
-<<<<<<< HEAD
-                          {project.technologies.map((tech: string, idx: number) => (
-                            <span key={idx} className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-700">
-                              {tech}
-                            </span>
-                          ))}
-=======
                           {project.technologies.length > 0 ? (
                             project.technologies.map((tech: string, idx: number) => (
                               <span key={idx} className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-700">
@@ -615,7 +589,6 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           ) : (
                             <span className="text-xs text-gray-400">기술 스택 정보가 없습니다</span>
                           )}
->>>>>>> aebe966a022d56dd3e46f8da60a71fa1d06f9b71
                         </div>
                       </div>
                       {project.github && (
@@ -706,12 +679,8 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     <div className="p-4">
                       {/* Document List */}
                       <div className="space-y-1 mb-3">
-<<<<<<< HEAD
-                        {project.documents.map((doc: any) => (
-=======
                         {project.documents.length > 0 ? (
                           project.documents.map((doc: any) => (
->>>>>>> aebe966a022d56dd3e46f8da60a71fa1d06f9b71
                           <div
                             key={doc.id}
                             className="group flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 transition-colors"
@@ -880,22 +849,6 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   
                   {openSections.related && (
                     <div className="p-4 space-y-2">
-<<<<<<< HEAD
-                      {project.relatedProjects.map((related: any) => (
-                        <Link
-                          key={related.id}
-                          href={`/projects/${related.id}`}
-                          className="block p-2 rounded-lg hover:bg-gray-50 transition-colors"
-                        >
-                          <p className="text-sm font-medium text-gray-900 mb-1">
-                            {related.title}
-                          </p>
-                          <p className="text-xs text-gray-600">
-                            {related.version}
-                          </p>
-                        </Link>
-                      ))}
-=======
                       {project.relatedProjects.length > 0 ? (
                         project.relatedProjects.map((related: any) => (
                           <Link
@@ -916,7 +869,6 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           연관 프로젝트가 없습니다
                         </p>
                       )}
->>>>>>> aebe966a022d56dd3e46f8da60a71fa1d06f9b71
                     </div>
                   )}
                 </div>
@@ -998,20 +950,6 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                 )}
 
                 {/* Tags */}
-<<<<<<< HEAD
-                <section className="mb-12">
-                  <div className="flex flex-wrap gap-2">
-                    {project.tags.map((tag: string, index: number) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors cursor-pointer"
-                      >
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                </section>
-=======
                 {project.tags.length > 0 && (
                   <section className="mb-12">
                     <div className="flex flex-wrap gap-2">
@@ -1026,7 +964,6 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     </div>
                   </section>
                 )}
->>>>>>> aebe966a022d56dd3e46f8da60a71fa1d06f9b71
 
                 {/* Like Button */}
                 <section className="mb-12 flex justify-center py-4">

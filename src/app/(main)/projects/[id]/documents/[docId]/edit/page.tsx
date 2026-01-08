@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { fetchDocument, updateDocument } from '@/lib/api/endpoints/project';
+import { fetchDocument, updateDocument } from '@/lib/api/services/project-services';
 
 interface EditDocumentPageProps {
   params: Promise<{ id: string; docId: string }>;

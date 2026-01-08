@@ -1,7 +1,7 @@
 // useCurrentUser (SWR-gated variant)
 import useSWR from 'swr';
 import { useAuth } from '@/context/AuthContext';
-import { profileService, type UserResponse } from '@/lib/api/services/user-service';
+import { profileService, type UserResponse } from '@/lib/api/services/user-services';
 
 export function useCurrentUser() {
   const { isAuthenticated } = useAuth();

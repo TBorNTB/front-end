@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import TipTapEditor from '@/components/editor/TipTapEditor';
 import Image from 'next/image';
 import { fetchCategories, createProject } from '@/lib/api/services/project-services';
-import { UserResponse, memberService } from '@/lib/api/services/user-service';
+import { UserResponse, memberService } from '@/lib/api/services/user-services';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 const TECH_STACK_CATEGORIES = [
