@@ -1,5 +1,3 @@
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
 import NewProjectForm from '../_components/NewProjectForm';
 
 export const metadata = {
@@ -10,13 +8,11 @@ export const metadata = {
 export default function NewProjectPage() {
   return (
     <>
-      <Header />
       <div className="min-h-screen bg-background py-10">
         <div className="w-full px-3 sm:px-4 lg:px-10">
           <NewProjectForm />
         </div>
       </div>
-      <Footer />
     </>
   );
 }

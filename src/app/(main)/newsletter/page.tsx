@@ -1,8 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
 import { Mail, Shield, Clock, BookOpen, Users, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import Image from 'next/image';
 import NewsletterSubscribe from './_components/NewsletterSubscribe';
@@ -61,9 +59,7 @@ export default function SSGNewsletter() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      
+    <div className="min-h-screen bg-background">      
       {/* Hero Section */}
     <section className="relative flex flex-col items-center justify-center px-6 text-center bg-black" style={{ height: '500px' }}>
       {/* Animated background grid pattern */}
@@ -338,8 +334,6 @@ export default function SSGNewsletter() {
           </div>
         </div>
       </section>
-
-      <Footer />
     </div>
   );
 }

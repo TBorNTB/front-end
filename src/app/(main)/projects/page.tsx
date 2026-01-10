@@ -1,6 +1,4 @@
 import { Suspense } from 'react';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
 import ProjectsContent from './_components/ProjectsContent';
 
 // Loading fallback component
@@ -32,11 +30,9 @@ function ProjectsLoadingSkeleton() {
 export default function ProjectsPage() {
   return (
     <>
-      <Header />
       <Suspense fallback={<ProjectsLoadingSkeleton />}>
         <ProjectsContent />
       </Suspense>
-      <Footer />
     </>
   );
 }

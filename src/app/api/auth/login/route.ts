@@ -1,7 +1,7 @@
 //src/app/api/auth/login/route.ts
 import { NextResponse } from 'next/server';
 import { BASE_URL } from '@/lib/api/config'; 
-import { USER_ENDPOINTS } from '@/lib/api/endpoints/user'; 
+import { USER_ENDPOINTS } from '@/lib/api/endpoints/user-endpoints'; 
 
 export async function POST(request: Request) {
   try {

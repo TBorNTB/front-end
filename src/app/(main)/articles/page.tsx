@@ -1,11 +1,10 @@
 // app/(main)/articles/page.tsx
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
 import Link from 'next/link';
+import { getArticles, type Article } from '@/lib/mock-data';
 import {
   Search,
   Plus,
@@ -14,158 +13,144 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import ArticleCard from './_components/ArticleCard';
+import { searchCSKnowledge, type CSKnowledgeSearchResponse } from '@/lib/api/services/elastic-services';
+import { categoryService, type CategoryItem } from '@/lib/api/services/category-services';
+import { CategoryType, CategoryDisplayNames, CategorySlugs } from '@/types/services/category';
 
 const ARTICLES_PER_PAGE = 6;
 
-const articles = [
-  {
-    id: 1,
-    title: '워크플로 분석 실제 가이드',
-    excerpt: '워크플로를 체계적으로 분석하고 최적화하는 방법에 대해 알아보겠습니다.',
-    content: '워크플로 분석은 업무 프로세스를 개선하는데 필수적인...',
-    category: '웹 해킹',
-    topicSlug: 'web-hacking',
-    author: '김민수',
-    date: '2024.03.15',
-    readTime: '8분',
-    views: 342,
-    likes: 23,
-    comments: 5,
-    tags: ['워크플로', '분석', '최적화', '프로세스'],
-    image: '/api/placeholder/400/250',
-  },
-  {
-    id: 2,
-    title: 'OSINT를 활용한 디지털 포렌식',
-    excerpt:
-      '공개된 정보를 활용하여 디지털 포렌식 조사를 수행하는 방법과 주요 도구들을 소개합니다.',
-    content:
-      'OSINT(Open Source Intelligence)는 공개적으로 이용 가능한 정보를 수집하고 분석하는...',
-    category: '웹 해킹',
-    topicSlug: 'web-hacking',
-    author: '최수진',
-    date: '2024.03.08',
-    readTime: '10분',
-    views: 198,
-    likes: 15,
-    comments: 6,
-    tags: ['OSINT', 'Digital Forensics', 'Investigation', 'Maltego'],
-    image: '/api/placeholder/400/250',
-  },
-  {
-    id: 3,
-    title: '리버싱 기초 가이드',
-    excerpt:
-      'IDA Pro와 Ghidra를 활용한 바이너리 분석의 기초를 학습해보겠습니다.',
-    content: '리버싱(역공학)은 컴파일된 바이너리 파일을 분석하여...',
-    category: '리버싱',
-    topicSlug: 'reversing',
-    author: '박지영',
-    date: '2024.03.12',
-    readTime: '12분',
-    views: 156,
-    likes: 18,
-    comments: 8,
-    tags: ['리버싱', 'IDA Pro', 'Ghidra', '바이너리 분석'],
-    image: '/api/placeholder/400/250',
-  },
-  {
-    id: 4,
-    title: '시스템 해킹 실전 기법',
-    excerpt:
-      'Buffer Overflow와 ROP 체인을 활용한 시스템 익스플로잇 기법을 다룹니다.',
-    content: '시스템 해킹은 운영체제와 시스템 레벨에서 발생하는...',
-    category: '시스템 해킹',
-    topicSlug: 'system-hacking',
-    author: '이준호',
-    date: '2024.03.10',
-    readTime: '15분',
-    views: 289,
-    likes: 31,
-    comments: 12,
-    tags: ['시스템 해킹', 'Buffer Overflow', 'ROP', '익스플로잇'],
-    image: '/api/placeholder/400/250',
-  },
-  {
-    id: 5,
-    title: '디지털 포렌식 도구 활용법',
-    excerpt:
-      'Volatility와 Autopsy를 사용한 메모리 덤프와 디스크 이미지 분석 방법을 설명합니다.',
-    content:
-      '디지털 포렌식은 사이버 범죄나 보안 사고 발생 시...',
-    category: '디지털 포렌식',
-    topicSlug: 'digital-forensics',
-    author: '정우현',
-    date: '2024.03.05',
-    readTime: '11분',
-    views: 234,
-    likes: 19,
-    comments: 9,
-    tags: ['디지털 포렌식', 'Volatility', 'Autopsy', '메모리 분석'],
-    image: '/api/placeholder/400/250',
-  },
-  {
-    id: 7,
-    title: '네트워크 보안 모니터링',
-    excerpt:
-      'Wireshark와 Suricata를 활용한 네트워크 트래픽 분석과 침입 탐지 시스템 구축',
-    content:
-      '네트워크 보안에서 실시간 모니터링은 매우 중요한...',
-    category: '네트워크 보안',
-    topicSlug: 'network-security',
-    author: '강예린',
-    date: '2024.03.02',
-    readTime: '14분',
-    views: 167,
-    likes: 22,
-    comments: 4,
-    tags: ['네트워크 보안', 'Wireshark', 'Suricata', 'IDS'],
-    image: '/api/placeholder/400/250',
-  },
-    {
-    id: 8,
-    title: '네트워크 보안 모니터링',
-    excerpt:
-      'Wireshark와 Suricata를 활용한 네트워크 트래픽 분석과 침입 탐지 시스템 구축',
-    content:
-      '네트워크 보안에서 실시간 모니터링은 매우 중요한...',
-    category: '네트워크 보안',
-    topicSlug: 'network-security',
-    author: '강예린',
-    date: '2024.03.02',
-    readTime: '14분',
-    views: 167,
-    likes: 22,
-    comments: 4,
-    tags: ['네트워크 보안', 'Wireshark', 'Suricata', 'IDS'],
-    image: '/api/placeholder/400/250',
-  },
-];
+interface Category {
+  name: string;
+  slug: string;
+  apiCategory?: string; // API에 전달할 카테고리 형식 (예: 'WEB-HACKING')
+}
 
-const categories = [
-  { name: '전체', slug: 'all' },
-  { name: '웹 해킹', slug: 'web-hacking' },
-  { name: '리버싱', slug: 'reversing' },
-  { name: '시스템 해킹', slug: 'system-hacking' },
-  { name: '디지털 포렌식', slug: 'digital-forensics' },
-  { name: '네트워크 보안', slug: 'network-security' },
-  { name: 'IoT보안', slug: 'iot-security' },
-  { name: '암호학', slug: 'cryptography' },
-];
+// 카테고리 이름으로 CategoryType 찾기
+const getCategoryTypeByName = (name: string): CategoryType | null => {
+  const entry = Object.entries(CategoryDisplayNames).find(([_, displayName]) => displayName === name);
+  return entry ? (entry[0] as CategoryType) : null;
+};
+
+// CategoryType을 API 형식으로 변환 (WEB_HACKING -> WEB-HACKING)
+const convertCategoryTypeToApiFormat = (categoryType: CategoryType): string => {
+  return categoryType.replace(/_/g, '-');
+};
+
+// 카테고리 이름에서 slug 생성
+const createSlugFromName = (name: string, id: number): string => {
+  // CategoryType 매핑이 있으면 해당 slug 사용
+  const type = getCategoryTypeByName(name);
+  if (type && CategorySlugs[type]) {
+    return CategorySlugs[type];
+  }
+  
+  // 영문/숫자만 있는 경우: 공백을 하이픈으로, 소문자 변환
+  if (/^[a-zA-Z0-9\s-]+$/.test(name)) {
+    return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  }
+  
+  // 한글이나 특수문자가 포함된 경우: ID 기반 slug 사용
+  return `category-${id}`;
+};
+
+// 카테고리 slug를 API 형식으로 변환
+const convertSlugToApiCategory = (slug: string, categories: Category[]): string | undefined => {
+  if (slug === 'all') return undefined;
+  
+  // categories 배열에서 해당 slug의 apiCategory 찾기
+  const category = categories.find(cat => cat.slug === slug);
+  if (category) {
+    // apiCategory가 있으면 사용, 없으면 카테고리 이름을 그대로 사용
+    if (category.apiCategory) {
+      return category.apiCategory;
+    }
+    // fallback: 카테고리 이름을 그대로 사용
+    return category.name;
+  }
+  
+  // 최종 fallback: slug를 그대로 사용
+  return slug;
+};
 
 function ArticlesContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  const [categories, setCategories] = useState<Category[]>([{ name: '전체', slug: 'all' }]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [articlesData, setArticlesData] = useState<Article[]>([]);
+  const [articlesLoading, setArticlesLoading] = useState(true);
+  const [articlesError, setArticlesError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeSearchTerm, setActiveSearchTerm] = useState(''); // 실제 검색에 사용되는 검색어
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState('최신순');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [page, setPage] = useState(1);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [searchResults, setSearchResults] = useState<CSKnowledgeSearchResponse | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const suggestionsRef = useRef<HTMLDivElement | null>(null);
 
   const currentUser: 'guest' | 'member' | 'admin' | null = 'member';
   const sortOptions = ['최신순', '인기순', '조회순'];
+
+  // 카테고리 목록 API 호출
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setCategoriesLoading(true);
+        const response = await categoryService.getCategories();
+        
+        // API 응답을 Category 형식으로 변환
+        const transformedCategories: Category[] = [
+          { name: '전체', slug: 'all' }, // 전체 카테고리 추가
+          ...response.categories.map((apiCategory: CategoryItem) => {
+            const type = getCategoryTypeByName(apiCategory.name);
+            const slug = type ? CategorySlugs[type] : createSlugFromName(apiCategory.name, apiCategory.id);
+            // CategoryType이 있으면 변환된 형식 사용, 없으면 카테고리 이름을 그대로 사용
+            const apiCategoryFormat = type 
+              ? convertCategoryTypeToApiFormat(type) 
+              : apiCategory.name;
+            
+            return {
+              name: apiCategory.name,
+              slug: slug,
+              apiCategory: apiCategoryFormat,
+            };
+          }),
+        ];
+        
+        setCategories(transformedCategories);
+      } catch (error) {
+        console.error('Failed to fetch categories:', error);
+        // 에러 발생 시 기본 카테고리만 사용
+        setCategories([{ name: '전체', slug: 'all' }]);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  // 정렬 옵션을 API 형식으로 변환
+  const convertSortToApiType = (sortBy: string): 'LATEST' | 'POPULAR' | 'VIEWS' => {
+    switch (sortBy) {
+      case '인기순':
+        return 'POPULAR';
+      case '조회순':
+        return 'VIEWS';
+      case '최신순':
+      default:
+        return 'LATEST';
+    }
+  };
 
   // URL 쿼리(topic, page) → state 초기화
   useEffect(() => {
@@ -183,16 +168,33 @@ function ArticlesContent() {
     }
   }, [searchParams]);
 
+  // Load articles (mock-aware)
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setArticlesLoading(true);
+        setArticlesError(null);
+        const data = await getArticles();
+        setArticlesData(data);
+      } catch (err) {
+        console.error('Failed to load articles', err);
+        setArticlesError('아티클을 불러오는 데 실패했습니다.');
+      } finally {
+        setArticlesLoading(false);
+      }
+    };
+
+    load();
+  }, []);
+
   // 필터링
-  let filteredArticles = articles.filter((article) => {
+  let filteredArticles = articlesData.filter((article) => {
     const matchesCategory =
-      selectedCategory === 'all' || article.topicSlug === selectedCategory;
+      selectedCategory === 'all' || article.content.category === selectedCategory || article.topicSlug === selectedCategory;
     const matchesSearch =
-      article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      article.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      article.tags.some((tag: string) =>
-        tag.toLowerCase().includes(searchTerm.toLowerCase()),
-      );
+      article.content.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      article.content.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      article.tags.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
 
     return matchesCategory && matchesSearch;
   });
@@ -201,27 +203,160 @@ function ArticlesContent() {
   filteredArticles = filteredArticles.sort((a, b) => {
     switch (sortBy) {
       case '인기순':
-        return b.likes - a.likes;
+        return (b.likeCount || 0) - (a.likeCount || 0);
       case '조회순':
-        return b.views - a.views;
+        return (b.viewCount || 0) - (a.viewCount || 0);
       case '최신순':
       default:
         return 0;
     }
   });
 
+  // 검색어 suggestion API 호출
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (!searchTerm || searchTerm.trim().length === 0) {
+        setSuggestions([]);
+        setShowSuggestions(false);
+        return;
+      }
+
+      setIsLoadingSuggestions(true);
+      try {
+        const results = await getCSKnowledgeSuggestion({
+          query: searchTerm.trim(),
+        });
+        setSuggestions(results);
+        setShowSuggestions(results.length > 0);
+      } catch (error) {
+        console.error('Error fetching suggestions:', error);
+        setSuggestions([]);
+        setShowSuggestions(false);
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    };
+
+    // 디바운싱: 300ms 후에 API 호출
+    const timer = setTimeout(() => {
+      fetchSuggestions();
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // 외부 클릭 시 suggestion 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        searchInputRef.current &&
+        suggestionsRef.current &&
+        !searchInputRef.current.contains(event.target as Node) &&
+        !suggestionsRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // 검색 실행 함수
+  const performSearch = useCallback(async () => {
+    setIsSearching(true);
+    setSearchError(null);
+
+    try {
+      const apiCategory = convertSlugToApiCategory(selectedCategory, categories);
+      console.log('Search params:', {
+        selectedCategory,
+        apiCategory,
+        keyword: activeSearchTerm,
+        sortBy,
+        page: page - 1,
+      });
+      
+      const results = await searchCSKnowledge({
+        keyword: activeSearchTerm && activeSearchTerm.trim() ? activeSearchTerm.trim() : undefined,
+        category: apiCategory,
+        sortType: convertSortToApiType(sortBy),
+        page: page - 1, // API는 0부터 시작하므로 -1
+        size: ARTICLES_PER_PAGE,
+      });
+
+      setSearchResults(results);
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchError('검색 중 오류가 발생했습니다.');
+      setSearchResults(null);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [selectedCategory, categories, activeSearchTerm, sortBy, page]);
+
+  // 검색하기 버튼 클릭 핸들러
+  const handleSearch = () => {
+    setActiveSearchTerm(searchTerm);
+    setPage(1);
+    setShowSuggestions(false);
+  };
+
+  // 게시글 조회 API 호출 (카테고리, 정렬, 페이지 변경 시 자동 실행, 검색어는 버튼 클릭 시에만)
+  useEffect(() => {
+    // 카테고리가 로드된 후에만 검색 실행
+    if (!categoriesLoading) {
+      performSearch();
+    }
+  }, [categoriesLoading, performSearch, selectedCategory, page, sortBy]);
+
+  // 검색 결과를 Article 형식으로 변환
+  const apiResultsAsArticles: Array<{
+    id: number;
+    title: string;
+    excerpt: string;
+    content: string;
+    category: string;
+    topicSlug: string;
+    author: { nickname: string; bio: string };
+    date: string;
+    readTime: string;
+    views: number;
+    likes: number;
+    comments: number;
+    tags: string[];
+    image: string;
+  }> = searchResults?.content.map((item) => ({
+    id: Number(item.id),
+    title: item.title,
+    excerpt: item.content.length > 100 ? item.content.substring(0, 100) + '...' : item.content,
+    content: item.content,
+    category: item.category || (selectedCategory !== 'all' 
+      ? categories.find((cat) => cat.slug === selectedCategory)?.name || ''
+      : 'CS 지식'),
+    topicSlug: selectedCategory !== 'all' ? selectedCategory : 'all',
+    author: {
+      nickname: '시스템',
+      bio: '',
+    },
+    date: item.createdAt ? new Date(item.createdAt).toLocaleDateString('ko-KR') : new Date().toLocaleDateString('ko-KR'),
+    readTime: '5분',
+    views: item.viewCount || 0,
+    likes: item.likeCount || 0,
+    comments: 0,
+    tags: [],
+    image: '/api/placeholder/400/250',
+  })) || [];
+
   // 페이지네이션 계산
-  const totalArticles = filteredArticles.length;
-  const totalPages = Math.max(
-    1,
-    Math.ceil(totalArticles / ARTICLES_PER_PAGE),
-  );
+  const totalArticles = searchResults?.totalElements || 0;
+  const totalPages = searchResults?.totalPages || 1;
   const safePage = Math.min(page, totalPages);
-  const startIndex = (safePage - 1) * ARTICLES_PER_PAGE;
-  const currentArticles = filteredArticles.slice(
-    startIndex,
-    startIndex + ARTICLES_PER_PAGE,
-  );
+  
+  // API 결과 사용 (이미 페이지네이션된 결과)
+  const currentArticles = apiResultsAsArticles;
 
   const currentTopicName =
     selectedCategory !== 'all'
@@ -249,38 +384,100 @@ function ArticlesContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-
       <main className="w-full px-3 sm:px-4 lg:px-10 py-10">
         {/* 상단 Hero 영역 – 기존 디자인 그대로 */}
         <section className="mb-8">
-          <div className="w-full rounded-2xl bg-secondary-50 py-10 px-6 sm:px-10 flex flex-col items-center text-center">
-            <h1 className="text-3xl sm:text-4xl font-bold text-primary-700 mb-3">
-              CS지식
-            </h1>
-            <p className="text-gray-600 text-base sm:text-lg max-w-2xl">
+          <div className="relative overflow-hidden rounded-2xl bg-black px-6 py-10 sm:px-10 flex justify-center bg-gradient-to-r from-primary-600/40 via-primary-500 to-secondary-500/10">
+            <div className="relative z-10 text-center max-w-3xl">
+              <h1 className="mt-2 text-3xl sm:text-4xl font-bold text-white">CS지식</h1>
+              <p className="mt-3 text-primary-100 text-base sm:text-lg">
               동아리의 모든 지식과 경험을 이곳에서 찾아보세요
-            </p>
+              </p>
+            </div>
           </div>
         </section>
+
+        {articlesLoading && (
+          <div className="text-center py-8 text-gray-600">아티클을 불러오는 중...</div>
+        )}
+        {articlesError && !articlesLoading && (
+          <div className="text-center py-8 text-red-500">{articlesError}</div>
+        )}
 
         {/* 검색/뷰모드/새 글 쓰기 – 기존 디자인에 맞게 배치 */}
         <section className="flex flex-col md:flex-row gap-4 mb-6">
           {/* 검색 인풋 */}
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="찾고자 할 컨텐츠를 작성해주세요"
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setPage(1);
-                }}
-                className="w-full h-11 pl-10 pr-4 rounded-xl border border-gray-200 bg-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
+          <div className="flex-1 relative">
+            <div className="relative flex gap-2">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="찾고자 할 컨텐츠를 작성해주세요"
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSearch();
+                    }
+                  }}
+                  onFocus={() => {
+                    if (suggestions.length > 0) {
+                      setShowSuggestions(true);
+                    }
+                  }}
+                  className="w-full h-11 pl-10 pr-4 rounded-xl border border-gray-200 bg-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              {/* 검색하기 버튼 */}
+              <button
+                onClick={handleSearch}
+                disabled={isSearching}
+                className="px-6 py-2 h-11 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              >
+                {isSearching ? '검색 중...' : '검색하기'}
+              </button>
             </div>
+
+            {/* Suggestion 드롭다운 */}
+            {showSuggestions && (
+              <div
+                ref={suggestionsRef}
+                className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto"
+              >
+                {isLoadingSuggestions ? (
+                  <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                    검색 중...
+                  </div>
+                ) : suggestions.length > 0 ? (
+                  <div className="py-2">
+                    {suggestions.map((suggestion, index) => (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          setSearchTerm(suggestion);
+                          setShowSuggestions(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Search className="w-4 h-4 text-gray-400" />
+                          <span>{suggestion}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                    검색 결과가 없습니다
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* 오른쪽: 뷰모드 + 정렬 + 새 글쓰기 */}
@@ -302,46 +499,42 @@ function ArticlesContent() {
                 카테고리
               </h3>
               <div className="space-y-1">
-                {categories.map((cat) => {
-                  const isActive = selectedCategory === cat.slug;
-                  const count = articles.filter(
-                    (a) =>
-                      cat.slug === 'all' || a.topicSlug === cat.slug,
-                  ).length;
+                {categoriesLoading ? (
+                  <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                    로딩 중...
+                  </div>
+                ) : (
+                  categories.map((cat) => {
+                    const isActive = selectedCategory === cat.slug;
 
-                  return (
-                    <button
-                      key={cat.slug}
-                      onClick={() => {
-                        setSelectedCategory(cat.slug);
-                        setPage(1);
-                        const params = new URLSearchParams(
-                          searchParams.toString(),
-                        );
-                        if (cat.slug === 'all') {
-                          params.delete('topic');
-                        } else {
-                          params.set('topic', cat.slug);
-                        }
-                        router.push(`/articles?${params.toString()}`);
-                      }}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
-                        isActive
-                          ? 'bg-primary-600 text-white'
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      <span>{cat.name}</span>
-                      <span
-                        className={`text-xs ${
-                          isActive ? 'text-primary-50' : 'text-gray-400'
+                    return (
+                      <button
+                        key={cat.slug}
+                        onClick={() => {
+                          setSelectedCategory(cat.slug);
+                          setPage(1);
+                          const params = new URLSearchParams(
+                            searchParams.toString(),
+                          );
+                          if (cat.slug === 'all') {
+                            params.delete('topic');
+                          } else {
+                            params.set('topic', cat.slug);
+                          }
+                          router.push(`/articles?${params.toString()}`);
+                          // 카테고리 변경 시 selectedCategory가 변경되면 useEffect가 자동으로 검색 실행
+                        }}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
+                          isActive
+                            ? 'bg-primary-600 text-white'
+                            : 'text-gray-700 hover:bg-gray-50'
                         }`}
                       >
-                        {count}
-                      </span>
-                    </button>
-                  );
-                })}
+                        <span>{cat.name}</span>
+                      </button>
+                    );
+                  })
+                )}
               </div>
             </div>
           </aside>
@@ -350,15 +543,23 @@ function ArticlesContent() {
           <div className="flex-1">
             {/* 결과 수 + 필터 (같은 라인) */}
             <div className="flex items-center justify-between mb-4">
-              <p className="text-sm text-gray-600">
-                총{' '}
-                <span className="font-semibold text-primary-600">
-                  {totalArticles}
-                </span>
-                개의 글
-                {searchTerm && ` (검색어: "${searchTerm}")`}
-                {currentTopicName && ` (주제: ${currentTopicName})`}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-gray-600">
+                  총{' '}
+                  <span className="font-semibold text-primary-600">
+                    {totalArticles}
+                  </span>
+                  개의 글
+                  {activeSearchTerm && ` (검색어: "${activeSearchTerm}")`}
+                  {currentTopicName && ` (주제: ${currentTopicName})`}
+                </p>
+                {isSearching && (
+                  <span className="text-xs text-gray-400">검색 중...</span>
+                )}
+                {searchError && (
+                  <span className="text-xs text-red-500">{searchError}</span>
+                )}
+              </div>
 
               {/* 오른쪽 필터/정렬/뷰모드 영역 */}
               <div className="flex items-center gap-3">
@@ -417,6 +618,13 @@ function ArticlesContent() {
               </div>
             </div>
 
+            {/* 검색 중 로딩 */}
+            {isSearching && (
+              <div className="text-center py-12">
+                <p className="text-gray-500">검색 중...</p>
+              </div>
+            )}
+
             {/* 카드 리스트 */}
             <div
               className={
@@ -428,18 +636,11 @@ function ArticlesContent() {
               {currentArticles.map((article) => (
                 <ArticleCard
                   key={article.id}
-                  article={{
-                    ...article,
-                    author: {
-                      nickname: article.author,
-                      bio: '',
-                    },
-                  }}
+                  article={article}
                   viewMode={viewMode}
                 />
               ))}
             </div>
-
 
             {/* 페이지네이션 */}
             {totalPages > 1 && (
@@ -483,8 +684,6 @@ function ArticlesContent() {
           </div>
         </section>
       </main>
-
-      <Footer />
     </div>
   );
 }
@@ -496,3 +695,9 @@ export default function ArticlesPage() {
     </Suspense>
   );
 }
+async function getCSKnowledgeSuggestion(arg0: { query: string; }): Promise<string[]> {
+  // TODO: Implement API call to fetch suggestions
+  // For now, return empty array as placeholder
+  return [];
+}
+

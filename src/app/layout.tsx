@@ -3,7 +3,6 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from 'react-hot-toast';
-import ChatBot from "@/components/chatbot/ChatBot";
 
 <Toaster
   position="top-right"
@@ -52,7 +51,6 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased`}>
         <AuthProvider>
           <main className="flex-grow w-full">{children}</main>
-          <ChatBot />
         </AuthProvider>
       </body>
     </html>

@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { AuthUser } from "@/app/(main)/(auth)/types/auth";
+import { AuthUser } from "@/app/(auth)/types/auth";
 import { UserRole } from "@/types/core";
 import {
   Form,

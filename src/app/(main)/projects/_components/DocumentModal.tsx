@@ -4,6 +4,7 @@ import { Dialog, Transition } from '@headlessui/react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { Fragment, useState, useMemo } from 'react';
+import { createDocument } from '@/lib/api/services/project-services';
 
 interface DocumentModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export default function DocumentModal({
   const router = useRouter();
   const [documentTitle, setDocumentTitle] = useState('');
   const [documentContent, setDocumentContent] = useState(''); // Changed from Block[] to string
+  const [documentDescription, setDocumentDescription] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [saveOption, setSaveOption] = useState<'save' | 'continue'>('save');
 
@@ -42,34 +44,30 @@ export default function DocumentModal({
       return;
     }
 
+    if (!projectId) {
+      alert('프로젝트 ID가 없습니다.');
+      return;
+    }
+
     setIsSaving(true);
     try {
-      const response = await fetch('/api/documents', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId,
-          title: documentTitle,
-          content: documentContent // Now a string (HTML)
-        })
+      const document = await createDocument(projectId, {
+        title: documentTitle,
+        content: documentContent,
+        description: documentDescription || documentTitle,
+        thumbnailUrl: '',
       });
-
-      if (response.ok) {
-        const { documentId } = await response.json();
-        
-        if (saveOption === 'continue') {
-          router.push(`/projects/${projectId}/documents/${documentId}/edit`);
-        } else {
-          onClose();
-          onSuccess?.();
-          resetForm();
-        }
+      
+      if (saveOption === 'continue') {
+        router.push(`/projects/${projectId}/documents/${document.id}/edit`);
       } else {
-        throw new Error('Failed to save document');
+        onClose();
+        onSuccess?.();
+        resetForm();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Save error:', error);
-      alert('문서 저장에 실패했습니다.');
+      alert(error.message || '문서 저장에 실패했습니다.');
     } finally {
       setIsSaving(false);
     }
@@ -89,6 +87,7 @@ export default function DocumentModal({
   const resetForm = () => {
     setDocumentTitle('');
     setDocumentContent('');
+    setDocumentDescription('');
     setSaveOption('save');
   };
 
@@ -152,6 +151,15 @@ export default function DocumentModal({
                     placeholder="문서 제목을 입력하세요..."
                     className="w-full text-2xl font-bold border-none outline-none focus:ring-0 px-0 placeholder:text-gray-400"
                     autoFocus
+                  />
+
+                  {/* Description Input */}
+                  <input
+                    type="text"
+                    value={documentDescription}
+                    onChange={(e) => setDocumentDescription(e.target.value)}
+                    placeholder="문서 설명을 입력하세요 (선택사항)..."
+                    className="w-full text-sm text-gray-600 border-none outline-none focus:ring-0 px-0 placeholder:text-gray-400"
                   />
 
                   <div className="border-t border-gray-200" />

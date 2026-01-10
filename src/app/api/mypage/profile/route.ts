@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getUserApiUrl, USER_ENDPOINTS } from '@/lib/api/endpoints/user';
+import { getUserApiUrl, USER_ENDPOINTS } from '@/lib/api/endpoints/user-endpoints';
 
 export async function POST(request: Request) {
   try {

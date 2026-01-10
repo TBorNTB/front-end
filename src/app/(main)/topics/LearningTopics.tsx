@@ -5,8 +5,8 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Star, Users, Clock, ArrowRight, Globe, Shield, Code, Lock, Search, Wifi, Cpu, Key } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { categoryService, CategoryItem } from '@/lib/api/services/category';
-import { CategoryType, CategorySlugs, CategoryDisplayNames, CategoryDescriptions } from './types/category';
+import { categoryService, CategoryItem } from '@/lib/api/services/category-services';
+import { CategoryType, CategorySlugs, CategoryDisplayNames, CategoryDescriptions } from '@/types/services/category';
 
 // Icon mapping for each category
 const CategoryIcons: Record<CategoryType, LucideIcon> = {
@@ -115,8 +115,83 @@ const transformCategoryData = (apiCategory: CategoryItem): CategoryDisplayData |
   };
 };
 
+// Mock data for categories
+const mockCategories: CategoryDisplayData[] = [
+  {
+    id: 1,
+    name: '웹 해킹',
+    slug: 'web-hacking',
+    articles: 12,
+    projects: 8,
+    type: CategoryType.WEB_HACKING,
+    description: '웹 애플리케이션의 보안 취약점을 실습하고 분석합니다.',
+    longDescription: longDescriptions[CategoryType.WEB_HACKING],
+  },
+  {
+    id: 2,
+    name: '리버싱',
+    slug: 'reversing',
+    articles: 9,
+    projects: 6,
+    type: CategoryType.REVERSING,
+    description: '바이너리 파일 분석 및 역공학 기술을 습득합니다.',
+    longDescription: longDescriptions[CategoryType.REVERSING],
+  },
+  {
+    id: 3,
+    name: '시스템 해킹',
+    slug: 'system-hacking',
+    articles: 11,
+    projects: 7,
+    type: CategoryType.SYSTEM_HACKING,
+    description: '운영체제 레벨의 취약점을 분석합니다.',
+    longDescription: longDescriptions[CategoryType.SYSTEM_HACKING],
+  },
+  {
+    id: 4,
+    name: '디지털 포렌식',
+    slug: 'digital-forensics',
+    articles: 8,
+    projects: 5,
+    type: CategoryType.DIGITAL_FORENSICS,
+    description: '디지털 증거 수집 및 분석 기술을 배웁니다.',
+    longDescription: longDescriptions[CategoryType.DIGITAL_FORENSICS],
+  },
+  {
+    id: 5,
+    name: '네트워크 보안',
+    slug: 'network-security',
+    articles: 10,
+    projects: 9,
+    type: CategoryType.NETWORK_SECURITY,
+    description: '네트워크 공격과 방어 기술을 습득합니다.',
+    longDescription: longDescriptions[CategoryType.NETWORK_SECURITY],
+  },
+  {
+    id: 6,
+    name: 'IoT 보안',
+    slug: 'iot-security',
+    articles: 7,
+    projects: 4,
+    type: CategoryType.IOT_SECURITY,
+    description: '임베디드 시스템 및 IoT 기기의 보안을 다룹니다.',
+    longDescription: longDescriptions[CategoryType.IOT_SECURITY],
+  },
+  {
+    id: 7,
+    name: '암호학',
+    slug: 'cryptography',
+    articles: 13,
+    projects: 6,
+    type: CategoryType.CRYPTOGRAPHY,
+    description: '암호화 알고리즘과 프로토콜을 이해합니다.',
+    longDescription: longDescriptions[CategoryType.CRYPTOGRAPHY],
+  },
+];
+
 // Mock data for projects and articles
 const projects = [
+  // Web Hacking
   {
     id: 1,
     title: 'SQL 인젝션 취약점 스캐너',
@@ -124,8 +199,8 @@ const projects = [
     category: '웹 해킹',
     status: 'In Progress',
     tags: ['Python', 'Security'],
-    stars: 7,
-    contributors: 2,
+    stars: 12,
+    contributors: 3,
     categorySlug: 'web-hacking'
   },
   {
@@ -135,7 +210,7 @@ const projects = [
     category: '웹 해킹',
     status: 'Planning',
     tags: ['JavaScript', 'Web'],
-    stars: 7,
+    stars: 8,
     contributors: 2,
     categorySlug: 'web-hacking'
   },
@@ -146,13 +221,163 @@ const projects = [
     category: '웹 해킹',
     status: 'Completed',
     tags: ['Go', 'Testing'],
-    stars: 7,
+    stars: 15,
+    contributors: 4,
+    categorySlug: 'web-hacking'
+  },
+  {
+    id: 4,
+    title: 'CSRF 토큰 검증 시스템',
+    description: 'Cross-Site Request Forgery 방어 미들웨어',
+    category: '웹 해킹',
+    status: 'Completed',
+    tags: ['Node.js', 'Express'],
+    stars: 9,
     contributors: 2,
     categorySlug: 'web-hacking'
-  }
+  },
+  {
+    id: 5,
+    title: '웹 취약점 자동 스캔 봇',
+    description: '자동화된 웹 취약점 탐지 및 리포팅 시스템',
+    category: '웹 해킹',
+    status: 'In Progress',
+    tags: ['Python', 'Selenium'],
+    stars: 11,
+    contributors: 3,
+    categorySlug: 'web-hacking'
+  },
+  // Reversing
+  {
+    id: 6,
+    title: 'Windows PE 파일 분석기',
+    description: 'PE 파일 구조 분석 및 리버싱 도구',
+    category: '리버싱',
+    status: 'Completed',
+    tags: ['C++', 'Assembly'],
+    stars: 14,
+    contributors: 2,
+    categorySlug: 'reversing'
+  },
+  {
+    id: 7,
+    title: '악성코드 언패킹 프레임워크',
+    description: '패킹된 악성코드 자동 언패킹 시스템',
+    category: '리버싱',
+    status: 'In Progress',
+    tags: ['Python', 'Dynamorio'],
+    stars: 10,
+    contributors: 3,
+    categorySlug: 'reversing'
+  },
+  // System Hacking
+  {
+    id: 8,
+    title: '버퍼 오버플로우 익스플로잇 킷',
+    description: 'BOF 취약점 개발 및 테스트용 도구 모음',
+    category: '시스템 해킹',
+    status: 'Completed',
+    tags: ['C', 'GDB', 'Assembly'],
+    stars: 13,
+    contributors: 2,
+    categorySlug: 'system-hacking'
+  },
+  {
+    id: 9,
+    title: 'ROP 체인 생성기',
+    description: 'Return-Oriented Programming 체인 자동 생성',
+    category: '시스템 해킹',
+    status: 'Planning',
+    tags: ['Python', 'IDA Pro'],
+    stars: 7,
+    contributors: 2,
+    categorySlug: 'system-hacking'
+  },
+  // Digital Forensics
+  {
+    id: 10,
+    title: '메모리 포렌식 분석 도구',
+    description: '메모리 덤프 분석을 위한 포렌식 도구',
+    category: '디지털 포렌식',
+    status: 'Completed',
+    tags: ['Python', 'Volatility'],
+    stars: 11,
+    contributors: 3,
+    categorySlug: 'digital-forensics'
+  },
+  {
+    id: 11,
+    title: '파일 시스템 포렌식 수집기',
+    description: '파일 시스템 증거 수집 자동화 도구',
+    category: '디지털 포렌식',
+    status: 'In Progress',
+    tags: ['Python', 'Bash'],
+    stars: 8,
+    contributors: 2,
+    categorySlug: 'digital-forensics'
+  },
+  // Network Security
+  {
+    id: 12,
+    title: 'IDS 시스템 개발 프로젝트',
+    description: 'Intrusion Detection System 구현',
+    category: '네트워크 보안',
+    status: 'Completed',
+    tags: ['Python', 'Scapy'],
+    stars: 16,
+    contributors: 4,
+    categorySlug: 'network-security'
+  },
+  {
+    id: 13,
+    title: '패킷 분석기 및 시각화 도구',
+    description: '네트워크 패킷 분석 및 실시간 시각화',
+    category: '네트워크 보안',
+    status: 'In Progress',
+    tags: ['C', 'Wireshark'],
+    stars: 12,
+    contributors: 3,
+    categorySlug: 'network-security'
+  },
+  // IoT Security
+  {
+    id: 14,
+    title: 'IoT 디바이스 펌웨어 추출기',
+    description: '임베디드 기기 펌웨어 추출 및 분석',
+    category: 'IoT 보안',
+    status: 'Planning',
+    tags: ['Python', 'Binwalk'],
+    stars: 9,
+    contributors: 2,
+    categorySlug: 'iot-security'
+  },
+  // Cryptography
+  {
+    id: 15,
+    title: 'RSA 암호 분석 도구',
+    description: 'RSA 암호 취약점 분석 및 공격 도구',
+    category: '암호학',
+    status: 'Completed',
+    tags: ['Python', 'Math'],
+    stars: 13,
+    contributors: 2,
+    categorySlug: 'cryptography'
+  },
+  {
+    id: 16,
+    title: 'AES 구현 및 분석',
+    description: '고급 암호화 표준(AES) 구현 및 side-channel 분석',
+    category: '암호학',
+    status: 'Completed',
+    tags: ['C', 'Cryptography'],
+    stars: 11,
+    contributors: 2,
+    categorySlug: 'cryptography'
+  },
 ];
 
 const articles = [
+  // Web Hacking
   {
     id: 1,
     title: 'OWASP Top 10 2024 분석',
@@ -161,8 +386,8 @@ const articles = [
     author: '김보안',
     publishDate: '2024-01-20',
     readTime: '5분 읽기',
-    views: 35,
-    comments: 4,
+    views: 245,
+    comments: 12,
     categorySlug: 'web-hacking'
   },
   {
@@ -173,8 +398,8 @@ const articles = [
     author: '임해커',
     publishDate: '2024-01-18',
     readTime: '8분 읽기',
-    views: 35,
-    comments: 4,
+    views: 189,
+    comments: 8,
     categorySlug: 'web-hacking'
   },
   {
@@ -185,10 +410,135 @@ const articles = [
     author: '김민준',
     publishDate: '2024-01-15',
     readTime: '12분 읽기',
-    views: 35,
-    comments: 4,
+    views: 156,
+    comments: 7,
     categorySlug: 'web-hacking'
-  }
+  },
+  {
+    id: 4,
+    title: 'SQL 인젝션 실전 공략집',
+    description: '다양한 SQL 인젝션 기법 및 방어 전략',
+    category: '웹 해킹',
+    author: '박해킹',
+    publishDate: '2024-01-12',
+    readTime: '15분 읽기',
+    views: 312,
+    comments: 14,
+    categorySlug: 'web-hacking'
+  },
+  {
+    id: 5,
+    title: '웹 API 보안 체크리스트',
+    description: 'REST API 개발 시 고려할 보안 사항',
+    category: '웹 해킹',
+    author: '이안전',
+    publishDate: '2024-01-10',
+    readTime: '9분 읽기',
+    views: 167,
+    comments: 6,
+    categorySlug: 'web-hacking'
+  },
+  // Reversing
+  {
+    id: 6,
+    title: '리버싱 시작 가이드',
+    description: 'IDA Pro를 이용한 바이너리 분석 입문',
+    category: '리버싱',
+    author: '최리버싱',
+    publishDate: '2024-01-19',
+    readTime: '10분 읽기',
+    views: 198,
+    comments: 9,
+    categorySlug: 'reversing'
+  },
+  {
+    id: 7,
+    title: '어셈블리어 이해하기',
+    description: 'x86-64 어셈블리 기본 개념 및 실습',
+    category: '리버싱',
+    author: '조어셈블리',
+    publishDate: '2024-01-17',
+    readTime: '14분 읽기',
+    views: 234,
+    comments: 11,
+    categorySlug: 'reversing'
+  },
+  // System Hacking
+  {
+    id: 8,
+    title: '버퍼 오버플로우 완전 정복',
+    description: 'Stack 기반 BOF 공격 및 방어 기법',
+    category: '시스템 해킹',
+    author: '이시스템',
+    publishDate: '2024-01-16',
+    readTime: '18분 읽기',
+    views: 278,
+    comments: 13,
+    categorySlug: 'system-hacking'
+  },
+  {
+    id: 9,
+    title: 'ASLR 우회 기법',
+    description: 'Address Space Layout Randomization 우회 방법',
+    category: '시스템 해킹',
+    author: '박우회',
+    publishDate: '2024-01-14',
+    readTime: '11분 읽기',
+    views: 145,
+    comments: 5,
+    categorySlug: 'system-hacking'
+  },
+  // Digital Forensics
+  {
+    id: 10,
+    title: '포렌식 분석 기초',
+    description: '디지털 포렌식의 개념과 절차',
+    category: '디지털 포렌식',
+    author: '정포렌식',
+    publishDate: '2024-01-13',
+    readTime: '7분 읽기',
+    views: 123,
+    comments: 4,
+    categorySlug: 'digital-forensics'
+  },
+  // Network Security
+  {
+    id: 11,
+    title: '패킷 분석 마스터',
+    description: 'Wireshark를 이용한 네트워크 분석',
+    category: '네트워크 보안',
+    author: '윤네트워크',
+    publishDate: '2024-01-11',
+    readTime: '13분 읽기',
+    views: 267,
+    comments: 10,
+    categorySlug: 'network-security'
+  },
+  {
+    id: 12,
+    title: 'Nmap 고급 사용법',
+    description: '네트워크 스캔 및 포트 스캐닝 기법',
+    category: '네트워크 보안',
+    author: '강스캔',
+    publishDate: '2024-01-09',
+    readTime: '9분 읽기',
+    views: 198,
+    comments: 8,
+    categorySlug: 'network-security'
+  },
+  // Cryptography
+  {
+    id: 13,
+    title: 'RSA 암호화 이해하기',
+    description: '비대칭키 암호의 원리와 구현',
+    category: '암호학',
+    author: '성암호',
+    publishDate: '2024-01-21',
+    readTime: '16분 읽기',
+    views: 289,
+    comments: 15,
+    categorySlug: 'cryptography'
+  },
 ];
 
 const getStatusColor = (status: string) => {
@@ -218,7 +568,7 @@ export function LearningTopics() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // API에서 카테고리 데이터 가져오기
+  // API에서 카테고리 데이터 가져오기 (실패 시 mock data 사용)
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -232,8 +582,9 @@ export function LearningTopics() {
         
         setCategories(transformedCategories);
       } catch (err) {
-        console.error('Failed to fetch categories:', err);
-        setError('카테고리를 불러오는데 실패했습니다.');
+        console.error('Failed to fetch categories, using mock data:', err);
+        // Fallback to mock data
+        setCategories(mockCategories);
       } finally {
         setLoading(false);
       }
@@ -268,11 +619,15 @@ export function LearningTopics() {
 
   // Common Header Component
   const renderHeader = () => (
-    <div className="text-center mb-4">
-      <h1 className="text-4xl font-bold text-primary-600 mb-2">Learning Topics</h1>
-      <p className="text-gray-600 text-lg max-w-3xl mx-auto mb-8">
-        사이버보안의 다양한 분야를 탐구하고 실무 경험을 쌓을 수 있는 학습 주제들을 확인하세요.
-      </p>
+    <div className="relative overflow-hidden rounded-2xl bg-black px-6 py-10 sm:px-10 flex justify-center bg-gradient-to-r from-primary-600/40 via-primary-500 to-secondary-500/10">
+      <div className="relative z-10 text-center max-w-3xl">
+        <h1 className="mt-2 text-3xl sm:text-4xl font-bold text-white">
+          Learning Topics
+        </h1>
+        <p className="mt-3 text-primary-100 text-base sm:text-lg">
+          사이버보안의 다양한 분야를 탐구하고 실무 경험을 쌓을 수 있는 학습 주제들을 확인하세요.
+        </p>
+      </div>
     </div>
   );
 
@@ -327,211 +682,213 @@ export function LearningTopics() {
     </div>
   );
 
-  const renderCategoryDetail = () => (
-    <div className="space-y-6">
-      {/* Header Section */}
-      {renderHeader()}
+  const renderCategoryDetail = () => {
+    const cat = currentCategory;
+    return (
+      <div className="space-y-6">
+        {/* Header Section */}
+        {renderHeader()}
 
-      <div className="flex gap-8 items-start">
-        {/* Sidebar - Sticky */}
-        <div className="w-64 flex-shrink-0">
-          <div className="sticky top-8 bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="p-4 border-b border-gray-200">
-              <h3 className="text-base font-semibold text-gray-900">전체 카테고리</h3>
-            </div>
-            <div className="p-2 max-h-[calc(100vh-10rem)] overflow-y-auto">
-              {categories.map((category) => {
-                const isActive = selectedCategory === category.slug;
-                
-                return (
-                  <button
-                    key={category.slug}
-                    onClick={() => handleCategoryClick(category.slug)}
-                    className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-sm transition-all ${
-                      isActive
-                        ? 'bg-primary-600 text-white font-medium'
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <span>{category.name}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-xs ${
-                      isActive
-                        ? 'bg-white bg-opacity-20 text-white'
-                        : 'bg-gray-200 text-gray-600'
-                    }`}>
-                      {category.articles + category.projects}
-                    </span>
-                  </button>
-                );
-              })}
+        <div className="flex gap-8 items-start">
+          {/* Sidebar - Sticky */}
+          <div className="w-64 flex-shrink-0">
+            <div className="sticky top-8 bg-white rounded-xl shadow-sm border border-gray-200">
+              <button
+                onClick={() => router.push('/topics')}
+                className="w-full p-4 border-b border-gray-200 text-left hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                <h3 className="text-base font-semibold text-gray-900">전체 카테고리</h3>
+              </button>
+              <div className="p-2 max-h-[calc(100vh-10rem)] overflow-y-auto">
+                {categories.map((category) => {
+                  const isActive = selectedCategory === category.slug;
+                  return (
+                    <button
+                      key={category.slug}
+                      onClick={() => handleCategoryClick(category.slug)}
+                      className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-sm transition-all ${
+                        isActive
+                          ? 'bg-primary-600 text-white font-medium'
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span>{category.name}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs ${
+                        isActive
+                          ? 'bg-white bg-opacity-20 text-white'
+                          : 'bg-gray-200 text-gray-600'
+                      }`}>
+                        {category.articles + category.projects}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Content Area - Naturally Scrollable */}
-        <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-          {/* Category Header - Compact spacing */}
-          {currentCategory ? (
-            <div className="pb-6 mb-6 border-b border-gray-200">
-              <div className="flex items-start space-x-4">
-                <div className={`w-14 h-14 rounded-xl ${CategoryColors[currentCategory.type] || 'bg-gray-500'} flex items-center justify-center flex-shrink-0`}>
-                  {(() => {
-                    // 알 수 없는 카테고리도 기본 아이콘 사용 (확장성 고려)
-                    const IconComponent = CategoryIcons[currentCategory.type] || Shield;
-                    return <IconComponent className="w-7 h-7 text-white" />;
-                  })()}
-                </div>
-                <div className="flex-1">
-                  <h1 className="text-2xl font-bold text-foreground mb-2">{currentCategory.name}</h1>
-                  <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
-                    {currentCategory.longDescription || currentCategory.description || '설명이 없습니다.'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="pb-6 mb-6 border-b border-gray-200">
-              <div className="flex items-start space-x-4">
-                <div className="w-14 h-14 rounded-xl bg-gray-400 flex items-center justify-center flex-shrink-0">
-                  <Shield className="w-7 h-7 text-white" />
-                </div>
-                <div className="flex-1">
-                  <h1 className="text-2xl font-bold text-foreground mb-2">카테고리를 찾을 수 없습니다</h1>
-                  <p className="text-sm text-gray-600 leading-relaxed">
-                    선택하신 카테고리 정보를 불러올 수 없습니다.
-                  </p>
+          {/* Right Side Content */}
+          <div className="flex-1 space-y-6">
+            {/* Category Header - Without background */}
+            {cat ? (
+              <div className="pb-4 border-b border-gray-200">
+                <div className="flex items-start space-x-4">
+                  <div className={`w-14 h-14 rounded-xl ${CategoryColors[cat.type]} flex items-center justify-center flex-shrink-0`}>
+                    {(() => {
+                      const Icon = CategoryIcons[cat.type];
+                      return <Icon className="w-7 h-7 text-white" />;
+                    })()}
+                  </div>
+                  <div className="flex-1">
+                    <h1 className="text-2xl font-bold text-foreground mb-2">{cat.name}</h1>
+                    <p className="text-sm text-gray-900 leading-relaxed whitespace-pre-line">
+                      {cat.longDescription}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="pb-6 mb-6 border-b border-gray-200">
+                <div className="flex items-start space-x-4">
+                  <div className="w-14 h-14 rounded-xl bg-gray-400 flex items-center justify-center flex-shrink-0">
+                    <Shield className="w-7 h-7 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h1 className="text-2xl font-bold text-foreground mb-2">카테고리를 찾을 수 없습니다</h1>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      선택하신 카테고리 정보를 불러올 수 없습니다.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
-          {/* Content Sections */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Projects Section */}
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-foreground">관련 프로젝트</h2>
-                <span className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium">
-                  {filteredProjects.length}개
-                </span>
-              </div>
-              
-              <div className="space-y-4">
-                {filteredProjects.length > 0 ? (
-                  filteredProjects.map((project) => (
-                    <div key={project.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-200">
-                      <div className="flex items-start justify-between mb-3">
-                        <h3 className="text-base font-bold text-foreground flex-1">{project.title}</h3>
-                        <span className={`px-2 py-1 rounded-full text-xs border ml-3 flex-shrink-0 ${getStatusColor(project.status)}`}>
-                          {getStatusText(project.status)}
-                        </span>
-                      </div>
-                      
-                      <p className="text-gray-600 text-sm mb-4">{project.description}</p>
-                      
-                      <div className="flex items-center space-x-2 mb-4">
-                        {project.tags.map((tag, index) => (
-                          <span key={index} className="bg-white text-gray-700 px-2 py-1 rounded text-xs border border-gray-200">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3 text-xs text-gray-500">
-                          <div className="flex items-center space-x-1">
-                            <Star size={12} />
-                            <span>{project.stars}</span>
+            {/* Content Area with white background */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+              {/* Content Sections */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Projects Section */}
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-bold text-foreground">프로젝트</h2>
+                    <span className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium">
+                      {filteredProjects.length}개
+                    </span>
+                  </div>
+
+                  <div className="space-y-4">
+                    {filteredProjects.length > 0 ? (
+                      filteredProjects.map((project) => (
+                        <div key={project.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-200">
+                          <div className="flex items-start justify-between mb-3">
+                            <h3 className="text-base font-bold text-foreground flex-1">{project.title}</h3>
+                            <span className={`px-2 py-1 rounded-full text-xs border ml-3 flex-shrink-0 ${getStatusColor(project.status)}`}>
+                              {getStatusText(project.status)}
+                            </span>
                           </div>
-                          <div className="flex items-center space-x-1">
-                            <Users size={12} />
-                            <span>{project.contributors}</span>
+                          <p className="text-gray-600 text-sm mb-4">{project.description}</p>
+                          <div className="flex items-center space-x-2 mb-4">
+                            {project.tags.map((tag, index) => (
+                              <span key={index} className="bg-white text-gray-700 px-2 py-1 rounded text-xs border border-gray-200">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3 text-xs text-gray-500">
+                              <div className="flex items-center space-x-1">
+                                <Star size={12} />
+                                <span>{project.stars}</span>
+                              </div>
+                              <div className="flex items-center space-x-1">
+                                <Users size={12} />
+                                <span>{project.contributors}</span>
+                              </div>
+                            </div>
+                            <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                              자세히 보기 →
+                            </button>
                           </div>
                         </div>
-                        <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
-                          자세히 보기 →
-                        </button>
+                      ))
+                    ) : (
+                      <div className="bg-gray-50 rounded-lg p-8 text-center border border-gray-200">
+                        <p className="text-gray-600">이 카테고리에 등록된 프로젝트가 없습니다.</p>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="bg-gray-50 rounded-lg p-8 text-center border border-gray-200">
-                    <p className="text-gray-500">이 카테고리에 등록된 프로젝트가 없습니다.</p>
+                    )}
                   </div>
-                )}
-              </div>
-              
-              <div className="text-center">
-                <button 
-                  onClick={() => router.push(`/projects?topic=${currentCategory?.slug}`)}
-                  className="text-primary-600 hover:text-primary-700 font-medium flex items-center space-x-2 mx-auto text-sm"
-                >
-                  <span>모든 프로젝트 보기</span>
-                  <ArrowRight size={16} />
-                </button>
-              </div>
-            </div>
 
-            {/* Articles Section */}
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-foreground">관련 CS지식</h2>
-                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
-                  {filteredArticles.length}개
-                </span>
-              </div>
-              
-              <div className="space-y-4">
-                {filteredArticles.length > 0 ? (
-                  filteredArticles.map((article) => (
-                    <div key={article.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-200">
-                      <h3 className="text-base font-bold text-foreground mb-2">{article.title}</h3>
-                      <p className="text-gray-600 text-sm mb-4">{article.description}</p>
-                      
-                      <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                        <span>by {article.author}</span>
-                        <span>{article.publishDate}</span>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4 text-xs text-gray-500">
-                          <div className="flex items-center space-x-1">
-                            <Globe size={12} />
-                            <span>{article.views}</span>
+                  <div className="text-center">
+                    <button
+                      onClick={() => router.push(`/projects?topic=${cat?.slug}`)}
+                      className="text-primary-600 hover:text-primary-700 font-medium flex items-center space-x-2 mx-auto text-sm"
+                    >
+                      <span>모든 프로젝트 보기</span>
+                      <ArrowRight size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Articles Section */}
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-bold text-foreground">아티클</h2>
+                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+                      {filteredArticles.length}개
+                    </span>
+                  </div>
+
+                  <div className="space-y-4">
+                    {filteredArticles.length > 0 ? (
+                      filteredArticles.map((article) => (
+                        <div key={article.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-200">
+                          <h3 className="text-base font-bold text-foreground mb-2">{article.title}</h3>
+                          <p className="text-gray-600 text-sm mb-4">{article.description}</p>
+                          <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                            <span>by {article.author}</span>
+                            <span>{article.publishDate}</span>
                           </div>
-                          <div className="flex items-center space-x-1">
-                            <Clock size={12} />
-                            <span>{article.readTime}</span>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-4 text-xs text-gray-500">
+                              <div className="flex items-center space-x-1">
+                                <Globe size={12} />
+                                <span>{article.views}</span>
+                              </div>
+                              <div className="flex items-center space-x-1">
+                                <Clock size={12} />
+                                <span>{article.readTime}</span>
+                              </div>
+                            </div>
+                            <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                              읽어보기 →
+                            </button>
                           </div>
                         </div>
-                        <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
-                          읽어보기 →
-                        </button>
+                      ))
+                    ) : (
+                      <div className="bg-gray-50 rounded-lg p-8 text-center border border-gray-200">
+                        <p className="text-gray-600">이 카테고리에 등록된 CS지식이 없습니다.</p>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="bg-gray-50 rounded-lg p-8 text-center border border-gray-200">
-                    <p className="text-gray-500">이 카테고리에 등록된 CS지식이 없습니다.</p>
+                    )}
                   </div>
-                )}
-              </div>
-              
-              <div className="text-center">
-                <button 
-                  onClick={() => router.push(`/articles?topic=${currentCategory?.slug}`)}
-                  className="text-green-600 hover:text-green-700 font-medium flex items-center space-x-2 mx-auto text-sm"
-                >
-                  <span>모든 CS지식 보기</span>
-                  <ArrowRight size={16} />
-                </button>
+
+                  <div className="text-center">
+                    <button
+                      onClick={() => router.push(`/articles?topic=${cat?.slug}`)}
+                      className="text-green-600 hover:text-green-700 font-medium flex items-center space-x-2 mx-auto text-sm"
+                    >
+                      <span>모든 CS지식 보기</span>
+                      <ArrowRight size={16} />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
 
   // 로딩 상태

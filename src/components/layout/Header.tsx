@@ -5,14 +5,13 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { ChevronDownIcon, BellIcon, Search, X, Menu, Shield } from "lucide-react";
-import { UserRoleDisplay, UserRole } from "@/types/core";
 import AlarmPopup from "./AlarmPopup";
-import { profileService, UserResponse } from "@/lib/api/services/user";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
+import { getRoleDisplayLabel, hasAdminAccess, pickRole } from "@/lib/role-utils";
 
 const navList = [
-  { 
-    name: "About", 
+  { name: "About", 
     slug: "about",
     hasDropdown: true,
     dropdownItems: [
@@ -23,9 +22,10 @@ const navList = [
       { name: "FAQs", slug: "faqs", href: "/faqs" },
     ]
   },
-  { name: "Topics", slug: "topics", href: "/topics", scrollToSection: "topics" }, // ✅ Added scrollToSection
+  { name: "Topics", slug: "topics", href: "/topics" },
   { name: "Projects", slug: "projects", href: "/projects" },
   { name: "Articles", slug: "articles", href: "/articles" },
+  { name: "Community", slug: "community", href: "/community" },
   { name: "Newsletter", slug: "newsletter", href: "/newsletter" },
 ];
 
@@ -38,7 +38,7 @@ const Header = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAlarmPopupOpen, setIsAlarmPopupOpen] = useState(false);
-  const [profileData, setProfileData] = useState<UserResponse | null>(null);
+  const { user:profileData } = useCurrentUser();
   
   const dropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -69,21 +69,7 @@ const Header = () => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
-  // 프로필 정보 로드
-  useEffect(() => {
-    if (isAuthenticated) {
-      const loadProfile = async () => {
-        try {
-          const profile = await profileService.getProfile();
-          setProfileData(profile);
-        } catch (error) {
-          console.error('Failed to load profile in header:', error);
-          // 에러가 발생해도 기존 user 데이터 사용
-        }
-      };
-      loadProfile();
-    }
-  }, [isAuthenticated]);
+  // 프로필 정보는 hooks에서 로드 (useProfileData)
 
   const toggleDropdown = (slug: string) => {
     setDropdowns(prev => ({
@@ -128,32 +114,6 @@ const Header = () => {
     }
   };
 
-  // ✅  Handle navigation with scroll and offset
-  const handleNavClick = (e: React.MouseEvent, navItem: any) => {
-    // If it has a scrollToSection property
-    if (navItem.scrollToSection) {
-      e.preventDefault();
-      
-      // If we're on homepage, scroll to section
-      if (pathname === '/') {
-        const section = document.getElementById(navItem.scrollToSection);
-        if (section) {
-          const headerOffset = 80; // Height of sticky header
-          const elementPosition = section.getBoundingClientRect().top;
-          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-
-          window.scrollTo({
-            top: offsetPosition,
-            behavior: 'smooth'
-          });
-        }
-      } else {
-        // If we're on another page, navigate to homepage with hash
-        router.push('/#' + navItem.scrollToSection);
-      }
-    }
-  };
-
 
   // URL 유효성 검사 함수
   const isValidImageUrl = (url: string | null | undefined): string | null => {
@@ -174,22 +134,12 @@ const Header = () => {
   const displayName = profileData?.realName || profileData?.nickname || user?.nickname || user?.full_name || '사용자';
   const displayEmail = profileData?.email || user?.email || '';
   const profileImageUrl = isValidImageUrl(profileData?.profileImageUrl) || isValidImageUrl(user?.profile_image) || null;
-  
-  // Role 매핑: API 응답의 role을 UserRoleDisplay로 변환
-  const getDisplayRole = (role?: string): string => {
-    if (!role) return '외부인';
-    // UserRole enum 값과 매칭 시도
-    const roleKey = role.toUpperCase() as UserRole;
-    if (roleKey in UserRoleDisplay) {
-      return UserRoleDisplay[roleKey];
-    }
-    // 매칭되지 않으면 원본 role 반환
-    return role;
-  };
-  
-  const displayRole = profileData?.role 
-    ? getDisplayRole(profileData.role)
-    : (user?.role ? getDisplayRole(user.role) : '외부인');
+
+  // Role handling
+  const combinedRole = pickRole(profileData?.role, user?.role);
+  const displayRole = getRoleDisplayLabel(combinedRole);
+  const isAdmin = hasAdminAccess(combinedRole);
+
   const userInitial = displayName?.charAt(0)?.toUpperCase() || displayEmail?.charAt(0)?.toUpperCase() || '?';
 
   return (
@@ -244,7 +194,6 @@ const Header = () => {
                   ) : (
                     <Link 
                       href={navItem.href!}
-                      onClick={(e) => handleNavClick(e, navItem)}
                       className={`py-2 px-1 transition-all duration-200 relative cursor-pointer inline-block ${
                         isActive(navItem.href!) 
                           ? "text-primary-600 font-bold" 
@@ -390,7 +339,7 @@ const Header = () => {
                           마이페이지
                         </Link>
                         
-                        {user?.role === UserRole.ADMIN && (
+                        {isAdmin && (
                           <Link
                             href="/admin/dashboard"
                             className="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
@@ -456,10 +405,7 @@ const Header = () => {
                   ) : (
                     <Link
                       href={navItem.href!}
-                      onClick={(e) => {
-                        handleNavClick(e, navItem);
-                        setIsMobileMenuOpen(false);
-                      }}
+                      onClick={() => setIsMobileMenuOpen(false)}
                       className="block py-2 text-gray-900 hover:text-primary-600 cursor-pointer"
                     >
                       {navItem.name}
@@ -509,7 +455,7 @@ const Header = () => {
                       마이페이지
                     </Link>
 
-                    {user?.role === UserRole.ADMIN && (
+                    {isAdmin && (
                       <Link
                         href="/admin/dashboard"
                         className="flex items-center gap-2 py-2 text-gray-700 hover:text-primary-600 transition-colors cursor-pointer"

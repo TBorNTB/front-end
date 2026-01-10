@@ -1,7 +1,7 @@
 // src/lib/api/endpoints/index.ts
-export * from './user';
-export * from './archive';
-export * from './project';
-export * from './meta';
-export * from './elastic';
-export * from './newsletter';
+export * from './user-endpoints';
+export * from './article-endpoints';
+export * from './project-endpoints';
+export * from './meta-endpoints';
+export * from './elastic-endpoints';
+export * from './newsletter-endpoints';

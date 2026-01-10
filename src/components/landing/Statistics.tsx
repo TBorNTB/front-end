@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { BASE_URL } from '@/lib/api/config';
+import { USE_MOCK_DATA } from '@/lib/api/env';
+import { MOCK_PROJECTS, MOCK_ARTICLES, MOCK_CATEGORIES } from '@/lib/mock-data';
 
 interface StatisticItemProps {
   number: string;
@@ -101,9 +103,36 @@ export default function StatisticsSection({ className = "" }: StatisticsSectionP
 
   useEffect(() => {
     const fetchStatistics = async () => {
+      // Mock path: short-circuit API and use local counts to avoid fetch errors in dev
+      if (USE_MOCK_DATA) {
+        setStatistics([
+          {
+            number: formatNumber(MOCK_PROJECTS.length),
+            label: 'Active Projects',
+            description: '활성 프로젝트'
+          },
+          {
+            number: formatNumber(MOCK_ARTICLES.length),
+            label: 'Articles Published',
+            description: '게시된 아티클'
+          },
+          {
+            number: formatNumber(120), // mock members
+            label: '함께 멤버',
+            description: '활발한 커뮤니티'
+          },
+          {
+            number: formatNumber(MOCK_CATEGORIES.length),
+            label: 'Learning Topics',
+            description: '학습 주제'
+          }
+        ]);
+        setLoading(false);
+        return;
+      }
       try {
         const response = await fetch(
-          `${BASE_URL}/meta-service/api/meta/count`,
+          `${BASE_URL}/user-service/api/meta/count`,
           {
             method: 'GET',
             headers: {
@@ -142,6 +171,29 @@ export default function StatisticsSection({ className = "" }: StatisticsSectionP
         ]);
       } catch (error) {
         console.error('Error fetching statistics:', error);
+        // Fall back to mock data on error
+        setStatistics([
+          {
+            number: formatNumber(MOCK_PROJECTS.length),
+            label: 'Active Projects',
+            description: '활성 프로젝트'
+          },
+          {
+            number: formatNumber(MOCK_ARTICLES.length),
+            label: 'Articles Published',
+            description: '게시된 아티클'
+          },
+          {
+            number: formatNumber(120), // mock members
+            label: '함께 멤버',
+            description: '활발한 커뮤니티'
+          },
+          {
+            number: formatNumber(MOCK_CATEGORIES.length),
+            label: 'Learning Topics',
+            description: '학습 주제'
+          }
+        ]);
         // 에러 발생 시 기본값 유지
       } finally {
         setLoading(false);

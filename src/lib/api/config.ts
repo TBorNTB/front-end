@@ -1,28 +1,13 @@
-// src/lib/api/config.ts
-// API 설정 중앙화 - BASE_URL 관리
-const API_CONFIG = {
-  DEVELOPMENT: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
-  STAGING: 'https://api.sejongssg.kr',
-  PRODUCTION: 'https://api.sejongssg.kr',
-} as const;
+import { API_URL, ENABLE_MOCKS, ENABLE_API_LOGGING } from "@/lib/api/env";
 
-// 환경에 맞는 Base URL 반환
-export const getBaseUrl = () => {
-  const explicit = process.env.NEXT_PUBLIC_API_URL;
-  if (explicit) return explicit;
+export const BASE_URL = API_URL;
 
-  const nodeEnv = process.env.NODE_ENV;
-  if (nodeEnv === 'production') return API_CONFIG.PRODUCTION;
-  if (nodeEnv === 'development') return API_CONFIG.DEVELOPMENT;
-  return API_CONFIG.STAGING;
-};
-
-export const BASE_URL = getBaseUrl();
-
-export const getApiUrl = (endpoint: string) => {
+export const getApiUrl = (endpoint: string): string => {
   const url = `${BASE_URL}${endpoint}`;
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`🔗 API Request: ${url}`);
+  
+  if (ENABLE_API_LOGGING) {
+    console.log(`🔗 API Request: ${url}${ENABLE_MOCKS ? ' [MOCK]' : ''}`);
   }
+  
   return url;
 };

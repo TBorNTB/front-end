@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Alarm, AlarmType, AlarmCategory } from '@/types/alarm';
+import { Alarm, AlarmType, AlarmCategory } from '@/types/services/alarm';
 import { Bell, MessageSquare, Reply, Heart, UserPlus, X, Clock, Trash2, ChevronRight, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { UserRole } from '@/types/core';
 import Link from 'next/link';
-import { alarmService, AlarmResponse } from '@/lib/api/services/alarm';
+import { alarmService, AlarmResponse } from '@/lib/api/services/alarm-services';
 
 // API 응답을 Alarm 인터페이스로 변환
 const mapAlarmResponseToAlarm = (response: AlarmResponse): Alarm => {

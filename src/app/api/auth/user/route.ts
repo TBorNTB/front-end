@@ -1,30 +1,23 @@
 // src/app/api/auth/user/route.ts
 import { NextResponse } from 'next/server';
-import { BASE_URL} from '@/lib/api/config';
-import { USER_ENDPOINTS } from '@/lib/api/endpoints/user';
+import { USER_ENDPOINTS } from '@/lib/api/endpoints/user-endpoints'; 
 import { serverApiClient } from '@/lib/api/client-server';
-//import { validateUserRole } from '@/lib/role-utils';
 
 export async function GET(request: Request) {
   try {
     const cookieHeader = request.headers.get('cookie');
-
-    if (!cookieHeader) {
-      return NextResponse.json({
-        authenticated: false,
-        user: null
-      }, { status: 200 });
+    if (!cookieHeader?.includes('accessToken')) {
+      return NextResponse.json({ authenticated: false, user: null }, { status: 200 });
     }
 
-    const hasAuthCookies = cookieHeader.includes('accessToken') ||
-                          cookieHeader.includes('refreshToken') ||
-                          cookieHeader.includes('sessionToken');
+    // Parallel profile + role calls
+    const [profileRes, roleRes] = await Promise.allSettled([
+      serverApiClient.request(USER_ENDPOINTS.USER.PROFILE, { request }),
+      serverApiClient.request(USER_ENDPOINTS.USER.ROLE, { request }),
+    ]);
 
-    if (!hasAuthCookies) {
-      return NextResponse.json({
-        authenticated: false,
-        user: null
-      }, { status: 200 });
+    if (profileRes.status === 'rejected' || !profileRes.value?.success) {
+      return NextResponse.json({ authenticated: false, user: null }, { status: 200 });
     }
 
     try {
@@ -130,11 +123,7 @@ export async function GET(request: Request) {
     }
 
   } catch (error) {
-    console.error("❌ Auth check unexpected error:", error);
-    return NextResponse.json({
-      authenticated: false,
-      user: null,
-      error: 'Internal server error'
-    }, { status: 500 });
+    console.error('Auth check failed:', error);
+    return NextResponse.json({ authenticated: false, user: null }, { status: 500 });
   }
 }

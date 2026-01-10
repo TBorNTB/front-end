@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { createDocument } from '@/lib/api/services/project-services';
 
 interface NewDocumentPageProps {
   params: Promise<{ id: string }>;
@@ -14,6 +15,7 @@ export default function NewDocumentPage({ params }: NewDocumentPageProps) {
   const [projectId, setProjectId] = useState<string>('');
   const [documentTitle, setDocumentTitle] = useState('');
   const [documentContent, setDocumentContent] = useState(''); // Changed to string
+  const [documentDescription, setDocumentDescription] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
 
@@ -80,28 +82,25 @@ export default function NewDocumentPage({ params }: NewDocumentPageProps) {
       return;
     }
 
+    if (!projectId) {
+      alert('프로젝트 ID가 없습니다.');
+      return;
+    }
+
     setIsSaving(true);
     try {
-      const response = await fetch('/api/documents', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId,
-          title: documentTitle,
-          content: documentContent
-        })
+      const document = await createDocument(projectId, {
+        title: documentTitle,
+        content: documentContent,
+        description: documentDescription || documentTitle,
+        thumbnailUrl: '',
       });
-
-      if (response.ok) {
-        const { documentId } = await response.json();
-        localStorage.removeItem('documentDraft');
-        router.push(`/projects/${projectId}/documents/${documentId}`);
-      } else {
-        throw new Error('Failed to save document');
-      }
-    } catch (error) {
+      
+      localStorage.removeItem('documentDraft');
+      router.push(`/projects/${projectId}/documents/${document.id}`);
+    } catch (error: any) {
       console.error('Save error:', error);
-      alert('문서 저장에 실패했습니다.');
+      alert(error.message || '문서 저장에 실패했습니다.');
     } finally {
       setIsSaving(false);
     }
@@ -200,8 +199,17 @@ export default function NewDocumentPage({ params }: NewDocumentPageProps) {
               value={documentTitle}
               onChange={(e) => setDocumentTitle(e.target.value)}
               placeholder="문서 제목을 입력하세요..."
-              className="w-full text-4xl font-bold border-none outline-none focus:ring-0 mb-8 px-0 placeholder:text-gray-400"
+              className="w-full text-4xl font-bold border-none outline-none focus:ring-0 mb-4 px-0 placeholder:text-gray-400"
               autoFocus
+            />
+
+            {/* Description Input */}
+            <input
+              type="text"
+              value={documentDescription}
+              onChange={(e) => setDocumentDescription(e.target.value)}
+              placeholder="문서 설명을 입력하세요 (선택사항)..."
+              className="w-full text-lg text-gray-600 border-none outline-none focus:ring-0 mb-8 px-0 placeholder:text-gray-400"
             />
 
             {/* Metadata Info */}
