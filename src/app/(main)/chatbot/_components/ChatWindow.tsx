@@ -6,7 +6,7 @@ import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
 import { Message } from "@/types";
 import ChatBotCharacter from "./ChatBotCharacter";
-import { queryRAG } from "../api";
+import { queryRAG } from "../../../../lib/api/services/chatbot-service";
 import toast from "react-hot-toast";
 
 interface ChatWindowProps {
@@ -72,28 +72,33 @@ const ChatWindow = ({ onClose, isMinimized }: ChatWindowProps) => {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-[calc(100vw-3rem)] h-[calc(100vh-8rem)] max-h-[calc(100vh-3rem)] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200 animate-slide-up md:w-96 md:h-[600px] md:max-h-[600px]">
+    <div className="fixed bottom-6 right-6 z-50 w-[calc(100vw-3rem)] h-[calc(100vh-8rem)] max-h-[calc(100vh-3rem)] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-gray-100 animate-slide-up md:w-96 md:h-[650px] md:max-h-[650px] backdrop-blur-sm">
       {/* Header */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white px-4 py-3 flex items-center justify-between">
+      <div className="bg-gradient-to-r from-primary-600 via-primary-600 to-primary-700 text-white px-5 py-4 flex items-center justify-between shadow-md">
         <div className="flex items-center gap-3">
-            <ChatBotCharacter size={40} className="text-white" showBubble={false} />
+            <div className="relative">
+              <ChatBotCharacter size={40} className="text-white" showBubble={false} />
+              <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-300 rounded-full animate-pulse"></div>
+            </div>
           <div>
-            <h3 className="font-semibold text-sm">SSG 챗봇</h3>
-            <p className="text-xs text-white/90">SSG 정보를 물어보세요</p>
+            <h3 className="font-bold text-sm">SSG 챗봇</h3>
+            <p className="text-xs text-white/85">어떻게 도와드릴까요?</p>
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
+            className="p-2 hover:bg-white/20 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95"
             aria-label="Minimize chat"
+            title="최소화"
           >
             <Minimize2 className="w-4 h-4" />
           </button>
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
+            className="p-2 hover:bg-white/20 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95"
             aria-label="Close chat"
+            title="닫기"
           >
             <X className="w-4 h-4" />
           </button>
@@ -103,25 +108,24 @@ const ChatWindow = ({ onClose, isMinimized }: ChatWindowProps) => {
       {/* Messages Container */}
       <div
         ref={chatContainerRef}
-        className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50 chat-scrollbar"
+        className="flex-1 overflow-y-auto px-4 py-5 space-y-4 bg-gradient-to-b from-gray-50 to-white chat-scrollbar"
         style={{ scrollbarWidth: "thin" }}
       >
         {messages.map((message) => (
           <ChatMessage key={message.id} message={message} />
         ))}
         
-        {/* Typing Indicator - ✅ Removed circular background */}
+        {/* Typing Indicator */}
         {isTyping && (
-          <div className="flex items-start gap-2">
-            {/* ✅ No background circle, just the robot */}
+          <div className="flex items-end gap-2 animate-fade-in">
             <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
               <ChatBotCharacter size={40} className="text-primary-600" animated />
             </div>
-            <div className="flex-1 bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm border border-gray-200">
-              <div className="flex gap-1">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+            <div className="flex-1 bg-gradient-to-r from-gray-100 to-gray-50 rounded-3xl rounded-tl-sm px-5 py-4 shadow-sm border border-gray-200 backdrop-blur-sm">
+              <div className="flex gap-1.5">
+                <div className="w-2.5 h-2.5 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                <div className="w-2.5 h-2.5 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                <div className="w-2.5 h-2.5 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
               </div>
             </div>
           </div>
@@ -131,9 +135,39 @@ const ChatWindow = ({ onClose, isMinimized }: ChatWindowProps) => {
       </div>
 
       {/* Input Area */}
-      <div className="border-t border-gray-200 bg-white p-4">
+      <div className="border-t border-gray-200 bg-white/80 backdrop-blur-sm p-4 shadow-sm">
         <ChatInput onSend={handleSendMessage} />
       </div>
+      
+      {/* Global styles */}
+      <style jsx>{`
+        .chat-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .chat-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .chat-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(58, 77, 161, 0.3);
+          border-radius: 3px;
+        }
+        .chat-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(58, 77, 161, 0.5);
+        }
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };

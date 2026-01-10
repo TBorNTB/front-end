@@ -7,6 +7,7 @@ import ChatBotCharacter from "./_components/ChatBotCharacter";
 const ChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   const toggleChat = () => {
     setIsOpen(!isOpen);
@@ -20,20 +21,36 @@ const ChatBot = () => {
 
   return (
     <>
-      {/* Floating Chat Button - Notion Style */}
+      {/* Floating Chat Button - Enhanced */}
       {!isOpen && (
-        <button
-          onClick={toggleChat}
-          className="fixed bottom-6 right-6 z-50 w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-700 hover:from-primary-600 hover:to-primary-800 text-white rounded-full shadow-2xl hover:shadow-[0_20px_50px_rgba(58,77,161,0.5)] transition-all duration-300 flex items-center justify-center group animate-bounce-subtle hover:scale-110 md:w-16 md:h-16 border-4 border-white/30"
-          aria-label="Open chat"
-        >
-          <div className="relative">
-            <ChatBotCharacter size={44} className="text-white md:w-11 md:h-11 w-14 h-14 group-hover:scale-110 transition-transform drop-shadow-lg" animated />
-            {/* Sparkle effects */}
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-300 rounded-full animate-ping opacity-80"></div>
-            <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-yellow-200 rounded-full animate-pulse opacity-60"></div>
-          </div>
-        </button>
+        <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+          {/* Tooltip */}
+          {isHovered && (
+            <div className="animate-fade-in bg-gray-900 text-white text-sm px-3 py-2 rounded-lg whitespace-nowrap shadow-lg">
+              SSG 챗봇에게 물어보기
+            </div>
+          )}
+          
+          {/* Chat Button */}
+          <button
+            onClick={toggleChat}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            className="relative w-16 h-16 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 hover:from-primary-600 hover:to-primary-800 text-white shadow-lg hover:shadow-2xl transition-all duration-300 ease-out hover:scale-110 active:scale-95 flex items-center justify-center group"
+            aria-label="Open chat"
+          >
+            {/* Animated background glow */}
+            <div className="absolute inset-0 rounded-full bg-primary-400 opacity-0 group-hover:opacity-20 blur-lg transition-opacity duration-300"></div>
+            
+            <div className="relative z-10 flex items-center justify-center">
+              <ChatBotCharacter size={48} className="text-white group-hover:scale-110 transition-transform duration-300" animated />
+            </div>
+            
+            {/* Status indicators */}
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse border-2 border-white shadow-lg"></div>
+            <div className="absolute -bottom-0.5 -left-0.5 w-2.5 h-2.5 bg-yellow-300 rounded-full animate-bounce opacity-75"></div>
+          </button>
+        </div>
       )}
 
       {/* Chat Window */}
@@ -43,6 +60,23 @@ const ChatBot = () => {
           isMinimized={isMinimized}
         />
       )}
+      
+      {/* Global styles for animations */}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.3s ease-out;
+        }
+      `}</style>
     </>
   );
 };

@@ -82,7 +82,7 @@ export const queryRAG = async (query: string): Promise<string> => {
     });
 
     if (!response.ok) {
-      throw new Error(`API 요청 실패: ${response.status}`);
+      throw new Error(`API request failed: ${response.status}`);
     }
 
     const data: RAGResponse = await response.json();

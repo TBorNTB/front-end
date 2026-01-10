@@ -115,8 +115,83 @@ const transformCategoryData = (apiCategory: CategoryItem): CategoryDisplayData |
   };
 };
 
+// Mock data for categories
+const mockCategories: CategoryDisplayData[] = [
+  {
+    id: 1,
+    name: '웹 해킹',
+    slug: 'web-hacking',
+    articles: 12,
+    projects: 8,
+    type: CategoryType.WEB_HACKING,
+    description: '웹 애플리케이션의 보안 취약점을 실습하고 분석합니다.',
+    longDescription: longDescriptions[CategoryType.WEB_HACKING],
+  },
+  {
+    id: 2,
+    name: '리버싱',
+    slug: 'reversing',
+    articles: 9,
+    projects: 6,
+    type: CategoryType.REVERSING,
+    description: '바이너리 파일 분석 및 역공학 기술을 습득합니다.',
+    longDescription: longDescriptions[CategoryType.REVERSING],
+  },
+  {
+    id: 3,
+    name: '시스템 해킹',
+    slug: 'system-hacking',
+    articles: 11,
+    projects: 7,
+    type: CategoryType.SYSTEM_HACKING,
+    description: '운영체제 레벨의 취약점을 분석합니다.',
+    longDescription: longDescriptions[CategoryType.SYSTEM_HACKING],
+  },
+  {
+    id: 4,
+    name: '디지털 포렌식',
+    slug: 'digital-forensics',
+    articles: 8,
+    projects: 5,
+    type: CategoryType.DIGITAL_FORENSICS,
+    description: '디지털 증거 수집 및 분석 기술을 배웁니다.',
+    longDescription: longDescriptions[CategoryType.DIGITAL_FORENSICS],
+  },
+  {
+    id: 5,
+    name: '네트워크 보안',
+    slug: 'network-security',
+    articles: 10,
+    projects: 9,
+    type: CategoryType.NETWORK_SECURITY,
+    description: '네트워크 공격과 방어 기술을 습득합니다.',
+    longDescription: longDescriptions[CategoryType.NETWORK_SECURITY],
+  },
+  {
+    id: 6,
+    name: 'IoT 보안',
+    slug: 'iot-security',
+    articles: 7,
+    projects: 4,
+    type: CategoryType.IOT_SECURITY,
+    description: '임베디드 시스템 및 IoT 기기의 보안을 다룹니다.',
+    longDescription: longDescriptions[CategoryType.IOT_SECURITY],
+  },
+  {
+    id: 7,
+    name: '암호학',
+    slug: 'cryptography',
+    articles: 13,
+    projects: 6,
+    type: CategoryType.CRYPTOGRAPHY,
+    description: '암호화 알고리즘과 프로토콜을 이해합니다.',
+    longDescription: longDescriptions[CategoryType.CRYPTOGRAPHY],
+  },
+];
+
 // Mock data for projects and articles
 const projects = [
+  // Web Hacking
   {
     id: 1,
     title: 'SQL 인젝션 취약점 스캐너',
@@ -124,8 +199,8 @@ const projects = [
     category: '웹 해킹',
     status: 'In Progress',
     tags: ['Python', 'Security'],
-    stars: 7,
-    contributors: 2,
+    stars: 12,
+    contributors: 3,
     categorySlug: 'web-hacking'
   },
   {
@@ -135,7 +210,7 @@ const projects = [
     category: '웹 해킹',
     status: 'Planning',
     tags: ['JavaScript', 'Web'],
-    stars: 7,
+    stars: 8,
     contributors: 2,
     categorySlug: 'web-hacking'
   },
@@ -146,13 +221,163 @@ const projects = [
     category: '웹 해킹',
     status: 'Completed',
     tags: ['Go', 'Testing'],
-    stars: 7,
+    stars: 15,
+    contributors: 4,
+    categorySlug: 'web-hacking'
+  },
+  {
+    id: 4,
+    title: 'CSRF 토큰 검증 시스템',
+    description: 'Cross-Site Request Forgery 방어 미들웨어',
+    category: '웹 해킹',
+    status: 'Completed',
+    tags: ['Node.js', 'Express'],
+    stars: 9,
     contributors: 2,
     categorySlug: 'web-hacking'
-  }
+  },
+  {
+    id: 5,
+    title: '웹 취약점 자동 스캔 봇',
+    description: '자동화된 웹 취약점 탐지 및 리포팅 시스템',
+    category: '웹 해킹',
+    status: 'In Progress',
+    tags: ['Python', 'Selenium'],
+    stars: 11,
+    contributors: 3,
+    categorySlug: 'web-hacking'
+  },
+  // Reversing
+  {
+    id: 6,
+    title: 'Windows PE 파일 분석기',
+    description: 'PE 파일 구조 분석 및 리버싱 도구',
+    category: '리버싱',
+    status: 'Completed',
+    tags: ['C++', 'Assembly'],
+    stars: 14,
+    contributors: 2,
+    categorySlug: 'reversing'
+  },
+  {
+    id: 7,
+    title: '악성코드 언패킹 프레임워크',
+    description: '패킹된 악성코드 자동 언패킹 시스템',
+    category: '리버싱',
+    status: 'In Progress',
+    tags: ['Python', 'Dynamorio'],
+    stars: 10,
+    contributors: 3,
+    categorySlug: 'reversing'
+  },
+  // System Hacking
+  {
+    id: 8,
+    title: '버퍼 오버플로우 익스플로잇 킷',
+    description: 'BOF 취약점 개발 및 테스트용 도구 모음',
+    category: '시스템 해킹',
+    status: 'Completed',
+    tags: ['C', 'GDB', 'Assembly'],
+    stars: 13,
+    contributors: 2,
+    categorySlug: 'system-hacking'
+  },
+  {
+    id: 9,
+    title: 'ROP 체인 생성기',
+    description: 'Return-Oriented Programming 체인 자동 생성',
+    category: '시스템 해킹',
+    status: 'Planning',
+    tags: ['Python', 'IDA Pro'],
+    stars: 7,
+    contributors: 2,
+    categorySlug: 'system-hacking'
+  },
+  // Digital Forensics
+  {
+    id: 10,
+    title: '메모리 포렌식 분석 도구',
+    description: '메모리 덤프 분석을 위한 포렌식 도구',
+    category: '디지털 포렌식',
+    status: 'Completed',
+    tags: ['Python', 'Volatility'],
+    stars: 11,
+    contributors: 3,
+    categorySlug: 'digital-forensics'
+  },
+  {
+    id: 11,
+    title: '파일 시스템 포렌식 수집기',
+    description: '파일 시스템 증거 수집 자동화 도구',
+    category: '디지털 포렌식',
+    status: 'In Progress',
+    tags: ['Python', 'Bash'],
+    stars: 8,
+    contributors: 2,
+    categorySlug: 'digital-forensics'
+  },
+  // Network Security
+  {
+    id: 12,
+    title: 'IDS 시스템 개발 프로젝트',
+    description: 'Intrusion Detection System 구현',
+    category: '네트워크 보안',
+    status: 'Completed',
+    tags: ['Python', 'Scapy'],
+    stars: 16,
+    contributors: 4,
+    categorySlug: 'network-security'
+  },
+  {
+    id: 13,
+    title: '패킷 분석기 및 시각화 도구',
+    description: '네트워크 패킷 분석 및 실시간 시각화',
+    category: '네트워크 보안',
+    status: 'In Progress',
+    tags: ['C', 'Wireshark'],
+    stars: 12,
+    contributors: 3,
+    categorySlug: 'network-security'
+  },
+  // IoT Security
+  {
+    id: 14,
+    title: 'IoT 디바이스 펌웨어 추출기',
+    description: '임베디드 기기 펌웨어 추출 및 분석',
+    category: 'IoT 보안',
+    status: 'Planning',
+    tags: ['Python', 'Binwalk'],
+    stars: 9,
+    contributors: 2,
+    categorySlug: 'iot-security'
+  },
+  // Cryptography
+  {
+    id: 15,
+    title: 'RSA 암호 분석 도구',
+    description: 'RSA 암호 취약점 분석 및 공격 도구',
+    category: '암호학',
+    status: 'Completed',
+    tags: ['Python', 'Math'],
+    stars: 13,
+    contributors: 2,
+    categorySlug: 'cryptography'
+  },
+  {
+    id: 16,
+    title: 'AES 구현 및 분석',
+    description: '고급 암호화 표준(AES) 구현 및 side-channel 분석',
+    category: '암호학',
+    status: 'Completed',
+    tags: ['C', 'Cryptography'],
+    stars: 11,
+    contributors: 2,
+    categorySlug: 'cryptography'
+  },
 ];
 
 const articles = [
+  // Web Hacking
   {
     id: 1,
     title: 'OWASP Top 10 2024 분석',
@@ -161,8 +386,8 @@ const articles = [
     author: '김보안',
     publishDate: '2024-01-20',
     readTime: '5분 읽기',
-    views: 35,
-    comments: 4,
+    views: 245,
+    comments: 12,
     categorySlug: 'web-hacking'
   },
   {
@@ -173,8 +398,8 @@ const articles = [
     author: '임해커',
     publishDate: '2024-01-18',
     readTime: '8분 읽기',
-    views: 35,
-    comments: 4,
+    views: 189,
+    comments: 8,
     categorySlug: 'web-hacking'
   },
   {
@@ -185,10 +410,135 @@ const articles = [
     author: '김민준',
     publishDate: '2024-01-15',
     readTime: '12분 읽기',
-    views: 35,
-    comments: 4,
+    views: 156,
+    comments: 7,
     categorySlug: 'web-hacking'
-  }
+  },
+  {
+    id: 4,
+    title: 'SQL 인젝션 실전 공략집',
+    description: '다양한 SQL 인젝션 기법 및 방어 전략',
+    category: '웹 해킹',
+    author: '박해킹',
+    publishDate: '2024-01-12',
+    readTime: '15분 읽기',
+    views: 312,
+    comments: 14,
+    categorySlug: 'web-hacking'
+  },
+  {
+    id: 5,
+    title: '웹 API 보안 체크리스트',
+    description: 'REST API 개발 시 고려할 보안 사항',
+    category: '웹 해킹',
+    author: '이안전',
+    publishDate: '2024-01-10',
+    readTime: '9분 읽기',
+    views: 167,
+    comments: 6,
+    categorySlug: 'web-hacking'
+  },
+  // Reversing
+  {
+    id: 6,
+    title: '리버싱 시작 가이드',
+    description: 'IDA Pro를 이용한 바이너리 분석 입문',
+    category: '리버싱',
+    author: '최리버싱',
+    publishDate: '2024-01-19',
+    readTime: '10분 읽기',
+    views: 198,
+    comments: 9,
+    categorySlug: 'reversing'
+  },
+  {
+    id: 7,
+    title: '어셈블리어 이해하기',
+    description: 'x86-64 어셈블리 기본 개념 및 실습',
+    category: '리버싱',
+    author: '조어셈블리',
+    publishDate: '2024-01-17',
+    readTime: '14분 읽기',
+    views: 234,
+    comments: 11,
+    categorySlug: 'reversing'
+  },
+  // System Hacking
+  {
+    id: 8,
+    title: '버퍼 오버플로우 완전 정복',
+    description: 'Stack 기반 BOF 공격 및 방어 기법',
+    category: '시스템 해킹',
+    author: '이시스템',
+    publishDate: '2024-01-16',
+    readTime: '18분 읽기',
+    views: 278,
+    comments: 13,
+    categorySlug: 'system-hacking'
+  },
+  {
+    id: 9,
+    title: 'ASLR 우회 기법',
+    description: 'Address Space Layout Randomization 우회 방법',
+    category: '시스템 해킹',
+    author: '박우회',
+    publishDate: '2024-01-14',
+    readTime: '11분 읽기',
+    views: 145,
+    comments: 5,
+    categorySlug: 'system-hacking'
+  },
+  // Digital Forensics
+  {
+    id: 10,
+    title: '포렌식 분석 기초',
+    description: '디지털 포렌식의 개념과 절차',
+    category: '디지털 포렌식',
+    author: '정포렌식',
+    publishDate: '2024-01-13',
+    readTime: '7분 읽기',
+    views: 123,
+    comments: 4,
+    categorySlug: 'digital-forensics'
+  },
+  // Network Security
+  {
+    id: 11,
+    title: '패킷 분석 마스터',
+    description: 'Wireshark를 이용한 네트워크 분석',
+    category: '네트워크 보안',
+    author: '윤네트워크',
+    publishDate: '2024-01-11',
+    readTime: '13분 읽기',
+    views: 267,
+    comments: 10,
+    categorySlug: 'network-security'
+  },
+  {
+    id: 12,
+    title: 'Nmap 고급 사용법',
+    description: '네트워크 스캔 및 포트 스캐닝 기법',
+    category: '네트워크 보안',
+    author: '강스캔',
+    publishDate: '2024-01-09',
+    readTime: '9분 읽기',
+    views: 198,
+    comments: 8,
+    categorySlug: 'network-security'
+  },
+  // Cryptography
+  {
+    id: 13,
+    title: 'RSA 암호화 이해하기',
+    description: '비대칭키 암호의 원리와 구현',
+    category: '암호학',
+    author: '성암호',
+    publishDate: '2024-01-21',
+    readTime: '16분 읽기',
+    views: 289,
+    comments: 15,
+    categorySlug: 'cryptography'
+  },
 ];
 
 const getStatusColor = (status: string) => {
@@ -218,7 +568,7 @@ export function LearningTopics() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // API에서 카테고리 데이터 가져오기
+  // API에서 카테고리 데이터 가져오기 (실패 시 mock data 사용)
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -232,8 +582,9 @@ export function LearningTopics() {
         
         setCategories(transformedCategories);
       } catch (err) {
-        console.error('Failed to fetch categories:', err);
-        setError('카테고리를 불러오는데 실패했습니다.');
+        console.error('Failed to fetch categories, using mock data:', err);
+        // Fallback to mock data
+        setCategories(mockCategories);
       } finally {
         setLoading(false);
       }
