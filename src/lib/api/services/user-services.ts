@@ -22,10 +22,11 @@ export interface UserResponse {
 }
 
 export interface MembersPageResponse {
-  userResponses: UserResponse[];
+  message: string;
+  data: UserResponse[];
   size: number;
   page: number;
-  totalElements: number;
+  totalPage: number;
 }
 
 export interface GetMembersParams {
@@ -77,10 +78,11 @@ export interface UserResponse {
 }
 
 export interface MembersPageResponse {
-  userResponses: UserResponse[];
+  message: string;
+  data: UserResponse[];
   size: number;
   page: number;
-  totalElements: number;
+  totalPage: number;
 }
 
 export interface GetMembersParams {
@@ -111,10 +113,11 @@ export const memberService = {
     }
 
     return {
-      userResponses: data.userResponses || [],
+      message: data.message || '',
+      data: data.data || [],
       size: data.size || 0,
       page: data.page || 0,
-      totalElements: data.totalElements || 0,
+      totalPage: data.totalPage || 0,
     };
   },
 };
