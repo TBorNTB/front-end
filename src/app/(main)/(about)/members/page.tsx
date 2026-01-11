@@ -295,7 +295,7 @@ export default function MembersPage() {
                         <div className="text-center mb-4">
                           <div className="relative inline-block">
                             <ImageWithFallback
-                              src={member.profileImageUrl || '/default-avatar.png'}
+                              src={member.profileImageUrl || '/default-avatar.svg'}
                               alt={getDisplayName(member)}
                               width={80}
                               height={80}
