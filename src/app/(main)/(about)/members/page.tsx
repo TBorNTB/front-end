@@ -1,95 +1,42 @@
 // app/members/page.tsx
 'use client';
-import { useState, useEffect } from 'react';
-import { 
-  Search, 
-  Calendar,
-  MapPin,
-  Loader2,
-  AlertCircle,
-  X,
-  ChevronLeft,
-  ChevronRight
-} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { memberService, UserResponse } from '@/lib/api/services/user-services';
+import {
+  AlertCircle,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Search,
+  X
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
 
-// Types for member data
-interface Member {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-  level: 'ASSOCIATE' | 'REGULAR' | 'SENIOR' | 'ADMIN';
-  avatar?: string;
-  bio?: string;
-  location?: string;
-  joinDate: string;
-  skills: string[];
-  projects: number;
-  articles: number;
-  badges: number;
-  isOnline?: boolean;
-  lastActive?: string;
-}
-
-// API 응답을 Member 형식으로 변환하는 헬퍼 함수
-const transformUserToMember = (user: UserResponse): Member => {
-  // role을 기반으로 level 매핑 (API 응답의 role 필드 사용)
-  const roleToLevelMap: Record<string, 'ASSOCIATE' | 'REGULAR' | 'SENIOR' | 'ADMIN'> = {
-    'ASSOCIATE': 'ASSOCIATE',
-    'REGULAR': 'REGULAR',
-    'SENIOR': 'SENIOR',
-    'ADMIN': 'ADMIN',
-  };
-
-  // 날짜 포맷팅
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
-  };
-
-  return {
-    id: user.id,
-    name: user.realName || user.nickname || user.username,
-    email: user.email,
-    role: user.role || 'Member',
-    level: roleToLevelMap[user.role] || 'ASSOCIATE',
-    avatar: user.profileImageUrl || undefined,
-    bio: user.description || undefined,
-    location: '', // API 응답에 없으므로 빈 문자열
-    joinDate: formatDate(user.createdAt),
-    skills: [], // API 응답에 없으므로 빈 배열 (필터는 클라이언트에서 처리)
-    projects: 0, // API 응답에 없으므로 0
-    articles: 0, // API 응답에 없으므로 0
-    badges: 0, // API 응답에 없으므로 0
-  };
-};
-
-// Updated member levels with your UserRole system
+// 회원 등급 정의
 const memberLevels = [
-  { key: 'ASSOCIATE', label: '준회원' },
-  { key: 'REGULAR', label: '정회원' },
+  { key: 'GUEST', label: '게스트' },
+  { key: 'ASSOCIATE_MEMBER', label: '준회원' },
+  { key: 'FULL_MEMBER', label: '정회원' },
   { key: 'SENIOR', label: '선배님' },
   { key: 'ADMIN', label: '운영진' }
 ];
 
-const skillOptions = [
-  'React', 'TypeScript', 'Next.js', 'Python', 'Java', 'Spring', 
-  'Node.js', 'Vue.js', 'Angular', 'Docker', 'Kubernetes', 'AWS',
-  'PostgreSQL', 'MongoDB', 'Redis', 'Elasticsearch', 'Wireshark', 'Burp Suite'
-];
+// 날짜 포맷팅 헬퍼
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
+};
 
 export default function MembersPage() {
-  const [members, setMembers] = useState<Member[]>([]);
-  const [filteredMembers, setFilteredMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<UserResponse[]>([]);
+  const [filteredMembers, setFilteredMembers] = useState<UserResponse[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLevels, setSelectedLevels] = useState<string[]>([]);
-  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // 페이지네이션 상태
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize] = useState(6);
@@ -102,20 +49,18 @@ export default function MembersPage() {
       try {
         setIsLoading(true);
         setError(null);
-        
+
         const response = await memberService.getMembers({
           page: currentPage,
           size: pageSize,
         });
 
-        const transformedMembers = response.userResponses.map(transformUserToMember);
-        setMembers(transformedMembers);
-        setTotalElements(response.totalElements);
-        setTotalPages(Math.ceil(response.totalElements / pageSize));
+        setMembers(response.data);
+        setTotalElements(response.data.length);
+        setTotalPages(response.totalPage);
       } catch (err: any) {
         console.error('Failed to load members:', err);
         setError(err.message || '멤버 정보를 불러올 수 없습니다.');
-        // 에러 발생 시 빈 배열로 설정
         setMembers([]);
       } finally {
         setIsLoading(false);
@@ -125,35 +70,28 @@ export default function MembersPage() {
     loadMembers();
   }, [currentPage, pageSize]);
 
-  // Filter members based on search term, levels, and skills
-  // Note: 현재는 클라이언트 사이드 필터링만 지원합니다.
-  // 서버 사이드 필터링이 필요한 경우 API를 수정해야 합니다.
+  // Filter members
   useEffect(() => {
     let filtered = members;
 
     // Search filter
     if (searchTerm) {
+      const query = searchTerm.toLowerCase();
       filtered = filtered.filter(member =>
-        member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        member.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        member.bio?.toLowerCase().includes(searchTerm.toLowerCase())
+        member.realName?.toLowerCase().includes(query) ||
+        member.nickname?.toLowerCase().includes(query) ||
+        member.username?.toLowerCase().includes(query) ||
+        member.description?.toLowerCase().includes(query)
       );
     }
 
     // Level filter
     if (selectedLevels.length > 0) {
-      filtered = filtered.filter(member => selectedLevels.includes(member.level));
-    }
-
-    // Skills filter
-    if (selectedSkills.length > 0) {
-      filtered = filtered.filter(member =>
-        selectedSkills.some(skill => member.skills.includes(skill))
-      );
+      filtered = filtered.filter(member => selectedLevels.includes(member.role));
     }
 
     setFilteredMembers(filtered);
-  }, [members, searchTerm, selectedLevels, selectedSkills]);
+  }, [members, searchTerm, selectedLevels]);
 
   const handleLevelToggle = (level: string) => {
     setSelectedLevels(prev =>
@@ -163,25 +101,18 @@ export default function MembersPage() {
     );
   };
 
-  const handleSkillToggle = (skill: string) => {
-    setSelectedSkills(prev =>
-      prev.includes(skill)
-        ? prev.filter(s => s !== skill)
-        : [...prev, skill]
-    );
-  };
-
   const clearAllFilters = () => {
     setSearchTerm('');
     setSelectedLevels([]);
-    setSelectedSkills([]);
   };
 
-  const getLevelBadgeColor = (level: string) => {
-    switch (level) {
-      case 'ASSOCIATE':
+  const getLevelBadgeColor = (role: string) => {
+    switch (role) {
+      case 'GUEST':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'ASSOCIATE_MEMBER':
         return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'REGULAR':
+      case 'FULL_MEMBER':
         return 'bg-green-100 text-green-800 border-green-200';
       case 'SENIOR':
         return 'bg-purple-100 text-purple-800 border-purple-200';
@@ -192,9 +123,14 @@ export default function MembersPage() {
     }
   };
 
-  const getLevelLabel = (level: string) => {
-    const levelObj = memberLevels.find(l => l.key === level);
-    return levelObj?.label || level;
+  const getLevelLabel = (role: string) => {
+    const levelObj = memberLevels.find(l => l.key === role);
+    return levelObj?.label || role;
+  };
+
+  // 표시용 이름 가져오기
+  const getDisplayName = (member: UserResponse) => {
+    return member.realName || member.nickname || member.username;
   };
 
   if (isLoading) {
@@ -220,8 +156,8 @@ export default function MembersPage() {
             <div className="text-center">
               <AlertCircle className="h-8 w-8 text-red-600 mx-auto mb-4" />
               <p className="text-red-600 mb-2">멤버 정보를 불러올 수 없습니다</p>
-              <button 
-                onClick={() => window.location.reload()} 
+              <button
+                onClick={() => window.location.reload()}
                 className="btn btn-primary mt-4"
               >
                 다시 시도
@@ -235,7 +171,7 @@ export default function MembersPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      
+
       {/* Background Effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-1/4 w-96 h-96 bg-primary-500/3 rounded-full blur-3xl"></div>
@@ -259,7 +195,7 @@ export default function MembersPage() {
                 <div className="card sticky top-8">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-semibold text-primary-700">필터 옵션</h2>
-                    {(selectedLevels.length > 0 || selectedSkills.length > 0 || searchTerm) && (
+                    {(selectedLevels.length > 0 || searchTerm) && (
                       <button
                         onClick={clearAllFilters}
                         className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
@@ -279,7 +215,7 @@ export default function MembersPage() {
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                       <input
                         type="text"
-                        placeholder="이름, 역할 검색..."
+                        placeholder="이름, 닉네임 검색..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg
@@ -303,28 +239,7 @@ export default function MembersPage() {
                           />
                           <span className="text-gray-700 font-medium">{level.label}</span>
                           <span className="text-sm text-gray-500">
-                            ({members.filter(m => m.level === level.key).length})
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Skills Filter */}
-                  <div className="mb-6">
-                    <h3 className="text-sm font-medium text-gray-700 mb-3">기술 스택</h3>
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {skillOptions.map((skill) => (
-                        <label key={skill} className="flex items-center space-x-3 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={selectedSkills.includes(skill)}
-                            onChange={() => handleSkillToggle(skill)}
-                            className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                          />
-                          <span className="text-gray-700">{skill}</span>
-                          <span className="text-sm text-gray-500">
-                            ({members.filter(m => m.skills.includes(skill)).length})
+                            ({members.filter(m => m.role === level.key).length})
                           </span>
                         </label>
                       ))}
@@ -341,13 +256,13 @@ export default function MembersPage() {
                     총 <span className="font-semibold text-primary-700">{totalElements}</span>명의 멤버
                     {filteredMembers.length !== totalElements && (
                       <span className="ml-2 text-sm text-gray-500">
-                        (현재 페이지: {filteredMembers.length}명)
+                        (필터 결과: {filteredMembers.length}명)
                       </span>
                     )}
                   </p>
-                  
+
                   {/* Active Filters */}
-                  {(selectedLevels.length > 0 || selectedSkills.length > 0) && (
+                  {selectedLevels.length > 0 && (
                     <div className="flex flex-wrap gap-2">
                       {selectedLevels.map((level) => (
                         <Badge
@@ -356,16 +271,6 @@ export default function MembersPage() {
                           onClick={() => handleLevelToggle(level)}
                         >
                           {getLevelLabel(level)}
-                          <X className="h-3 w-3 ml-1" />
-                        </Badge>
-                      ))}
-                      {selectedSkills.map((skill) => (
-                        <Badge
-                          key={skill}
-                          className="bg-secondary-100 text-secondary-800 border-secondary-200 cursor-pointer hover:bg-secondary-200"
-                          onClick={() => handleSkillToggle(skill)}
-                        >
-                          {skill}
                           <X className="h-3 w-3 ml-1" />
                         </Badge>
                       ))}
@@ -390,87 +295,34 @@ export default function MembersPage() {
                         <div className="text-center mb-4">
                           <div className="relative inline-block">
                             <ImageWithFallback
-                              src={member.avatar || '/default-avatar.png'}
-                              alt={member.name}
+                              src={member.profileImageUrl || '/default-avatar.png'}
+                              alt={getDisplayName(member)}
                               width={80}
                               height={80}
                               className="w-20 h-20 rounded-full object-cover border-4 border-gray-200 group-hover:border-primary-300 transition-colors"
                             />
-                            {member.isOnline && (
-                              <div className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
-                            )}
                           </div>
                           <h3 className="font-bold text-lg text-foreground mt-3 group-hover:text-primary-700 transition-colors">
-                            {member.name}
+                            {getDisplayName(member)}
                           </h3>
                           <p className="text-gray-600 text-sm">{member.email}</p>
                         </div>
 
                         {/* Member Info */}
                         <div className="space-y-3 mb-4">
-                          <div className="flex items-center justify-between">
-                            <Badge className={getLevelBadgeColor(member.level)}>
-                              {getLevelLabel(member.level)}
+                          <div className="flex items-center justify-center">
+                            <Badge className={getLevelBadgeColor(member.role)}>
+                              {getLevelLabel(member.role)}
                             </Badge>
-                            {!member.isOnline && member.lastActive && (
-                              <span className="text-xs text-gray-500">{member.lastActive}</span>
-                            )}
                           </div>
 
-                          <p className="font-medium text-gray-900">{member.role}</p>
-                          
-                          {member.bio && (
-                            <p className="text-gray-600 text-sm line-clamp-2">{member.bio}</p>
+                          {member.description && (
+                            <p className="text-gray-600 text-sm line-clamp-2 text-center">{member.description}</p>
                           )}
 
-                          <div className="flex items-center gap-4 text-sm text-gray-500">
-                            <div className="flex items-center gap-1">
-                              <MapPin className="h-3 w-3" />
-                              <span>{member.location}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              <span>{member.joinDate}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Skills */}
-                        <div className="mb-4">
-                          <div className="flex flex-wrap gap-1">
-                            {member.skills.slice(0, 3).map((skill, index) => (
-                              <Badge
-                                key={index}
-                                variant="outline"
-                                className="text-xs bg-gray-50 text-gray-700 border-gray-300"
-                              >
-                                {skill}
-                              </Badge>
-                            ))}
-                            {member.skills.length > 3 && (
-                              <Badge
-                                variant="outline"
-                                className="text-xs bg-gray-50 text-gray-700 border-gray-300"
-                              >
-                                +{member.skills.length - 3}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Stats */}
-                        <div className="flex justify-around text-center pt-4 border-t border-gray-200">
-                          <div>
-                            <div className="text-lg font-bold text-primary-700">{member.projects}</div>
-                            <div className="text-xs text-gray-600">프로젝트</div>
-                          </div>
-                          <div>
-                            <div className="text-lg font-bold text-secondary-700">{member.articles}</div>
-                            <div className="text-xs text-gray-600">아티클</div>
-                          </div>
-                          <div>
-                            <div className="text-lg font-bold text-warning">{member.badges}</div>
-                            <div className="text-xs text-gray-600">배지</div>
+                          <div className="flex items-center justify-center gap-1 text-sm text-gray-500">
+                            <Calendar className="h-3 w-3" />
+                            <span>가입일: {formatDate(member.createdAt)}</span>
                           </div>
                         </div>
 
@@ -495,10 +347,9 @@ export default function MembersPage() {
                     >
                       <ChevronLeft className="h-5 w-5" />
                     </button>
-                    
+
                     <div className="flex items-center gap-1">
                       {Array.from({ length: totalPages }, (_, i) => i).map((page) => {
-                        // 현재 페이지 주변 2페이지씩만 표시
                         if (
                           page === 0 ||
                           page === totalPages - 1 ||
@@ -544,7 +395,7 @@ export default function MembersPage() {
             </div>
           </div>
         </section>
-      </div>      
+      </div>
     </div>
   );
 }
