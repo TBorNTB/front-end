@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import Image, { ImageProps } from 'next/image';
 import { cn } from '@/lib/utils';
+import Image, { ImageProps } from 'next/image';
+import React, { useEffect, useState } from 'react';
 
 interface ImageWithFallbackProps extends Omit<ImageProps, 'src'> {
   src: string;
@@ -38,15 +38,22 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
 }) => {
   // 유효한 URL인지 확인
   const validSrc = isValidUrl(src) ? src : null;
-  const [imgSrc, setImgSrc] = useState<string>(validSrc || fallbackSrc);
-  const [isLoading, setIsLoading] = useState(true);
+  const initialSrc = validSrc || fallbackSrc;
+  // 로컬 파일은 로딩 상태 건너뛰기
+  const isLocalFile = initialSrc.startsWith('/');
+
+  const [imgSrc, setImgSrc] = useState<string>(initialSrc);
+  const [isLoading, setIsLoading] = useState(!isLocalFile);
   const [hasError, setHasError] = useState(!validSrc);
 
   // Reset states when src changes
   useEffect(() => {
     const newValidSrc = isValidUrl(src) ? src : null;
-    setImgSrc(newValidSrc || fallbackSrc);
-    setIsLoading(true);
+    const newSrc = newValidSrc || fallbackSrc;
+    const newIsLocalFile = newSrc.startsWith('/');
+
+    setImgSrc(newSrc);
+    setIsLoading(!newIsLocalFile);
     setHasError(!newValidSrc);
   }, [src, fallbackSrc]);
 
@@ -99,6 +106,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
         )}
         onError={handleError}
         onLoad={handleLoad}
+        unoptimized={imgSrc.endsWith('.svg')}
         {...props}
       />
     </div>
