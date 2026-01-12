@@ -12,6 +12,8 @@ export const USER_ENDPOINTS = {
     LOGOUT: '/user-service/users/logout',
     ROLE: '/user-service/users/role/one',
     PROFILE: '/user-service/users/profile',
+    GET_BY_ROLES: '/user-service/users/search',
+    GET_ALL_ROLES: '/user-service/users/role',
 
     //admin endpoints
     GET_ALL: '/user-service/users',
