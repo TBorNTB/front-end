@@ -3,6 +3,7 @@
 
 import { useState, Suspense } from "react";
 import { Megaphone, Calendar, User, Pin, Users, MessageSquare, Send, Trash2, Lock, Plus, X } from "lucide-react";
+import TitleBanner from "@/components/layout/TitleBanner";
 import NewsContent from "./_components/NewsContent";
 import ChattingRoom from "./_components/ChattingRoom";
 
@@ -121,21 +122,12 @@ export default function CommunityPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <TitleBanner
+        title="SSG News & Community"
+        description="동아리의 모든 활동 소식을 한 곳에서 확인해보세요."
+        backgroundImage="/images/BgHeader.png"
+      />
       <div className="container mx-auto px-4 py-10">
-        {/* Hero / Header */}
-        <section className="mb-8">
-          <div className="relative overflow-hidden rounded-2xl bg-black px-6 py-10 sm:px-10 flex justify-center bg-gradient-to-r from-primary-600/40 via-primary-500 to-secondary-500/10">
-            <div className="relative z-10 text-center max-w-3xl">
-              <h1 className="mt-2 text-3xl sm:text-4xl font-bold text-white">
-                SSG News & Community
-              </h1>
-              <p className="mt-3 text-primary-100 text-base sm:text-lg">
-                동아리의 모든 활동 소식을 한 곳에서 확인해보세요.
-              </p>
-            </div>
-          </div>
-        </section>
-
         {/* Tabs */}
         <section className="mb-6 flex justify-center">
           <div className="w-full max-w-4xl flex rounded-xl bg-white border border-gray-200 p-1 shadow-sm">

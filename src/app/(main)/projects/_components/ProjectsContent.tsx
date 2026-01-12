@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ExternalLink, Github, Grid, List, Plus, Search, ChevronDown, ChevronLeft, ChevronRight, Heart, Eye } from 'lucide-react';
+import TitleBanner from '@/components/layout/TitleBanner';
 import { CategoryHelpers, CategoryType, CategoryDisplayNames } from '@/types/services/category';
 import Image from 'next/image';
 import { USE_MOCK_DATA } from '@/lib/api/env';
@@ -28,6 +29,7 @@ interface ProjectSearchResponse {
   size: number;
   totalElements: number;
   totalPages: number;
+  error?: string;
 }
 
 /**
@@ -63,8 +65,6 @@ const fetchProjects = async (params: ProjectSearchParams): Promise<ProjectSearch
 
     const url = `/api/projects/search?${queryParams.toString()}`; // ✅ Use API route
 
-    console.log('🔍 Fetching projects:', { url, params });
-
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -75,26 +75,26 @@ const fetchProjects = async (params: ProjectSearchParams): Promise<ProjectSearch
         || response.statusText
         || `API error: ${response.status}`;
 
-      console.error('API Error', {
-        status: response.status,
-        statusText: response.statusText,
-        url,
-        params,
-        data: errorData,
-      });
-
-      throw new Error(message);
+      return {
+        content: [],
+        page: 0,
+        size: 0,
+        totalElements: 0,
+        totalPages: 0,
+        error: message,
+      };
     }
 
     return await response.json();
   } catch (error) {
-    console.error('Error fetching projects:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error while fetching projects';
     return {
       content: [],
       page: 0,
       size: 0,
       totalElements: 0,
-      totalPages: 0
+      totalPages: 0,
+      error: message,
     };
   }
 };
@@ -116,7 +116,6 @@ const fetchSearchSuggestions = async (query: string): Promise<string[]> => {
     const data = await response.json();
     return Array.isArray(data) ? data : [];
   } catch (error) {
-    console.error('Error fetching suggestions:', error);
     return [];
   }
 };
@@ -358,7 +357,6 @@ export default function ProjectsContent() {
       setTotalElements(response.totalElements);
       setCurrentPage(response.page);
     } catch (error) {
-      console.error('Error loading projects:', error);
       setProjects([]);
     } finally {
       setIsLoading(false);
@@ -461,19 +459,12 @@ export default function ProjectsContent() {
 
   return (
     <div className="min-h-screen bg-background">
+      <TitleBanner
+        title="Projects"
+        description="동아리 멤버들이 만들어낸 프로젝트를 만나보세요."
+        backgroundImage="/images/BgHeader.png"
+      />
       <div className="w-full px-3 sm:px-4 lg:px-10 py-10">
-        {/* Hero Section */}
-        <section className="mb-8">
-          <div className="relative overflow-hidden rounded-2xl bg-black px-6 py-10 sm:px-10 flex justify-center bg-gradient-to-r from-primary-600/40 via-primary-500 to-secondary-500/10">
-            <div className="relative z-10 text-center max-w-3xl">
-              <h1 className="mt-2 text-3xl sm:text-4xl font-bold text-white">Projects</h1>
-              <p className="mt-3 text-primary-100 text-base sm:text-lg">
-                동아리 멤버들이 만들어낸 프로젝트를 만나보세요.
-              </p>
-            </div>
-          </div>
-        </section>
-
         {/* Top Controls */}
         <div className="flex flex-col md:flex-row gap-4 mb-8 bg-white rounded-xl p-6 shadow-lg border border-gray-200">
           <div className="flex items-center justify-between w-full gap-4">

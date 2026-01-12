@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Star, Users, Clock, ArrowRight, Globe, Shield, Code, Lock, Search, Wifi, Cpu, Key } from 'lucide-react';
+import TitleBanner from '@/components/layout/TitleBanner';
 import type { LucideIcon } from 'lucide-react';
 import { categoryService, CategoryItem } from '@/lib/api/services/category-services';
 import { CategoryType, CategorySlugs, CategoryDisplayNames, CategoryDescriptions } from '@/types/services/category';
@@ -617,25 +618,8 @@ export function LearningTopics() {
     console.warn(`Category not found for slug: "${selectedCategory}"`);
   }
 
-  // Common Header Component
-  const renderHeader = () => (
-    <div className="relative overflow-hidden rounded-2xl bg-black px-6 py-10 sm:px-10 flex justify-center bg-gradient-to-r from-primary-600/40 via-primary-500 to-secondary-500/10">
-      <div className="relative z-10 text-center max-w-3xl">
-        <h1 className="mt-2 text-3xl sm:text-4xl font-bold text-white">
-          Learning Topics
-        </h1>
-        <p className="mt-3 text-primary-100 text-base sm:text-lg">
-          사이버보안의 다양한 분야를 탐구하고 실무 경험을 쌓을 수 있는 학습 주제들을 확인하세요.
-        </p>
-      </div>
-    </div>
-  );
-
   const renderAllCategories = () => (
     <div className="space-y-8">
-      {/* Header Section */}
-      {renderHeader()}
-
       {/* Categories Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {categories.map((category) => {
@@ -686,9 +670,6 @@ export function LearningTopics() {
     const cat = currentCategory;
     return (
       <div className="space-y-6">
-        {/* Header Section */}
-        {renderHeader()}
-
         <div className="flex gap-8 items-start">
           {/* Sidebar - Sticky */}
           <div className="w-64 flex-shrink-0">
@@ -939,6 +920,11 @@ export function LearningTopics() {
 
   return (
     <div className="min-h-screen bg-background">
+      <TitleBanner
+        title="Learning Topics"
+        description="사이버보안의 다양한 분야를 탐구하고 실무 경험을 쌓을 수 있는 학습 주제들을 확인하세요."
+        backgroundImage="/images/BgHeader.png"
+      />
       <div className="container py-8">
         {selectedCategory && currentCategory ? renderCategoryDetail() : renderAllCategories()}
       </div>

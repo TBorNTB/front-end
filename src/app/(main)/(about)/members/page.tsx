@@ -14,6 +14,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { memberService, UserResponse } from '@/lib/api/services/user-services';
+import TitleBanner from '@/components/layout/TitleBanner';
 
 // Types for member data
 interface Member {
@@ -235,6 +236,11 @@ export default function MembersPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <TitleBanner
+        title="Members"
+        description="SSG를 만들어가는 멤버들을 만나보세요."
+        backgroundImage="/images/BgHeader.png"
+      />
       
       {/* Background Effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">

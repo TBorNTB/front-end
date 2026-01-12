@@ -71,14 +71,29 @@ export const searchCSKnowledge = async (
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to search CS knowledge: ${response.status}`);
+      console.error(`CS Knowledge API error: ${response.status} ${response.statusText}`);
+      // Return empty results instead of throwing
+      return {
+        content: [],
+        page: params.page || 0,
+        size: params.size || 6,
+        totalElements: 0,
+        totalPages: 0,
+      };
     }
 
     const data: CSKnowledgeSearchResponse = await response.json();
     return data;
   } catch (error) {
     console.error('Error searching CS knowledge:', error);
-    throw error;
+    // Return empty results instead of throwing
+    return {
+      content: [],
+      page: 0,
+      size: 6,
+      totalElements: 0,
+      totalPages: 0,
+    };
   }
 };
 

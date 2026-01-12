@@ -18,7 +18,6 @@ const navList = [
       { name: "About SSG", slug: "aboutSSG", href: "/aboutSSG" },
       { name: "Members", slug: "members", href: "/members" },
       { name: "Activities", slug: "activities", href: "/activities" },
-      { name: "SSG News", slug: "ssg-news", href: "/news" },
       { name: "FAQs", slug: "faqs", href: "/faqs" },
     ]
   },

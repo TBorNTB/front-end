@@ -12,6 +12,7 @@ import {
   List,
   ChevronDown,
 } from 'lucide-react';
+import TitleBanner from '@/components/layout/TitleBanner';
 import ArticleCard from './_components/ArticleCard';
 import { searchCSKnowledge, type CSKnowledgeSearchResponse } from '@/lib/api/services/elastic-services';
 import { categoryService, type CategoryItem } from '@/lib/api/services/category-services';
@@ -384,19 +385,12 @@ function ArticlesContent() {
 
   return (
     <div className="min-h-screen bg-background">
+      <TitleBanner
+        title="CS지식"
+        description="동아리의 모든 지식과 경험을 이곳에서 찾아보세요"
+        backgroundImage="/images/BgHeader.png"
+      />
       <main className="w-full px-3 sm:px-4 lg:px-10 py-10">
-        {/* 상단 Hero 영역 – 기존 디자인 그대로 */}
-        <section className="mb-8">
-          <div className="relative overflow-hidden rounded-2xl bg-black px-6 py-10 sm:px-10 flex justify-center bg-gradient-to-r from-primary-600/40 via-primary-500 to-secondary-500/10">
-            <div className="relative z-10 text-center max-w-3xl">
-              <h1 className="mt-2 text-3xl sm:text-4xl font-bold text-white">CS지식</h1>
-              <p className="mt-3 text-primary-100 text-base sm:text-lg">
-              동아리의 모든 지식과 경험을 이곳에서 찾아보세요
-              </p>
-            </div>
-          </div>
-        </section>
-
         {articlesLoading && (
           <div className="text-center py-8 text-gray-600">아티클을 불러오는 중...</div>
         )}

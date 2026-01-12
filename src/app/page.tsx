@@ -384,7 +384,7 @@ export default function Home() {
                   )}
                   
                   {/* Articles Grid */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {visibleArticles.map((article) => (
                       <ArticleCardHome key={article.id} article={article} />
                     ))}
@@ -444,6 +444,16 @@ export default function Home() {
             )}
           </div>
         </section>
+
+        {/* FAQs Section */}
+        <FAQsSection
+          faqs={faqs}
+          expandedFaq={expandedFaq}
+          onToggleFaq={toggleFaq}
+        />
+
+      {/* Quick Actions Section */}
+        <QuickActions />
       </div>
 
       <Footer />
