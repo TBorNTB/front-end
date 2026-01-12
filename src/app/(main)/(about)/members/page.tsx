@@ -191,9 +191,9 @@ export default function MembersPage() {
 
             {/* Filter Bar */}
             <div className="card mb-8">
-              <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-                {/* Search */}
-                <div className="relative flex-1 max-w-md">
+              {/* Search Row */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                   <input
                     type="text"
@@ -205,35 +205,32 @@ export default function MembersPage() {
                              transition-all duration-300"
                   />
                 </div>
-
-                {/* Level Filter */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium text-gray-700">등급:</span>
-                  {memberLevels.map((level) => (
-                    <button
-                      key={level.key}
-                      onClick={() => handleLevelToggle(level.key)}
-                      className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
-                        selectedLevels.includes(level.key)
-                          ? 'bg-primary-600 text-white border-primary-600'
-                          : 'bg-white text-gray-700 border-gray-300 hover:border-primary-400'
-                      }`}
-                    >
-                      {level.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Clear Filters */}
                 {(selectedLevels.length > 0 || searchTerm) && (
                   <button
                     onClick={clearAllFilters}
-                    className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                    className="text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap"
                   >
-                    <X className="h-4 w-4" />
                     초기화
                   </button>
                 )}
+              </div>
+
+              {/* Level Filter Row */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                <span className="text-sm font-medium text-gray-700 whitespace-nowrap">등급:</span>
+                {memberLevels.map((level) => (
+                  <button
+                    key={level.key}
+                    onClick={() => handleLevelToggle(level.key)}
+                    className={`px-3 py-1.5 text-sm rounded-full border transition-colors whitespace-nowrap ${
+                      selectedLevels.includes(level.key)
+                        ? 'bg-primary-600 text-white border-primary-600'
+                        : 'bg-white text-gray-700 border-gray-300 hover:border-primary-400'
+                    }`}
+                  >
+                    {level.label}
+                  </button>
+                ))}
               </div>
             </div>
 
