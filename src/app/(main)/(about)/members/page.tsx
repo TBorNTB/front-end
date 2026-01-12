@@ -10,18 +10,17 @@ import {
   ChevronRight,
   Loader2,
   Search,
-  X
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-// 회원 등급 정의
-const memberLevels = [
-  { key: 'GUEST', label: '게스트' },
-  { key: 'ASSOCIATE_MEMBER', label: '준회원' },
-  { key: 'FULL_MEMBER', label: '정회원' },
-  { key: 'SENIOR', label: '선배님' },
-  { key: 'ADMIN', label: '운영진' }
-];
+// 회원 등급 라벨 (API role -> 한글)
+const roleLabelMap: Record<string, string> = {
+  'GUEST': '게스트',
+  'ASSOCIATE_MEMBER': '준회원',
+  'FULL_MEMBER': '정회원',
+  'SENIOR': '선배님',
+  'ADMIN': '운영진',
+};
 
 // 날짜 포맷팅 헬퍼
 const formatDate = (dateString: string) => {
@@ -31,8 +30,9 @@ const formatDate = (dateString: string) => {
 
 export default function MembersPage() {
   const [members, setMembers] = useState<UserResponse[]>([]);
-  const [filteredMembers, setFilteredMembers] = useState<UserResponse[]>([]);
+  const [availableRoles, setAvailableRoles] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedLevels, setSelectedLevels] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,58 +40,57 @@ export default function MembersPage() {
   // 페이지네이션 상태
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize] = useState(6);
-  const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
-  // Load members data
+  // 검색어 debounce (300ms)
   useEffect(() => {
-    const loadMembers = async () => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setCurrentPage(0); // 검색 시 첫 페이지로
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // 처음 로드 시 role 목록 API 호출
+  useEffect(() => {
+    const loadAllRoles = async () => {
       try {
-        setIsLoading(true);
-        setError(null);
-
-        const response = await memberService.getMembers({
-          page: currentPage,
-          size: pageSize,
-        });
-
-        setMembers(response.data);
-        setTotalElements(response.data.length);
-        setTotalPages(response.totalPage);
-      } catch (err: any) {
-        console.error('Failed to load members:', err);
-        setError(err.message || '멤버 정보를 불러올 수 없습니다.');
-        setMembers([]);
-      } finally {
-        setIsLoading(false);
+        const roles = await memberService.getAllRoles();
+        setAvailableRoles(roles);
+      } catch (err) {
+        console.error('Failed to load roles:', err);
       }
     };
+    loadAllRoles();
+  }, []);
 
-    loadMembers();
-  }, [currentPage, pageSize]);
+  // Load members data (API 필터링)
+  const loadMembers = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
 
-  // Filter members
+      const response = await memberService.getMembers({
+        page: currentPage,
+        size: pageSize,
+        roles: selectedLevels.length > 0 ? selectedLevels : undefined,
+        realName: debouncedSearchTerm || undefined,
+      });
+
+      setMembers(response.data);
+      setTotalPages(response.totalPage);
+    } catch (err: any) {
+      console.error('Failed to load members:', err);
+      setError(err.message || '멤버 정보를 불러올 수 없습니다.');
+      setMembers([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentPage, pageSize, selectedLevels, debouncedSearchTerm]);
+
   useEffect(() => {
-    let filtered = members;
-
-    // Search filter
-    if (searchTerm) {
-      const query = searchTerm.toLowerCase();
-      filtered = filtered.filter(member =>
-        member.realName?.toLowerCase().includes(query) ||
-        member.nickname?.toLowerCase().includes(query) ||
-        member.username?.toLowerCase().includes(query) ||
-        member.description?.toLowerCase().includes(query)
-      );
-    }
-
-    // Level filter
-    if (selectedLevels.length > 0) {
-      filtered = filtered.filter(member => selectedLevels.includes(member.role));
-    }
-
-    setFilteredMembers(filtered);
-  }, [members, searchTerm, selectedLevels]);
+    loadMembers();
+  }, [loadMembers]);
 
   const handleLevelToggle = (level: string) => {
     setSelectedLevels(prev =>
@@ -99,6 +98,7 @@ export default function MembersPage() {
         ? prev.filter(l => l !== level)
         : [...prev, level]
     );
+    setCurrentPage(0); // 필터 변경 시 첫 페이지로
   };
 
   const clearAllFilters = () => {
@@ -124,8 +124,7 @@ export default function MembersPage() {
   };
 
   const getLevelLabel = (role: string) => {
-    const levelObj = memberLevels.find(l => l.key === role);
-    return levelObj?.label || role;
+    return roleLabelMap[role] || role;
   };
 
   // 표시용 이름 가져오기
@@ -185,7 +184,7 @@ export default function MembersPage() {
             <div className="text-center mb-12">
               <h1 className="text-4xl font-bold text-primary-700 mb-4">멤버</h1>
               <p className="text-xl text-gray-700 max-w-2xl mx-auto">
-                SSG를 만들어나가는 뛰어난 동료들을 만나보세요
+                SSG의 뛰어난 구성원들을 만나보세요
               </p>
             </div>
 
@@ -218,17 +217,17 @@ export default function MembersPage() {
               {/* Level Filter Row */}
               <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1">
                 <span className="text-sm font-medium text-gray-700 whitespace-nowrap">등급:</span>
-                {memberLevels.map((level) => (
+                {availableRoles.map((role) => (
                   <button
-                    key={level.key}
-                    onClick={() => handleLevelToggle(level.key)}
+                    key={role}
+                    onClick={() => handleLevelToggle(role)}
                     className={`px-3 py-1.5 text-sm rounded-full border transition-colors whitespace-nowrap ${
-                      selectedLevels.includes(level.key)
+                      selectedLevels.includes(role)
                         ? 'bg-primary-600 text-white border-primary-600'
                         : 'bg-white text-gray-700 border-gray-300 hover:border-primary-400'
                     }`}
                   >
-                    {level.label}
+                    {getLevelLabel(role)}
                   </button>
                 ))}
               </div>
@@ -237,24 +236,24 @@ export default function MembersPage() {
             {/* Results Info */}
             <div className="flex items-center justify-between mb-6">
               <p className="text-gray-600">
-                총 <span className="font-semibold text-primary-700">{totalElements}</span>명의 멤버
-                {filteredMembers.length !== totalElements && (
+                총 <span className="font-semibold text-primary-700">{members.length}</span>명의 멤버
+                {(selectedLevels.length > 0 || debouncedSearchTerm) && (
                   <span className="ml-2 text-sm text-gray-500">
-                    (필터 결과: {filteredMembers.length}명)
+                    (필터 적용됨)
                   </span>
                 )}
               </p>
             </div>
 
                 {/* Members Grid */}
-                {filteredMembers.length === 0 ? (
+                {members.length === 0 ? (
                   <div className="text-center py-20">
                     <div className="text-gray-500 text-lg mb-2">검색 결과가 없습니다</div>
                     <p className="text-gray-400">다른 조건으로 검색해보세요</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredMembers.map((member) => (
+                    {members.map((member) => (
                       <div
                         key={member.id}
                         className="card group cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.02]"
