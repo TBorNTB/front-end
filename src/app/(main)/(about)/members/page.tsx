@@ -189,94 +189,65 @@ export default function MembersPage() {
               </p>
             </div>
 
-            <div className="flex flex-col lg:flex-row gap-8">
-              {/* Left Sidebar - Filters */}
-              <aside className="lg:w-80 flex-shrink-0">
-                <div className="card sticky top-8">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-semibold text-primary-700">필터 옵션</h2>
-                    {(selectedLevels.length > 0 || searchTerm) && (
-                      <button
-                        onClick={clearAllFilters}
-                        className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
-                      >
-                        <X className="h-4 w-4" />
-                        초기화
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Search */}
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      멤버 검색
-                    </label>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                      <input
-                        type="text"
-                        placeholder="이름, 닉네임 검색..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg
-                                 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200
-                                 transition-all duration-300"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Level Filter */}
-                  <div className="mb-6">
-                    <h3 className="text-sm font-medium text-gray-700 mb-3">회원 등급</h3>
-                    <div className="space-y-2">
-                      {memberLevels.map((level) => (
-                        <label key={level.key} className="flex items-center space-x-3 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={selectedLevels.includes(level.key)}
-                            onChange={() => handleLevelToggle(level.key)}
-                            className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                          />
-                          <span className="text-gray-700 font-medium">{level.label}</span>
-                          <span className="text-sm text-gray-500">
-                            ({members.filter(m => m.role === level.key).length})
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
+            {/* Filter Bar */}
+            <div className="card mb-8">
+              <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                {/* Search */}
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                  <input
+                    type="text"
+                    placeholder="이름, 닉네임 검색..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg
+                             focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200
+                             transition-all duration-300"
+                  />
                 </div>
-              </aside>
 
-              {/* Main Content */}
-              <main className="flex-1">
-                {/* Results Header */}
-                <div className="flex items-center justify-between mb-8">
-                  <p className="text-gray-600">
-                    총 <span className="font-semibold text-primary-700">{totalElements}</span>명의 멤버
-                    {filteredMembers.length !== totalElements && (
-                      <span className="ml-2 text-sm text-gray-500">
-                        (필터 결과: {filteredMembers.length}명)
-                      </span>
-                    )}
-                  </p>
-
-                  {/* Active Filters */}
-                  {selectedLevels.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {selectedLevels.map((level) => (
-                        <Badge
-                          key={level}
-                          className="bg-primary-100 text-primary-800 border-primary-200 cursor-pointer hover:bg-primary-200"
-                          onClick={() => handleLevelToggle(level)}
-                        >
-                          {getLevelLabel(level)}
-                          <X className="h-3 w-3 ml-1" />
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
+                {/* Level Filter */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-medium text-gray-700">등급:</span>
+                  {memberLevels.map((level) => (
+                    <button
+                      key={level.key}
+                      onClick={() => handleLevelToggle(level.key)}
+                      className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
+                        selectedLevels.includes(level.key)
+                          ? 'bg-primary-600 text-white border-primary-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:border-primary-400'
+                      }`}
+                    >
+                      {level.label}
+                    </button>
+                  ))}
                 </div>
+
+                {/* Clear Filters */}
+                {(selectedLevels.length > 0 || searchTerm) && (
+                  <button
+                    onClick={clearAllFilters}
+                    className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                  >
+                    <X className="h-4 w-4" />
+                    초기화
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Results Info */}
+            <div className="flex items-center justify-between mb-6">
+              <p className="text-gray-600">
+                총 <span className="font-semibold text-primary-700">{totalElements}</span>명의 멤버
+                {filteredMembers.length !== totalElements && (
+                  <span className="ml-2 text-sm text-gray-500">
+                    (필터 결과: {filteredMembers.length}명)
+                  </span>
+                )}
+              </p>
+            </div>
 
                 {/* Members Grid */}
                 {filteredMembers.length === 0 ? (
@@ -391,8 +362,6 @@ export default function MembersPage() {
                     </button>
                   </div>
                 )}
-              </main>
-            </div>
           </div>
         </section>
       </div>
