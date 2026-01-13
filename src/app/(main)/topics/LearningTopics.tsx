@@ -37,6 +37,17 @@ const getCategoryTypeByName = (name: string): CategoryType | null => {
   return entry ? (entry[0] as CategoryType) : null;
 };
 
+// CategoryType을 API 형식으로 변환 (WEB_HACKING -> WEB-HACKING)
+const convertCategoryTypeToApiFormat = (categoryType: CategoryType): string => {
+  return categoryType.replace(/_/g, '-');
+};
+
+// 카테고리 이름을 API 형식으로 변환 (한글 이름 -> API 형식)
+const getCategoryApiFormat = (categoryName: string): string => {
+  const type = getCategoryTypeByName(categoryName);
+  return type ? convertCategoryTypeToApiFormat(type) : categoryName;
+};
+
 // API 응답을 컴포넌트에서 사용하는 형식으로 변환
 interface CategoryDisplayData {
   id: number;
@@ -602,16 +613,102 @@ export function LearningTopics() {
     }
   };
 
-  // Filter projects and articles based on selected category
-  const filteredProjects = selectedCategory 
-    ? projects.filter(project => project.categorySlug === selectedCategory)
-    : projects;
-    
-  const filteredArticles = selectedCategory 
-    ? articles.filter(article => article.categorySlug === selectedCategory)
-    : articles;
-
+  // Find current category based on selected slug
   const currentCategory = categories.find(cat => cat.slug === selectedCategory);
+
+  // State for projects and articles
+  const [filteredProjects, setFilteredProjects] = useState<any[]>([]);
+  const [filteredArticles, setFilteredArticles] = useState<any[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [loadingArticles, setLoadingArticles] = useState(false);
+
+  // Fetch projects and articles when category is selected
+  useEffect(() => {
+    if (!selectedCategory || !currentCategory) {
+      setFilteredProjects([]);
+      setFilteredArticles([]);
+      return;
+    }
+
+    const fetchProjectsAndArticles = async () => {
+      const categoryApiFormat = getCategoryApiFormat(currentCategory.name);
+      
+      // Fetch projects
+      setLoadingProjects(true);
+      try {
+        const projectParams = new URLSearchParams();
+        projectParams.append('categories', currentCategory.name); // API는 한글 카테고리 이름을 받음
+        projectParams.append('size', '5');
+        projectParams.append('page', '0');
+        projectParams.append('projectSortType', 'LATEST');
+
+        const projectResponse = await fetch(`/api/projects/search?${projectParams.toString()}`);
+        if (projectResponse.ok) {
+          const projectData = await projectResponse.json();
+          const transformedProjects = (projectData.content || []).map((item: any) => ({
+            id: String(item.id),
+            title: item.title || '제목 없음',
+            description: item.description || '',
+            category: item.projectCategories?.[0] || currentCategory.name,
+            status: item.projectStatus === 'IN_PROGRESS' ? 'In Progress' :
+                    item.projectStatus === 'COMPLETED' ? 'Completed' :
+                    item.projectStatus === 'PLANNING' ? 'Planning' : 'In Progress',
+            tags: item.projectTechStacks || [],
+            stars: item.likeCount || 0,
+            contributors: (item.collaborators || []).length + (item.owner ? 1 : 0),
+            categorySlug: selectedCategory
+          }));
+          setFilteredProjects(transformedProjects);
+        } else {
+          setFilteredProjects([]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch projects:', error);
+        setFilteredProjects([]);
+      } finally {
+        setLoadingProjects(false);
+      }
+
+      // Fetch articles (CS Knowledge)
+      setLoadingArticles(true);
+      try {
+        const articleParams = new URLSearchParams();
+        articleParams.append('category', currentCategory.name); // API는 한글 카테고리 이름을 받음
+        articleParams.append('size', '5');
+        articleParams.append('page', '0');
+        articleParams.append('sortType', 'LATEST');
+
+        const articleResponse = await fetch(`/api/articles/search?${articleParams.toString()}`);
+        if (articleResponse.ok) {
+          const articleData = await articleResponse.json();
+          const transformedArticles = (articleData.content || []).map((item: any) => ({
+            id: String(item.id),
+            title: item.title || '제목 없음',
+            description: typeof item.content === 'string' 
+              ? item.content.substring(0, 150) 
+              : '',
+            category: item.category || currentCategory.name,
+            author: item.writer?.nickname || item.writer?.realname || '작성자',
+            publishDate: item.createdAt ? new Date(item.createdAt).toLocaleDateString('ko-KR') : '',
+            readTime: '5분 읽기',
+            views: item.viewCount || 0,
+            comments: 0,
+            categorySlug: selectedCategory
+          }));
+          setFilteredArticles(transformedArticles);
+        } else {
+          setFilteredArticles([]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch articles:', error);
+        setFilteredArticles([]);
+      } finally {
+        setLoadingArticles(false);
+      }
+    };
+
+    fetchProjectsAndArticles();
+  }, [selectedCategory, currentCategory]);
   
   // 선택된 카테고리가 없으면 상세 페이지를 표시하지 않음
   if (selectedCategory && !currentCategory) {
@@ -758,7 +855,12 @@ export function LearningTopics() {
                   </div>
 
                   <div className="space-y-4">
-                    {filteredProjects.length > 0 ? (
+                    {loadingProjects ? (
+                      <div className="bg-gray-50 rounded-lg p-8 text-center border border-gray-200">
+                        <div className="inline-block w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-gray-600 mt-2">프로젝트를 불러오는 중...</p>
+                      </div>
+                    ) : filteredProjects.length > 0 ? (
                       filteredProjects.map((project) => (
                         <div key={project.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-200">
                           <div className="flex items-start justify-between mb-3">
@@ -769,11 +871,13 @@ export function LearningTopics() {
                           </div>
                           <p className="text-gray-600 text-sm mb-4">{project.description}</p>
                           <div className="flex items-center space-x-2 mb-4">
-                            {project.tags.map((tag, index) => (
-                              <span key={index} className="bg-white text-gray-700 px-2 py-1 rounded text-xs border border-gray-200">
-                                {tag}
-                              </span>
-                            ))}
+                            {project.tags && project.tags.length > 0 ? (
+                              project.tags.slice(0, 3).map((tag: string, index: number) => (
+                                <span key={index} className="bg-white text-gray-700 px-2 py-1 rounded text-xs border border-gray-200">
+                                  {tag}
+                                </span>
+                              ))
+                            ) : null}
                           </div>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3 text-xs text-gray-500">
@@ -786,7 +890,10 @@ export function LearningTopics() {
                                 <span>{project.contributors}</span>
                               </div>
                             </div>
-                            <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                            <button 
+                              onClick={() => router.push(`/projects/${project.id}`)}
+                              className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                            >
                               자세히 보기 →
                             </button>
                           </div>
@@ -820,7 +927,12 @@ export function LearningTopics() {
                   </div>
 
                   <div className="space-y-4">
-                    {filteredArticles.length > 0 ? (
+                    {loadingArticles ? (
+                      <div className="bg-gray-50 rounded-lg p-8 text-center border border-gray-200">
+                        <div className="inline-block w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-gray-600 mt-2">아티클을 불러오는 중...</p>
+                      </div>
+                    ) : filteredArticles.length > 0 ? (
                       filteredArticles.map((article) => (
                         <div key={article.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-200">
                           <h3 className="text-base font-bold text-foreground mb-2">{article.title}</h3>
@@ -840,7 +952,10 @@ export function LearningTopics() {
                                 <span>{article.readTime}</span>
                               </div>
                             </div>
-                            <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                            <button 
+                              onClick={() => router.push(`/community/news/${article.id}`)}
+                              className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                            >
                               읽어보기 →
                             </button>
                           </div>
