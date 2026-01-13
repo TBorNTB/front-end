@@ -40,6 +40,7 @@ export const USER_ENDPOINTS = {
   // Alarm endpoints
   ALARM: {
     RECEIVED: '/user-service/alarm/received',
+    MARK_AS_SEEN: '/user-service/alarm/{alarmId}/seen',
   },
 
   // View & Like endpoints

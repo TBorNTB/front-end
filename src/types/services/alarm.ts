@@ -14,6 +14,8 @@ export interface Alarm {
   isRead: boolean;
   createdAt: string;
   link?: string; // 알람 클릭 시 이동할 링크
+  domainType?: string; // 예: 'PROJECT', 'ARTICLE', 'NEWS', 'CSKNOWLEDGE'
+  domainId?: string | number; // 해당 도메인의 ID
   relatedUser?: {
     nickname: string;
     profileImage?: string;

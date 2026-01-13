@@ -26,6 +26,8 @@ export interface AlarmResponse {
   isRead: boolean;
   createdAt: string;
   link?: string;
+  domainType?: string; // 예: 'PROJECT', 'ARTICLE', 'NEWS', 'CSKNOWLEDGE'
+  domainId?: string | number; // 해당 도메인의 ID
   relatedUser?: {
     nickname: string;
     profileImage?: string;
@@ -75,6 +77,41 @@ export const alarmService = {
       return Array.isArray(data) ? data : [];
     } catch (error) {
       console.error('Error fetching alarms:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 알람 읽음 처리
+   * @param alarmId 알람 ID
+   */
+  markAsSeen: async (alarmId: string): Promise<void> => {
+    try {
+      const token = getAccessToken();
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const url = `${BASE_URL}${USER_ENDPOINTS.ALARM.MARK_AS_SEEN.replace('{alarmId}', alarmId)}`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Accept': '*/*',
+          'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          throw new Error('Authentication failed');
+        }
+        throw new Error(`Failed to mark alarm as seen: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error marking alarm as seen:', error);
       throw error;
     }
   },

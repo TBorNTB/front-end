@@ -1,11 +1,36 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Alarm, AlarmType } from '@/types/services/alarm';
 import { Bell, MessageSquare, Reply, Heart, UserPlus, ChevronRight, Clock, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { UserRole } from '@/types/core';
 import { alarmService, AlarmResponse } from '@/lib/api/services/alarm-services';
+
+// domainType과 domainId를 기반으로 URL 생성
+const generateAlarmLink = (domainType?: string, domainId?: string | number, link?: string): string => {
+  // link가 있으면 우선 사용
+  if (link) return link;
+  
+  // domainType과 domainId가 없으면 기본값
+  if (!domainType || !domainId) return '#';
+  
+  const id = String(domainId);
+  
+  // domainType에 따라 URL 생성
+  switch (domainType.toUpperCase()) {
+    case 'PROJECT':
+      return `/projects/${id}`;
+    case 'ARTICLE':
+    case 'CSKNOWLEDGE':
+      return `/community/news/${id}`;
+    case 'NEWS':
+      return `/community/news/${id}`;
+    default:
+      return '#';
+  }
+};
 
 // API 응답을 Alarm 인터페이스로 변환
 const mapAlarmResponseToAlarm = (response: AlarmResponse): Alarm => {
@@ -17,7 +42,9 @@ const mapAlarmResponseToAlarm = (response: AlarmResponse): Alarm => {
     content: response.message || response.content || '',
     isRead: response.isRead,
     createdAt: response.createdAt,
-    link: response.link,
+    link: generateAlarmLink(response.domainType, response.domainId, response.link),
+    domainType: response.domainType,
+    domainId: response.domainId,
     relatedUser: response.relatedUser,
     relatedPost: response.relatedPost,
   };
@@ -142,9 +169,32 @@ export default function AlarmsPage() {
     ? [AlarmType.COMMENT_ADDED, AlarmType.COMMENT_REPLY_ADDED, AlarmType.POST_LIKED, AlarmType.SIGNUP]
     : [AlarmType.COMMENT_ADDED, AlarmType.COMMENT_REPLY_ADDED, AlarmType.POST_LIKED];
 
-  const handleAlarmClick = (alarm: Alarm) => {
-    setSelectedAlarm(alarm);
-    // 실제로는 여기서 읽음 처리 API 호출
+  const handleAlarmClick = async (alarm: Alarm) => {
+    // 읽지 않은 알람만 읽음 처리
+    if (!alarm.isRead) {
+      try {
+        await alarmService.markAsSeen(alarm.id);
+        // 로컬 상태 업데이트
+        setAlarms(prevAlarms => 
+          prevAlarms.map(a => 
+            a.id === alarm.id ? { ...a, isRead: true } : a
+          )
+        );
+        setAllAlarms(prevAlarms => 
+          prevAlarms.map(a => 
+            a.id === alarm.id ? { ...a, isRead: true } : a
+          )
+        );
+        // 선택된 알람도 업데이트
+        setSelectedAlarm({ ...alarm, isRead: true });
+      } catch (error) {
+        console.error('Failed to mark alarm as seen:', error);
+        // 에러가 발생해도 상세 보기는 표시
+        setSelectedAlarm(alarm);
+      }
+    } else {
+      setSelectedAlarm(alarm);
+    }
   };
 
   const handleBackToList = () => {
@@ -262,14 +312,14 @@ export default function AlarmsPage() {
                     </div>
                   )}
 
-                  {selectedAlarm.link && (
-                    <a
+                  {selectedAlarm.link && selectedAlarm.link !== '#' && (
+                    <Link
                       href={selectedAlarm.link}
                       className="inline-flex items-center space-x-2 text-primary-600 hover:text-primary-700 font-medium text-sm"
                     >
                       <span>게시글 보기</span>
                       <ChevronRight className="w-4 h-4" />
-                    </a>
+                    </Link>
                   )}
                 </div>
               </div>
@@ -288,12 +338,24 @@ export default function AlarmsPage() {
                     const config = categoryConfig[alarm.type];
                     const Icon = config.icon;
 
+                    const handleClick = async (e: React.MouseEvent) => {
+                      e.preventDefault();
+                      await handleAlarmClick(alarm);
+                      // 링크로 이동
+                      if (alarm.link && alarm.link !== '#') {
+                        window.location.href = alarm.link;
+                      }
+                    };
+
                     return (
-                      <button
+                      <Link
                         key={alarm.id}
-                        onClick={() => handleAlarmClick(alarm)}
-                        className={`w-full p-4 hover:bg-gray-50 transition-colors text-left ${
-                          !alarm.isRead ? 'bg-blue-50/50' : ''
+                        href={alarm.link || '#'}
+                        onClick={handleClick}
+                        className={`w-full p-4 transition-colors text-left block ${
+                          !alarm.isRead 
+                            ? 'bg-blue-50/50 hover:bg-blue-100/50 border-l-4 border-blue-500' 
+                            : 'bg-white hover:bg-gray-50'
                         }`}
                       >
                         <div className="flex items-start space-x-4">
@@ -308,16 +370,16 @@ export default function AlarmsPage() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between mb-1">
                               <h4 className={`font-medium ${
-                                alarm.isRead ? 'text-gray-600' : 'text-gray-900'
+                                alarm.isRead ? 'text-gray-600' : 'text-gray-900 font-semibold'
                               }`}>
                                 {alarm.title}
                               </h4>
                               {!alarm.isRead && (
-                                <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1.5 ml-2"></span>
+                                <span className="w-2.5 h-2.5 bg-blue-500 rounded-full flex-shrink-0 mt-1.5 ml-2 animate-pulse"></span>
                               )}
                             </div>
                             <p className={`text-sm mb-2 line-clamp-2 ${
-                              alarm.isRead ? 'text-gray-500' : 'text-gray-700'
+                              alarm.isRead ? 'text-gray-500' : 'text-gray-800 font-medium'
                             }`}>
                               {alarm.content}
                             </p>
@@ -329,7 +391,7 @@ export default function AlarmsPage() {
 
                           <ChevronRight className="w-5 h-5 text-gray-300 flex-shrink-0" />
                         </div>
-                      </button>
+                      </Link>
                     );
                   })}
                 </div>
