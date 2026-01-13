@@ -5,11 +5,11 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Grid, List, Search, ChevronDown, X, ChevronLeft, ChevronRight, Heart, Eye, Calendar, User, Plus } from 'lucide-react';
 import { NewsCard } from './NewsCard';
 import Link from 'next/link';
-import { BASE_URL } from '@/lib/api/config';
-
 // News API Response Types
 interface NewsSearchParams {
-  query?: string;
+  keyword?: string;
+  category?: string;
+  postSortType?: string;
   size?: number;
   page?: number;
 }
@@ -20,97 +20,97 @@ interface NewsSearchResponse {
   size: number;
   totalElements: number;
   totalPages: number;
+  error?: string;
 }
 
 interface NewsItem {
-  id: string;
+  id: number;
   content: {
     title: string;
     summary: string;
     content: string;
-    category?: string;
+    category: string;
   };
   thumbnailPath?: string;
-  writerId: string;
   tags: string[];
   createdAt: string;
   updatedAt: string;
   likeCount: number;
   viewCount: number;
+  writer: {
+    username: string;
+    nickname: string;
+    realname: string;
+  };
+  participants?: Array<{
+    username: string;
+    nickname: string;
+    realname: string;
+  }>;
 }
 
-// News 검색 API 호출 함수
+/**
+ * Fetch news from Elasticsearch API via API route
+ */
 const fetchNews = async (params: NewsSearchParams): Promise<NewsSearchResponse> => {
   try {
     const queryParams = new URLSearchParams();
     
-    if (params.query && params.query.trim()) {
-      queryParams.append('query', params.query.trim());
-    } else {
-      queryParams.append('query', ' ');
+    // Keyword: only append if provided and not empty
+    if (params.keyword && params.keyword.trim() && params.keyword.trim() !== ' ') {
+      queryParams.append('keyword', params.keyword.trim());
     }
     
-    if (params.size !== undefined) {
-      queryParams.append('size', params.size.toString());
-    }
+    // Category: default to MT for member news
+    const category = params.category && params.category !== 'all' ? params.category : 'MT';
+    queryParams.append('category', category);
     
-    if (params.page !== undefined) {
-      queryParams.append('page', params.page.toString());
-    }
+    // Sort type: default to LATEST
+    queryParams.append('postSortType', params.postSortType || 'LATEST');
+    
+    // Size and page: always include
+    queryParams.append('size', (params.size || PAGE_SIZE).toString());
+    queryParams.append('page', (params.page !== undefined ? params.page : 0).toString());
 
-    const url = `${BASE_URL}/elastic-service/api/elastic/news/search?${queryParams.toString()}`;
+    const url = `/api/news/search?${queryParams.toString()}`;
     
-    console.log('Fetching news from:', url);
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'accept': 'application/json',
-      },
-    });
+    const response = await fetch(url);
 
     if (!response.ok) {
-      let errorMessage = `API error: ${response.status} ${response.statusText}`;
-      try {
-        const errorText = await response.text();
-        console.error('API Error Response:', errorText);
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.message || errorData.error || errorMessage;
-        } catch {
-          // If not JSON, use the status text
-        }
-      } catch (e) {
-        console.error('Could not read error response:', e);
-      }
-      
-      // Return mock data when API fails
-      console.warn('Using mock data due to API error:', errorMessage);
+      const errorData = await response.json().catch(() => ({} as Record<string, unknown>));
+      const message = (errorData as { message?: string; error?: string })?.message
+        || (errorData as { error?: string })?.error
+        || response.statusText
+        || `API error: ${response.status}`;
+
       return {
-        content: mockNewsData,
+        content: [],
         page: params.page || 0,
         size: params.size || PAGE_SIZE,
-        totalElements: mockNewsData.length,
-        totalPages: Math.ceil(mockNewsData.length / (params.size || PAGE_SIZE))
+        totalElements: 0,
+        totalPages: 0,
+        error: message,
       };
     }
 
-    const data: NewsSearchResponse = await response.json();
-    return data;
+    return await response.json();
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error fetching news:', error);
-    console.warn('Using mock data due to network error');
     return {
-      content: mockNewsData,
+      content: [],
       page: params.page || 0,
       size: params.size || PAGE_SIZE,
-      totalElements: mockNewsData.length,
-      totalPages: Math.ceil(mockNewsData.length / (params.size || PAGE_SIZE))
+      totalElements: 0,
+      totalPages: 0,
+      error: message,
     };
   }
 };
 
-// Elasticsearch 검색 제안 API 호출 함수
+/**
+ * Fetch search suggestions from Elasticsearch API via API route
+ */
 const fetchElasticSearchSuggestions = async (query: string): Promise<string[]> => {
   if (!query || query.trim().length === 0) {
     return [];
@@ -118,24 +118,18 @@ const fetchElasticSearchSuggestions = async (query: string): Promise<string[]> =
 
   try {
     const response = await fetch(
-      `${BASE_URL}/elastic-service/api/elastic/news/suggestion?query=${encodeURIComponent(query)}`,
-      {
-        method: 'GET',
-        headers: {
-          'accept': 'application/json',
-        },
-      }
+      `/api/news/suggestions?query=${encodeURIComponent(query.trim())}`
     );
 
     if (!response.ok) {
-      console.error('Elasticsearch API error:', response.status);
+      console.error('News suggestion API error:', response.status);
       return [];
     }
 
     const data = await response.json();
     return Array.isArray(data) ? data : [];
   } catch (error) {
-    console.error('Error fetching Elasticsearch suggestions:', error);
+    console.error('Error fetching news suggestions:', error);
     return [];
   }
 };
@@ -144,6 +138,20 @@ const fetchElasticSearchSuggestions = async (query: string): Promise<string[]> =
 const PAGE_SIZE = 6;
 
 const sortOptions = ['최신순', '인기순', '조회순'];
+
+// 정렬 옵션을 API 형식으로 변환
+const convertSortToApiType = (sortBy: string): string => {
+  switch (sortBy) {
+    case '최신순':
+      return 'LATEST';
+    case '인기순':
+      return 'POPULAR';
+    case '조회순':
+      return 'VIEWS';
+    default:
+      return 'LATEST';
+  }
+};
 
 // News 카테고리 정의
 export enum NewsCategoryType {
@@ -321,13 +329,13 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeSearchTerm, setActiveSearchTerm] = useState(''); // 실제 검색에 사용되는 검색어
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState('최신순');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [useMockData, setUseMockData] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
@@ -339,6 +347,7 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
     
     if (queryParam) {
       setSearchTerm(queryParam);
+      setActiveSearchTerm(queryParam);
     }
     
     if (categoryParam) {
@@ -356,81 +365,45 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
     }
   }, [searchParams]);
 
-  // News 데이터 가져오기
+  // News 데이터 가져오기 (카테고리, 정렬, 페이지 변경 시 자동 실행, 검색어는 버튼 클릭 시에만)
   useEffect(() => {
     const loadNews = async () => {
       setLoading(true);
       setError(null);
       
       try {
+        const apiCategory = selectedCategory !== 'all' ? selectedCategory : 'MT';
         const response = await fetchNews({
-          query: searchTerm || undefined,
+          keyword: activeSearchTerm && activeSearchTerm.trim() ? activeSearchTerm.trim() : undefined,
+          category: apiCategory,
+          postSortType: convertSortToApiType(sortBy),
           page: currentPage,
           size: PAGE_SIZE
         });
         
-        // API 응답이 비어있거나 에러가 있으면 목 데이터 사용
-        if (!response.content || response.content.length === 0) {
-          setUseMockData(true);
-          // 목 데이터 필터링
-          let filteredMock = mockNewsData;
-          
-          if (selectedCategory !== 'all') {
-            filteredMock = filteredMock.filter(item => item.content.category === selectedCategory);
-          }
-          
-          if (searchTerm) {
-            filteredMock = filteredMock.filter(item => 
-              item.content.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              item.content.summary.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-          }
-          
-          // 페이지네이션 적용
-          const startIndex = currentPage * PAGE_SIZE;
-          const endIndex = startIndex + PAGE_SIZE;
-          const paginatedMock = filteredMock.slice(startIndex, endIndex);
-          
-          setNews(paginatedMock);
-          setTotalPages(Math.ceil(filteredMock.length / PAGE_SIZE));
-          setTotalElements(filteredMock.length);
+        if (response.error) {
+          setError(response.error);
+          setNews([]);
+          setTotalPages(0);
+          setTotalElements(0);
         } else {
-          setUseMockData(false);
           setNews(response.content || []);
           setTotalPages(response.totalPages || 0);
           setTotalElements(response.totalElements || 0);
         }
       } catch (err) {
         console.error('Error loading news:', err);
-        // 에러 발생 시 목 데이터 사용
-        setUseMockData(true);
-        let filteredMock = mockNewsData;
-        
-        if (selectedCategory !== 'all') {
-          filteredMock = filteredMock.filter(item => item.content.category === selectedCategory);
-        }
-        
-        if (searchTerm) {
-          filteredMock = filteredMock.filter(item => 
-            item.content.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.content.summary.toLowerCase().includes(searchTerm.toLowerCase())
-          );
-        }
-        
-        const startIndex = currentPage * PAGE_SIZE;
-        const endIndex = startIndex + PAGE_SIZE;
-        const paginatedMock = filteredMock.slice(startIndex, endIndex);
-        
-        setNews(paginatedMock);
-        setTotalPages(Math.ceil(filteredMock.length / PAGE_SIZE));
-        setTotalElements(filteredMock.length);
+        setError(err instanceof Error ? err.message : '뉴스를 불러오는 중 오류가 발생했습니다.');
+        setNews([]);
+        setTotalPages(0);
+        setTotalElements(0);
       } finally {
         setLoading(false);
       }
     };
 
     loadNews();
-  }, [currentPage, searchTerm, selectedCategory]);
+  }, [currentPage, activeSearchTerm, selectedCategory, sortBy]);
 
   // 검색어 입력 시 제안 가져오기
   useEffect(() => {
@@ -484,14 +457,19 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
     }
   }, [showSortDropdown]);
 
-  const handleSearch = (value: string) => {
-    setSearchTerm(value);
+  // 검색하기 버튼 클릭 핸들러
+  const handleSearch = () => {
+    setActiveSearchTerm(searchTerm);
     setCurrentPage(0);
-    updateURL({ query: value, page: 0 });
+    updateURL({ query: searchTerm, page: 0 });
+    setShowSuggestions(false);
   };
 
   const handleSuggestionClick = (suggestion: string) => {
-    handleSearch(suggestion);
+    setSearchTerm(suggestion);
+    setActiveSearchTerm(suggestion);
+    setCurrentPage(0);
+    updateURL({ query: suggestion, page: 0 });
     setShowSuggestions(false);
   };
 
@@ -530,11 +508,12 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
       }
     }
     
-    router.push(`/news?${newSearchParams.toString()}`, { scroll: false });
+    router.push(`/community?${newSearchParams.toString()}`, { scroll: false });
   };
 
   const clearFilters = () => {
     setSearchTerm('');
+    setActiveSearchTerm('');
     setSelectedCategory('all');
     setCurrentPage(0);
     updateURL({ query: '', category: 'all', page: 0 });
@@ -548,12 +527,12 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
 
   // News 데이터 변환
   const transformedNews = news.map((item) => ({
-    id: item.id,
+    id: item.id.toString(),
     title: item.content.title,
     summary: item.content.summary || item.content.content?.substring(0, 150) || '',
     content: item.content.content,
     thumbnailPath: item.thumbnailPath,
-    writerId: item.writerId || '작성자',
+    writerId: item.writer?.nickname || item.writer?.realname || item.writer?.username || '작성자',
     tags: item.tags || [],
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
@@ -566,15 +545,17 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
     <div className="w-full">
       {/* Header Section */}
       <div className="text-center mb-0">
-        {(searchTerm || selectedCategory !== 'all') && (
+        {(activeSearchTerm || selectedCategory !== 'all') && (
           <div className="flex-wrap items-center justify-center gap-2">
-            {searchTerm && (
+            {activeSearchTerm && (
               <div className="inline-flex items-center space-x-2 bg-primary-50 text-primary-700 px-4 py-2 rounded-lg border border-primary-200">
                 <span className="text-sm">검색어:</span>
-                <span className="font-semibold">{searchTerm}</span>
+                <span className="font-semibold">{activeSearchTerm}</span>
                 <button
                   onClick={() => {
                     setSearchTerm('');
+                    setActiveSearchTerm('');
+                    setCurrentPage(0);
                     updateURL({ query: '', page: 0 });
                   }}
                   className="ml-2 hover:text-primary-900"
@@ -599,7 +580,7 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
                 </button>
               </div>
             )}
-            {(searchTerm || selectedCategory !== 'all') && (
+            {(activeSearchTerm || selectedCategory !== 'all') && (
               <button
                 onClick={clearFilters}
                 className="text-sm text-primary-600 hover:text-primary-800 hover:underline"
@@ -615,40 +596,47 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
       <section className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="flex items-center justify-between w-full">
           {/* Search Bar */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              ref={searchInputRef}
-              type="text"
-              placeholder="뉴스 검색..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleSearch(searchTerm);
-                  setShowSuggestions(false);
-                }
-              }}
-              className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
+          <div className="relative flex-1 max-w-md flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="뉴스 검색..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearch();
+                  }
+                }}
+                className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
             
-            {/* Search Suggestions */}
-            {showSuggestions && suggestions.length > 0 && (
-              <div
-                ref={suggestionsRef}
-                className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto"
-              >
-                {suggestions.map((suggestion, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-            )}
+              {/* Search Suggestions */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div
+                  ref={suggestionsRef}
+                  className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto"
+                >
+                  {suggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSuggestionClick(suggestion)}
+                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={handleSearch}
+              className="h-11 px-4 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors text-sm font-medium whitespace-nowrap"
+            >
+              검색
+            </button>
           </div>
 
           {/* Controls */}
@@ -674,10 +662,6 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
             <div className="space-y-1">
               {newsCategories.map((category) => {
                 const isActive = selectedCategory === category.value;
-                // 목 데이터에서 카운트 계산
-                const categoryCount = category.value === 'all'
-                  ? mockNewsData.length
-                  : mockNewsData.filter(n => n.content.category === category.value).length;
 
                 return (
                   <button
@@ -688,9 +672,6 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
                     }`}
                   >
                     <span>{category.name}</span>
-                    <span className={`${isActive ? 'text-primary-50' : 'text-gray-400'} text-xs`}>
-                      {categoryCount}
-                    </span>
                   </button>
                 );
               })}
@@ -704,7 +685,7 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
           <div className="flex items-center justify-between mb-6">
             <p className="text-sm text-gray-600">
               총 <span className="font-semibold text-primary">{totalElements}</span>개의 뉴스
-              {searchTerm && ` (검색어: "${searchTerm}")`}
+              {activeSearchTerm && ` (검색어: "${activeSearchTerm}")`}
               {selectedCategory !== 'all' && ` (카테고리: ${newsCategories.find(c => c.value === selectedCategory)?.name})`}
             </p>
           {/* Controls */}
@@ -743,6 +724,7 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
                       onClick={() => {
                         setSortBy(option);
                         setShowSortDropdown(false);
+                        setCurrentPage(0);
                       }}
                       className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors ${
                         sortBy === option ? 'text-primary font-medium' : 'text-gray-700'
@@ -771,7 +753,7 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
             <button
               onClick={() => {
                 setError(null);
-                handleSearch(searchTerm);
+                handleSearch();
               }}
               className="text-primary hover:underline"
             >
@@ -781,7 +763,7 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
         ) : transformedNews.length === 0 ? (
           <div className="text-center py-20">
             <div className="text-gray-600 text-xl mb-4">검색 결과가 없습니다.</div>
-            {searchTerm && (
+            {activeSearchTerm && (
               <button 
                 onClick={clearFilters}
                 className="text-primary hover:underline"
