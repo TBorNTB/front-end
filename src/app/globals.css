@@ -7,7 +7,7 @@
   --color-text: #1f2937;
   --color-background: #e2eefc;
   --color-foreground: #060810;
-  --color-gradient-background: radial-gradient(ellipse at top, #e2eefc, #3a4da1);
+  --color-authentication-background: radial-gradient(ellipse at top, #e2eefc, #3a4da1);
   
   /* Primary Scale */
   --color-primary-50: #ebedf6;
@@ -62,6 +62,9 @@
   --background-color-success: #BBF7D1;
   --background-color-warning: #FEFFC1;
   --background-color-info: var(--color-secondary-100);
+
+  /* Gradient Backgrounds */
+  --color-gradient-background: linear-gradient(to bottom, #000000, #3a4da1);
 }
 
 @layer base {
@@ -78,8 +81,11 @@
 
 @layer components {
   .bg-gradient-background {
-  background: var(--color-gradient-background);
-}
+    background: var(--color-gradient-background);
+    border: 1px solid rgba(108, 170, 239, 0.3);
+    position: relative;
+    overflow: hidden;
+  }
   .btn {
     @apply inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer border-0 outline-none px-4 py-2;
   }

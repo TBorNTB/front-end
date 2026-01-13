@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import TitleBanner from '@/components/layout/TitleBanner';
-import ContentFilterBar from '@/components/layout/ContentFilterBar';
+import ContentFilterBar from '@/components/layout/TopSection';
 import QuestionCard from '../_components/QuestionCard';
 import { MessageSquare, CheckCircle, Bookmark, Tag, User, Calendar } from 'lucide-react';
 

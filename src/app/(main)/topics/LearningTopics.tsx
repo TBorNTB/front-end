@@ -77,14 +77,29 @@ Buffer Overflow, Format String Bug, Use-After-Free와 같은 메모리 corruptio
 
 // 범용 slug 생성 함수 - 어떤 카테고리 이름이 와도 자동으로 처리
 const createSlugFromName = (name: string, id: number): string => {
+  // 한글 카테고리 이름을 영문 slug로 변환하는 매핑
+  const koreanToSlugMap: Record<string, string> = {
+    '웹 해킹': 'web-hacking',
+    '리버싱': 'reversing',
+    '시스템 해킹': 'system-hacking',
+    '디지털 포렌식': 'digital-forensics',
+    '네트워크 보안': 'network-security',
+    'IoT보안': 'iot-security',
+    '암호학': 'cryptography',
+  };
+
+  // 매핑에 있으면 사용
+  if (koreanToSlugMap[name]) {
+    return koreanToSlugMap[name];
+  }
+
   // 영문/숫자만 있는 경우: 공백을 하이픈으로, 소문자 변환
   if (/^[a-zA-Z0-9\s-]+$/.test(name)) {
     return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
   }
   
-  // 한글이나 특수문자가 포함된 경우: ID 기반 slug 사용 (안정적이고 고유함)
-  // 예: "임시" -> "category-0", "임시2" -> "category-1"
-  return `category-${id}`;
+  // 한글이나 특수문자가 포함된 경우: 공백을 제거하고 소문자로 변환
+  return name.toLowerCase().replace(/\s+/g, '-');
 };
 
 const transformCategoryData = (apiCategory: CategoryItem): CategoryDisplayData | null => {
@@ -671,9 +686,52 @@ export function LearningTopics() {
     const cat = currentCategory;
     return (
       <div className="space-y-6">
-        <div className="flex gap-8 items-start">
-          {/* Sidebar - Sticky */}
-          <div className="w-64 flex-shrink-0">
+        {/* Full Width Header */}
+        {cat ? (
+          <div className="bg-gradient-background rounded-xl p-8">
+            {/* Animated background grid pattern */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(58,77,161,0.1)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
+            </div>
+            <div className="relative z-10 flex items-start space-x-4">
+              <div className={`w-16 h-16 rounded-xl ${CategoryColors[cat.type]} flex items-center justify-center flex-shrink-0`}>
+                {(() => {
+                  const Icon = CategoryIcons[cat.type];
+                  return <Icon className="w-8 h-8 text-white" />;
+                })()}
+              </div>
+              <div className="flex-1">
+                <h1 className="text-3xl font-bold text-white mb-2">{cat.name}</h1>
+                <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-line">
+                  {cat.longDescription}
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-gradient-background rounded-xl p-8">
+            {/* Animated background grid pattern */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(58,77,161,0.1)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
+            </div>
+            <div className="relative z-10 flex items-start space-x-4">
+              <div className="w-16 h-16 rounded-xl bg-gray-700 flex items-center justify-center flex-shrink-0">
+                <Shield className="w-8 h-8 text-gray-400" />
+              </div>
+              <div className="flex-1">
+                <h1 className="text-3xl font-bold text-white mb-2">카테고리를 찾을 수 없습니다</h1>
+                <p className="text-sm text-gray-300 leading-relaxed">
+                  선택하신 카테고리 정보를 불러올 수 없습니다.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Main Content Area */}
+        <div className="flex gap-8">
+          {/* Left Sidebar - Category Navigation */}
+          <div className="w-64 flex-shrink-0 hidden lg:block">
             <div className="sticky top-8">
               <CategoryFilter
                 categories={[
@@ -696,43 +754,8 @@ export function LearningTopics() {
             </div>
           </div>
 
-          {/* Right Side Content */}
-          <div className="flex-1 space-y-6">
-            {/* Category Header - Without background */}
-            {cat ? (
-              <div className="pb-4 border-b border-gray-200">
-                <div className="flex items-start space-x-4">
-                  <div className={`w-14 h-14 rounded-xl ${CategoryColors[cat.type]} flex items-center justify-center flex-shrink-0`}>
-                    {(() => {
-                      const Icon = CategoryIcons[cat.type];
-                      return <Icon className="w-7 h-7 text-white" />;
-                    })()}
-                  </div>
-                  <div className="flex-1">
-                    <h1 className="text-2xl font-bold text-foreground mb-2">{cat.name}</h1>
-                    <p className="text-sm text-gray-900 leading-relaxed whitespace-pre-line">
-                      {cat.longDescription}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="pb-6 mb-6 border-b border-gray-200">
-                <div className="flex items-start space-x-4">
-                  <div className="w-14 h-14 rounded-xl bg-gray-400 flex items-center justify-center flex-shrink-0">
-                    <Shield className="w-7 h-7 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <h1 className="text-2xl font-bold text-foreground mb-2">카테고리를 찾을 수 없습니다</h1>
-                    <p className="text-sm text-gray-600 leading-relaxed">
-                      선택하신 카테고리 정보를 불러올 수 없습니다.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Content Area with white background */}
+          {/* Right Content Area */}
+          <div className="flex-1">
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
               {/* Content Sections */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -908,11 +931,13 @@ export function LearningTopics() {
 
   return (
     <div className="min-h-screen bg-background">
-      <TitleBanner
-        title="Learning Topics"
-        description="사이버보안의 다양한 분야를 탐구하고 실무 경험을 쌓을 수 있는 학습 주제들을 확인하세요."
-        backgroundImage="/images/BgHeader.png"
-      />
+      {!selectedCategory && (
+        <TitleBanner
+          title="Learning Topics"
+          description="사이버보안의 다양한 분야를 탐구하고 실무 경험을 쌓을 수 있는 학습 주제들을 확인하세요."
+          backgroundImage="/images/BgHeader.png"
+        />
+      )}
       <div className="container py-8">
         {selectedCategory && currentCategory ? renderCategoryDetail() : renderAllCategories()}
       </div>

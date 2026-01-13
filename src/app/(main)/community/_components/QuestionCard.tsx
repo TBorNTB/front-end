@@ -11,7 +11,7 @@ interface Answer {
   id: string;
   content: string;
   author: string;
-  authorRole: 'member' | 'admin';
+  authorRole: 'member' | 'admin' | 'guest';
   createdAt: string;
   isAccepted: boolean;
   upvotes: number;
@@ -22,7 +22,7 @@ interface Question {
   title: string;
   content: string;
   author: string;
-  authorRole: 'member' | 'admin';
+  authorRole: 'member' | 'admin' | 'guest';
   techTags: TechTag[];
   createdAt: string;
   views: number;
@@ -52,7 +52,7 @@ export default function QuestionCard({ question, onBookmark, viewMode }: Questio
     return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
-  const getRoleBadge = (role: 'member' | 'admin') => {
+  const getRoleBadge = (role: 'member' | 'admin' | 'guest') => {
     if (role === 'admin') {
       return (
         <span className="px-2 py-0.5 text-xs font-medium bg-primary-100 text-primary-700 rounded">

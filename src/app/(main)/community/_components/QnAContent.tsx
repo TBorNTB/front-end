@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import ContentFilterBar from '@/components/layout/ContentFilterBar';
+import ContentFilterBar from '@/components/layout/TopSection';
 import CategoryFilter from '@/components/layout/CategoryFilter';
 import QuestionCard from './QuestionCard';
 import { MessageSquare, CheckCircle } from 'lucide-react';

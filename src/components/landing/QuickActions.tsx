@@ -27,14 +27,14 @@ const actions = [
 
 export function QuickActions() {
   return (
-    <section className="w-full bg-[#dbeafe] py-10">
+    <section className="w-full py-10">
       <div className="container mx-auto px-4">
-        <div className="rounded-2xl bg-black bg-gradient-to-r from-primary-600/40 via-primary-500 to-secondary-500/10 p-6 sm:p-8 shadow-lg">
-          <h2 className="text-white font-semibold text-lg mb-4">
+        <div className="rounded-2xl bg-gradient-background p-6 sm:p-8 shadow-lg">
+          <h2 className="text-white font-semibold text-lg mb-4 relative z-10">
             Quick Actions
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10">
             {actions.map((action) => {
               const Icon = action.icon;
               return (

@@ -13,7 +13,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import TitleBanner from '@/components/layout/TitleBanner';
-import ContentFilterBar from '@/components/layout/ContentFilterBar';
+import ContentFilterBar from '@/components/layout/TopSection';
 import CategoryFilter from '@/components/layout/CategoryFilter';
 import ArticleCard from './_components/ArticleCard';
 import { searchCSKnowledge, type CSKnowledgeSearchResponse } from '@/lib/api/services/elastic-services';

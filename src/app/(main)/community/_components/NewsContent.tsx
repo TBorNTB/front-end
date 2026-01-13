@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Grid, List, Search, ChevronDown, X, ChevronLeft, ChevronRight, Heart, Eye, Calendar, User, Plus } from 'lucide-react';
 import { NewsCard } from './NewsCard';
-import ContentFilterBar from '@/components/layout/ContentFilterBar';
+import ContentFilterBar from '@/components/layout/TopSection';
 import CategoryFilter from '@/components/layout/CategoryFilter';
 import Link from 'next/link';
 import { BASE_URL } from '@/lib/api/config';

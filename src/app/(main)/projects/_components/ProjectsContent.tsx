@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ExternalLink, Github, Grid, List, Plus, Search, ChevronDown, ChevronLeft, ChevronRight, Heart, Eye } from 'lucide-react';
 import TitleBanner from '@/components/layout/TitleBanner';
-import ContentFilterBar from '@/components/layout/ContentFilterBar';
+import ContentFilterBar from '@/components/layout/TopSection';
 import CategoryFilter from '@/components/layout/CategoryFilter';
 import { CategoryHelpers, CategoryType, CategoryDisplayNames } from '@/types/services/category';
 import Image from 'next/image';
