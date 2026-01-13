@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Heart, Eye, MessageCircle } from 'lucide-react';
+import { Heart, Eye, MessageCircle, User } from 'lucide-react';
 
 type Article = {
   id: number;
@@ -15,6 +15,8 @@ type Article = {
     nickname: string;
     bio?: string;
     avatarUrl?: string;
+    username?: string;
+    realname?: string;
   };
   date: string;
   readTime: string;
@@ -107,18 +109,41 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
             </div>
           </div>
 
-          {/* 하단 메타 */}
-          <div className="mt-auto flex items-center justify-between text-xs text-gray-500">
+          {/* 작성자 정보 */}
+          <div className="mt-3 mb-3">
             <div className="flex items-center gap-2">
-              <span className="font-medium text-gray-700">
-                {article.author.nickname}
-              </span>
-              {article.author.bio && (
-                <span className="line-clamp-1 max-w-[160px]">
-                  {article.author.bio}
+              <div className="flex items-center gap-1.5">
+                <User size={14} className="text-blue-500" />
+                <span className="text-xs font-medium text-gray-600">작성자</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+                  {article.author.avatarUrl ? (
+                    <Image
+                      src={article.author.avatarUrl}
+                      alt={article.author.nickname}
+                      width={24}
+                      height={24}
+                      className="w-full h-full rounded-full object-cover"
+                    />
+                  ) : (
+                    <User className="w-3 h-3 text-blue-600" />
+                  )}
+                </div>
+                <span className="text-xs text-gray-700 font-medium">
+                  {article.author.nickname || article.author.realname || '작성자'}
                 </span>
-              )}
+                {article.author.realname && article.author.realname !== article.author.nickname && (
+                  <span className="text-xs text-gray-500">
+                    ({article.author.realname})
+                  </span>
+                )}
+              </div>
             </div>
+          </div>
+
+          {/* 하단 메타 */}
+          <div className="mt-auto flex items-center justify-between text-xs text-gray-500 pt-3 border-t border-gray-100">
             <div className="flex items-center gap-2">
               <span>{article.date}</span>
               <span>· {article.readTime}</span>

@@ -321,7 +321,7 @@ function ArticlesContent() {
     content: string;
     category: string;
     topicSlug: string;
-    author: { nickname: string; bio: string };
+    author: { nickname: string; bio?: string; avatarUrl?: string; username?: string; realname?: string };
     date: string;
     readTime: string;
     views: number;
@@ -339,8 +339,10 @@ function ArticlesContent() {
       : 'CS 지식'),
     topicSlug: selectedCategory !== 'all' ? selectedCategory : 'all',
     author: {
-      nickname: '시스템',
-      bio: '',
+      nickname: item.writer?.nickname || item.writer?.realname || '작성자',
+      bio: item.writer?.realname || '',
+      username: item.writer?.username,
+      realname: item.writer?.realname,
     },
     date: item.createdAt ? new Date(item.createdAt).toLocaleDateString('ko-KR') : new Date().toLocaleDateString('ko-KR'),
     readTime: '5분',

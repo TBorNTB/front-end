@@ -13,14 +13,21 @@ export interface CSKnowledgeSearchParams {
   size?: number; // 페이지 크기
 }
 
+export interface CSKnowledgeWriter {
+  username: string;
+  nickname: string;
+  realname: string;
+}
+
 export interface CSKnowledgeItem {
-  id: string;
+  id: number;
   title: string;
   content: string;
   category: string;
   createdAt: string;
   likeCount: number;
   viewCount: number;
+  writer: CSKnowledgeWriter;
 }
 
 export interface CSKnowledgeSearchResponse {
