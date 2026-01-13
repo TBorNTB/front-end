@@ -533,6 +533,23 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
     content: item.content.content,
     thumbnailPath: item.thumbnailPath,
     writerId: item.writer?.nickname || item.writer?.realname || item.writer?.username || '작성자',
+    writer: item.writer ? {
+      username: item.writer.username || '',
+      nickname: item.writer.nickname || 'Unknown',
+      realname: item.writer.realname || '',
+      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+    } : {
+      username: '',
+      nickname: 'Unknown',
+      realname: '',
+      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+    },
+    participants: (item.participants || []).map((participant: any) => ({
+      username: participant.username || '',
+      nickname: participant.nickname || 'Unknown',
+      realname: participant.realname || '',
+      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+    })),
     tags: item.tags || [],
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
