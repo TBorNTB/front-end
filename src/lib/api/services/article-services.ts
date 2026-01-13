@@ -11,6 +11,12 @@ export interface ArticleResponse {
   createdAt: string;
 }
 
+export interface ArticleCreateRequest {
+  title: string;
+  content: string;
+  category: string;
+}
+
 export interface ArticleUpdateRequest {
   title: string;
   content: string;
@@ -130,8 +136,42 @@ export const deleteArticle = async (id: string | number): Promise<void> => {
   }
 };
 
+/**
+ * CS 지식 생성
+ * @param data 생성할 데이터 (title, content, category)
+ * @returns 생성된 아티클 정보 (id 포함)
+ */
+export const createArticle = async (data: ArticleCreateRequest): Promise<ArticleResponse> => {
+  const url = getArticleApiUrl(ARTICLE_ENDPOINTS.ARTICLE.CREATE);
+
+  const accessToken = getAccessToken();
+  const headers: HeadersInit = {
+    'accept': 'application/json',
+    'Content-Type': 'application/json',
+  };
+
+  if (accessToken) {
+    headers['Authorization'] = `Bearer ${accessToken}`;
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers,
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to create article: ${response.status} - ${errorText}`);
+  }
+
+  return response.json();
+};
+
 export const articleService = {
   fetchArticleById,
+  createArticle,
   updateArticle,
   deleteArticle,
 };

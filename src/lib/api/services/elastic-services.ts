@@ -13,6 +13,12 @@ export interface CSKnowledgeSearchParams {
   size?: number; // 페이지 크기
 }
 
+export interface CSKnowledgeSearchByMemberParams {
+  name: string; // realName 또는 nickname
+  page?: number; // 페이지 번호 (0부터 시작)
+  size?: number; // 페이지 크기
+}
+
 export interface CSKnowledgeWriter {
   username: string;
   nickname: string;
@@ -104,7 +110,64 @@ export const searchCSKnowledge = async (
   }
 };
 
+/**
+ * CS 지식 저자별 검색 API 호출
+ * @param params 검색 파라미터 (name: realName 또는 nickname)
+ * @returns 검색 결과 (페이지네이션 포함)
+ */
+export const searchCSKnowledgeByMember = async (
+  params: CSKnowledgeSearchByMemberParams
+): Promise<CSKnowledgeSearchResponse> => {
+  try {
+    const queryParams = new URLSearchParams();
+
+    // name은 필수 파라미터
+    queryParams.append('name', params.name.trim());
+
+    // size와 page는 항상 전송
+    queryParams.append('size', (params.size || 10).toString());
+    queryParams.append('page', (params.page !== undefined ? params.page : 0).toString());
+
+    const url = `${getElasticApiUrl(ELASTIC_ENDPOINTS.ELASTIC.ARTICLE_SEARCH_BY_MEMBER)}?${queryParams.toString()}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+      credentials: 'include',
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      console.error(`CS Knowledge By Member API error: ${response.status} ${response.statusText}`);
+      // Return empty results instead of throwing
+      return {
+        content: [],
+        page: params.page || 0,
+        size: params.size || 10,
+        totalElements: 0,
+        totalPages: 0,
+      };
+    }
+
+    const data: CSKnowledgeSearchResponse = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error searching CS knowledge by member:', error);
+    // Return empty results instead of throwing
+    return {
+      content: [],
+      page: 0,
+      size: 10,
+      totalElements: 0,
+      totalPages: 0,
+    };
+  }
+};
+
 export const elasticService = {
   searchCSKnowledge,
+  searchCSKnowledgeByMember,
 };
 

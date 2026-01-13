@@ -3,13 +3,18 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, createElement, useRef, JSX } from 'react';
-import { Heart, Eye, MessageCircle, Share2, Edit, Clock, ArrowLeft, Code, FileText, Trash2 } from 'lucide-react';
+import { Heart, Eye, MessageCircle, Share2, Edit, Clock, ArrowLeft, Code, FileText, Trash2, X } from 'lucide-react';
 import { fetchArticleById, updateArticle, deleteArticle, type ArticleResponse } from '@/lib/api/services/article-services';
 import { useRouter } from 'next/navigation';
 import TipTapEditor from '@/components/editor/TipTapEditor';
+import { fetchCategories } from '@/lib/api/services/project-services';
+import { searchCSKnowledge, searchCSKnowledgeByMember } from '@/lib/api/services/elastic-services';
 import { 
-  fetchViewCount, 
+  fetchViewCount,
+  incrementViewCount,
   fetchLikeCount,
+  fetchLikeStatus,
+  toggleLike,
   fetchComments,
   createComment,
   createReply,
@@ -68,12 +73,19 @@ interface PostData {
     category: string;
     tags: string[];
     slug: string;
+    createdAt?: string;
+    viewCount?: number;
+    likeCount?: number;
   }>;
   popularArticles: Array<{
     id: string;
     title: string;
     author: string;
+    category: string;
     slug: string;
+    createdAt?: string;
+    viewCount?: number;
+    likeCount?: number;
   }>;
 }
 
@@ -84,6 +96,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string>('');
   const [isLiked, setIsLiked] = useState(false);
+  const [isTogglingLike, setIsTogglingLike] = useState(false);
   const [post, setPost] = useState<PostData | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -146,6 +159,17 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
         setComments(response.content);
         commentsRef.current = response.content; // ref도 업데이트
         console.log(`[초기 로드] 댓글 ${response.content.length}개 로드`);
+        
+        // 댓글 수 업데이트
+        if (post) {
+          setPost({
+            ...post,
+            stats: {
+              ...post.stats,
+              comments: response.content.length,
+            },
+          });
+        }
       } else {
         // 더 보기: 기존 댓글은 유지하고 아래에 새로운 댓글 5개 추가
         // 상태 업데이트 함수를 사용하여 최신 상태를 가져옴
@@ -181,18 +205,33 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
     }
   };
 
-  // 좋아요 토글 (API 연결 준비)
+  // 좋아요 토글
   const handleToggleLike = async () => {
-    // TODO: 좋아요 토글 API 연결
-    setIsLiked(!isLiked);
-    if (post) {
-      setPost({
-        ...post,
-        stats: {
-          ...post.stats,
-          likes: isLiked ? post.stats.likes - 1 : post.stats.likes + 1,
-        },
-      });
+    if (!articleId || isTogglingLike) return;
+    
+    setIsTogglingLike(true);
+    try {
+      const response = await toggleLike(articleId, 'ARTICLE');
+      setIsLiked(response.status === 'LIKED');
+      
+      // Update post stats
+      if (post) {
+        setPost({
+          ...post,
+          stats: {
+            ...post.stats,
+            likes: response.likeCount,
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      // 에러 발생 시 사용자에게 알림
+      if (error instanceof Error && error.message.includes('로그인이 필요')) {
+        alert('로그인이 필요합니다.');
+      }
+    } finally {
+      setIsTogglingLike(false);
     }
   };
 
@@ -219,6 +258,10 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
   const [articleEditTitle, setArticleEditTitle] = useState('');
   const [articleEditContent, setArticleEditContent] = useState('');
   const [articleEditCategory, setArticleEditCategory] = useState('');
+  
+  // 카테고리 API 데이터
+  const [categories, setCategories] = useState<Array<{ id: number; name: string; description: string }>>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
 
   const handleEditArticle = () => {
     if (!post) return;
@@ -258,15 +301,22 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
     setArticleEditCategory('');
   };
 
-  const ARTICLE_CATEGORIES = [
-    'WEB-HACKING',
-    'REVERSING',
-    'SYSTEM-HACKING',
-    'DIGITAL-FORENSICS',
-    'NETWORK-SECURITY',
-    'IOT-SECURITY',
-    'CRYPTOGRAPHY',
-  ];
+  // 카테고리 로드
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        setIsLoadingCategories(true);
+        const response = await fetchCategories();
+        setCategories(response.categories);
+      } catch (error) {
+        console.error('Failed to load categories:', error);
+        setCategories([]);
+      } finally {
+        setIsLoadingCategories(false);
+      }
+    };
+    loadCategories();
+  }, []);
 
   // 댓글 작성
   const handleCreateComment = async () => {
@@ -367,13 +417,62 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
         setError(null);
         
         // 아티클 상세 정보와 통계 정보를 병렬로 가져오기
-        const [articleData, viewCountData, likeCountData] = await Promise.all([
+        // 조회수 증가 API 호출 (페이지 진입 시 자동으로 조회수 증가)
+        const [articleData, viewCountData, likeCountData, likeStatusData] = await Promise.all([
           fetchArticleById(articleId),
-          fetchViewCount(articleId, 'ARTICLE').catch(() => ({ viewCount: 0 })),
+          incrementViewCount(articleId, 'ARTICLE').catch(() => ({ viewCount: 0 })), // 조회수 증가 및 반환
           fetchLikeCount(articleId, 'ARTICLE').catch(() => ({ likedCount: 0 })),
+          fetchLikeStatus(articleId, 'ARTICLE').catch(() => ({ likeCount: 0, status: 'NOT_LIKED' as const })),
         ]);
         
         if (articleData) {
+          // 현재 아티클의 writer 정보를 가져오기 위해 검색 API 사용 (realname 확인용)
+          // 인기 아티클과 현재 아티클 정보를 병렬로 가져오기
+          const [popularArticlesResponse, currentArticleSearchResponse] = await Promise.all([
+            searchCSKnowledge({ sortType: 'POPULAR', page: 0, size: 3 }).catch(() => ({ content: [], page: 0, size: 3, totalElements: 0, totalPages: 0 })),
+            // 현재 아티클 ID로 검색하여 writer 정보 가져오기 (realname 확인용)
+            searchCSKnowledge({ page: 0, size: 100 }).catch(() => ({ content: [], page: 0, size: 100, totalElements: 0, totalPages: 0 })),
+          ]);
+
+          // 현재 아티클의 writer 정보 찾기
+          const currentArticleItem = currentArticleSearchResponse.content.find((item) => item.id === articleData.id);
+          const authorName = currentArticleItem?.writer?.realname || currentArticleItem?.writer?.nickname || articleData.nickname;
+
+          // 저자의 다른 글 조회 (realname 우선, 없으면 nickname 사용)
+          const authorArticlesResponse = await searchCSKnowledgeByMember({ name: authorName, page: 0, size: 3 }).catch(() => ({ content: [], page: 0, size: 3, totalElements: 0, totalPages: 0 }));
+
+          // 인기 아티클 매핑 (현재 아티클 제외)
+          const popularArticles = popularArticlesResponse.content
+            .filter((item) => item.id !== articleData.id)
+            .slice(0, 3)
+            .map((item) => ({
+              id: String(item.id),
+              title: item.title,
+              author: item.writer.nickname || item.writer.realname || item.writer.username,
+              category: item.category,
+              tags: [],
+              slug: String(item.id),
+              createdAt: item.createdAt,
+              viewCount: item.viewCount,
+              likeCount: item.likeCount,
+            }));
+
+          // 저자의 다른 글 매핑 (현재 아티클 제외)
+          const authorArticles = authorArticlesResponse.content
+            .filter((item) => item.id !== articleData.id)
+            .slice(0, 3)
+            .map((item) => ({
+              id: String(item.id),
+              title: item.title,
+              author: item.writer.nickname || item.writer.realname || item.writer.username,
+              category: item.category,
+              tags: [],
+              slug: String(item.id),
+              createdAt: item.createdAt,
+              viewCount: item.viewCount,
+              likeCount: item.likeCount,
+            }));
+
           // API 응답을 UI 형식으로 변환
           const mappedPost: PostData = {
             id: articleData.id,
@@ -389,15 +488,16 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
             readTime: `${Math.ceil(articleData.content.length / 500)}분`,
             stats: {
               views: viewCountData.viewCount,
-              likes: likeCountData.likedCount,
+              likes: likeStatusData.likeCount || likeCountData.likedCount,
               comments: 0, // 댓글 수는 댓글 로드 후 업데이트
             },
             tags: [], // API에 없으면 빈 배열
-            relatedArticles: [], // API에 없으면 빈 배열
-            popularArticles: [], // API에 없으면 빈 배열
+            relatedArticles: authorArticles,
+            popularArticles: popularArticles,
           };
 
           setPost(mappedPost);
+          setIsLiked(likeStatusData.status === 'LIKED');
           // 댓글 로드
           await loadComments(articleId, 'DESC', true);
         } else {
@@ -794,15 +894,12 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
               {/* Stats Bar */}
               <div className="flex items-center gap-8 py-5 border-y border-gray-200 mb-8 bg-gray-50 rounded-lg px-4">
-                <button 
-                  onClick={handleToggleLike}
-                  className="flex items-center gap-2 text-gray-600 hover:text-red-600 transition-colors group"
-                >
-                  <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''} group-hover:scale-110 transition-transform`} />
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
                   <span className="text-sm font-semibold">
                     {displayPost.stats.likes}
                   </span>
-                </button>
+                </div>
                 <div className="flex items-center gap-2 text-gray-600">
                   <Eye className="w-5 h-5" />
                   <span className="text-sm font-semibold">
@@ -816,6 +913,42 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                   </span>
                 </div>
               </div>
+
+              {/* Like Button */}
+              <section className="mb-12 flex justify-center py-4">
+                <button 
+                  onClick={handleToggleLike}
+                  disabled={isTogglingLike}
+                  className={`flex flex-col items-center gap-2 px-8 py-4 rounded-full border-2 transition-colors group ${
+                    isLiked 
+                      ? 'border-red-500 bg-red-50 hover:bg-red-100' 
+                      : 'border-gray-300 hover:border-primary-500 hover:bg-primary-50'
+                  } ${isTogglingLike ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  <svg 
+                    className={`w-8 h-8 transition-colors ${
+                      isLiked 
+                        ? 'text-red-500 fill-red-500' 
+                        : 'text-gray-400 group-hover:text-primary-600'
+                    }`} 
+                    fill={isLiked ? 'currentColor' : 'none'} 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                  </svg>
+                  <span className={`text-2xl font-bold transition-colors ${
+                    isLiked 
+                      ? 'text-red-600' 
+                      : 'text-gray-900 group-hover:text-primary-600'
+                  }`}>
+                    {displayPost.stats.likes}
+                  </span>
+                  {isTogglingLike && (
+                    <span className="text-xs text-gray-500">처리 중...</span>
+                  )}
+                </button>
+              </section>
 
               {/* Featured Image */}
               <div className="relative w-full h-80 mb-8 rounded-xl overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center border border-gray-200 shadow-sm">
@@ -900,18 +1033,69 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           카테고리 <span className="text-red-500">*</span>
                         </label>
-                        <select
-                          value={articleEditCategory}
-                          onChange={(e) => setArticleEditCategory(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="">카테고리를 선택하세요</option>
-                          {ARTICLE_CATEGORIES.map((cat) => (
-                            <option key={cat} value={cat}>
-                              {cat}
-                            </option>
-                          ))}
-                        </select>
+                        {isLoadingCategories ? (
+                          <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50">
+                            <span className="text-gray-500">카테고리 로딩 중...</span>
+                          </div>
+                        ) : (
+                          <>
+                            <div className={`border rounded-lg p-3 min-h-[120px] max-h-[200px] overflow-y-auto ${
+                              !articleEditCategory ? 'border-red-300' : 'border-gray-300'
+                            }`}>
+                              {categories.length === 0 ? (
+                                <p className="text-gray-500 text-sm">카테고리가 없습니다</p>
+                              ) : (
+                                <div className="space-y-2">
+                                  {categories.map((cat) => {
+                                    const isSelected = articleEditCategory === cat.name;
+                                    return (
+                                      <label
+                                        key={cat.id}
+                                        className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+                                      >
+                                        <input
+                                          type="radio"
+                                          name="editCategory"
+                                          checked={isSelected}
+                                          onChange={() => {
+                                            setArticleEditCategory(cat.name);
+                                          }}
+                                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                        />
+                                        <div className="flex-1">
+                                          <span className="text-sm font-medium text-gray-900">{cat.name}</span>
+                                          {cat.description && (
+                                            <p className="text-xs text-gray-500 mt-0.5">{cat.description}</p>
+                                          )}
+                                        </div>
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                            {/* Selected Category Display */}
+                            {articleEditCategory && (
+                              <div className="mt-3">
+                                <p className="text-xs text-gray-600 mb-2">선택된 카테고리:</p>
+                                <div className="flex flex-wrap gap-2">
+                                  <span className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
+                                    {articleEditCategory}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setArticleEditCategory('');
+                                      }}
+                                      className="hover:text-blue-900"
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
                       </div>
 
                       <div>
@@ -1208,24 +1392,67 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                   <Eye className="w-5 h-5 text-green-600" />
                   인기 아티클
                 </h3>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {displayPost.popularArticles && displayPost.popularArticles.length > 0 ? (
-                    displayPost.popularArticles.map((article) => (
-                      <Link
-                        key={article.id}
-                        href={`/articles/${article.slug}`}
-                        className="block group p-3 rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        <p className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors mb-1.5 line-clamp-2">
-                          {article.title}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          by {article.author}
-                        </p>
-                      </Link>
-                    ))
+                    displayPost.popularArticles.map((article) => {
+                      const formatDate = (dateString?: string) => {
+                        if (!dateString) return '';
+                        try {
+                          const date = new Date(dateString);
+                          return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+                        } catch {
+                          return '';
+                        }
+                      };
+                      return (
+                        <Link
+                          key={article.id}
+                          href={`/articles/${article.slug}`}
+                          className="block group p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 cursor-pointer bg-white hover:bg-blue-50/30"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-green-100 text-green-700 whitespace-nowrap">
+                                  {article.category}
+                                </span>
+                                {article.viewCount !== undefined && (
+                                  <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
+                                    <Eye className="w-3.5 h-3.5 text-gray-600" />
+                                    <span className="text-gray-700">{article.viewCount}</span>
+                                  </div>
+                                )}
+                                {article.likeCount !== undefined && (
+                                  <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
+                                    <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" />
+                                    <span className="text-gray-700">{article.likeCount}</span>
+                                  </div>
+                                )}
+                              </div>
+                              <h4 className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors mb-1.5 line-clamp-2 leading-snug">
+                                {article.title}
+                              </h4>
+                              <div className="flex items-center gap-2 text-xs text-gray-500">
+                                <span className="font-medium">{article.author}</span>
+                                {article.createdAt && (
+                                  <>
+                                    <span>·</span>
+                                    <span>{formatDate(article.createdAt)}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </div>
+                          </div>
+                        </Link>
+                      );
+                    })
                   ) : (
-                    <p className="text-sm text-gray-500">인기 아티클이 없습니다.</p>
+                    <p className="text-sm text-gray-500 text-center py-4">인기 아티클이 없습니다.</p>
                   )}
                 </div>
               </div>
@@ -1236,31 +1463,67 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                   <Code className="w-5 h-5 text-purple-600" />
                   저자의 다른 글
                 </h3>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {displayPost.relatedArticles && displayPost.relatedArticles.length > 0 ? (
-                    displayPost.relatedArticles.map((article) => (
-                    <Link
-                      key={article.id}
-                      href={`/articles/${article.slug}`}
-                      className="block group p-4 rounded-lg hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0 last:pb-0 pb-4"
-                    >
-                      <div className="mb-2">
-                        <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-purple-50 text-purple-700">
-                          {article.category}
-                        </span>
-                      </div>
-                      <p className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors mb-2 line-clamp-2">
-                        {article.title}
-                      </p>
-                      <div className="flex flex-wrap items-center gap-1.5 text-xs text-gray-500">
-                        {article.tags.map((tag, index) => (
-                          <span key={index} className="hover:text-gray-700">#{tag}</span>
-                        ))}
-                      </div>
-                    </Link>
-                    ))
+                    displayPost.relatedArticles.map((article) => {
+                      const formatDate = (dateString?: string) => {
+                        if (!dateString) return '';
+                        try {
+                          const date = new Date(dateString);
+                          return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+                        } catch {
+                          return '';
+                        }
+                      };
+                      return (
+                        <Link
+                          key={article.id}
+                          href={`/articles/${article.slug}`}
+                          className="block group p-4 rounded-xl border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all duration-200 cursor-pointer bg-white hover:bg-purple-50/30"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-purple-100 text-purple-700 whitespace-nowrap">
+                                  {article.category}
+                                </span>
+                                {article.viewCount !== undefined && (
+                                  <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
+                                    <Eye className="w-3.5 h-3.5 text-gray-600" />
+                                    <span className="text-gray-700">{article.viewCount}</span>
+                                  </div>
+                                )}
+                                {article.likeCount !== undefined && (
+                                  <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
+                                    <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" />
+                                    <span className="text-gray-700">{article.likeCount}</span>
+                                  </div>
+                                )}
+                              </div>
+                              <h4 className="text-sm font-bold text-gray-900 group-hover:text-purple-600 transition-colors mb-1.5 line-clamp-2 leading-snug">
+                                {article.title}
+                              </h4>
+                              <div className="flex items-center gap-2 text-xs text-gray-500">
+                                <span className="font-medium">{article.author}</span>
+                                {article.createdAt && (
+                                  <>
+                                    <span>·</span>
+                                    <span>{formatDate(article.createdAt)}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </div>
+                          </div>
+                        </Link>
+                      );
+                    })
                   ) : (
-                    <p className="text-sm text-gray-500">관련 아티클이 없습니다.</p>
+                    <p className="text-sm text-gray-500 text-center py-4">관련 아티클이 없습니다.</p>
                   )}
                 </div>
               </div>

@@ -13,6 +13,7 @@ export const ELASTIC_ENDPOINTS = {
     NEWS_SEARCH_LATEST: '/elastic-service/api/elastic/news/search/latest',
     NEWS_SUGGESTION: '/elastic-service/api/elastic/news/suggestion',
     ARTICLE_SEARCH: '/elastic-service/api/elastic/csknowledge/search',
+    ARTICLE_SEARCH_BY_MEMBER: '/elastic-service/api/elastic/csknowledge/search/member',
   },
     // RAG Service endpoints
   RAG: {
