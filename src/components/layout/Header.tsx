@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { ChevronDownIcon, BellIcon, Search, X, Menu, Shield } from "lucide-react";
 import AlarmPopup from "./AlarmPopup";
+import SearchModal from "./SearchModal";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 import { getRoleDisplayLabel, hasAdminAccess, pickRole } from "@/lib/role-utils";
@@ -33,8 +34,8 @@ const Header = () => {
   const pathname = usePathname();
   const router = useRouter();
   const [dropdowns, setDropdowns] = useState<Record<string, boolean>>({});
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAlarmPopupOpen, setIsAlarmPopupOpen] = useState(false);
   const { user:profileData } = useCurrentUser();
@@ -55,14 +56,6 @@ const Header = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  // Focus search input when opened
-  useEffect(() => {
-    if (isSearchOpen && searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
-  }, [isSearchOpen]);
-
   // Close mobile menu when route changes
   useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -99,18 +92,13 @@ const Header = () => {
     setIsMobileMenuOpen(false);
   };
 
-  const handleSearchToggle = () => {
-    setIsSearchOpen(!isSearchOpen);
-    if (isSearchOpen) {
-      setSearchQuery("");
-    }
+  const handleSearchClick = () => {
+    setIsSearchModalOpen(true);
+    setSearchQuery("");
   };
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      console.log("Searching for:", searchQuery);
-    }
+  const handleSearchQueryChange = (query: string) => {
+    setSearchQuery(query);
   };
 
 
@@ -142,7 +130,8 @@ const Header = () => {
   const userInitial = displayName?.charAt(0)?.toUpperCase() || displayEmail?.charAt(0)?.toUpperCase() || '?';
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+    <>
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
       <div className="container mx-auto px-4">
         <nav className="flex items-center h-16">
           {/* Left Side: Logo + Navigation Links */}
@@ -215,36 +204,13 @@ const Header = () => {
           {/* Right Side - Search, Notifications, Auth */}
           <div className="flex items-center space-x-2 ml-auto">
             {/* Search - Hidden on small screens */}
-            <div className="hidden sm:block relative">
-              {!isSearchOpen ? (
-                <button 
-                  onClick={handleSearchToggle}
-                  className="p-2 text-gray-700 hover:text-gray-900 transition-colors cursor-pointer"
-                >
-                  <Search className="w-5 h-5" />
-                </button>
-              ) : (
-                <form onSubmit={handleSearchSubmit} className="flex items-center">
-                  <div className="relative">
-                    <input
-                      ref={searchInputRef}
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search..."
-                      className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    />
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleSearchToggle}
-                    className="ml-2 p-2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </form>
-              )}
+            <div className="hidden sm:block">
+              <button 
+                onClick={handleSearchClick}
+                className="p-2 text-gray-700 hover:text-gray-900 transition-colors cursor-pointer"
+              >
+                <Search className="w-5 h-5" />
+              </button>
             </div>
 
             {/* Notifications */}
@@ -479,6 +445,14 @@ const Header = () => {
         )}
       </div>
     </header>
+
+    <SearchModal
+      isOpen={isSearchModalOpen}
+      onClose={() => setIsSearchModalOpen(false)}
+      searchQuery={searchQuery}
+      onSearchChange={handleSearchQueryChange}
+    />
+    </>
   );
 };
 

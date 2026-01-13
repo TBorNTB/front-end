@@ -348,7 +348,7 @@ function ArticlesContent() {
     likes: item.likeCount || 0,
     comments: 0,
     tags: [],
-    image: '/api/placeholder/400/250',
+    image: '/images/placeholder/article.png',
   })) || [];
 
   // 페이지네이션 계산
