@@ -13,6 +13,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import TitleBanner from '@/components/layout/TitleBanner';
+import ContentFilterBar from '@/components/layout/ContentFilterBar';
 import ArticleCard from './_components/ArticleCard';
 import { searchCSKnowledge, type CSKnowledgeSearchResponse } from '@/lib/api/services/elastic-services';
 import { categoryService, type CategoryItem } from '@/lib/api/services/category-services';
@@ -394,89 +395,30 @@ function ArticlesContent() {
           <div className="text-center py-8 text-red-500">{articlesError}</div>
         )}
 
-      <section className="flex flex-col md:flex-row gap-4 mb-8 bg-gradient-to-r from-primary-600 to-secondary-500 rounded-xl p-6 shadow-md">
-        {/* 검색/뷰모드/새 글 쓰기 – 기존 디자인에 맞게 배치 */}
-        <div className="flex flex-col md:flex-row gap-4 w-full items-center">
-          {/* 검색 인풋 */}
-          <div className="flex-1 relative w-full">
-            <div className="relative flex gap-2">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  placeholder="찾고자 할 컨텐츠를 작성해주세요"
-                  value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                    }
-                  }}
-                  onFocus={() => {
-                    if (suggestions.length > 0) {
-                      setShowSuggestions(true);
-                    }
-                  }}
-                  className="w-full h-11 pl-10 pr-10 rounded-xl border border-gray-200 bg-gray-50 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-colors"
-                />
-                {isSearching && (
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" style={{ animationDuration: '1.5s' }}></div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Suggestion 드롭다운 */}
-            {showSuggestions && (
-              <div
-                ref={suggestionsRef}
-                className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto"
-              >
-                {isLoadingSuggestions ? (
-                  <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                    검색 중...
-                  </div>
-                ) : suggestions.length > 0 ? (
-                  <div className="py-2">
-                    {suggestions.map((suggestion, index) => (
-                      <button
-                        key={index}
-                        onClick={() => {
-                          setSearchTerm(suggestion);
-                          setShowSuggestions(false);
-                        }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Search className="w-4 h-4 text-gray-400" />
-                          <span>{suggestion}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                    검색 결과가 없습니다
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* 오른쪽: 뷰모드 + 정렬 + 새 글쓰기 */}
-          <div className="flex items-center justify-end gap-3 md:justify-end">
-            {/* 새 글 쓰기 버튼 (디자인 유지용) */}
-            <Link href="/articles/create" className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 transition-colors shadow-sm hover:shadow-md whitespace-nowrap">
-              <Plus className="w-4 h-4" />
-              새 글 쓰기
-            </Link>
-          </div>
-        </div>
-      </section>
+        <ContentFilterBar
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          isSearching={isSearching}
+          suggestions={suggestions}
+          showSuggestions={showSuggestions}
+          onSuggestionSelect={(suggestion) => {
+            setSearchTerm(suggestion);
+            setShowSuggestions(false);
+          }}
+          onSuggestionsShow={setShowSuggestions}
+          isLoadingSuggestions={isLoadingSuggestions}
+          viewMode={viewMode as 'grid' | 'list'}
+          onViewModeChange={(mode) => setViewMode(mode)}
+          sortBy={sortBy}
+          sortOptions={['최신순', '인기순', '조회순']}
+          onSortChange={setSortBy}
+          showViewMode={true}
+          showSort={true}
+          showCreateButton={true}
+          createButtonText="새 글 쓰기"
+          createButtonHref="/articles/create"
+          placeholderText="찾고자 할 컨텐츠를 작성해주세요"
+        />
 
         {/* 본문 영역: 좌측 카테고리 + 우측 리스트 (디자인 유지) */}
         <section className="flex gap-8">
@@ -547,62 +489,6 @@ function ArticlesContent() {
                 {searchError && (
                   <span className="text-xs text-red-500">{searchError}</span>
                 )}
-              </div>
-
-              {/* 오른쪽 필터/정렬/뷰모드 영역 */}
-              <div className="flex items-center gap-3">
-                {/* 뷰모드 토글 */}
-                <div className="flex rounded-xl border border-gray-200 overflow-hidden">
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`px-3 py-1.5 flex items-center justify-center ${
-                      viewMode === 'grid'
-                        ? 'bg-primary-600 text-white'
-                        : 'bg-white text-gray-500'
-                    }`}
-                  >
-                    <Grid className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`px-3 py-1.5 flex items-center justify-center ${
-                      viewMode === 'list'
-                        ? 'bg-primary-600 text-white'
-                        : 'bg-white text-gray-500'
-                    }`}
-                  >
-                    <List className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* 정렬 드롭다운 */}
-                <div className="relative">
-                  <button
-                    onClick={() => setShowSortDropdown((prev) => !prev)}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-xs sm:text-sm text-gray-700"
-                  >
-                    {sortBy}
-                    <ChevronDown className="w-4 h-4" />
-                  </button>
-                  {showSortDropdown && (
-                    <div className="absolute right-0 mt-1 w-28 bg-white border border-gray-200 rounded-xl shadow-lg z-10">
-                      {sortOptions.map((option) => (
-                        <button
-                          key={option}
-                          onClick={() => {
-                            setSortBy(option);
-                            setShowSortDropdown(false);
-                          }}
-                          className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${
-                            sortBy === option ? 'text-primary-600 font-medium' : ''
-                          }`}
-                        >
-                          {option}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
 

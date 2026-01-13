@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Grid, List, Search, ChevronDown, X, ChevronLeft, ChevronRight, Heart, Eye, Calendar, User, Plus } from 'lucide-react';
 import { NewsCard } from './NewsCard';
+import ContentFilterBar from '@/components/layout/ContentFilterBar';
 import Link from 'next/link';
 import { BASE_URL } from '@/lib/api/config';
 
@@ -612,58 +613,31 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
       </div>
 
       {/* Top Controls - aligned with Articles styling */}
-      <section className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="flex items-center justify-between w-full">
-          {/* Search Bar */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              ref={searchInputRef}
-              type="text"
-              placeholder="뉴스 검색..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleSearch(searchTerm);
-                  setShowSuggestions(false);
-                }
-              }}
-              className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-            
-            {/* Search Suggestions */}
-            {showSuggestions && suggestions.length > 0 && (
-              <div
-                ref={suggestionsRef}
-                className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto"
-              >
-                {suggestions.map((suggestion, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Controls */}
-          <div className="flex items-center gap-3">
-            {/* New Post Button */}
-            <Link
-              href={createHref}
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary-600 px-4 text-white hover:bg-primary-700 transition-colors"
-            >
-              <Plus size={16} />
-              <span className="text-sm font-medium">새 글 쓰기</span>
-            </Link>
-          </div>
-        </div>
-      </section>
+      <ContentFilterBar
+        searchTerm={searchTerm}
+        onSearchChange={(value) => {
+          setSearchTerm(value);
+          setCurrentPage(0);
+          updateURL({ query: value, page: 0 });
+        }}
+        isSearching={loading}
+        suggestions={suggestions}
+        showSuggestions={showSuggestions}
+        onSuggestionSelect={handleSuggestionClick}
+        onSuggestionsShow={setShowSuggestions}
+        isLoadingSuggestions={false}
+        viewMode={viewMode as 'grid' | 'list'}
+        onViewModeChange={setViewMode}
+        sortBy={sortBy}
+        sortOptions={sortOptions}
+        onSortChange={setSortBy}
+        showViewMode={true}
+        showSort={true}
+        showCreateButton={true}
+        createButtonText="새 글 쓰기"
+        createButtonHref={createHref}
+        placeholderText="뉴스 검색..."
+      />
 
       {/* Main Content with Sidebar */}
       <div className="flex gap-8">
@@ -707,57 +681,7 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
               {searchTerm && ` (검색어: "${searchTerm}")`}
               {selectedCategory !== 'all' && ` (카테고리: ${newsCategories.find(c => c.value === selectedCategory)?.name})`}
             </p>
-          {/* Controls */}
-          <div className="flex items-center gap-3">
-            {/* View Mode Toggle */}
-            <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 ${viewMode === 'grid' ? 'bg-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-              >
-                <Grid size={16} />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 ${viewMode === 'list' ? 'bg-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-              >
-                <List size={16} />
-              </button>
-            </div>
-
-            {/* Sort Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setShowSortDropdown(!showSortDropdown)}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                {sortBy}
-                <ChevronDown size={16} className={`transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {showSortDropdown && (
-                <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                  {sortOptions.map((option) => (
-                    <button
-                      key={option}
-                      onClick={() => {
-                        setSortBy(option);
-                        setShowSortDropdown(false);
-                      }}
-                      className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors ${
-                        sortBy === option ? 'text-primary font-medium' : 'text-gray-700'
-                      }`}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
-          </div>
-
-        
 
         {/* Loading State */}
         {loading ? (
