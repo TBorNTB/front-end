@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, useRef, Fragment } from 'react';
-import { Heart, Eye, Clock, ArrowLeft, Crown, Users, Calendar, Tag, MessageCircle, ChevronDown } from 'lucide-react';
+import { Heart, Eye, Clock, ArrowLeft, Crown, Users, Calendar, Tag, MessageCircle, ChevronDown, Edit, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Menu, Transition } from '@headlessui/react';
 import { 
@@ -21,6 +21,8 @@ import {
   Comment,
   CommentListResponse
 } from '@/lib/api/services/user-services';
+import { deleteNews } from '@/lib/api/services/news-services';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 interface NewsDetailPageProps {
   params: Promise<{ id: string }>;
@@ -44,6 +46,7 @@ interface NewsDetail {
 
 export default function NewsDetailPage({ params }: NewsDetailPageProps) {
   const router = useRouter();
+  const { user: currentUser } = useCurrentUser();
   const [newsId, setNewsId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +55,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
   const [isTogglingLike, setIsTogglingLike] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [viewCount, setViewCount] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Comment states
   const [comments, setComments] = useState<Comment[]>([]);
@@ -376,6 +380,30 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
     }));
   };
 
+  const handleEdit = () => {
+    router.push(`/community/news/${newsId}/edit`);
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('정말 이 뉴스를 삭제하시겠습니까?')) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await deleteNews(newsId);
+      alert('뉴스가 성공적으로 삭제되었습니다.');
+      router.push('/community');
+    } catch (error: any) {
+      console.error('Error deleting news:', error);
+      alert(error.message || '뉴스 삭제에 실패했습니다.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const isOwner = currentUser?.username === news?.writerId;
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -660,19 +688,42 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                 </div>
 
                 {/* Stats Bar */}
-                <div className="flex items-center gap-8 mt-6 pt-6 border-t border-gray-200">
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-                    <span className="text-sm font-semibold">{likeCount}</span>
+                <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
+                  <div className="flex items-center gap-8">
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
+                      <span className="text-sm font-semibold">{likeCount}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Eye className="w-5 h-5" />
+                      <span className="text-sm font-semibold">{viewCount.toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <MessageCircle className="w-5 h-5" />
+                      <span className="text-sm font-semibold">{comments.length}{hasNextComments ? '+' : ''}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Eye className="w-5 h-5" />
-                    <span className="text-sm font-semibold">{viewCount.toLocaleString()}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <MessageCircle className="w-5 h-5" />
-                    <span className="text-sm font-semibold">{comments.length}{hasNextComments ? '+' : ''}</span>
-                  </div>
+                  
+                  {/* Edit/Delete Buttons - Only show for owner */}
+                  {isOwner && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleEdit}
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <Edit className="w-4 h-4" />
+                        수정
+                      </button>
+                      <button
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        {isDeleting ? '삭제 중...' : '삭제'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </header>
 

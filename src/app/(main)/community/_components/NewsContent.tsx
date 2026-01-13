@@ -319,7 +319,7 @@ const mockNewsData: NewsItem[] = [
 
 type NewsContentProps = { createHref?: string };
 
-export default function NewsContent({ createHref = '/news/new' }: NewsContentProps) {
+export default function NewsContent({ createHref = '/community/news/create' }: NewsContentProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [news, setNews] = useState<NewsItem[]>([]);
