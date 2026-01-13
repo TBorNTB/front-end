@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { Calendar, Eye, Heart, User, Crown, Users } from 'lucide-react';
 
 interface NewsItem {
@@ -154,7 +155,8 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
 
   if (variant === 'list') {
     return (
-      <article className="group bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-primary-300 hover:shadow-md transition-all duration-200 flex">
+      <Link href={`/community/news/${news.id}`}>
+        <article className="group bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-primary-300 hover:shadow-md transition-all duration-200 flex cursor-pointer">
         {/* Image - Left side */}
         <div className="w-56 flex-shrink-0 relative overflow-hidden bg-gray-100">
           {thumbnailUrl ? (
@@ -218,12 +220,14 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
           </div>
         </div>
       </article>
+      </Link>
     );
   }
 
   // Grid variant
   return (
-    <article className="group bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-primary-300 hover:shadow-lg transition-all duration-200 flex flex-col h-full">
+    <Link href={`/community/news/${news.id}`}>
+      <article className="group bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-primary-300 hover:shadow-lg transition-all duration-200 flex flex-col h-full cursor-pointer">
       {/* Image */}
       <div className="relative overflow-hidden bg-gray-100">
         {thumbnailUrl ? (
@@ -298,5 +302,6 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
         </div>
       </div>
     </article>
+    </Link>
   );
 }
