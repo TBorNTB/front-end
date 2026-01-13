@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Grid, List, Search, ChevronDown, X, ChevronLeft, ChevronRight, Heart, Eye, Calendar, User, Plus } from 'lucide-react';
 import { NewsCard } from './NewsCard';
 import ContentFilterBar from '@/components/layout/ContentFilterBar';
+import CategoryFilter from '@/components/layout/CategoryFilter';
 import Link from 'next/link';
 import { BASE_URL } from '@/lib/api/config';
 
@@ -643,33 +644,19 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
       <div className="flex gap-8">
         {/* Sidebar Filter - aligned with Articles styling */}
         <aside className="w-64 flex-shrink-0 hidden md:block">
-          <div className="bg-white rounded-2xl border border-gray-200 p-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">카테고리</h3>
-            <div className="space-y-1">
-              {newsCategories.map((category) => {
-                const isActive = selectedCategory === category.value;
-                // 목 데이터에서 카운트 계산
-                const categoryCount = category.value === 'all'
-                  ? mockNewsData.length
-                  : mockNewsData.filter(n => n.content.category === category.value).length;
-
-                return (
-                  <button
-                    key={category.value}
-                    onClick={() => handleCategoryChange(category.value)}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all ${
-                      isActive ? 'bg-primary-600 text-white' : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <span>{category.name}</span>
-                    <span className={`${isActive ? 'text-primary-50' : 'text-gray-400'} text-xs`}>
-                      {categoryCount}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <CategoryFilter
+            categories={newsCategories.filter(cat => cat.value !== 'all').map(category => {
+              const categoryCount = mockNewsData.filter(n => n.content.category === category.value).length;
+              return {
+                id: category.value,
+                name: category.name,
+                count: categoryCount,
+              };
+            })}
+            selectedCategory={selectedCategory}
+            onCategoryChange={handleCategoryChange}
+            title="카테고리"
+          />
         </aside>
 
         {/* Main Content */}

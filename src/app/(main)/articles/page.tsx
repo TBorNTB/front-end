@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import TitleBanner from '@/components/layout/TitleBanner';
 import ContentFilterBar from '@/components/layout/ContentFilterBar';
+import CategoryFilter from '@/components/layout/CategoryFilter';
 import ArticleCard from './_components/ArticleCard';
 import { searchCSKnowledge, type CSKnowledgeSearchResponse } from '@/lib/api/services/elastic-services';
 import { categoryService, type CategoryItem } from '@/lib/api/services/category-services';
@@ -110,7 +111,6 @@ function ArticlesContent() {
         
         // API 응답을 Category 형식으로 변환
         const transformedCategories: Category[] = [
-          { name: '전체', slug: 'all' }, // 전체 카테고리 추가
           ...response.categories.map((apiCategory: CategoryItem) => {
             const type = getCategoryTypeByName(apiCategory.name);
             const slug = type ? CategorySlugs[type] : createSlugFromName(apiCategory.name, apiCategory.id);
@@ -424,49 +424,33 @@ function ArticlesContent() {
         <section className="flex gap-8">
           {/* 왼쪽 카테고리 패널 */}
           <aside className="w-64 flex-shrink-0 hidden md:block">
-            <div className="bg-white rounded-2xl border border-gray-200 p-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-4">
-                카테고리
-              </h3>
-              <div className="space-y-1">
-                {categoriesLoading ? (
-                  <div className="px-3 py-2 text-sm text-gray-500 text-center">
-                    로딩 중...
-                  </div>
-                ) : (
-                  categories.map((cat) => {
-                    const isActive = selectedCategory === cat.slug;
-
-                    return (
-                      <button
-                        key={cat.slug}
-                        onClick={() => {
-                          setSelectedCategory(cat.slug);
-                          setPage(1);
-                          const params = new URLSearchParams(
-                            searchParams.toString(),
-                          );
-                          if (cat.slug === 'all') {
-                            params.delete('topic');
-                          } else {
-                            params.set('topic', cat.slug);
-                          }
-                          router.push(`/articles?${params.toString()}`);
-                          // 카테고리 변경 시 selectedCategory가 변경되면 useEffect가 자동으로 검색 실행
-                        }}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
-                          isActive
-                            ? 'bg-primary-600 text-white'
-                            : 'text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        <span>{cat.name}</span>
-                      </button>
-                    );
-                  })
-                )}
+            {categoriesLoading ? (
+              <div className="bg-white rounded-2xl border border-gray-200 p-4">
+                <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                  로딩 중...
+                </div>
               </div>
-            </div>
+            ) : (
+              <CategoryFilter
+                categories={categories.map(cat => ({
+                  id: cat.slug,
+                  name: cat.name,
+                }))}
+                selectedCategory={selectedCategory}
+                onCategoryChange={(slug) => {
+                  setSelectedCategory(slug);
+                  setPage(1);
+                  const params = new URLSearchParams(searchParams.toString());
+                  if (slug === 'all') {
+                    params.delete('topic');
+                  } else {
+                    params.set('topic', slug);
+                  }
+                  router.push(`/articles?${params.toString()}`);
+                }}
+                title="카테고리"
+              />
+            )}
           </aside>
 
           <div className="flex-1">

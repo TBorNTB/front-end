@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import ContentFilterBar from '@/components/layout/ContentFilterBar';
+import CategoryFilter from '@/components/layout/CategoryFilter';
 import QuestionCard from './QuestionCard';
 import { MessageSquare, CheckCircle } from 'lucide-react';
 
@@ -346,47 +347,16 @@ export default function QnAContent() {
           </div>
 
           {/* Tech Tags Filter */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">기술 태그</h3>
-            <div className="space-y-1">
-              <button
-                onClick={() => setSelectedTag('all')}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
-                  selectedTag === 'all'
-                    ? 'bg-primary-600 text-white'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <span>전체</span>
-                <span className={`text-xs ${selectedTag === 'all' ? 'text-primary-100' : 'text-gray-400'}`}>
-                  {questions.length}
-                </span>
-              </button>
-              {availableTechTags.map((tag) => {
-                const isActive = selectedTag === tag.id;
-                const count = questions.filter((q) =>
-                  q.techTags.some((t) => t.id === tag.id)
-                ).length;
-
-                return (
-                  <button
-                    key={tag.id}
-                    onClick={() => setSelectedTag(tag.id)}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
-                      isActive
-                        ? 'bg-primary-600 text-white'
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <span>{tag.name}</span>
-                    <span className={`text-xs ${isActive ? 'text-primary-100' : 'text-gray-400'}`}>
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <CategoryFilter
+            categories={availableTechTags.map((tag) => ({
+              id: tag.id,
+              name: tag.name,
+              count: questions.filter((q) => q.techTags.some((t) => t.id === tag.id)).length,
+            }))}
+            selectedCategory={selectedTag}
+            onCategoryChange={setSelectedTag}
+            title="기술 태그"
+          />
         </aside>
 
         {/* Main Content */}

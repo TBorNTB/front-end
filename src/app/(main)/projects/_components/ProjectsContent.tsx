@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ExternalLink, Github, Grid, List, Plus, Search, ChevronDown, ChevronLeft, ChevronRight, Heart, Eye } from 'lucide-react';
 import TitleBanner from '@/components/layout/TitleBanner';
 import ContentFilterBar from '@/components/layout/ContentFilterBar';
+import CategoryFilter from '@/components/layout/CategoryFilter';
 import { CategoryHelpers, CategoryType, CategoryDisplayNames } from '@/types/services/category';
 import Image from 'next/image';
 import { USE_MOCK_DATA } from '@/lib/api/env';
@@ -492,13 +493,14 @@ export default function ProjectsContent() {
         {/* Main Content with Sidebar */}
         <section className="flex gap-8">
           {/* Sidebar Filter */}
-          <aside className="w-64 flex-shrink-0 hidden md:block">
+          <aside className="w-64 flex-shrink-0 hidden md:block space-y-6">
+            {/* Status Filter Box */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-gray-900">필터</h3>
-                {(selectedCategories.length > 0 || selectedStatuses.length > 1) && (
+                <h3 className="text-sm font-semibold text-gray-900">프로젝트 상태</h3>
+                {selectedStatuses.length > 1 && (
                   <button
-                    onClick={clearAllFilters}
+                    onClick={() => setSelectedStatuses(['진행중'])}
                     className="text-xs text-primary hover:underline"
                   >
                     초기화
@@ -507,8 +509,7 @@ export default function ProjectsContent() {
               </div>
 
               {/* Status Filters */}
-              <div className="space-y-3 mb-6">
-                <h4 className="text-base font-semibold text-gray-900">프로젝트 상태</h4>
+              <div className="space-y-3">
                 {statuses.map((status) => (
                   <label key={status} className="flex items-center cursor-pointer">
                     <input
@@ -533,25 +534,26 @@ export default function ProjectsContent() {
                   </label>
                 ))}
               </div>
-
-              {/* Category Filters */}
-              <h4 className="text-xs font-semibold text-gray-900 uppercase mb-3">학습 주제</h4>
-              <div className="space-y-1">
-                {categories.map((category) => (
-                  <button
-                    key={category}
-                    onClick={() => handleCategoryToggle(category)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm ${
-                      selectedCategories.includes(category)
-                        ? 'bg-primary-600 text-white'
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    {category}
-                  </button>
-                ))}
-              </div>
             </div>
+
+            {/* Category Filter Box */}
+            <CategoryFilter
+              categories={categories.map(cat => ({
+                id: cat,
+                name: cat,
+                count: 0, // You can calculate actual counts if needed
+              }))}
+              selectedCategory={selectedCategories.length === 0 ? 'all' : selectedCategories[0]}
+              onCategoryChange={(categoryId) => {
+                if (categoryId === 'all') {
+                  setSelectedCategories([]);
+                } else {
+                  setSelectedCategories([categoryId]);
+                }
+                setCurrentPage(0);
+              }}
+              title="학습 주제"
+            />
           </aside>
 
           {/* Main Content */}

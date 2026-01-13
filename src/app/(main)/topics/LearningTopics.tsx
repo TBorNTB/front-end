@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Star, Users, Clock, ArrowRight, Globe, Shield, Code, Lock, Search, Wifi, Cpu, Key } from 'lucide-react';
 import TitleBanner from '@/components/layout/TitleBanner';
+import CategoryFilter from '@/components/layout/CategoryFilter';
 import type { LucideIcon } from 'lucide-react';
 import { categoryService, CategoryItem } from '@/lib/api/services/category-services';
 import { CategoryType, CategorySlugs, CategoryDisplayNames, CategoryDescriptions } from '@/types/services/category';
@@ -673,38 +674,25 @@ export function LearningTopics() {
         <div className="flex gap-8 items-start">
           {/* Sidebar - Sticky */}
           <div className="w-64 flex-shrink-0">
-            <div className="sticky top-8 bg-white rounded-xl shadow-sm border border-gray-200">
-              <button
-                onClick={() => router.push('/topics')}
-                className="w-full p-4 border-b border-gray-200 text-left hover:bg-gray-50 transition-colors cursor-pointer"
-              >
-                <h3 className="text-base font-semibold text-gray-900">전체 카테고리</h3>
-              </button>
-              <div className="p-2 max-h-[calc(100vh-10rem)] overflow-y-auto">
-                {categories.map((category) => {
-                  const isActive = selectedCategory === category.slug;
-                  return (
-                    <button
-                      key={category.slug}
-                      onClick={() => handleCategoryClick(category.slug)}
-                      className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-sm transition-all ${
-                        isActive
-                          ? 'bg-primary-600 text-white font-medium'
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      <span>{category.name}</span>
-                      <span className={`px-2 py-0.5 rounded-full text-xs ${
-                        isActive
-                          ? 'bg-white bg-opacity-20 text-white'
-                          : 'bg-gray-200 text-gray-600'
-                      }`}>
-                        {category.articles + category.projects}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+            <div className="sticky top-8">
+              <CategoryFilter
+                categories={[
+                  ...categories.map(category => ({
+                    id: category.slug,
+                    name: category.name,
+                    count: category.articles + category.projects,
+                  }))
+                ]}
+                selectedCategory={selectedCategory}
+                onCategoryChange={(slug) => {
+                  if (slug === 'all') {
+                    router.push('/topics');
+                  } else {
+                    router.push(`/topics?category=${slug}`);
+                  }
+                }}
+                title="전체 카테고리"
+              />
             </div>
           </div>
 
