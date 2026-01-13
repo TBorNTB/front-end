@@ -54,18 +54,14 @@ const createSlugFromName = (name: string, id: number): string => {
   return `category-${id}`;
 };
 
-// 카테고리 slug를 API 형식으로 변환
+// 카테고리 slug를 API 형식으로 변환 (API는 한글 카테고리 이름을 받음)
 const convertSlugToApiCategory = (slug: string, categories: Category[]): string | undefined => {
   if (slug === 'all') return undefined;
   
-  // categories 배열에서 해당 slug의 apiCategory 찾기
+  // categories 배열에서 해당 slug의 카테고리 찾기
   const category = categories.find(cat => cat.slug === slug);
   if (category) {
-    // apiCategory가 있으면 사용, 없으면 카테고리 이름을 그대로 사용
-    if (category.apiCategory) {
-      return category.apiCategory;
-    }
-    // fallback: 카테고리 이름을 그대로 사용
+    // API는 한글 카테고리 이름을 받으므로 name을 그대로 사용
     return category.name;
   }
   
@@ -114,15 +110,10 @@ function ArticlesContent() {
           ...response.categories.map((apiCategory: CategoryItem) => {
             const type = getCategoryTypeByName(apiCategory.name);
             const slug = type ? CategorySlugs[type] : createSlugFromName(apiCategory.name, apiCategory.id);
-            // CategoryType이 있으면 변환된 형식 사용, 없으면 카테고리 이름을 그대로 사용
-            const apiCategoryFormat = type 
-              ? convertCategoryTypeToApiFormat(type) 
-              : apiCategory.name;
             
             return {
-              name: apiCategory.name,
+              name: apiCategory.name, // API는 한글 카테고리 이름을 받으므로 name을 그대로 사용
               slug: slug,
-              apiCategory: apiCategoryFormat,
             };
           }),
         ];
