@@ -210,44 +210,48 @@ const AvatarStack = ({
       </div>
 
       {/* Collaborators Section */}
-      {contributors.length > 0 && (
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5">
-            <Users size={14} className="text-blue-500" />
-            <span className="text-xs font-medium text-gray-600">협력자</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="flex -space-x-2">
-              {visibleContributors.map((contributor, index) => (
-                <div 
-                  key={contributor.username || index} 
-                  className="relative inline-block"
-                  title={contributor.nickname}
-                >
-                  <Image
-                    src={contributor.avatar}
-                    alt={contributor.nickname}
-                    width={24}
-                    height={24}
-                    className="w-6 h-6 rounded-full border-2 border-white bg-gray-200 hover:z-10 relative"
-                  />
-                </div>
-              ))}
-              {remainingCount > 0 && (
-                <div
-                  className="w-6 h-6 rounded-full border-2 border-white bg-gray-300 flex items-center justify-center relative"
-                  title={`+${remainingCount} more contributors`}
-                >
-                  <span className="text-xs font-medium text-gray-600">+{remainingCount}</span>
-                </div>
-              )}
-            </div>
-            <span className="text-xs text-gray-500">
-              {contributors.length}명
-            </span>
-          </div>
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          <Users size={14} className="text-blue-500" />
+          <span className="text-xs font-medium text-gray-600">협력자</span>
         </div>
-      )}
+        <div className="flex items-center gap-1.5">
+          {contributors.length > 0 ? (
+            <>
+              <div className="flex -space-x-2">
+                {visibleContributors.map((contributor, index) => (
+                  <div 
+                    key={contributor.username || index} 
+                    className="relative inline-block"
+                    title={contributor.nickname}
+                  >
+                    <Image
+                      src={contributor.avatar}
+                      alt={contributor.nickname}
+                      width={24}
+                      height={24}
+                      className="w-6 h-6 rounded-full border-2 border-white bg-gray-200 hover:z-10 relative"
+                    />
+                  </div>
+                ))}
+                {remainingCount > 0 && (
+                  <div
+                    className="w-6 h-6 rounded-full border-2 border-white bg-gray-300 flex items-center justify-center relative"
+                    title={`+${remainingCount} more contributors`}
+                  >
+                    <span className="text-xs font-medium text-gray-600">+{remainingCount}</span>
+                  </div>
+                )}
+              </div>
+              <span className="text-xs text-gray-500">
+                {contributors.length}명
+              </span>
+            </>
+          ) : (
+            <span className="text-xs text-gray-400">없음</span>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
