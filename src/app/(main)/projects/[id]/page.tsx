@@ -9,6 +9,8 @@ import { fetchProjectDetail, deleteDocument } from '@/lib/api/services/project-s
 import { 
   fetchViewCount, 
   fetchLikeCount,
+  fetchLikeStatus,
+  toggleLike,
   fetchComments,
   createComment,
   createReply,
@@ -104,6 +106,10 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   });
 
   const [project, setProject] = useState<MappedProject | null>(null);
+  
+  // Like states
+  const [isLiked, setIsLiked] = useState(false);
+  const [isTogglingLike, setIsTogglingLike] = useState(false);
 
   // Comment functions - useEffect보다 먼저 정의
   const loadComments = async (postId: string, direction: 'ASC' | 'DESC', reset: boolean = true) => {
@@ -326,24 +332,56 @@ export default function ProjectPage({ params }: ProjectPageProps) {
 
     // 2) 상세/통계 합치기 (항상 시도)
     try {
-      const [apiData, viewCountData, likeCountData] = await Promise.all([
+      const [apiData, viewCountData, likeCountData, likeStatusData] = await Promise.all([
         fetchProjectDetail(id),
         fetchViewCount(id, 'PROJECT').catch(() => ({ viewCount: 0 })),
         fetchLikeCount(id, 'PROJECT').catch(() => ({ likedCount: 0 })),
+        fetchLikeStatus(id, 'PROJECT').catch(() => ({ likeCount: 0, status: 'NOT_LIKED' as const })),
       ]);
 
       const mappedData = mapApiResponseToUI(apiData);
       mappedData.stats = {
         views: viewCountData.viewCount,
-        likes: likeCountData.likedCount,
+        likes: likeStatusData.likeCount || likeCountData.likedCount,
         comments: 0,
       };
       setProject(mappedData);
+      setIsLiked(likeStatusData.status === 'LIKED');
     } catch (error) {
       console.error('Error fetching project details:', error);
       setProject((prev) => prev); // keep whatever was set above
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Handle like toggle
+  const handleLikeToggle = async () => {
+    if (!projectId || isTogglingLike) return;
+    
+    setIsTogglingLike(true);
+    try {
+      const response = await toggleLike(projectId, 'PROJECT');
+      setIsLiked(response.status === 'LIKED');
+      
+      // Update project stats
+      if (project) {
+        setProject({
+          ...project,
+          stats: {
+            ...(project.stats || { views: 0, likes: 0, comments: 0 }),
+            likes: response.likeCount,
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      // 에러 발생 시 사용자에게 알림 (선택사항)
+      if (error instanceof Error && error.message.includes('로그인이 필요')) {
+        alert('로그인이 필요합니다.');
+      }
+    } finally {
+      setIsTogglingLike(false);
     }
   };
 
@@ -990,13 +1028,37 @@ export default function ProjectPage({ params }: ProjectPageProps) {
 
                 {/* Like Button */}
                 <section className="mb-12 flex justify-center py-4">
-                  <button className="flex flex-col items-center gap-2 px-8 py-4 rounded-full border-2 border-gray-300 hover:border-primary-500 hover:bg-primary-50 transition-colors group">
-                    <svg className="w-8 h-8 text-gray-400 group-hover:text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <button 
+                    onClick={handleLikeToggle}
+                    disabled={isTogglingLike}
+                    className={`flex flex-col items-center gap-2 px-8 py-4 rounded-full border-2 transition-colors group ${
+                      isLiked 
+                        ? 'border-red-500 bg-red-50 hover:bg-red-100' 
+                        : 'border-gray-300 hover:border-primary-500 hover:bg-primary-50'
+                    } ${isTogglingLike ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  >
+                    <svg 
+                      className={`w-8 h-8 transition-colors ${
+                        isLiked 
+                          ? 'text-red-500 fill-red-500' 
+                          : 'text-gray-400 group-hover:text-primary-600'
+                      }`} 
+                      fill={isLiked ? 'currentColor' : 'none'} 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
                     </svg>
-                    <span className="text-2xl font-bold text-gray-900 group-hover:text-primary-600">
+                    <span className={`text-2xl font-bold transition-colors ${
+                      isLiked 
+                        ? 'text-red-600' 
+                        : 'text-gray-900 group-hover:text-primary-600'
+                    }`}>
                       {project.stats?.likes || 0}
                     </span>
+                    {isTogglingLike && (
+                      <span className="text-xs text-gray-500">처리 중...</span>
+                    )}
                   </button>
                 </section>
 

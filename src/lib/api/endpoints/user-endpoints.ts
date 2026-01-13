@@ -46,6 +46,8 @@ export const USER_ENDPOINTS = {
   },
   LIKE: {
     COUNT: '/user-service/api/like/:id/count',
+    STATUS: '/user-service/api/like/:id/me',
+    TOGGLE: '/user-service/api/like/:id',
   },
 
   // Comment endpoints

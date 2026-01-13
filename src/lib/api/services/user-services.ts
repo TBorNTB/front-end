@@ -337,6 +337,78 @@ export const fetchLikeCount = async (id: string | number, postType: string = 'PR
   return response.json();
 };
 
+// Like status response type
+export interface LikeStatusResponse {
+  likeCount: number;
+  status: 'LIKED' | 'NOT_LIKED';
+}
+
+// Get access token from cookies
+const getAccessToken = (): string | null => {
+  if (typeof document === 'undefined') return null;
+  const cookies = document.cookie.split(';');
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split('=');
+    if (name === 'accessToken') {
+      return decodeURIComponent(value);
+    }
+  }
+  return null;
+};
+
+// Fetch like status for current user
+export const fetchLikeStatus = async (id: string | number, postType: string = 'PROJECT'): Promise<LikeStatusResponse> => {
+  const endpoint = USER_ENDPOINTS.LIKE.STATUS.replace(':id', String(id));
+  const url = getUserApiUrl(`${endpoint}?postType=${postType}`);
+  const token = getAccessToken();
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'accept': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` }),
+    },
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    // 401이나 403이면 로그인하지 않은 상태로 간주
+    if (response.status === 401 || response.status === 403) {
+      return { likeCount: 0, status: 'NOT_LIKED' };
+    }
+    const errorText = await response.text();
+    throw new Error(`Failed to fetch like status: ${response.status} - ${errorText}`);
+  }
+
+  return response.json();
+};
+
+// Toggle like (like/unlike)
+export const toggleLike = async (id: string | number, postType: string = 'PROJECT'): Promise<LikeStatusResponse> => {
+  const endpoint = USER_ENDPOINTS.LIKE.TOGGLE.replace(':id', String(id));
+  const url = getUserApiUrl(`${endpoint}?postType=${postType}`);
+  const token = getAccessToken();
+
+  if (!token) {
+    throw new Error('로그인이 필요합니다.');
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to toggle like: ${response.status} - ${errorText}`);
+  }
+
+  return response.json();
+};
 
 // Comment types
 export interface Comment {
@@ -368,20 +440,6 @@ export interface CreateCommentRequest {
 export interface UpdateCommentRequest {
   content: string;
 }
-
-
-// Get access token from cookies
-const getAccessToken = (): string | null => {
-  if (typeof document === 'undefined') return null;
-  const cookies = document.cookie.split(';');
-  for (const cookie of cookies) {
-    const [name, value] = cookie.trim().split('=');
-    if (name === 'accessToken') {
-      return decodeURIComponent(value);
-    }
-  }
-  return null;
-};
 
 
 // Fetch comments for a post
