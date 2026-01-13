@@ -103,21 +103,23 @@ const fetchProjects = async (params: ProjectSearchParams): Promise<ProjectSearch
 
 /**
  * Fetch search suggestions from Elasticsearch
- * TODO: Move to src/lib/services/elastic.ts
+ * 최대 5개 제안 반환
  */
 const fetchSearchSuggestions = async (query: string): Promise<string[]> => {
   if (!query?.trim()) return [];
 
   try {
     const response = await fetch(
-      `/api/projects/suggestions?query=${encodeURIComponent(query)}` // ✅ Use API route
+      `/api/projects/suggestions?query=${encodeURIComponent(query.trim())}`
     );
 
     if (!response.ok) return [];
 
     const data = await response.json();
-    return Array.isArray(data) ? data : [];
+    // API 라우트에서 이미 5개로 제한하지만, 안전을 위해 여기서도 제한
+    return Array.isArray(data) ? data.slice(0, 5) : [];
   } catch (error) {
+    console.error('Error fetching search suggestions:', error);
     return [];
   }
 };
@@ -457,7 +459,7 @@ export default function ProjectsContent() {
       setSearchSuggestions([]);
       setShowSuggestions(false);
       setIsSearching(false);
-      setCurrentPage(0);
+      // 검색어가 비어있을 때는 검색 실행하지 않음 (제안만 닫음)
     }
 
     return () => {
@@ -467,11 +469,11 @@ export default function ProjectsContent() {
     };
   }, [searchTerm]);
 
-  // Load projects when filters/sort/page/searchTerm change
+  // Load projects when filters/sort/page change (searchTerm 제외 - 제안 클릭이나 Enter 시에만 검색)
   useEffect(() => {
     loadProjects(currentPage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategories, selectedStatuses, sortBy, currentPage, searchTerm]);
+  }, [selectedCategories, selectedStatuses, sortBy, currentPage]);
 
   // Handlers
   const handleCategoryToggle = (category: string) => {
@@ -501,11 +503,21 @@ export default function ProjectsContent() {
     setCurrentPage(0);
   };
 
-  const handleSuggestionClick = (suggestion: string) => {
+  const handleSuggestionClick = async (suggestion: string) => {
     setSearchTerm(suggestion);
     setShowSuggestions(false);
     setCurrentPage(0);
     searchInputRef.current?.blur();
+    // 검색어를 설정한 후 프로젝트 검색 실행
+    await loadProjects(0);
+  };
+
+  const handleSearchSubmit = async () => {
+    setShowSuggestions(false);
+    setCurrentPage(0);
+    searchInputRef.current?.blur();
+    // 현재 검색어로 프로젝트 검색 실행
+    await loadProjects(0);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -561,6 +573,12 @@ export default function ProjectsContent() {
                 }}
                 onFocus={() => {
                   if (searchSuggestions.length > 0) setShowSuggestions(true);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSearchSubmit();
+                  }
                 }}
                 className="w-full h-10 pl-10 pr-4 text-sm bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
               />
