@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import TitleBanner from '@/components/layout/TitleBanner';
 import ContentFilterBar from '@/components/layout/ContentFilterBar';
-import QuestionCard from '../QuestionCard';
+import QuestionCard from '../_components/QuestionCard';
 import { MessageSquare, CheckCircle, Bookmark, Tag, User, Calendar } from 'lucide-react';
 
 // Types
@@ -298,7 +298,7 @@ export default function FAQsPage() {
           showSort={true}
           showCreateButton={currentUserRole !== 'guest'}
           createButtonText="질문하기"
-          createButtonHref="/about/faqs/create"
+          createButtonHref="/community/qna/create"
           placeholderText="질문 검색..."
         />
 

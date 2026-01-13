@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import TitleBanner from '@/components/layout/TitleBanner';
 import ContentFilterBar from '@/components/layout/ContentFilterBar';
-import QuestionCard from '../QuestionCard';
-import { MessageSquare, CheckCircle, Bookmark, Tag, User, Calendar } from 'lucide-react';
+import QuestionCard from './QuestionCard';
+import { MessageSquare, CheckCircle } from 'lucide-react';
 
 // Types
 interface TechTag {
@@ -17,7 +16,7 @@ interface Comment {
   id: string;
   content: string;
   author: string;
-  authorRole: 'member' | 'admin';
+  authorRole: 'member' | 'admin' | 'guest';
   createdAt: string;
 }
 
@@ -25,7 +24,7 @@ interface Answer {
   id: string;
   content: string;
   author: string;
-  authorRole: 'member' | 'admin';
+  authorRole: 'member' | 'admin' | 'guest';
   createdAt: string;
   isAccepted: boolean;
   comments: Comment[];
@@ -37,13 +36,13 @@ interface Question {
   title: string;
   content: string;
   author: string;
-  authorRole: 'member' | 'admin';
+  authorRole: 'member' | 'admin' | 'guest';
   techTags: TechTag[];
   createdAt: string;
   updatedAt: string;
   views: number;
   answers: Answer[];
-  comments: Comment[];
+  comments: any[];
   isBookmarked: boolean;
   hasAcceptedAnswer: boolean;
 }
@@ -201,7 +200,7 @@ const mockQuestions: Question[] = [
   },
 ];
 
-export default function FAQsPage() {
+export default function QnAContent() {
   const [questions, setQuestions] = useState<Question[]>(mockQuestions);
   const [filteredQuestions, setFilteredQuestions] = useState<Question[]>(mockQuestions);
   const [searchTerm, setSearchTerm] = useState('');
@@ -273,162 +272,154 @@ export default function FAQsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <TitleBanner
-        title="Q&A"
-        description="기술 질문과 답변을 공유하는 공간입니다."
-        backgroundImage="/images/BgHeader.png"
+    <div className="w-full">
+      {/* Filter Bar */}
+      <ContentFilterBar
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        isSearching={false}
+        suggestions={[]}
+        showSuggestions={showSuggestions}
+        onSuggestionsShow={setShowSuggestions}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        sortBy={sortBy}
+        sortOptions={['최신순', '인기순', '답변순']}
+        onSortChange={setSortBy}
+        showViewMode={true}
+        showSort={true}
+        showCreateButton={currentUserRole !== 'guest'}
+        createButtonText="질문하기"
+        createButtonHref="/community/qna/create"
+        placeholderText="질문 검색..."
       />
 
-      <main className="w-full px-3 sm:px-4 lg:px-10 py-10">
-        {/* Filter Bar */}
-        <ContentFilterBar
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          isSearching={false}
-          suggestions={[]}
-          showSuggestions={showSuggestions}
-          onSuggestionsShow={setShowSuggestions}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          sortBy={sortBy}
-          sortOptions={['최신순', '인기순', '답변순']}
-          onSortChange={setSortBy}
-          showViewMode={true}
-          showSort={true}
-          showCreateButton={currentUserRole !== 'guest'}
-          createButtonText="질문하기"
-          createButtonHref="/about/faqs/create"
-          placeholderText="질문 검색..."
-        />
+      <div className="flex gap-8">
+        {/* Sidebar */}
+        <aside className="w-64 flex-shrink-0 hidden md:block space-y-6">
+          {/* Status Filter */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-4">상태</h3>
+            <div className="space-y-1">
+              {[
+                { value: 'all', label: '전체', icon: MessageSquare },
+                { value: 'answered', label: '답변있음', icon: MessageSquare },
+                { value: 'unanswered', label: '답변없음', icon: MessageSquare },
+                { value: 'accepted', label: '채택완료', icon: CheckCircle },
+              ].map((status) => {
+                const Icon = status.icon;
+                const isActive = filterStatus === status.value;
+                const count = questions.filter((q) => {
+                  switch (status.value) {
+                    case 'answered':
+                      return q.answers.length > 0;
+                    case 'unanswered':
+                      return q.answers.length === 0;
+                    case 'accepted':
+                      return q.hasAcceptedAnswer;
+                    default:
+                      return true;
+                  }
+                }).length;
 
-        <div className="flex gap-8">
-          {/* Sidebar */}
-          <aside className="w-64 flex-shrink-0 hidden md:block space-y-6">
-            {/* Status Filter */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-4">상태</h3>
-              <div className="space-y-1">
-                {[
-                  { value: 'all', label: '전체', icon: MessageSquare },
-                  { value: 'answered', label: '답변있음', icon: MessageSquare },
-                  { value: 'unanswered', label: '답변없음', icon: MessageSquare },
-                  { value: 'accepted', label: '채택완료', icon: CheckCircle },
-                ].map((status) => {
-                  const Icon = status.icon;
-                  const isActive = filterStatus === status.value;
-                  const count = questions.filter((q) => {
-                    switch (status.value) {
-                      case 'answered':
-                        return q.answers.length > 0;
-                      case 'unanswered':
-                        return q.answers.length === 0;
-                      case 'accepted':
-                        return q.hasAcceptedAnswer;
-                      default:
-                        return true;
-                    }
-                  }).length;
-
-                  return (
-                    <button
-                      key={status.value}
-                      onClick={() => setFilterStatus(status.value as any)}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
-                        isActive
-                          ? 'bg-primary-600 text-white'
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Icon className="w-4 h-4" />
-                        <span>{status.label}</span>
-                      </div>
-                      <span className={`text-xs ${isActive ? 'text-primary-100' : 'text-gray-400'}`}>
-                        {count}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+                return (
+                  <button
+                    key={status.value}
+                    onClick={() => setFilterStatus(status.value as any)}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
+                      isActive
+                        ? 'bg-primary-600 text-white'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Icon className="w-4 h-4" />
+                      <span>{status.label}</span>
+                    </div>
+                    <span className={`text-xs ${isActive ? 'text-primary-100' : 'text-gray-400'}`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-
-            {/* Tech Tags Filter */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-4">기술 태그</h3>
-              <div className="space-y-1">
-                <button
-                  onClick={() => setSelectedTag('all')}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
-                    selectedTag === 'all'
-                      ? 'bg-primary-600 text-white'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <span>전체</span>
-                  <span className={`text-xs ${selectedTag === 'all' ? 'text-primary-100' : 'text-gray-400'}`}>
-                    {questions.length}
-                  </span>
-                </button>
-                {availableTechTags.map((tag) => {
-                  const isActive = selectedTag === tag.id;
-                  const count = questions.filter((q) =>
-                    q.techTags.some((t) => t.id === tag.id)
-                  ).length;
-
-                  return (
-                    <button
-                      key={tag.id}
-                      onClick={() => setSelectedTag(tag.id)}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
-                        isActive
-                          ? 'bg-primary-600 text-white'
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      <span>{tag.name}</span>
-                      <span className={`text-xs ${isActive ? 'text-primary-100' : 'text-gray-400'}`}>
-                        {count}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </aside>
-
-          {/* Main Content */}
-          <div className="flex-1">
-            {/* Results Info */}
-            <div className="flex items-center justify-between mb-6">
-              <p className="text-sm text-gray-600">
-                총 <span className="font-semibold text-primary-600">{filteredQuestions.length}</span>개의 질문
-                {searchTerm && ` (검색어: "${searchTerm}")`}
-              </p>
-            </div>
-
-            {/* Questions List */}
-            {filteredQuestions.length === 0 ? (
-              <div className="text-center py-20">
-                <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 text-lg mb-2">질문이 없습니다</p>
-                <p className="text-gray-400 text-sm">첫 번째 질문을 작성해보세요!</p>
-              </div>
-            ) : (
-              <div className={viewMode === 'grid' ? 'grid grid-cols-1 gap-4' : 'space-y-4'}>
-                {filteredQuestions.map((question) => (
-                  <QuestionCard
-                    key={question.id}
-                    question={question}
-                    onBookmark={handleBookmark}
-                    viewMode={viewMode}
-                  />
-                ))}
-              </div>
-            )}
           </div>
+
+          {/* Tech Tags Filter */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-4">기술 태그</h3>
+            <div className="space-y-1">
+              <button
+                onClick={() => setSelectedTag('all')}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
+                  selectedTag === 'all'
+                    ? 'bg-primary-600 text-white'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <span>전체</span>
+                <span className={`text-xs ${selectedTag === 'all' ? 'text-primary-100' : 'text-gray-400'}`}>
+                  {questions.length}
+                </span>
+              </button>
+              {availableTechTags.map((tag) => {
+                const isActive = selectedTag === tag.id;
+                const count = questions.filter((q) =>
+                  q.techTags.some((t) => t.id === tag.id)
+                ).length;
+
+                return (
+                  <button
+                    key={tag.id}
+                    onClick={() => setSelectedTag(tag.id)}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
+                      isActive
+                        ? 'bg-primary-600 text-white'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <span>{tag.name}</span>
+                    <span className={`text-xs ${isActive ? 'text-primary-100' : 'text-gray-400'}`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <div className="flex-1">
+          {/* Results Info */}
+          <div className="flex items-center justify-between mb-6">
+            <p className="text-sm text-gray-600">
+              총 <span className="font-semibold text-primary-600">{filteredQuestions.length}</span>개의 질문
+              {searchTerm && ` (검색어: "${searchTerm}")`}
+            </p>
+          </div>
+
+          {/* Questions List */}
+          {filteredQuestions.length === 0 ? (
+            <div className="text-center py-20">
+              <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 text-lg mb-2">질문이 없습니다</p>
+              <p className="text-gray-400 text-sm">첫 번째 질문을 작성해보세요!</p>
+            </div>
+          ) : (
+            <div className={viewMode === 'grid' ? 'grid grid-cols-1 gap-4' : 'space-y-4'}>
+              {filteredQuestions.map((question) => (
+                <QuestionCard
+                  key={question.id}
+                  question={question}
+                  onBookmark={handleBookmark}
+                  viewMode={viewMode}
+                />
+              ))}
+            </div>
+          )}
         </div>
-      </main>
+      </div>
     </div>
   );
 }

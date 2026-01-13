@@ -2,12 +2,13 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { Megaphone, Calendar, User, Pin, Users, MessageSquare, Send, Trash2, Lock, Plus, X } from "lucide-react";
+import { Megaphone, Calendar, User, Pin, Users, MessageSquare, Send, Trash2, Lock, Plus, X, HelpCircle } from "lucide-react";
 import TitleBanner from "@/components/layout/TitleBanner";
 import NewsContent from "./_components/NewsContent";
 import ChattingRoom from "./_components/ChattingRoom";
+import QnAContent from "./_components/QnAContent";
 
-type Tab = "announcements" | "posts" | "chatrooms";
+type Tab = "announcements" | "posts" | "chatrooms" | "qna";
 
 interface ChatRoom {
   id: string;
@@ -149,6 +150,12 @@ export default function CommunityPage() {
               active={activeTab === "chatrooms"}
               onClick={() => setActiveTab("chatrooms")}
             />
+            <TabButton
+              icon={HelpCircle}
+              label="Q&A"
+              active={activeTab === "qna"}
+              onClick={() => setActiveTab("qna")}
+            />
           </div>
         </section>
 
@@ -166,6 +173,17 @@ export default function CommunityPage() {
               }
             >
               <NewsContent />
+            </Suspense>
+          ) : activeTab === "qna" ? (
+            <Suspense
+              fallback={
+                <div className="space-y-4">
+                  <SkeletonCard />
+                  <SkeletonCard tall />
+                </div>
+              }
+            >
+              <QnAContent />
             </Suspense>
           ) : (
             <ChatRoomsSection

@@ -469,7 +469,6 @@ function ArticlesContent() {
             </div>
           </aside>
 
-          {/* 오른쪽 리스트 영역 */}
           <div className="flex-1">
             {/* 결과 수 + 필터 (같은 라인) */}
             <div className="flex items-center justify-between mb-4">
