@@ -466,11 +466,11 @@ export default function ProjectsContent() {
       />
       <div className="w-full px-3 sm:px-4 lg:px-10 py-10">
         {/* Top Controls */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8 bg-white rounded-xl p-6 shadow-lg border border-gray-200">
-          <div className="flex items-center justify-between w-full gap-4">
-            {/* Search Bar */}
-            <div className="relative flex-1 max-w-md">
-              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${isSearching ? 'text-primary animate-pulse' : 'text-gray-400'}`} />
+        <section className="flex flex-col md:flex-row gap-4 mb-6 bg-gradient-to-r from-primary-600 to-secondary-500 rounded-xl p-6 shadow-md">
+          {/* Search Bar */}
+          <div className="flex-1 relative">
+            <div className="relative">
+              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${isSearching ? 'text-primary animate-pulse' : 'text-gray-500'}`} />
               <input
                 ref={searchInputRef}
                 type="text"
@@ -483,7 +483,7 @@ export default function ProjectsContent() {
                 onFocus={() => {
                   if (searchSuggestions.length > 0) setShowSuggestions(true);
                 }}
-                className="w-full h-10 pl-10 pr-4 text-sm bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                className="w-full h-11 pl-10 pr-4 rounded-xl border border-gray-200 bg-gray-50 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-colors"
               />
               {isSearching && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -495,7 +495,7 @@ export default function ProjectsContent() {
               {showSuggestions && searchSuggestions.length > 0 && searchTerm.length > 0 && (
                 <div
                   ref={suggestionsRef}
-                  className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto"
+                  className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto"
                 >
                   <div className="py-2">
                     {searchSuggestions.map((suggestion, index) => {
@@ -504,7 +504,7 @@ export default function ProjectsContent() {
                         <button
                           key={index}
                           onClick={() => handleSuggestionClick(suggestion)}
-                          className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center"
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center"
                         >
                           <Search className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
                           <span className="flex-1">
@@ -523,32 +523,14 @@ export default function ProjectsContent() {
                 </div>
               )}
             </div>
-
-            {/* View Toggle */}
-            <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 ${viewMode === 'grid' ? 'bg-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                title="Grid View"
-              >
-                <Grid size={16} />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 ${viewMode === 'list' ? 'bg-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                title="List View"
-              >
-                <List size={16} />
-              </button>
-            </div>
-
-            {/* Create Button */}
-            <Link href="/projects/create" className="bg-primary text-white px-6 py-2 rounded-lg font-semibold hover:bg-primary-700 transition-colors flex items-center gap-2 whitespace-nowrap">
-              <Plus size={16} />
-              <span className="hidden sm:inline">새 프로젝트</span>
-            </Link>
           </div>
-        </div>
+
+          {/* Create Button */}
+          <Link href="/projects/create" className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 transition-colors shadow-sm hover:shadow-md whitespace-nowrap">
+            <Plus size={16} />
+            새 프로젝트
+          </Link>
+        </section>
 
         {/* Main Content with Sidebar */}
         <section className="flex gap-8">
@@ -625,34 +607,61 @@ export default function ProjectsContent() {
                 {currentTopicName && ` (주제: ${currentTopicName})`}
               </p>
 
-              {/* Sort Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowSortDropdown(!showSortDropdown)}
-                  className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  {sortBy}
-                  <ChevronDown size={16} className={`transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
-                </button>
+              {/* Right: View Toggle + Sort Dropdown */}
+              <div className="flex items-center gap-3">
+                {/* View Mode Toggle */}
+                <div className="flex rounded-xl border border-gray-200 overflow-hidden">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`px-3 py-1.5 flex items-center justify-center ${
+                      viewMode === 'grid'
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-white text-gray-500'
+                    }`}
+                  >
+                    <Grid className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`px-3 py-1.5 flex items-center justify-center ${
+                      viewMode === 'list'
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-white text-gray-500'
+                    }`}
+                  >
+                    <List className="w-4 h-4" />
+                  </button>
+                </div>
 
-                {showSortDropdown && (
-                  <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                    {sortOptions.map((option) => (
-                      <button
-                        key={option}
-                        onClick={() => {
-                          setSortBy(option);
-                          setShowSortDropdown(false);
-                        }}
-                        className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors ${
-                          sortBy === option ? 'text-primary font-medium' : 'text-gray-700'
-                        }`}
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                {/* Sort Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowSortDropdown(!showSortDropdown)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-xs sm:text-sm text-gray-700"
+                  >
+                    {sortBy}
+                    <ChevronDown size={16} className={`transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {showSortDropdown && (
+                    <div className="absolute right-0 mt-1 w-28 bg-white border border-gray-200 rounded-xl shadow-lg z-10">
+                      {sortOptions.map((option) => (
+                        <button
+                          key={option}
+                          onClick={() => {
+                            setSortBy(option);
+                            setShowSortDropdown(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                            sortBy === option ? 'text-primary-600 font-medium' : 'text-gray-700'
+                          }`}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 

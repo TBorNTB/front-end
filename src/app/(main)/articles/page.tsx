@@ -84,7 +84,6 @@ function ArticlesContent() {
   const [articlesError, setArticlesError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeSearchTerm, setActiveSearchTerm] = useState(''); // 실제 검색에 사용되는 검색어
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState('최신순');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
@@ -275,13 +274,13 @@ function ArticlesContent() {
       console.log('Search params:', {
         selectedCategory,
         apiCategory,
-        keyword: activeSearchTerm,
+        keyword: searchTerm,
         sortBy,
         page: page - 1,
       });
       
       const results = await searchCSKnowledge({
-        keyword: activeSearchTerm && activeSearchTerm.trim() ? activeSearchTerm.trim() : undefined,
+        keyword: searchTerm && searchTerm.trim() ? searchTerm.trim() : undefined,
         category: apiCategory,
         sortType: convertSortToApiType(sortBy),
         page: page - 1, // API는 0부터 시작하므로 -1
@@ -296,22 +295,19 @@ function ArticlesContent() {
     } finally {
       setIsSearching(false);
     }
-  }, [selectedCategory, categories, activeSearchTerm, sortBy, page]);
+  }, [selectedCategory, categories, searchTerm, sortBy, page]);
 
-  // 검색하기 버튼 클릭 핸들러
-  const handleSearch = () => {
-    setActiveSearchTerm(searchTerm);
-    setPage(1);
-    setShowSuggestions(false);
-  };
-
-  // 게시글 조회 API 호출 (카테고리, 정렬, 페이지 변경 시 자동 실행, 검색어는 버튼 클릭 시에만)
+  // 게시글 조회 API 호출 (카테고리, 정렬, 페이지, 검색어 변경 시 자동 실행)
   useEffect(() => {
     // 카테고리가 로드된 후에만 검색 실행
     if (!categoriesLoading) {
+      // 검색어가 변경되면 페이지를 1로 리셋
+      if (searchTerm) {
+        setPage(1);
+      }
       performSearch();
     }
-  }, [categoriesLoading, performSearch, selectedCategory, page, sortBy]);
+  }, [categoriesLoading, performSearch, searchTerm]);
 
   // 검색 결과를 Article 형식으로 변환
   const apiResultsAsArticles: Array<{
@@ -398,13 +394,14 @@ function ArticlesContent() {
           <div className="text-center py-8 text-red-500">{articlesError}</div>
         )}
 
+      <section className="flex flex-col md:flex-row gap-4 mb-8 bg-gradient-to-r from-primary-600 to-secondary-500 rounded-xl p-6 shadow-md">
         {/* 검색/뷰모드/새 글 쓰기 – 기존 디자인에 맞게 배치 */}
-        <section className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="flex flex-col md:flex-row gap-4 w-full items-center">
           {/* 검색 인풋 */}
-          <div className="flex-1 relative">
+          <div className="flex-1 relative w-full">
             <div className="relative flex gap-2">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                 <input
                   ref={searchInputRef}
                   type="text"
@@ -416,7 +413,6 @@ function ArticlesContent() {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
-                      handleSearch();
                     }
                   }}
                   onFocus={() => {
@@ -424,17 +420,14 @@ function ArticlesContent() {
                       setShowSuggestions(true);
                     }
                   }}
-                  className="w-full h-11 pl-10 pr-4 rounded-xl border border-gray-200 bg-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full h-11 pl-10 pr-10 rounded-xl border border-gray-200 bg-gray-50 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-colors"
                 />
+                {isSearching && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" style={{ animationDuration: '1.5s' }}></div>
+                  </div>
+                )}
               </div>
-              {/* 검색하기 버튼 */}
-              <button
-                onClick={handleSearch}
-                disabled={isSearching}
-                className="px-6 py-2 h-11 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-              >
-                {isSearching ? '검색 중...' : '검색하기'}
-              </button>
             </div>
 
             {/* Suggestion 드롭다운 */}
@@ -475,14 +468,15 @@ function ArticlesContent() {
           </div>
 
           {/* 오른쪽: 뷰모드 + 정렬 + 새 글쓰기 */}
-          <div className="flex items-center justify-end gap-3">
+          <div className="flex items-center justify-end gap-3 md:justify-end">
             {/* 새 글 쓰기 버튼 (디자인 유지용) */}
-            <Link href="/articles/create" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700">
+            <Link href="/articles/create" className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 transition-colors shadow-sm hover:shadow-md whitespace-nowrap">
               <Plus className="w-4 h-4" />
               새 글 쓰기
             </Link>
           </div>
-        </section>
+        </div>
+      </section>
 
         {/* 본문 영역: 좌측 카테고리 + 우측 리스트 (디자인 유지) */}
         <section className="flex gap-8">
@@ -544,7 +538,7 @@ function ArticlesContent() {
                     {totalArticles}
                   </span>
                   개의 글
-                  {activeSearchTerm && ` (검색어: "${activeSearchTerm}")`}
+                  {searchTerm && ` (검색어: "${searchTerm}")`}
                   {currentTopicName && ` (주제: ${currentTopicName})`}
                 </p>
                 {isSearching && (
