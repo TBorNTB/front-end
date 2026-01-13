@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import TitleBanner from '@/components/layout/TitleBanner';
 import ArticleCard from './_components/ArticleCard';
-import { searchCSKnowledge, type CSKnowledgeSearchResponse } from '@/lib/api/services/elastic-services';
+import { searchCSKnowledge, getCSKnowledgeSuggestion, type CSKnowledgeSearchResponse } from '@/lib/api/services/elastic-services';
 import { categoryService, type CategoryItem } from '@/lib/api/services/category-services';
 import { CategoryType, CategoryDisplayNames, CategorySlugs } from '@/types/services/category';
 
@@ -690,10 +690,5 @@ export default function ArticlesPage() {
       <ArticlesContent />
     </Suspense>
   );
-}
-async function getCSKnowledgeSuggestion(arg0: { query: string; }): Promise<string[]> {
-  // TODO: Implement API call to fetch suggestions
-  // For now, return empty array as placeholder
-  return [];
 }
 

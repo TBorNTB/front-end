@@ -166,8 +166,41 @@ export const searchCSKnowledgeByMember = async (
   }
 };
 
+/**
+ * CS 지식 검색 제안 API 호출 (API 라우트를 통해 호출)
+ * @param params 검색 파라미터 (query: 검색어)
+ * @returns 검색 제안 목록 (문자열 배열)
+ */
+export const getCSKnowledgeSuggestion = async (
+  params: CSKnowledgeSuggestionParams
+): Promise<string[]> => {
+  try {
+    if (!params.query || !params.query.trim()) {
+      return [];
+    }
+
+    // API 라우트를 통해 호출 (Projects와 동일한 방식)
+    const response = await fetch(
+      `/api/articles/suggestions?query=${encodeURIComponent(params.query.trim())}`
+    );
+
+    if (!response.ok) {
+      console.error(`CS Knowledge Suggestion API error: ${response.status} ${response.statusText}`);
+      return [];
+    }
+
+    const data: string[] = await response.json();
+    // 배열이 아니거나 빈 배열인 경우 빈 배열 반환
+    return Array.isArray(data) ? data.slice(0, 5) : [];
+  } catch (error) {
+    console.error('Error fetching CS knowledge suggestions:', error);
+    return [];
+  }
+};
+
 export const elasticService = {
   searchCSKnowledge,
   searchCSKnowledgeByMember,
+  getCSKnowledgeSuggestion,
 };
 
