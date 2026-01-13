@@ -51,7 +51,7 @@ const ChatInput = ({ onSend }: ChatInputProps) => {
       <button
         onClick={handleSend}
         disabled={!input.trim()}
-        className="w-10 h-10 bg-gradient-to-br from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white rounded-2xl flex items-center justify-center transition-all duration-200 shadow-sm hover:shadow-lg active:scale-95 disabled:opacity-60"
+        className="w-10 h-10 bg-gradient-to-br from-primary-700 to-secondary-500 hover:from-primary-700 hover:to-primary-800 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white rounded-2xl flex items-center justify-center transition-all duration-200 shadow-sm hover:shadow-lg active:scale-95 disabled:opacity-60"
         aria-label="Send message"
         title={input.trim() ? "보내기 (Enter)" : "메시지를 입력하세요"}
       >
