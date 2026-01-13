@@ -12,9 +12,11 @@ export const convertStatus = (apiStatus: string): string => {
   }
 };
 
-export const normalizeImageUrl = (url: string | null | undefined): string | null => {
-  if (!url || typeof url !== 'string') return null;
-  if (url.trim() === '' || url === 'string' || url === 'null' || url === 'undefined') return null;
+export const normalizeImageUrl = (url: string | null | undefined): string => {
+  const defaultImageUrl = 'https://images.pexels.com/photos/577585/pexels-photo-577585.jpeg?auto=compress&cs=tinysrgb&w=800';
+  
+  if (!url || typeof url !== 'string') return defaultImageUrl;
+  if (url.trim() === '' || url === 'string' || url === 'null' || url === 'undefined') return defaultImageUrl;
 
   // Relative paths (/images/...)
   if (url.startsWith('/')) return url;
@@ -23,6 +25,6 @@ export const normalizeImageUrl = (url: string | null | undefined): string | null
     new URL(url);
     return url;
   } catch {
-    return null;
+    return defaultImageUrl;
   }
 };

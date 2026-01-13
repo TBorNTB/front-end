@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Heart, Eye } from 'lucide-react';
+import { Heart, Eye, Crown, Users } from 'lucide-react';
 
 interface FeaturedProjectCardProps {
   project: {
@@ -16,6 +16,18 @@ interface FeaturedProjectCardProps {
     viewText: string;
     likes?: number;
     views?: number;
+    owner?: {
+      username?: string;
+      nickname?: string;
+      realname?: string;
+      avatarUrl?: string;
+    };
+    collaborators?: Array<{
+      username?: string;
+      nickname?: string;
+      realname?: string;
+      avatarUrl?: string;
+    }>;
   };
 }
 
@@ -105,6 +117,65 @@ export function FeaturedProjectCard({ project }: FeaturedProjectCardProps) {
               </span>
             ))}
           </div>
+
+          {/* Owner and Collaborators */}
+          {(project.owner || (project.collaborators && project.collaborators.length > 0)) && (
+            <div className="mb-4 space-y-2">
+              {/* Owner */}
+              {project.owner && (
+                <div className="flex items-center gap-2">
+                  <Crown size={14} className="text-yellow-400" />
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full overflow-hidden border-2 border-yellow-400 bg-gray-200">
+                      <Image
+                        src={project.owner.avatarUrl || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'}
+                        alt={project.owner.nickname || project.owner.realname || 'Owner'}
+                        width={24}
+                        height={24}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <span className="text-white text-xs font-medium">
+                      {project.owner.nickname || project.owner.realname || project.owner.username || '소유자'}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Collaborators */}
+              {project.collaborators && project.collaborators.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <Users size={14} className="text-blue-300" />
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex -space-x-2">
+                      {project.collaborators.slice(0, 3).map((collab, index) => (
+                        <div 
+                          key={index}
+                          className="w-6 h-6 rounded-full overflow-hidden border-2 border-white/50 bg-gray-200"
+                        >
+                          <Image
+                            src={collab.avatarUrl || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'}
+                            alt={collab.nickname || collab.realname || 'Collaborator'}
+                            width={24}
+                            height={24}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ))}
+                      {project.collaborators.length > 3 && (
+                        <div className="w-6 h-6 rounded-full border-2 border-white/50 bg-white/20 flex items-center justify-center">
+                          <span className="text-white text-xs font-medium">+{project.collaborators.length - 3}</span>
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-white/80 text-xs">
+                      {project.collaborators.length}명
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* View More Button */}
           <Link
