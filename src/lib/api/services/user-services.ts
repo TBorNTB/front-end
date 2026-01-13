@@ -313,6 +313,27 @@ export const fetchViewCount = async (id: string | number, postType: string = 'PR
   return response.json();
 };
 
+// Increment view count for a post
+export const incrementViewCount = async (id: string | number, postType: string = 'PROJECT'): Promise<ViewCountResponse> => {
+  const endpoint = USER_ENDPOINTS.VIEW.INCREMENT.replace(':id', String(id));
+  const url = getUserApiUrl(`${endpoint}?postType=${postType}`);
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+    },
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to increment view count: ${response.status} - ${errorText}`);
+  }
+
+  return response.json();
+};
+
 
 // Fetch like count for a post
 export const fetchLikeCount = async (id: string | number, postType: string = 'PROJECT'): Promise<LikeCountResponse> => {

@@ -43,6 +43,7 @@ export const USER_ENDPOINTS = {
   // View & Like endpoints
   VIEW: {
     COUNT: '/user-service/api/view/:id/count',
+    INCREMENT: '/user-service/api/view/:id',
   },
   LIKE: {
     COUNT: '/user-service/api/like/:id/count',

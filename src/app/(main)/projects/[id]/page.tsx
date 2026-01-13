@@ -7,7 +7,8 @@ import { Menu, Transition } from '@headlessui/react';
 import DocumentModal from '../_components/DocumentModal';
 import { fetchProjectDetail, deleteDocument } from '@/lib/api/services/project-services';
 import { 
-  fetchViewCount, 
+  fetchViewCount,
+  incrementViewCount,
   fetchLikeCount,
   fetchLikeStatus,
   toggleLike,
@@ -332,9 +333,10 @@ export default function ProjectPage({ params }: ProjectPageProps) {
 
     // 2) 상세/통계 합치기 (항상 시도)
     try {
+      // 조회수 증가 API 호출 (페이지 진입 시 자동으로 조회수 증가)
       const [apiData, viewCountData, likeCountData, likeStatusData] = await Promise.all([
         fetchProjectDetail(id),
-        fetchViewCount(id, 'PROJECT').catch(() => ({ viewCount: 0 })),
+        incrementViewCount(id, 'PROJECT').catch(() => ({ viewCount: 0 })), // 조회수 증가 및 반환
         fetchLikeCount(id, 'PROJECT').catch(() => ({ likedCount: 0 })),
         fetchLikeStatus(id, 'PROJECT').catch(() => ({ likeCount: 0, status: 'NOT_LIKED' as const })),
       ]);
