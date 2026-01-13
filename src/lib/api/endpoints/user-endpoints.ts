@@ -16,6 +16,8 @@ export const USER_ENDPOINTS = {
     //admin endpoints
     GET_ALL: '/user-service/users',
     GET_PAGED: '/user-service/users/page',
+    SEARCH_CURSOR: '/user-service/users/search/cursor',
+    SEARCH_CURSOR_BY_NAME: '/user-service/users/search/cursor/name',
     DELETE_USER: '/user-service/users',
     UPDATE_USER: '/user-service/users',
     CONFIRM_USER: '/user-service/users/{username}/confirm',

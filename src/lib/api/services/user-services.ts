@@ -33,6 +33,36 @@ export interface GetMembersParams {
   size?: number;
 }
 
+// Cursor-based pagination types
+export interface CursorUserResponse {
+  id: number;
+  username: string;
+  realName: string;
+  nickname: string;
+  profileImageUrl: string;
+  email: string;
+}
+
+export interface CursorUsersResponse {
+  hasNext: boolean;
+  content: CursorUserResponse[];
+  nextCursorId: number;
+}
+
+export interface GetCursorUsersParams {
+  cursorId?: number;
+  size?: number;
+  direction?: 'ASC' | 'DESC';
+}
+
+export interface GetCursorUsersByNameParams {
+  cursorId?: number;
+  size?: number;
+  direction?: 'ASC' | 'DESC';
+  nickname?: string;
+  realName?: string;
+}
+
 // ✅ Shared fetch logic (DRY!)
 const createFetchRequest = (url: string, accessToken: string | null = null, options: RequestInit = {}) => ({
   method: options.method || 'GET',
@@ -115,6 +145,54 @@ export const memberService = {
       size: data.size || 0,
       page: data.page || 0,
       totalElements: data.totalElements || 0,
+    };
+  },
+
+  getMembersByCursor: async (params: GetCursorUsersParams = {}): Promise<CursorUsersResponse> => {
+    const { cursorId = 0, size = 20, direction = 'ASC' } = params;
+    const url = `${getUserApiUrl(USER_ENDPOINTS.USER.SEARCH_CURSOR)}?cursorId=${cursorId}&size=${size}&direction=${direction}`;
+
+    const response = await fetch(url, createFetchRequest(url));
+    const data = await response.json().catch(() => null as never);
+
+    if (!response.ok) {
+      throw new Error(data?.message || data?.error || `멤버 조회 실패 (${response.status})`);
+    }
+
+    return {
+      hasNext: data.hasNext || false,
+      content: data.content || [],
+      nextCursorId: data.nextCursorId || 0,
+    };
+  },
+
+  getMembersByCursorByName: async (params: GetCursorUsersByNameParams = {}): Promise<CursorUsersResponse> => {
+    const { cursorId = 0, size = 7, direction = 'ASC', nickname, realName } = params;
+    const queryParams = new URLSearchParams();
+    queryParams.append('cursorId', cursorId.toString());
+    queryParams.append('size', size.toString());
+    queryParams.append('direction', direction);
+    
+    if (nickname) {
+      queryParams.append('nickname', nickname);
+    }
+    if (realName) {
+      queryParams.append('realName', realName);
+    }
+    
+    const url = `${getUserApiUrl(USER_ENDPOINTS.USER.SEARCH_CURSOR_BY_NAME)}?${queryParams.toString()}`;
+
+    const response = await fetch(url, createFetchRequest(url));
+    const data = await response.json().catch(() => null as never);
+
+    if (!response.ok) {
+      throw new Error(data?.message || data?.error || `멤버 검색 실패 (${response.status})`);
+    }
+
+    return {
+      hasNext: data.hasNext || false,
+      content: data.content || [],
+      nextCursorId: data.nextCursorId || 0,
     };
   },
 };
