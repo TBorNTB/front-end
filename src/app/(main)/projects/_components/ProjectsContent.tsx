@@ -9,6 +9,7 @@ import { CategoryHelpers, CategoryType, CategoryDisplayNames } from '@/types/ser
 import Image from 'next/image';
 import { USE_MOCK_DATA } from '@/lib/api/env';
 import { getProjects as getMockProjects, type Project } from '@/lib/mock-data';
+import { categoryService, type CategoryItem } from '@/lib/api/services/category-services';
 
 // ============================================================================
 // 🔧 API Service Layer (Move to src/lib/services/project.ts later)
@@ -262,7 +263,6 @@ const AvatarStack = ({
 // 📄 Main Component
 // ============================================================================
 
-const categories = ['웹 해킹', '리버싱', '시스템 해킹', '디지털 포렌식', '네트워크 보안', 'IoT보안', '암호학'];
 const statuses = ['전체', '진행중', '완료', '계획중'];
 const sortOptions = ['최신순', '인기순', '이름순'];
 
@@ -270,6 +270,7 @@ export default function ProjectsContent() {
   const searchParams = useSearchParams();
   
   // State
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]); // 전체 상태로 시작
   const [searchTerm, setSearchTerm] = useState('');
@@ -289,6 +290,22 @@ export default function ProjectsContent() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
+  // Fetch categories from API
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const response = await categoryService.getCategories();
+        setCategories(response.categories || []);
+      } catch (error) {
+        console.error('Failed to load categories:', error);
+        // 에러 발생 시 빈 배열로 설정
+        setCategories([]);
+      }
+    };
+    
+    loadCategories();
+  }, []);
+
   // Initialize from URL
   useEffect(() => {
     const topicParam = searchParams.get('topic');
@@ -305,8 +322,9 @@ export default function ProjectsContent() {
   const loadProjects = async (page: number = 0) => {
     setIsLoading(true);
     try {
+      // API에서 받은 카테고리 이름을 그대로 사용
       const categoriesParam = selectedCategories.length > 0
-        ? selectedCategories.map(cat => categoryToEnglish(cat)).filter(Boolean).join(',')
+        ? selectedCategories.join(',')
         : undefined;
       const statusParam = selectedStatuses.length > 0
         ? selectedStatuses.map(status => statusToEnglish(status)).join(',')
@@ -476,13 +494,20 @@ export default function ProjectsContent() {
   }, [selectedCategories, selectedStatuses, sortBy, currentPage]);
 
   // Handlers
-  const handleCategoryToggle = (category: string) => {
-    setSelectedCategories(prev =>
-      prev.includes(category)
-        ? prev.filter(c => c !== category)
-        : [...prev, category]
-    );
+  const handleCategoryToggle = async (categoryName: string) => {
+    const isSelected = selectedCategories.includes(categoryName);
+    
+    if (isSelected) {
+      // 카테고리 해제 시 전체 조회
+      setSelectedCategories([]);
+    } else {
+      // 카테고리 선택 (단일 선택)
+      setSelectedCategories([categoryName]);
+    }
+    
     setCurrentPage(0);
+    // 카테고리 변경 시 즉시 검색 실행 (useEffect에서도 실행되지만 명시적으로 호출)
+    await loadProjects(0);
   };
 
   const handleStatusToggle = (status: string) => {
@@ -700,19 +725,23 @@ export default function ProjectsContent() {
               {/* Category Filters */}
               <h4 className="text-xs font-semibold text-gray-900 uppercase mb-3">학습 주제</h4>
               <div className="space-y-1">
-                {categories.map((category) => (
-                  <button
-                    key={category}
-                    onClick={() => handleCategoryToggle(category)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm ${
-                      selectedCategories.includes(category)
-                        ? 'bg-primary-600 text-white'
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    {category}
-                  </button>
-                ))}
+                {categories.length > 0 ? (
+                  categories.map((category) => (
+                    <button
+                      key={category.id}
+                      onClick={() => handleCategoryToggle(category.name)}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                        selectedCategories.includes(category.name)
+                          ? 'bg-primary-600 text-white'
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {category.name}
+                    </button>
+                  ))
+                ) : (
+                  <div className="text-xs text-gray-400 py-2">카테고리를 불러오는 중...</div>
+                )}
               </div>
             </div>
           </aside>
