@@ -202,8 +202,11 @@ export interface CreateProjectRequest {
 }
 
 export interface CreateProjectResponse {
+  id: number;
   title: string;
   message: string;
+  content?: string;
+  endedAt?: string;
 }
 
 // Create a project

@@ -94,24 +94,6 @@ export default function NewProjectForm() {
     loadCategories();
   }, []);
 
-  // Initialize collaborators with current user as owner
-  useEffect(() => {
-    if (currentUser && !userLoading) {
-      // Only set if not already set
-      if (formData.collaborators.length === 0) {
-        setFormData((prev) => ({
-          ...prev,
-          collaborators: [
-            {
-              name: currentUser.realName || currentUser.nickname || currentUser.username,
-              email: currentUser.username,
-              role: 'OWNER',
-            },
-          ],
-        }));
-      }
-    }
-  }, [currentUser, userLoading]);
 
   // Load users when search query changes
   useEffect(() => {
@@ -368,7 +350,7 @@ export default function NewProjectForm() {
 
       const response = await createProject(projectData);
       alert(response.message || '프로젝트가 성공적으로 생성되었습니다!');
-      router.push('/projects');
+      router.push(`/projects/${response.id}`);
     } catch (error: any) {
       alert(error.message || '프로젝트 생성에 실패했습니다.');
     } finally {

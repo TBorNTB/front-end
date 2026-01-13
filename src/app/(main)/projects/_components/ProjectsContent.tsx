@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ExternalLink, Github, Grid, List, Plus, Search, ChevronDown, ChevronLeft, ChevronRight, Heart, Eye } from 'lucide-react';
+import { ExternalLink, Github, Grid, List, Plus, Search, ChevronDown, ChevronLeft, ChevronRight, Heart, Eye, Crown, Users } from 'lucide-react';
 import TitleBanner from '@/components/layout/TitleBanner';
 import { CategoryHelpers, CategoryType, CategoryDisplayNames } from '@/types/services/category';
 import Image from 'next/image';
@@ -40,9 +40,11 @@ const fetchProjects = async (params: ProjectSearchParams): Promise<ProjectSearch
   try {
     const queryParams = new URLSearchParams();
     
-    // Query: send space if empty (API requirement)
-    const queryValue = params.query?.trim() || ' ';
-    queryParams.append('query', queryValue);
+    // Query: only append if provided and not empty
+    const queryValue = params.query?.trim();
+    if (queryValue && queryValue !== ' ') {
+      queryParams.append('query', queryValue);
+    }
     
     // Project status: only append if selected
     if (params.projectStatus) {
@@ -170,43 +172,82 @@ const AvatarStack = ({
   contributors,
   maxVisible = 3
 }: {
-  creator: { name: string; avatar: string };
-  contributors: { name: string; avatar: string }[];
+  creator: { username: string; nickname: string; realname: string; avatar: string };
+  contributors: { username: string; nickname: string; realname: string; avatar: string }[];
   maxVisible?: number;
 }) => {
   const visibleContributors = contributors.slice(0, maxVisible);
   const remainingCount = contributors.length - maxVisible;
 
-  const getCreatorText = () => {
-    return contributors.length === 0
-      ? creator.name
-      : `${creator.name} 등 ${contributors.length + 1}명`;
-  };
-
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex -space-x-2">
-        {visibleContributors.map((contributor, index) => (
-          <div key={index} className="relative inline-block" title={contributor.name}>
+    <div className="space-y-2">
+      {/* Owner Section */}
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          <Crown size={14} className="text-yellow-500" />
+          <span className="text-xs font-medium text-gray-600">소유자</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div 
+            className="relative inline-block"
+            title={creator.nickname}
+          >
             <Image
-              src={contributor.avatar}
-              alt={contributor.name}
-              width={24}
-              height={24}
-              className="w-6 h-6 rounded-full border-2 border-white bg-gray-200 hover:z-10 relative"
+              src={creator.avatar}
+              alt={creator.nickname}
+              width={28}
+              height={28}
+              className="w-7 h-7 rounded-full border-2 border-yellow-400 bg-gray-200 hover:z-10 relative shadow-sm"
             />
           </div>
-        ))}
-        {remainingCount > 0 && (
-          <div
-            className="w-6 h-6 rounded-full border-2 border-white bg-gray-300 flex items-center justify-center relative"
-            title={`+${remainingCount} more contributors`}
+          <span 
+            className="text-xs text-gray-700 font-medium"
+            title={creator.nickname}
           >
-            <span className="text-xs font-medium text-gray-600">+{remainingCount}</span>
-          </div>
-        )}
+            {creator.nickname}
+          </span>
+        </div>
       </div>
-      <span className="text-xs text-gray-500">by {getCreatorText()}</span>
+
+      {/* Collaborators Section */}
+      {contributors.length > 0 && (
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <Users size={14} className="text-blue-500" />
+            <span className="text-xs font-medium text-gray-600">협력자</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="flex -space-x-2">
+              {visibleContributors.map((contributor, index) => (
+                <div 
+                  key={contributor.username || index} 
+                  className="relative inline-block"
+                  title={contributor.nickname}
+                >
+                  <Image
+                    src={contributor.avatar}
+                    alt={contributor.nickname}
+                    width={24}
+                    height={24}
+                    className="w-6 h-6 rounded-full border-2 border-white bg-gray-200 hover:z-10 relative"
+                  />
+                </div>
+              ))}
+              {remainingCount > 0 && (
+                <div
+                  className="w-6 h-6 rounded-full border-2 border-white bg-gray-300 flex items-center justify-center relative"
+                  title={`+${remainingCount} more contributors`}
+                >
+                  <span className="text-xs font-medium text-gray-600">+{remainingCount}</span>
+                </div>
+              )}
+            </div>
+            <span className="text-xs text-gray-500">
+              {contributors.length}명
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -216,7 +257,7 @@ const AvatarStack = ({
 // ============================================================================
 
 const categories = ['웹 해킹', '리버싱', '시스템 해킹', '디지털 포렌식', '네트워크 보안', 'IoT보안', '암호학'];
-const statuses = ['진행중', '완료', '계획중'];
+const statuses = ['전체', '진행중', '완료', '계획중'];
 const sortOptions = ['최신순', '인기순', '이름순'];
 
 export default function ProjectsContent() {
@@ -224,7 +265,7 @@ export default function ProjectsContent() {
   
   // State
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(['진행중']);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]); // 전체 상태로 시작
   const [searchTerm, setSearchTerm] = useState('');
   const [projects, setProjects] = useState<any[]>([]);
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
@@ -304,8 +345,23 @@ export default function ProjectsContent() {
           stars: item.likeCount || 0,
           likeCount: item.likeCount || 0,
           viewCount: item.viewCount || 0,
-          creator: { name: 'Unknown', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face' },
-          contributors: [],
+          creator: (item as any).owner ? {
+            username: (item as any).owner.username || '',
+            nickname: (item as any).owner.nickname || 'Unknown',
+            realname: (item as any).owner.realname || '',
+            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+          } : {
+            username: '',
+            nickname: 'Unknown',
+            realname: '',
+            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+          },
+          contributors: ((item as any).collaborators || []).map((collab: any) => ({
+            username: collab.username || '',
+            nickname: collab.nickname || 'Unknown',
+            realname: collab.realname || '',
+            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+          })),
           lastUpdate: item.updatedAt || item.createdAt || '',
           github: '',
           demo: null
@@ -319,7 +375,7 @@ export default function ProjectsContent() {
       }
 
       const response = await fetchProjects({
-        query: searchQuery || ' ',
+        query: searchQuery || undefined, // undefined로 전달하면 query 파라미터가 안보내짐
         projectStatus: statusParam,
         categories: categoriesParam,
         projectSortType: sortToEnglish(sortBy),
@@ -345,8 +401,23 @@ export default function ProjectsContent() {
         stars: item.likeCount || 0,
         likeCount: item.likeCount || 0,
         viewCount: item.viewCount || 0,
-        creator: { name: 'Unknown', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face' },
-        contributors: [],
+        creator: item.owner ? {
+          username: item.owner.username || '',
+          nickname: item.owner.nickname || 'Unknown',
+          realname: item.owner.realname || '',
+          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+        } : {
+          username: '',
+          nickname: 'Unknown',
+          realname: '',
+          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+        },
+        contributors: (item.collaborators || []).map((collab: any) => ({
+          username: collab.username || '',
+          nickname: collab.nickname || 'Unknown',
+          realname: collab.realname || '',
+          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+        })),
         lastUpdate: item.updatedAt || item.createdAt || '',
         github: '',
         demo: null
@@ -392,11 +463,11 @@ export default function ProjectsContent() {
     };
   }, [searchTerm]);
 
-  // Load projects when filters/sort/page change
+  // Load projects when filters/sort/page/searchTerm change
   useEffect(() => {
     loadProjects(currentPage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategories, selectedStatuses, sortBy, currentPage]);
+  }, [selectedCategories, selectedStatuses, sortBy, currentPage, searchTerm]);
 
   // Handlers
   const handleCategoryToggle = (category: string) => {
@@ -409,13 +480,17 @@ export default function ProjectsContent() {
   };
 
   const handleStatusToggle = (status: string) => {
-    setSelectedStatuses([status]);
+    if (status === '전체') {
+      setSelectedStatuses([]); // 전체는 빈 배열
+    } else {
+      setSelectedStatuses([status]);
+    }
     setCurrentPage(0);
   };
 
   const clearAllFilters = () => {
     setSelectedCategories([]);
-    setSelectedStatuses(['진행중']);
+    setSelectedStatuses([]); // 전체 상태로 초기화
     setSearchTerm('');
     setShowSuggestions(false);
     setSearchSuggestions([]);
@@ -570,29 +645,34 @@ export default function ProjectsContent() {
               {/* Status Filters */}
               <div className="space-y-3 mb-6">
                 <h4 className="text-base font-semibold text-gray-900">프로젝트 상태</h4>
-                {statuses.map((status) => (
-                  <label key={status} className="flex items-center cursor-pointer">
-                    <input
-                      type="radio"
-                      name="projectStatus"
-                      checked={selectedStatuses.includes(status)}
-                      onChange={() => handleStatusToggle(status)}
-                      className="sr-only"
-                    />
-                    <div className={`w-4 h-4 border-2 rounded mr-3 flex items-center justify-center ${
-                      selectedStatuses.includes(status)
-                        ? 'bg-primary border-primary'
-                        : 'border-gray-300'
-                    }`}>
-                      {selectedStatuses.includes(status) && (
-                        <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </div>
-                    <span className="text-gray-700">{status}</span>
-                  </label>
-                ))}
+                {statuses.map((status) => {
+                  const isSelected = status === '전체' 
+                    ? selectedStatuses.length === 0 
+                    : selectedStatuses.includes(status);
+                  return (
+                    <label key={status} className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="projectStatus"
+                        checked={isSelected}
+                        onChange={() => handleStatusToggle(status)}
+                        className="sr-only"
+                      />
+                      <div className={`w-4 h-4 border-2 rounded mr-3 flex items-center justify-center ${
+                        isSelected
+                          ? 'bg-primary border-primary'
+                          : 'border-gray-300'
+                      }`}>
+                        {isSelected && (
+                          <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </div>
+                      <span className="text-gray-700">{status}</span>
+                    </label>
+                  );
+                })}
               </div>
 
               {/* Category Filters */}
