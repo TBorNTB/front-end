@@ -125,7 +125,7 @@ export default function NewProjectForm() {
         setIsLoadingUsers(true);
         const response = await memberService.getMembers({ size: 100 });
         // Filter users by search query (name, nickname, username)
-        const filtered = response.userResponses.filter(
+        const filtered = response.data.filter(
           (user: UserResponse) =>
             user.realName?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
             user.nickname?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||

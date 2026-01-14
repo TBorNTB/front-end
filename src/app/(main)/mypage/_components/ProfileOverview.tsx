@@ -153,7 +153,7 @@ export default function ProfileContent() {
   const displayBio = profile.description || '';
   const displayRole = profile.role || 'Member';
   const displayJoinDate = profile.createdAt ? formatDate(profile.createdAt) : 'API 연결이 필요합니다';
-  const displayAvatar = isValidImageUrl(profile.profileImageUrl) || '/default-avatar.png';
+  const displayAvatar = isValidImageUrl(profile.profileImageUrl) || '/default-avatar.svg';
 
   // 통계 정보는 API 응답에 없으므로 -1로 표시
   const stats = {
