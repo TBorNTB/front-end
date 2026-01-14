@@ -24,7 +24,9 @@ export const USER_ENDPOINTS = {
     GRANT_ADMIN: '/user-service/users/{grantedUsername}/admin',
     SEND_VERIFICATION_CODE: '/user-service/users/auth/verification-code',                                     
     RESET_PASSWORD: '/user-service/users/auth/reset-password',
-    COUNT_NEW: '/user-service/users/count/new', 
+    COUNT_NEW: '/user-service/users/count/new',
+    ROLE_ALL: '/user-service/users/role/all',
+    ROLE_MANAGE: '/user-service/users/role/manage/:id', 
   },
 
   // Token management
