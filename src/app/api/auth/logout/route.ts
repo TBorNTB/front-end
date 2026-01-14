@@ -28,34 +28,23 @@ export async function POST(request: Request) {
       status: backendResponse.status,
     });
 
-    // ✅ Forward cookie clearing headers from backend
-    const setCookieHeaders = backendResponse.headers.getSetCookie?.() || 
-                           backendResponse.headers.get('set-cookie');
-    
-    if (setCookieHeaders) {
-      if (Array.isArray(setCookieHeaders)) {
-        // Multiple cookies (accessToken, refreshToken, etc.)
-        setCookieHeaders.forEach(cookie => {
-          response.headers.append('set-cookie', cookie);
-        });
-        console.log('🍪 Cleared', setCookieHeaders.length, 'cookies');
-      } else {
-        response.headers.set('set-cookie', setCookieHeaders);
-        console.log('🍪 Cleared cookies');
-      }
-    }
+    // ✅ Clear cookies (프론트에서 직접 삭제)
+    response.cookies.delete('accessToken');
+    response.cookies.delete('refreshToken');
 
-    console.log('✅ Logout successful');
+    console.log('✅ Logout successful, cookies cleared');
     return response;
 
   } catch (error) {
     console.error("❌ Logout API route error:", error);
-    
-    // ✅ Even if backend fails, return success to clear frontend state
-    // This ensures users can always log out locally
-    return NextResponse.json(
+
+    // ✅ Even if backend fails, clear cookies and return success
+    const response = NextResponse.json(
       { message: 'Logout completed' },
       { status: 200 }
     );
+    response.cookies.delete('accessToken');
+    response.cookies.delete('refreshToken');
+    return response;
   }
 }
