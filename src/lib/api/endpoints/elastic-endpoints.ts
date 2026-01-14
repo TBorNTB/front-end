@@ -15,6 +15,7 @@ export const ELASTIC_ENDPOINTS = {
     ARTICLE_SEARCH: '/elastic-service/api/elastic/csknowledge/search',
     ARTICLE_SEARCH_BY_MEMBER: '/elastic-service/api/elastic/csknowledge/search/member',
     ARTICLE_SUGGESTION: '/elastic-service/api/elastic/csknowledge/suggestion',
+    CONTENTS_POPULAR: '/elastic-service/api/elastic/contents/popular',
   },
     // RAG Service endpoints
   RAG: {
