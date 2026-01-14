@@ -47,6 +47,8 @@ export const USER_ENDPOINTS = {
   VIEW: {
     COUNT: '/user-service/api/view/:id/count',
     INCREMENT: '/user-service/api/view/:id',
+    WEEKLY_COUNT: '/user-service/api/view/count/weekly',
+    DAILY_COUNT_BETWEEN: '/user-service/api/view/count/daily/between',
   },
   LIKE: {
     COUNT: '/user-service/api/like/:id/count',
