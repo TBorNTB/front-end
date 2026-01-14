@@ -25,8 +25,10 @@ export const USER_ENDPOINTS = {
     SEND_VERIFICATION_CODE: '/user-service/users/auth/verification-code',                                     
     RESET_PASSWORD: '/user-service/users/auth/reset-password',
     COUNT_NEW: '/user-service/users/count/new',
+    COUNT_ROLE: '/user-service/users/count/role',
     ROLE_ALL: '/user-service/users/role/all',
     ROLE_MANAGE: '/user-service/users/role/manage/:id',
+    ROLE_BATCH: '/user-service/users/role/batch',
     SEARCH: '/user-service/users/search', 
   },
 

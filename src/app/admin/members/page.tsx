@@ -10,10 +10,11 @@ import {
   Users, 
   Clock,
   Edit3,
-  UserX,
   AlertCircle,
   RefreshCw,
-  Loader2
+  Loader2,
+  Check,
+  X
 } from "lucide-react";
 import { getApiUrl } from "@/lib/api/config";
 import { USER_ENDPOINTS } from "@/lib/api/endpoints/user-endpoints";
@@ -57,13 +58,20 @@ interface RoleChangeRequest {
   };
 }
 
-const gradeStats = [
-  { role: "외부인", count: 8, color: "gray" },
-  { role: "준회원", count: 15, color: "blue" },
-  { role: "정회원", count: 28, color: "green" },
-  { role: "선배님", count: 12, color: "purple" },
-  { role: "운영진", count: 5, color: "orange" }
-];
+interface RoleCountResponse {
+  guestCount: number;
+  associateMemberCount: number;
+  fullMemberCount: number;
+  seniorCount: number;
+  adminCount: number;
+  totalCount: number;
+}
+
+interface GradeStat {
+  role: string;
+  count: number;
+  color: string;
+}
 
 export default function AdminMembersContent() {
   const [activeTab, setActiveTab] = useState("all");
@@ -87,6 +95,24 @@ export default function AdminMembersContent() {
   const [size] = useState(10);
   const [totalPage, setTotalPage] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
+  
+  // 역할 변경 관련 상태
+  const [selectedMembers, setSelectedMembers] = useState<Set<string>>(new Set()); // 선택된 회원 username들
+  const [editingMember, setEditingMember] = useState<string | null>(null); // 편집 중인 회원 username
+  const [showBatchRoleChange, setShowBatchRoleChange] = useState(false); // 일괄 변경 UI 표시 여부
+  const [batchRoleChangeLoading, setBatchRoleChangeLoading] = useState(false); // 일괄 변경 로딩
+  const [singleRoleChangeLoading, setSingleRoleChangeLoading] = useState<string | null>(null); // 단일 변경 로딩 (username)
+  
+  // 등급 관리 관련 상태
+  const [gradeStats, setGradeStats] = useState<GradeStat[]>([
+    { role: "외부인", count: 0, color: "gray" },
+    { role: "준회원", count: 0, color: "blue" },
+    { role: "정회원", count: 0, color: "green" },
+    { role: "선배님", count: 0, color: "purple" },
+    { role: "운영진", count: 0, color: "orange" }
+  ]);
+  const [totalMemberCount, setTotalMemberCount] = useState(0);
+  const [gradeStatsLoading, setGradeStatsLoading] = useState(false);
   
   // 등급 변경 요청 관련 상태
   const [roleChangeRequests, setRoleChangeRequests] = useState<RoleChangeRequest[]>([]);
@@ -114,6 +140,267 @@ export default function AdminMembersContent() {
     // 탭 변경 시 페이지 초기화
     setPage(0);
     setRoleChangePage(0);
+  };
+
+  // 한국어 역할명을 API 역할 값으로 변환
+  const getRoleValueFromKorean = (koreanRole: string): string => {
+    const roleMap: Record<string, string> = {
+      '외부인': 'GUEST',
+      '준회원': 'ASSOCIATE_MEMBER',
+      '정회원': 'FULL_MEMBER',
+      '선배님': 'SENIOR',
+      '운영진': 'ADMIN'
+    };
+    return roleMap[koreanRole] || '';
+  };
+
+  // 역할별 회원 관리 버튼 클릭 핸들러
+  const handleRoleManagement = (koreanRole: string) => {
+    const roleValue = getRoleValueFromKorean(koreanRole);
+    setSelectedRole(roleValue);
+    setPage(0);
+    setNicknameSearch('');
+    setRealNameSearch('');
+    handleTabChange('all');
+  };
+
+  // 쿠키에서 accessToken 가져오기
+  const getAccessToken = (): string | null => {
+    if (typeof document === 'undefined') return null;
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'accessToken') {
+        return decodeURIComponent(value);
+      }
+    }
+    return null;
+  };
+
+  // 단일 회원 역할 변경
+  const handleSingleRoleChange = async (username: string, newRole: string) => {
+    try {
+      setSingleRoleChangeLoading(username);
+      setEditingMember(null);
+
+      const accessToken = getAccessToken();
+      const headers: HeadersInit = {
+        'accept': 'application/json',
+        'Content-Type': 'application/json',
+      };
+
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+
+      const response = await fetch(
+        getApiUrl(USER_ENDPOINTS.USER.ROLE_BATCH),
+        {
+          method: 'PATCH',
+          headers,
+          credentials: 'include',
+          body: JSON.stringify({
+            usernames: [username],
+            role: newRole
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText,
+        });
+        throw new Error(`Failed to change role: ${response.status}`);
+      }
+
+      // 성공 시 회원 목록 새로고침
+      const fetchMembers = async () => {
+        const params = new URLSearchParams();
+        params.append('page', '0');
+        params.append('size', '1000');
+        params.append('sortDirection', 'ASC');
+        params.append('sortBy', 'createdAt');
+
+        const response = await fetch(
+          `${getApiUrl(USER_ENDPOINTS.USER.SEARCH)}?${params.toString()}`,
+          {
+            method: 'GET',
+            headers: { 'accept': 'application/json' },
+            credentials: 'include',
+          }
+        );
+
+        if (response.ok) {
+          const data: MembersSearchResponse = await response.json();
+          setAllMembers(data.data || []);
+        }
+      };
+
+      await fetchMembers();
+      
+      // 등급별 회원 수도 새로고침
+      const fetchRoleCounts = async () => {
+        const response = await fetch(
+          getApiUrl(USER_ENDPOINTS.USER.COUNT_ROLE),
+          {
+            method: 'GET',
+            headers: { 'accept': 'application/json' },
+            credentials: 'include',
+          }
+        );
+
+        if (response.ok) {
+          const data: RoleCountResponse = await response.json();
+          setGradeStats([
+            { role: "외부인", count: data.guestCount || 0, color: "gray" },
+            { role: "준회원", count: data.associateMemberCount || 0, color: "blue" },
+            { role: "정회원", count: data.fullMemberCount || 0, color: "green" },
+            { role: "선배님", count: data.seniorCount || 0, color: "purple" },
+            { role: "운영진", count: data.adminCount || 0, color: "orange" }
+          ]);
+          setTotalMemberCount(data.totalCount || 0);
+        }
+      };
+
+      await fetchRoleCounts();
+
+      alert('역할이 성공적으로 변경되었습니다.');
+    } catch (err) {
+      console.error('Error changing role:', err);
+      alert('역할 변경 중 오류가 발생했습니다.');
+    } finally {
+      setSingleRoleChangeLoading(null);
+    }
+  };
+
+  // 일괄 역할 변경
+  const handleBatchRoleChange = async (newRole: string) => {
+    if (selectedMembers.size === 0) {
+      alert('선택된 회원이 없습니다.');
+      return;
+    }
+
+    try {
+      setBatchRoleChangeLoading(true);
+
+      const accessToken = getAccessToken();
+      const headers: HeadersInit = {
+        'accept': 'application/json',
+        'Content-Type': 'application/json',
+      };
+
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+
+      const response = await fetch(
+        getApiUrl(USER_ENDPOINTS.USER.ROLE_BATCH),
+        {
+          method: 'PATCH',
+          headers,
+          credentials: 'include',
+          body: JSON.stringify({
+            usernames: Array.from(selectedMembers),
+            role: newRole
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText,
+        });
+        throw new Error(`Failed to change roles: ${response.status}`);
+      }
+
+      // 성공 시 회원 목록 새로고침
+      const fetchMembers = async () => {
+        const params = new URLSearchParams();
+        params.append('page', '0');
+        params.append('size', '1000');
+        params.append('sortDirection', 'ASC');
+        params.append('sortBy', 'createdAt');
+
+        const response = await fetch(
+          `${getApiUrl(USER_ENDPOINTS.USER.SEARCH)}?${params.toString()}`,
+          {
+            method: 'GET',
+            headers: { 'accept': 'application/json' },
+            credentials: 'include',
+          }
+        );
+
+        if (response.ok) {
+          const data: MembersSearchResponse = await response.json();
+          setAllMembers(data.data || []);
+        }
+      };
+
+      await fetchMembers();
+      
+      // 등급별 회원 수도 새로고침
+      const fetchRoleCounts = async () => {
+        const response = await fetch(
+          getApiUrl(USER_ENDPOINTS.USER.COUNT_ROLE),
+          {
+            method: 'GET',
+            headers: { 'accept': 'application/json' },
+            credentials: 'include',
+          }
+        );
+
+        if (response.ok) {
+          const data: RoleCountResponse = await response.json();
+          setGradeStats([
+            { role: "외부인", count: data.guestCount || 0, color: "gray" },
+            { role: "준회원", count: data.associateMemberCount || 0, color: "blue" },
+            { role: "정회원", count: data.fullMemberCount || 0, color: "green" },
+            { role: "선배님", count: data.seniorCount || 0, color: "purple" },
+            { role: "운영진", count: data.adminCount || 0, color: "orange" }
+          ]);
+          setTotalMemberCount(data.totalCount || 0);
+        }
+      };
+
+      await fetchRoleCounts();
+
+      setSelectedMembers(new Set());
+      setShowBatchRoleChange(false);
+      alert(`${selectedMembers.size}명의 역할이 성공적으로 변경되었습니다.`);
+    } catch (err) {
+      console.error('Error changing roles:', err);
+      alert('역할 변경 중 오류가 발생했습니다.');
+    } finally {
+      setBatchRoleChangeLoading(false);
+    }
+  };
+
+  // 회원 선택/해제
+  const toggleMemberSelection = (username: string) => {
+    setSelectedMembers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(username)) {
+        newSet.delete(username);
+      } else {
+        newSet.add(username);
+      }
+      return newSet;
+    });
+  };
+
+  // 전체 선택/해제
+  const toggleSelectAll = () => {
+    if (selectedMembers.size === members.length) {
+      setSelectedMembers(new Set());
+    } else {
+      setSelectedMembers(new Set(members.map(m => m.username)));
+    }
   };
 
   // 검색어나 필터 변경 시 페이지 리셋
@@ -284,6 +571,50 @@ export default function AdminMembersContent() {
 
     fetchRoleChangeRequests();
   }, [activeTab]);
+
+  // 등급별 회원 수 조회
+  useEffect(() => {
+    const fetchRoleCounts = async () => {
+      try {
+        setGradeStatsLoading(true);
+        
+        const response = await fetch(
+          getApiUrl(USER_ENDPOINTS.USER.COUNT_ROLE),
+          {
+            method: 'GET',
+            headers: {
+              'accept': 'application/json',
+            },
+            credentials: 'include',
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch role counts');
+        }
+
+        const data: RoleCountResponse = await response.json();
+        
+        // API 응답을 gradeStats 형식으로 변환
+        setGradeStats([
+          { role: "외부인", count: data.guestCount || 0, color: "gray" },
+          { role: "준회원", count: data.associateMemberCount || 0, color: "blue" },
+          { role: "정회원", count: data.fullMemberCount || 0, color: "green" },
+          { role: "선배님", count: data.seniorCount || 0, color: "purple" },
+          { role: "운영진", count: data.adminCount || 0, color: "orange" }
+        ]);
+        
+        setTotalMemberCount(data.totalCount || 0);
+      } catch (err) {
+        console.error('Error fetching role counts:', err);
+        // 에러 발생 시 기본값 유지
+      } finally {
+        setGradeStatsLoading(false);
+      }
+    };
+
+    fetchRoleCounts();
+  }, []);
 
   // 등급 변경 요청 클라이언트 사이드 필터링 (닉네임, 실명, 역할)
   useEffect(() => {
@@ -598,38 +929,93 @@ export default function AdminMembersContent() {
       {/* Actions Bar */}
       {activeTab === "all" && (
         <>
-          <div className="flex flex-col sm:flex-row gap-4 justify-between">
-            <div className="flex items-center space-x-4 flex-wrap">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="닉네임 검색..."
-                  value={nicknameSearch}
-                  onChange={(e) => setNicknameSearch(e.target.value)}
-                  className="w-48 pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
-                />
+          <div className="flex flex-col gap-4">
+            {/* 검색 및 필터 영역 */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-between">
+              <div className="flex items-center space-x-4 flex-wrap">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="닉네임 검색..."
+                    value={nicknameSearch}
+                    onChange={(e) => setNicknameSearch(e.target.value)}
+                    className="w-48 pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                  />
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="실명 검색..."
+                    value={realNameSearch}
+                    onChange={(e) => setRealNameSearch(e.target.value)}
+                    className="w-48 pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                  />
+                </div>
+                <button 
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors ${
+                    showFilters 
+                      ? 'bg-primary-100 text-primary-700' 
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <Filter className="w-4 h-4 mr-2" />
+                  필터
+                </button>
               </div>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="실명 검색..."
-                  value={realNameSearch}
-                  onChange={(e) => setRealNameSearch(e.target.value)}
-                  className="w-48 pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
-                />
+            </div>
+            
+            {/* 일괄 작업 영역 */}
+            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-primary-50 to-blue-50 rounded-lg border border-primary-200">
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedMembers.size > 0 && selectedMembers.size === members.length}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    전체 선택
+                  </span>
+                </div>
+                {selectedMembers.size > 0 && (
+                  <div className="flex items-center space-x-2">
+                    <div className="h-4 w-px bg-gray-300"></div>
+                    <span className="text-sm font-semibold text-primary-700">
+                      {selectedMembers.size}명 선택됨
+                    </span>
+                    <button
+                      onClick={() => setSelectedMembers(new Set())}
+                      className="text-xs text-gray-600 hover:text-gray-800 underline"
+                    >
+                      선택 해제
+                    </button>
+                  </div>
+                )}
               </div>
-              <button 
-                onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors ${
-                  showFilters 
-                    ? 'bg-primary-100 text-primary-700' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              <button
+                onClick={() => {
+                  if (selectedMembers.size > 0) {
+                    setShowBatchRoleChange(true);
+                  }
+                }}
+                disabled={selectedMembers.size === 0}
+                className={`flex items-center space-x-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  selectedMembers.size > 0
+                    ? 'bg-primary-600 text-white hover:bg-primary-700 shadow-md hover:shadow-lg transform hover:scale-105'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                 }`}
               >
-                <Filter className="w-4 h-4 mr-2" />
-                필터
+                <Edit3 className="w-4 h-4" />
+                <span>일괄 역할 변경</span>
+                {selectedMembers.size > 0 && (
+                  <span className="bg-white bg-opacity-20 px-2 py-0.5 rounded-full text-xs font-bold">
+                    {selectedMembers.size}
+                  </span>
+                )}
               </button>
             </div>
           </div>
@@ -776,7 +1162,17 @@ export default function AdminMembersContent() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200">
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">회원</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedMembers.size > 0 && selectedMembers.size === members.length}
+                            onChange={toggleSelectAll}
+                            className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                          />
+                          <span className="ml-2">회원</span>
+                        </div>
+                      </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">등급</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">가입일</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">관리</th>
@@ -784,9 +1180,20 @@ export default function AdminMembersContent() {
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {members.map((member) => (
-                      <tr key={member.id} className="hover:bg-gray-50 transition-colors">
+                      <tr 
+                        key={member.id} 
+                        className={`hover:bg-gray-50 transition-colors ${
+                          selectedMembers.has(member.username) ? 'bg-primary-50' : ''
+                        }`}
+                      >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={selectedMembers.has(member.username)}
+                              onChange={() => toggleMemberSelection(member.username)}
+                              className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 mr-3"
+                            />
                             {member.profileImageUrl ? (
                               <img 
                                 src={member.profileImageUrl} 
@@ -812,23 +1219,58 @@ export default function AdminMembersContent() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(member.role)}`}>
-                            {getRoleDisplayLabel(member.role)}
-                          </span>
+                          {editingMember === member.username ? (
+                            <div className="flex items-center space-x-2">
+                              <select
+                                defaultValue={member.role}
+                                onChange={(e) => {
+                                  handleSingleRoleChange(member.username, e.target.value);
+                                }}
+                                className="px-2 py-1 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-primary-500"
+                                disabled={singleRoleChangeLoading === member.username}
+                              >
+                                <option value="GUEST">외부인</option>
+                                <option value="ASSOCIATE_MEMBER">준회원</option>
+                                <option value="FULL_MEMBER">정회원</option>
+                                <option value="SENIOR">선배님</option>
+                                <option value="ADMIN">운영진</option>
+                              </select>
+                              <button
+                                onClick={() => setEditingMember(null)}
+                                className="text-gray-400 hover:text-gray-600"
+                                disabled={singleRoleChangeLoading === member.username}
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(member.role)}`}>
+                              {getRoleDisplayLabel(member.role)}
+                            </span>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {formatDate(member.createdAt)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center space-x-2">
-                            <button className="text-gray-400 hover:text-primary-600 transition-colors">
-                              <Edit3 className="w-4 h-4" />
-                            </button>
-                            <button className="text-gray-400 hover:text-red-600 transition-colors">
-                              <UserX className="w-4 h-4" />
-                            </button>
-                            <button className="text-gray-400 hover:text-gray-600 transition-colors">
-                              <MoreHorizontal className="w-4 h-4" />
+                            <button 
+                              onClick={() => {
+                                if (editingMember === member.username) {
+                                  setEditingMember(null);
+                                } else {
+                                  setEditingMember(member.username);
+                                }
+                              }}
+                              disabled={singleRoleChangeLoading === member.username}
+                              className="text-gray-400 hover:text-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="역할 변경"
+                            >
+                              {singleRoleChangeLoading === member.username ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Edit3 className="w-4 h-4" />
+                              )}
                             </button>
                           </div>
                         </td>
@@ -860,6 +1302,70 @@ export default function AdminMembersContent() {
                   >
                     다음
                   </button>
+                </div>
+              </div>
+            )}
+            
+            {/* 일괄 역할 변경 모달 */}
+            {showBatchRoleChange && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">일괄 역할 변경</h3>
+                    <button
+                      onClick={() => setShowBatchRoleChange(false)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-4">
+                    {selectedMembers.size}명의 회원 역할을 변경합니다.
+                  </p>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        새로운 역할 선택
+                      </label>
+                      <select
+                        id="batchRoleSelect"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="GUEST">외부인</option>
+                        <option value="ASSOCIATE_MEMBER">준회원</option>
+                        <option value="FULL_MEMBER">정회원</option>
+                        <option value="SENIOR">선배님</option>
+                        <option value="ADMIN">운영진</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center justify-end space-x-3">
+                      <button
+                        onClick={() => setShowBatchRoleChange(false)}
+                        className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                      >
+                        취소
+                      </button>
+                      <button
+                        onClick={() => {
+                          const select = document.getElementById('batchRoleSelect') as HTMLSelectElement;
+                          if (select) {
+                            handleBatchRoleChange(select.value);
+                          }
+                        }}
+                        disabled={batchRoleChangeLoading}
+                        className="px-4 py-2 text-sm text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        {batchRoleChangeLoading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            변경 중...
+                          </>
+                        ) : (
+                          '변경하기'
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -1028,14 +1534,28 @@ export default function AdminMembersContent() {
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-gray-900">총 {grade.count}명</span>
-                    <button className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      grade.color === 'gray' ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' :
-                      grade.color === 'blue' ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' :
-                      grade.color === 'green' ? 'bg-green-100 text-green-700 hover:bg-green-200' :
-                      grade.color === 'purple' ? 'bg-purple-100 text-purple-700 hover:bg-purple-200' :
-                      'bg-orange-100 text-orange-700 hover:bg-orange-200'
-                    }`}>
+                    <span className="text-2xl font-bold text-gray-900">
+                      {gradeStatsLoading ? (
+                        <span className="text-gray-400">로딩 중...</span>
+                      ) : (
+                        `총 ${grade.count}명`
+                      )}
+                    </span>
+                    <button 
+                      onClick={() => handleRoleManagement(grade.role)}
+                      disabled={gradeStatsLoading}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                        gradeStatsLoading 
+                          ? 'opacity-50 cursor-not-allowed' 
+                          : ''
+                      } ${
+                        grade.color === 'gray' ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' :
+                        grade.color === 'blue' ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' :
+                        grade.color === 'green' ? 'bg-green-100 text-green-700 hover:bg-green-200' :
+                        grade.color === 'purple' ? 'bg-purple-100 text-purple-700 hover:bg-purple-200' :
+                        'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                      }`}
+                    >
                       관리
                     </button>
                   </div>
@@ -1056,8 +1576,23 @@ export default function AdminMembersContent() {
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold text-gray-900">총 68명</span>
-                  <button className="px-3 py-1.5 bg-primary-100 text-primary-700 hover:bg-primary-200 rounded-lg text-sm font-medium transition-colors">
+                  <span className="text-2xl font-bold text-gray-900">
+                    {gradeStatsLoading ? (
+                      <span className="text-gray-400">로딩 중...</span>
+                    ) : (
+                      `총 ${totalMemberCount}명`
+                    )}
+                  </span>
+                  <button 
+                    onClick={() => {
+                      setSelectedRole('');
+                      setPage(0);
+                      setNicknameSearch('');
+                      setRealNameSearch('');
+                      handleTabChange('all');
+                    }}
+                    className="px-3 py-1.5 bg-primary-100 text-primary-700 hover:bg-primary-200 rounded-lg text-sm font-medium transition-colors"
+                  >
                     전체보기
                   </button>
                 </div>
