@@ -9,13 +9,25 @@ import {
   FileText,
   Loader2,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
+  Newspaper
 } from "lucide-react";
 import { getApiUrl } from "@/lib/api/config";
 import { USER_ENDPOINTS } from "@/lib/api/endpoints/user-endpoints";
+import { PROJECT_ENDPOINTS } from "@/lib/api/endpoints/project-endpoints";
 
 interface ViewCountResponse {
   viewCount: number;
+}
+
+interface NewUserCountResponse {
+  count: number;
+}
+
+interface ProjectCountsResponse {
+  projectCount: number;
+  newsCount: number;
+  csCount: number;
 }
 
 // 날짜를 YYYY-MM-DD 형식으로 변환
@@ -51,42 +63,18 @@ const getPrevious7DaysRange = () => {
   return { start: thirteenDaysAgo, end: sevenDaysAgo };
 };
 
+// 오늘 기준 일주일 전 날짜 계산
+const getOneWeekAgoDate = () => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const oneWeekAgo = new Date(today);
+  oneWeekAgo.setDate(today.getDate() - 7); // 일주일 전
+  
+  return oneWeekAgo;
+};
 
-const otherStatsData = [
-  {
-    title: "신규 가입 (7일)",
-    value: "12",
-    unit: "명",
-    change: "+5%",
-    changeLabel: "지난 주 대비",
-    trend: "up" as const,
-    icon: Users,
-    iconBg: "bg-green-100",
-    iconColor: "text-green-600",
-  },
-  {
-    title: "새 프로젝트 (7일)",
-    value: "3",
-    unit: "개",
-    change: "-25%",
-    changeLabel: "지난 주 대비",
-    trend: "down" as const,
-    icon: FolderOpen,
-    iconBg: "bg-purple-100", 
-    iconColor: "text-purple-600",
-  },
-  {
-    title: "새 아티클 (7일)",
-    value: "8",
-    unit: "개",
-    change: "+30%",
-    changeLabel: "지난 주 대비",
-    trend: "up" as const,
-    icon: FileText,
-    iconBg: "bg-orange-100",
-    iconColor: "text-orange-600",
-  },
-];
+
 
 export default function StatsCards() {
   const [recentViews, setRecentViews] = useState<number | null>(null);
@@ -94,6 +82,16 @@ export default function StatsCards() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<{ recent: string; previous: string } | null>(null);
+  
+  const [newUserCount, setNewUserCount] = useState<number | null>(null);
+  const [newUserLoading, setNewUserLoading] = useState(true);
+  const [newUserDateRange, setNewUserDateRange] = useState<string | null>(null);
+  
+  // 프로젝트, 뉴스, CS 카운트
+  const [recentProjectCounts, setRecentProjectCounts] = useState<ProjectCountsResponse | null>(null);
+  const [previousProjectCounts, setPreviousProjectCounts] = useState<ProjectCountsResponse | null>(null);
+  const [projectCountsLoading, setProjectCountsLoading] = useState(true);
+  const [projectCountsDateRange, setProjectCountsDateRange] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchViewCounts = async () => {
@@ -156,6 +154,123 @@ export default function StatsCards() {
     fetchViewCounts();
   }, []);
 
+  // 신규 가입 수 조회
+  useEffect(() => {
+    const fetchNewUserCount = async () => {
+      try {
+        setNewUserLoading(true);
+        const oneWeekAgo = getOneWeekAgoDate();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const startDate = formatDateForAPI(oneWeekAgo);
+        const endDate = formatDateForAPI(today);
+
+        // 날짜 범위 저장 (제목 표시용)
+        setNewUserDateRange(`${startDate} ~ ${endDate}`);
+
+        const response = await fetch(
+          `${getApiUrl(USER_ENDPOINTS.USER.COUNT_NEW)}?startDate=${startDate}`,
+          {
+            method: 'GET',
+            headers: {
+              'accept': 'application/json',
+            },
+            credentials: 'include',
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch new user count');
+        }
+
+        const data: NewUserCountResponse = await response.json();
+        setNewUserCount(data.count);
+      } catch (err) {
+        console.error('Error fetching new user count:', err);
+        setNewUserCount(0);
+      } finally {
+        setNewUserLoading(false);
+      }
+    };
+
+    fetchNewUserCount();
+  }, []);
+
+  // 프로젝트, 뉴스, CS 카운트 조회
+  useEffect(() => {
+    const fetchProjectCounts = async () => {
+      try {
+        setProjectCountsLoading(true);
+        const recentRange = getRecent7DaysRange();
+        const previousRange = getPrevious7DaysRange();
+
+        // 날짜 범위 저장 (제목 표시용)
+        setProjectCountsDateRange(
+          `${formatDateForAPI(recentRange.start)} ~ ${formatDateForAPI(recentRange.end)}`
+        );
+
+        // 최근 7일과 이전 7일 데이터를 병렬로 가져오기
+        const [recentResponse, previousResponse] = await Promise.all([
+          fetch(
+            `${getApiUrl(PROJECT_ENDPOINTS.PROJECT.COUNTS)}?startDate=${formatDateForAPI(recentRange.start)}&endDate=${formatDateForAPI(recentRange.end)}`,
+            {
+              method: 'GET',
+              headers: {
+                'accept': 'application/json',
+              },
+              credentials: 'include',
+            }
+          ),
+          fetch(
+            `${getApiUrl(PROJECT_ENDPOINTS.PROJECT.COUNTS)}?startDate=${formatDateForAPI(previousRange.start)}&endDate=${formatDateForAPI(previousRange.end)}`,
+            {
+              method: 'GET',
+              headers: {
+                'accept': 'application/json',
+              },
+              credentials: 'include',
+            }
+          ),
+        ]);
+
+        if (!recentResponse.ok || !previousResponse.ok) {
+          throw new Error('Failed to fetch project counts');
+        }
+
+        const recentData: ProjectCountsResponse = await recentResponse.json();
+        const previousData: ProjectCountsResponse = await previousResponse.json();
+
+        setRecentProjectCounts(recentData);
+        setPreviousProjectCounts(previousData);
+      } catch (err) {
+        console.error('Error fetching project counts:', err);
+        setRecentProjectCounts({ projectCount: 0, newsCount: 0, csCount: 0 });
+        setPreviousProjectCounts({ projectCount: 0, newsCount: 0, csCount: 0 });
+      } finally {
+        setProjectCountsLoading(false);
+      }
+    };
+
+    fetchProjectCounts();
+  }, []);
+
+  // 변화율 계산 헬퍼 함수
+  const calculateChangePercent = (recent: number, previous: number): { change: string; trend: 'up' | 'down' | 'stable' } => {
+    if (previous === 0) {
+      return { change: recent > 0 ? "+100%" : "0%", trend: recent > 0 ? 'up' : 'stable' };
+    }
+
+    const changePercent = ((recent - previous) / previous) * 100;
+    const formattedChange = changePercent >= 0 
+      ? `+${changePercent.toFixed(1)}%` 
+      : `${changePercent.toFixed(1)}%`;
+    
+    return {
+      change: formattedChange,
+      trend: changePercent > 0 ? 'up' : changePercent < 0 ? 'down' : 'stable'
+    };
+  };
+
   // 변화율 계산
   const calculateChange = (): { change: string; trend: 'up' | 'down' | 'stable' } => {
     if (recentViews === null || previousViews === null || previousViews === 0) {
@@ -180,6 +295,43 @@ export default function StatsCards() {
       ? recentViews.toLocaleString() 
       : "0";
 
+  const formattedNewUserValue = newUserLoading 
+    ? "..." 
+    : newUserCount !== null 
+      ? newUserCount.toLocaleString() 
+      : "0";
+
+  // 프로젝트, 뉴스, CS 변화율 계산
+  const projectChange = recentProjectCounts && previousProjectCounts
+    ? calculateChangePercent(recentProjectCounts.projectCount, previousProjectCounts.projectCount)
+    : { change: "0%", trend: "stable" as const };
+  
+  const newsChange = recentProjectCounts && previousProjectCounts
+    ? calculateChangePercent(recentProjectCounts.newsCount, previousProjectCounts.newsCount)
+    : { change: "0%", trend: "stable" as const };
+  
+  const csChange = recentProjectCounts && previousProjectCounts
+    ? calculateChangePercent(recentProjectCounts.csCount, previousProjectCounts.csCount)
+    : { change: "0%", trend: "stable" as const };
+
+  const formattedProjectValue = projectCountsLoading 
+    ? "..." 
+    : recentProjectCounts !== null 
+      ? recentProjectCounts.projectCount.toLocaleString() 
+      : "0";
+
+  const formattedNewsValue = projectCountsLoading 
+    ? "..." 
+    : recentProjectCounts !== null 
+      ? recentProjectCounts.newsCount.toLocaleString() 
+      : "0";
+
+  const formattedCsValue = projectCountsLoading 
+    ? "..." 
+    : recentProjectCounts !== null 
+      ? recentProjectCounts.csCount.toLocaleString() 
+      : "0";
+
   const statsData = [
     {
       title: "페이지 총 방문 (최근 7일)",
@@ -195,10 +347,58 @@ export default function StatsCards() {
       loading,
       dateRange: dateRange?.recent,
     },
-    ...otherStatsData,
+    {
+      title: "신규 가입 (7일)",
+      value: formattedNewUserValue,
+      unit: "명",
+      icon: Users,
+      iconBg: "bg-green-100",
+      iconColor: "text-green-600",
+      loading: newUserLoading,
+      dateRange: newUserDateRange,
+    },
+    {
+      title: "프로젝트 (7일)",
+      value: formattedProjectValue,
+      unit: "개",
+      change: projectChange.change,
+      changeLabel: "이전 7일 대비",
+      trend: projectChange.trend,
+      icon: FolderOpen,
+      iconBg: "bg-purple-100", 
+      iconColor: "text-purple-600",
+      loading: projectCountsLoading,
+      dateRange: projectCountsDateRange,
+    },
+    {
+      title: "뉴스 (7일)",
+      value: formattedNewsValue,
+      unit: "개",
+      change: newsChange.change,
+      changeLabel: "이전 7일 대비",
+      trend: newsChange.trend,
+      icon: Newspaper,
+      iconBg: "bg-indigo-100",
+      iconColor: "text-indigo-600",
+      loading: projectCountsLoading,
+      dateRange: projectCountsDateRange,
+    },
+    {
+      title: "CS 아티클 (7일)",
+      value: formattedCsValue,
+      unit: "개",
+      change: csChange.change,
+      changeLabel: "이전 7일 대비",
+      trend: csChange.trend,
+      icon: FileText,
+      iconBg: "bg-orange-100",
+      iconColor: "text-orange-600",
+      loading: projectCountsLoading,
+      dateRange: projectCountsDateRange,
+    },
   ];
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
       {statsData.map((stat, index) => {
         const Icon = stat.icon;
         const TrendIcon = stat.trend === "up" ? TrendingUp : stat.trend === "down" ? TrendingDown : TrendingUp;
@@ -249,8 +449,8 @@ export default function StatsCards() {
               </div>
             </div>
             
-            {/* Change Indicator */}
-            {!stat.loading && stat.change && (
+            {/* Change Indicator - only show if change exists */}
+            {!stat.loading && stat.change && stat.changeLabel && (
               <div className="flex items-center justify-between">
                 <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
                   stat.trend === "up" 

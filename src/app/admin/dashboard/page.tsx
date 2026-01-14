@@ -7,52 +7,12 @@ import StatsCards from "./components/StatsCards";
 import WeeklyVisitorsChart from "./components/WeeklyVisitorsChart";
 import PopularPosts from "./components/PopularPosts";
 import { 
-  Activity,
   Shield,
-  Clock,
-  TrendingUp,
   AlertCircle,
-  CheckCircle,
   RefreshCw,
   Users,
   ChevronRight
 } from "lucide-react";
-
-// Enhanced Recent Activities with better data
-const recentActivities = [
-  {
-    id: 1,
-    message: "김철수님이 새로 가입했습니다",
-    time: "2분 전",
-    type: "user",
-    icon: CheckCircle,
-    color: "green"
-  },
-  {
-    id: 2, 
-    message: "React 최신 동향 아티클이 게시되었습니다",
-    time: "15분 전",
-    type: "content",
-    icon: TrendingUp,
-    color: "blue"
-  },
-  {
-    id: 3,
-    message: "프로젝트에 새로운 댓글이 등록되었습니다", 
-    time: "1시간 전",
-    type: "comment",
-    icon: Activity,
-    color: "orange"
-  },
-  {
-    id: 4,
-    message: "이영희님의 등급 변경이 요청되었습니다",
-    time: "2시간 전", 
-    type: "grade",
-    icon: AlertCircle,
-    color: "purple"
-  }
-];
 
 // Grade Change Requests (limited for dashboard)
 const gradeChangeRequests = [
@@ -145,9 +105,9 @@ export default function AdminDashboardPage() {
           <PopularPosts />
         </div>
 
-        {/* Right Column - Quick Actions & Activities */}
+        {/* Right Column - Quick Actions */}
         <div className="space-y-6">
-                    {/* Grade Change Requests - Separate Card */}
+          {/* Grade Change Requests - Separate Card */}
           <div className="card">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-primary-900">등급 변경 요청</h3>
@@ -189,52 +149,6 @@ export default function AdminDashboardPage() {
                 <span>모든 등급 요청 보기 (4개)</span>
                 <ChevronRight className="h-4 w-4" />
               </button>
-            </div>
-          </div>
-          
-          {/* Recent Activities Card */}
-          <div className="card">
-            {/* Recent Activities - Inline */}
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-primary-900">최근 활동</h3>
-                <Activity className="h-5 w-5 text-primary-400" />
-              </div>
-              
-              <div className="space-y-4">
-                {recentActivities.map((activity) => (
-                  <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                    <div className={`p-2 rounded-lg flex-shrink-0 ${
-                      activity.color === 'green' ? 'bg-green-100' :
-                      activity.color === 'blue' ? 'bg-blue-100' :
-                      activity.color === 'orange' ? 'bg-orange-100' :
-                      'bg-purple-100'
-                    }`}>
-                      <activity.icon className={`h-4 w-4 ${
-                        activity.color === 'green' ? 'text-green-600' :
-                        activity.color === 'blue' ? 'text-blue-600' :
-                        activity.color === 'orange' ? 'text-orange-600' :
-                        'text-purple-600'
-                      }`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 leading-relaxed">
-                        {activity.message}
-                      </p>
-                      <div className="flex items-center mt-1">
-                        <Clock className="h-3 w-3 text-gray-400 mr-1" />
-                        <span className="text-xs text-gray-500">{activity.time}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="mt-6 pt-4 border-t border-gray-100">
-                <button className="w-full text-sm text-primary-600 hover:text-primary-700 font-medium py-2 hover:bg-primary-50 rounded-lg transition-colors">
-                  모든 활동 보기 →
-                </button>
-              </div>
             </div>
           </div>
         </div>

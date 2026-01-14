@@ -13,6 +13,7 @@ export const PROJECT_ENDPOINTS = {
     DELETE: '/project-service/projects/:id',
     GET_COLLABORATORS: '/project-service/projects/:id/collaborators',
     GET_CATEGORIES: '/project-service/api/category',
+    COUNTS: '/project-service/api/project/counts',
   },
 
   // Document endpoints

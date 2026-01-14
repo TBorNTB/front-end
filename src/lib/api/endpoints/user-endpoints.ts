@@ -23,7 +23,8 @@ export const USER_ENDPOINTS = {
     CONFIRM_USER: '/user-service/users/{username}/confirm',
     GRANT_ADMIN: '/user-service/users/{grantedUsername}/admin',
     SEND_VERIFICATION_CODE: '/user-service/users/auth/verification-code',                                     
-    RESET_PASSWORD: '/user-service/users/auth/reset-password', 
+    RESET_PASSWORD: '/user-service/users/auth/reset-password',
+    COUNT_NEW: '/user-service/users/count/new', 
   },
 
   // Token management
