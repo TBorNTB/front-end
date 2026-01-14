@@ -18,13 +18,13 @@ import {
   RefreshCw
 } from "lucide-react";
 
-// Mock Data
+// Mock Data (role은 백엔드 API 응답과 일치)
 const mockMembers = [
   {
     id: 1,
     name: "김철수",
     email: "kim@example.com",
-    role: "REGULAR",
+    role: "FULL_MEMBER",
     roleDisplay: "정회원",
     joinDate: "2024-01-15",
     status: "active",
@@ -33,8 +33,8 @@ const mockMembers = [
   {
     id: 2,
     name: "이영희",
-    email: "lee@example.com", 
-    role: "ASSOCIATE",
+    email: "lee@example.com",
+    role: "ASSOCIATE_MEMBER",
     roleDisplay: "준회원",
     joinDate: "2024-02-20",
     status: "active",
@@ -112,8 +112,8 @@ export default function AdminMembersContent() {
   const getRoleColor = (role: string) => {
     const colorMap = {
       'GUEST': 'bg-gray-100 text-gray-800',
-      'ASSOCIATE': 'bg-blue-100 text-blue-800',
-      'REGULAR': 'bg-green-100 text-green-800',
+      'ASSOCIATE_MEMBER': 'bg-blue-100 text-blue-800',
+      'FULL_MEMBER': 'bg-green-100 text-green-800',
       'SENIOR': 'bg-purple-100 text-purple-800',
       'ADMIN': 'bg-orange-100 text-orange-800'
     };

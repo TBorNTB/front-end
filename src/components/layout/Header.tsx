@@ -8,7 +8,7 @@ import { ChevronDownIcon, BellIcon, Search, X, Menu, Shield } from "lucide-react
 import AlarmPopup from "./AlarmPopup";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
-import { getRoleDisplayLabel, hasAdminAccess, pickRole } from "@/lib/role-utils";
+import { getRoleDisplayLabel, hasAdminAccess } from "@/lib/role-utils";
 
 const navList = [
   { name: "About", 
@@ -136,7 +136,7 @@ const Header = () => {
   const profileImageUrl = isValidImageUrl(profileData?.profileImageUrl) || isValidImageUrl(user?.profile_image) || null;
 
   // Role handling
-  const combinedRole = pickRole(profileData?.role, user?.role);
+  const combinedRole = profileData?.role ?? user?.role;
   const displayRole = getRoleDisplayLabel(combinedRole);
   const isAdmin = hasAdminAccess(combinedRole);
 

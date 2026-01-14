@@ -3,6 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { memberService, UserResponse } from '@/lib/api/services/user-services';
+import { getRoleDisplayLabel, getRoleBadgeColor } from '@/lib/role-utils';
 import {
   AlertCircle,
   Calendar,
@@ -12,15 +13,6 @@ import {
   Search,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-
-// 회원 등급 라벨 (API role -> 한글)
-const roleLabelMap: Record<string, string> = {
-  'GUEST': '게스트',
-  'ASSOCIATE_MEMBER': '준회원',
-  'FULL_MEMBER': '정회원',
-  'SENIOR': '선배님',
-  'ADMIN': '운영진',
-};
 
 // 날짜 포맷팅 헬퍼
 const formatDate = (dateString: string) => {
@@ -104,27 +96,6 @@ export default function MembersPage() {
   const clearAllFilters = () => {
     setSearchTerm('');
     setSelectedLevels([]);
-  };
-
-  const getLevelBadgeColor = (role: string) => {
-    switch (role) {
-      case 'GUEST':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-      case 'ASSOCIATE_MEMBER':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'FULL_MEMBER':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'SENIOR':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'ADMIN':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getLevelLabel = (role: string) => {
-    return roleLabelMap[role] || role;
   };
 
   // 표시용 이름 가져오기
@@ -227,7 +198,7 @@ export default function MembersPage() {
                         : 'bg-white text-gray-700 border-gray-300 hover:border-primary-400'
                     }`}
                   >
-                    {getLevelLabel(role)}
+                    {getRoleDisplayLabel(role)}
                   </button>
                 ))}
               </div>
@@ -278,8 +249,8 @@ export default function MembersPage() {
                         {/* Member Info */}
                         <div className="space-y-3 mb-4">
                           <div className="flex items-center justify-center">
-                            <Badge className={getLevelBadgeColor(member.role)}>
-                              {getLevelLabel(member.role)}
+                            <Badge className={getRoleBadgeColor(member.role)}>
+                              {getRoleDisplayLabel(member.role)}
                             </Badge>
                           </div>
 
