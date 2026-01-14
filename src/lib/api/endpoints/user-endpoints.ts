@@ -26,7 +26,8 @@ export const USER_ENDPOINTS = {
     RESET_PASSWORD: '/user-service/users/auth/reset-password',
     COUNT_NEW: '/user-service/users/count/new',
     ROLE_ALL: '/user-service/users/role/all',
-    ROLE_MANAGE: '/user-service/users/role/manage/:id', 
+    ROLE_MANAGE: '/user-service/users/role/manage/:id',
+    SEARCH: '/user-service/users/search', 
   },
 
   // Token management

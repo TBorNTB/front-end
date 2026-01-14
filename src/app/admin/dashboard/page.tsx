@@ -85,9 +85,11 @@ export default function AdminDashboardPage() {
   const router = useRouter();
   
   const [roleChangeRequests, setRoleChangeRequests] = useState<RoleChangeRequest[]>([]);
+  const [allRoleChangeRequests, setAllRoleChangeRequests] = useState<RoleChangeRequest[]>([]);
   const [roleChangeLoading, setRoleChangeLoading] = useState(true);
   const [roleChangeError, setRoleChangeError] = useState<string | null>(null);
   const [processingIds, setProcessingIds] = useState<Set<number>>(new Set());
+  const [roleChangePage, setRoleChangePage] = useState(0);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -159,7 +161,17 @@ export default function AdminDashboardPage() {
         const pendingRequests = data.filter(
           item => item.roleChange && item.roleChange.requestStatus === 'PENDING'
         );
-        setRoleChangeRequests(pendingRequests);
+        
+        // 전체 목록 저장 (개수 표시용)
+        setAllRoleChangeRequests(pendingRequests);
+        
+        // 페이지네이션 처리 (5개씩)
+        const pageSize = 5;
+        const startIndex = roleChangePage * pageSize;
+        const endIndex = startIndex + pageSize;
+        const paginatedRequests = pendingRequests.slice(startIndex, endIndex);
+        
+        setRoleChangeRequests(paginatedRequests);
       } catch (err) {
         console.error('Error fetching role change requests:', err);
         const errorMessage = err instanceof Error ? err.message : '데이터를 불러오는 중 오류가 발생했습니다.';
@@ -171,7 +183,7 @@ export default function AdminDashboardPage() {
     };
 
     fetchRoleChangeRequests();
-  }, []);
+  }, [roleChangePage]);
 
   // 등급 변경 요청 승인/거절 처리
   const handleRoleChangeAction = async (requestId: number, approved: boolean) => {
@@ -223,10 +235,18 @@ export default function AdminDashboardPage() {
         throw new Error(`Failed to ${approved ? 'approve' : 'reject'} role change request: ${response.status}`);
       }
 
-      // 성공 시 목록에서 제거
-      setRoleChangeRequests(prev => 
+      // 성공 시 전체 목록과 현재 페이지 목록에서 제거
+      setAllRoleChangeRequests(prev => 
         prev.filter(item => item.roleChange.id !== requestId)
       );
+      setRoleChangeRequests(prev => {
+        const filtered = prev.filter(item => item.roleChange.id !== requestId);
+        // 현재 페이지에 아이템이 없고 이전 페이지가 있으면 이전 페이지로 이동
+        if (filtered.length === 0 && roleChangePage > 0) {
+          setRoleChangePage(prev => prev - 1);
+        }
+        return filtered;
+      });
 
       // 성공 메시지 (선택사항)
       console.log(`등급 변경 요청이 ${approved ? '승인' : '거부'}되었습니다.`);
@@ -306,7 +326,7 @@ export default function AdminDashboardPage() {
                 ) : (
                   <>
                     <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium">
-                      {roleChangeRequests.length}개 대기중
+                      {allRoleChangeRequests.length}개 대기중
                     </span>
                     <Users className="h-5 w-5 text-primary-400" />
                   </>
@@ -384,12 +404,37 @@ export default function AdminDashboardPage() {
                   })}
                 </div>
                 
-                <div className="mt-6 pt-4 border-t border-gray-100">
+                {/* 페이지네이션 */}
+                {Math.ceil(allRoleChangeRequests.length / 5) > 1 && (
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                    <div className="text-xs text-gray-500">
+                      {roleChangePage + 1} / {Math.ceil(allRoleChangeRequests.length / 5)}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => setRoleChangePage(prev => Math.max(0, prev - 1))}
+                        disabled={roleChangePage === 0}
+                        className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        이전
+                      </button>
+                      <button
+                        onClick={() => setRoleChangePage(prev => Math.min(Math.ceil(allRoleChangeRequests.length / 5) - 1, prev + 1))}
+                        disabled={roleChangePage >= Math.ceil(allRoleChangeRequests.length / 5) - 1}
+                        className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        다음
+                      </button>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="mt-4 pt-4 border-t border-gray-100">
                   <button 
-                    onClick={() => router.push('/admin/members?tab=grade-requests')}
+                    onClick={() => router.push('/admin/members?tab=requests')}
                     className="w-full flex items-center justify-center space-x-2 text-sm text-primary-600 hover:text-primary-700 font-medium py-2 hover:bg-primary-50 rounded-lg transition-colors"
                   >
-                    <span>모든 등급 요청 보기 ({roleChangeRequests.length}개)</span>
+                    <span>모든 등급 요청 보기 ({allRoleChangeRequests.length}개)</span>
                     <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
