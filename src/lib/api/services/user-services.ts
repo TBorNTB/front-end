@@ -236,6 +236,33 @@ export const profileService = {
 
     return cleanUserResponse(responseData); // ✅ Shared cleaner
   },
+
+  getActivityStats: async (): Promise<{
+    totalPostCount: number;
+    totalViewCount: number;
+    totalLikeCount: number;
+    totalCommentCount: number;
+  }> => {
+    const url = getUserApiUrl(USER_ENDPOINTS.USER.ACTIVITY_STATS);
+    const accessToken = getAccessTokenFromCookies();
+
+    const response = await fetch(url, createFetchRequest(url, accessToken));
+    const data = await response.json().catch(() => null as never);
+
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('로그인이 필요합니다. 다시 로그인해주세요.');
+      }
+      throw new Error(data?.message || data?.error || `활동 통계 조회 실패 (${response.status})`);
+    }
+
+    return {
+      totalPostCount: data.totalPostCount || 0,
+      totalViewCount: data.totalViewCount || 0,
+      totalLikeCount: data.totalLikeCount || 0,
+      totalCommentCount: data.totalCommentCount || 0,
+    };
+  },
 };
 
 /**

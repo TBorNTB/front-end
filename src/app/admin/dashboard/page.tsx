@@ -7,7 +7,6 @@ import StatsCards from "./components/StatsCards";
 import WeeklyVisitorsChart from "./components/WeeklyVisitorsChart";
 import PopularPosts from "./components/PopularPosts";
 import { 
-  Shield,
   AlertCircle,
   RefreshCw,
   Users,
@@ -440,48 +439,6 @@ export default function AdminDashboardPage() {
                 </div>
               </>
             )}
-          </div>
-        </div>
-      </div>
-
-      {/* System Status - Enhanced */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-primary-900">시스템 상태</h3>
-          <Shield className="h-5 w-5 text-primary-400" />
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-green-500 rounded-full mr-3 animate-pulse"></div>
-              <span className="font-medium text-gray-900">웹 서버</span>
-            </div>
-            <span className="text-sm text-green-600 font-medium">정상</span>
-          </div>
-          
-          <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-green-500 rounded-full mr-3 animate-pulse"></div>
-              <span className="font-medium text-gray-900">데이터베이스</span>
-            </div>
-            <span className="text-sm text-green-600 font-medium">정상</span>
-          </div>
-          
-          <div className="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-yellow-500 rounded-full mr-3"></div>
-              <span className="font-medium text-gray-900">이메일 서비스</span>
-            </div>
-            <span className="text-sm text-yellow-600 font-medium">점검중</span>
-          </div>
-
-          <div className="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-blue-500 rounded-full mr-3 animate-pulse"></div>
-              <span className="font-medium text-gray-900">CDN</span>
-            </div>
-            <span className="text-sm text-blue-600 font-medium">정상</span>
           </div>
         </div>
       </div>

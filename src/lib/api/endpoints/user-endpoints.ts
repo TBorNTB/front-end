@@ -12,6 +12,9 @@ export const USER_ENDPOINTS = {
     LOGOUT: '/user-service/users/logout',
     ROLE: '/user-service/users/role/one',
     PROFILE: '/user-service/users/profile',
+    ACTIVITY_STATS: '/user-service/users/activity/stats',
+    LIKED_POSTS: '/user-service/users/liked-posts',
+    COMMENTED_POSTS: '/user-service/users/commented-posts',
 
     //admin endpoints
     GET_ALL: '/user-service/users',
