@@ -75,6 +75,13 @@ export const USER_ENDPOINTS = {
     GET_REPLIES: '/user-service/api/comment/:commentId/replies',
   },
 
+  // Chat endpoints
+  CHAT: {
+    GET_ROOMS: '/user-service/chat/rooms',
+    CREATE_ROOM: '/user-service/chat/rooms',
+    CREATE_GROUP_ROOM: '/user-service/chat/rooms/group',
+  },
+
 } as const;
 
 // Use shared logging from config, no process.env duplication

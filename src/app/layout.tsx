@@ -3,32 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from 'react-hot-toast';
-
-<Toaster
-  position="top-right"
-  toastOptions={{
-    // Default styles
-    style: {
-      background: '#333',
-      color: '#fff',
-      fontSize: '14px',
-      borderRadius: '8px',
-      padding: '12px 16px',
-    },
-    // Success toast
-    success: {
-      style: {
-        background: '#22c55e', // Tailwind green-500
-      },
-    },
-    // Error toast
-    error: {
-      style: {
-        background: '#ef4444', // Tailwind red-500
-      },
-    },
-  }}
-/>
+import ChatBot from "@/app/(main)/chatbot/ChatBot";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -51,6 +26,32 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased`}>
         <AuthProvider>
           <main className="flex-grow w-full">{children}</main>
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              // Default styles
+              style: {
+                background: '#333',
+                color: '#fff',
+                fontSize: '14px',
+                borderRadius: '8px',
+                padding: '12px 16px',
+              },
+              // Success toast
+              success: {
+                style: {
+                  background: '#22c55e', // Tailwind green-500
+                },
+              },
+              // Error toast
+              error: {
+                style: {
+                  background: '#ef4444', // Tailwind red-500
+                },
+              },
+            }}
+          />
+          <ChatBot />
         </AuthProvider>
       </body>
     </html>
