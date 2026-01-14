@@ -48,6 +48,15 @@ export const UserRoleDescription: Record<UserRole, string> = {
   [UserRole.ADMIN]: "관리 권한을 가진 회원",
 };
 
+// Role별 기본 색상 (tailwind color name)
+export const UserRoleColor: Record<UserRole, string> = {
+  [UserRole.GUEST]: "gray",
+  [UserRole.ASSOCIATE_MEMBER]: "blue",
+  [UserRole.FULL_MEMBER]: "green",
+  [UserRole.SENIOR]: "purple",
+  [UserRole.ADMIN]: "orange",
+};
+
 // Role별 뱃지 색상
 export const UserRoleBadgeColor: Record<UserRole, string> = {
   [UserRole.GUEST]: "bg-gray-100 text-gray-800 border-gray-200",

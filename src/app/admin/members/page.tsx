@@ -17,6 +17,8 @@ import {
   Download,
   RefreshCw
 } from "lucide-react";
+import { UserRole } from "@/types/core";
+import { getRoleDisplayLabel, getRoleDescription, getRoleColor } from "@/lib/role-utils";
 
 // Mock Data (role은 백엔드 API 응답과 일치)
 const mockMembers = [
@@ -76,11 +78,11 @@ const mockGradeRequests = [
 ];
 
 const gradeStats = [
-  { role: "외부인", count: 8, color: "gray" },
-  { role: "준회원", count: 15, color: "blue" },
-  { role: "정회원", count: 28, color: "green" },
-  { role: "선배님", count: 12, color: "purple" },
-  { role: "운영진", count: 5, color: "orange" }
+  { role: UserRole.GUEST, count: 8 },
+  { role: UserRole.ASSOCIATE_MEMBER, count: 15 },
+  { role: UserRole.FULL_MEMBER, count: 28 },
+  { role: UserRole.SENIOR, count: 12 },
+  { role: UserRole.ADMIN, count: 5 },
 ];
 
 export default function AdminMembersContent() {
@@ -230,12 +232,10 @@ export default function AdminMembersContent() {
         <div className="card">
           <div className="flex flex-wrap gap-4">
             <select className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500">
-              <option>모든 등급</option>
-              <option>외부인</option>
-              <option>준회원</option>
-              <option>정회원</option>
-              <option>선배님</option>
-              <option>운영진</option>
+              <option value="">모든 등급</option>
+              {Object.values(UserRole).map((role) => (
+                <option key={role} value={role}>{getRoleDisplayLabel(role)}</option>
+              ))}
             </select>
             <select className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500">
               <option>모든 상태</option>
@@ -375,39 +375,35 @@ export default function AdminMembersContent() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {gradeStats.map((grade, index) => (
                 <div key={index} className={`p-6 rounded-lg border-2 hover:shadow-lg transition-all cursor-pointer ${
-                  grade.color === 'gray' ? 'bg-gray-50 border-gray-200 hover:border-gray-300' :
-                  grade.color === 'blue' ? 'bg-blue-50 border-blue-200 hover:border-blue-300' :
-                  grade.color === 'green' ? 'bg-green-50 border-green-200 hover:border-green-300' :
-                  grade.color === 'purple' ? 'bg-purple-50 border-purple-200 hover:border-purple-300' :
+                  getRoleColor(grade.role) === 'gray' ? 'bg-gray-50 border-gray-200 hover:border-gray-300' :
+                  getRoleColor(grade.role) === 'blue' ? 'bg-blue-50 border-blue-200 hover:border-blue-300' :
+                  getRoleColor(grade.role) === 'green' ? 'bg-green-50 border-green-200 hover:border-green-300' :
+                  getRoleColor(grade.role) === 'purple' ? 'bg-purple-50 border-purple-200 hover:border-purple-300' :
                   'bg-orange-50 border-orange-200 hover:border-orange-300'
                 }`}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
                       <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                        grade.color === 'gray' ? 'bg-gray-100' :
-                        grade.color === 'blue' ? 'bg-blue-100' :
-                        grade.color === 'green' ? 'bg-green-100' :
-                        grade.color === 'purple' ? 'bg-purple-100' :
+                        getRoleColor(grade.role) === 'gray' ? 'bg-gray-100' :
+                        getRoleColor(grade.role) === 'blue' ? 'bg-blue-100' :
+                        getRoleColor(grade.role) === 'green' ? 'bg-green-100' :
+                        getRoleColor(grade.role) === 'purple' ? 'bg-purple-100' :
                         'bg-orange-100'
                       }`}>
                         <span className={`text-sm font-bold ${
-                          grade.color === 'gray' ? 'text-gray-600' :
-                          grade.color === 'blue' ? 'text-blue-600' :
-                          grade.color === 'green' ? 'text-green-600' :
-                          grade.color === 'purple' ? 'text-purple-600' :
+                          getRoleColor(grade.role) === 'gray' ? 'text-gray-600' :
+                          getRoleColor(grade.role) === 'blue' ? 'text-blue-600' :
+                          getRoleColor(grade.role) === 'green' ? 'text-green-600' :
+                          getRoleColor(grade.role) === 'purple' ? 'text-purple-600' :
                           'text-orange-600'
                         }`}>
-                          {grade.role.charAt(0)}
+                          {getRoleDisplayLabel(grade.role).charAt(0)}
                         </span>
                       </div>
                       <div>
-                        <h4 className="font-bold text-gray-900 text-lg">{grade.role}</h4>
+                        <h4 className="font-bold text-gray-900 text-lg">{getRoleDisplayLabel(grade.role)}</h4>
                         <p className="text-sm text-gray-500">
-                          {grade.role === '외부인' && '제한된 권한을 가진 방문자'}
-                          {grade.role === '준회원' && '기본 권한을 가진 회원'}
-                          {grade.role === '정회원' && '모든 기능을 사용할 수 있는 회원'}
-                          {grade.role === '선배님' && '경험과 지식을 가진 선배 회원'}
-                          {grade.role === '운영진' && '관리 권한을 가진 회원'}
+                          {getRoleDescription(grade.role)}
                         </p>
                       </div>
                     </div>
@@ -415,10 +411,10 @@ export default function AdminMembersContent() {
                   <div className="flex items-center justify-between">
                     <span className="text-2xl font-bold text-gray-900">총 {grade.count}명</span>
                     <button className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      grade.color === 'gray' ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' :
-                      grade.color === 'blue' ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' :
-                      grade.color === 'green' ? 'bg-green-100 text-green-700 hover:bg-green-200' :
-                      grade.color === 'purple' ? 'bg-purple-100 text-purple-700 hover:bg-purple-200' :
+                      getRoleColor(grade.role) === 'gray' ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' :
+                      getRoleColor(grade.role) === 'blue' ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' :
+                      getRoleColor(grade.role) === 'green' ? 'bg-green-100 text-green-700 hover:bg-green-200' :
+                      getRoleColor(grade.role) === 'purple' ? 'bg-purple-100 text-purple-700 hover:bg-purple-200' :
                       'bg-orange-100 text-orange-700 hover:bg-orange-200'
                     }`}>
                       관리
