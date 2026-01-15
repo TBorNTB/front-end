@@ -286,6 +286,13 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
 
     setIsCreating(true);
     try {
+      const toChatMember = (u: User) => ({
+        username: u.username,
+        nickname: u.nickname ?? u.name ?? u.username,
+        realName: u.realName ?? u.name ?? u.username,
+        thumbnailUrl: u.profileImageUrl ?? u.avatar ?? null,
+      });
+
       const created = await createGroupChat({
         roomName: groupRoomName,
         friendsUsername: friendUsers.map(u => u.username),
@@ -299,13 +306,8 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
         type: "group",
         memberCount: friendUsers.length + 1,
         members: [
-          ...(selfUser ? [selfUser] : []),
-          ...friendUsers.map((u) => ({
-            username: u.username,
-            nickname: (u.nickname ?? u.name ?? u.username) as string,
-            realName: (u.realName ?? u.name ?? u.username) as string,
-            thumbnailUrl: (u.profileImageUrl ?? u.avatar) as string | undefined,
-          })),
+          ...(selfUser ? [toChatMember(selfUser)] : []),
+          ...friendUsers.map(toChatMember),
         ],
       });
 
@@ -315,7 +317,7 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
       
       // 채팅방 목록 새로고침
       if (activeTab === "rooms") {
-        await fetchChatRooms();
+        await fetchChatRooms("initial");
       }
       // 채팅방 탭으로 전환
       setActiveTab("rooms");

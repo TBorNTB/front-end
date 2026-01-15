@@ -111,6 +111,17 @@ interface LikedPostsResponse {
   }>;
 }
 
+interface CommentedPostsResponse {
+  message: string;
+  size: number;
+  page: number;
+  totalPage: number;
+  data: Array<{
+    postType: 'PROJECT' | 'ARTICLE' | 'NEWS';
+    postId: number;
+  }>;
+}
+
 interface PostDetailResponse {
   postId: number;
   postType: 'PROJECT' | 'ARTICLE' | 'NEWS';

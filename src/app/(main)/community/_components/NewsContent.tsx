@@ -189,7 +189,7 @@ const newsCategories = [
 // 목 데이터 (예시용)
 const mockNewsData: NewsItem[] = [
   {
-    id: '1',
+    id: 1,
     content: {
       title: '2025년 신입생 OT 개최 안내',
       summary: '세종대학교 정보보안 동아리 SSG의 2025년 신입생 오리엔테이션이 개최됩니다.',
@@ -197,15 +197,19 @@ const mockNewsData: NewsItem[] = [
       category: NewsCategoryType.OT
     },
     thumbnailPath: undefined,
-    writerId: '관리자',
     tags: ['OT', '신입생', '안내'],
     createdAt: new Date(2025, 0, 15).toISOString(),
     updatedAt: new Date(2025, 0, 15).toISOString(),
     likeCount: 45,
-    viewCount: 234
+    viewCount: 234,
+    writer: {
+      username: '관리자',
+      nickname: '관리자',
+      realname: '관리자',
+    },
   },
   {
-    id: '2',
+    id: 2,
     content: {
       title: '웹 해킹 스터디 3기 모집',
       summary: '웹 해킹 기초부터 실전까지 함께 공부하는 스터디를 모집합니다.',
@@ -213,15 +217,19 @@ const mockNewsData: NewsItem[] = [
       category: NewsCategoryType.STUDY
     },
     thumbnailPath: undefined,
-    writerId: '김민수',
     tags: ['스터디', '웹해킹', '모집'],
     createdAt: new Date(2025, 0, 12).toISOString(),
     updatedAt: new Date(2025, 0, 12).toISOString(),
     likeCount: 32,
-    viewCount: 189
+    viewCount: 189,
+    writer: {
+      username: '김민수',
+      nickname: '김민수',
+      realname: '김민수',
+    },
   },
   {
-    id: '3',
+    id: 3,
     content: {
       title: '리버싱 세미나 개최',
       summary: 'IDA Pro를 활용한 리버싱 기초 세미나가 개최됩니다.',
@@ -229,15 +237,19 @@ const mockNewsData: NewsItem[] = [
       category: NewsCategoryType.SEMINAR
     },
     thumbnailPath: undefined,
-    writerId: '박지영',
     tags: ['세미나', '리버싱', 'IDA Pro'],
     createdAt: new Date(2025, 0, 10).toISOString(),
     updatedAt: new Date(2025, 0, 10).toISOString(),
     likeCount: 28,
-    viewCount: 156
+    viewCount: 156,
+    writer: {
+      username: '박지영',
+      nickname: '박지영',
+      realname: '박지영',
+    },
   },
   {
-    id: '4',
+    id: 4,
     content: {
       title: '2025년 MT 일정 안내',
       summary: '2025년도 MT(Membership Training) 일정을 안내드립니다.',
@@ -245,15 +257,19 @@ const mockNewsData: NewsItem[] = [
       category: NewsCategoryType.MT
     },
     thumbnailPath: undefined,
-    writerId: '이준호',
     tags: ['MT', '일정', '안내'],
     createdAt: new Date(2025, 0, 8).toISOString(),
     updatedAt: new Date(2025, 0, 8).toISOString(),
     likeCount: 67,
-    viewCount: 312
+    viewCount: 312,
+    writer: {
+      username: '이준호',
+      nickname: '이준호',
+      realname: '이준호',
+    },
   },
   {
-    id: '5',
+    id: 5,
     content: {
       title: '연합 세미나: 사이버 보안 트렌드',
       summary: '다른 대학 동아리와 함께하는 연합 세미나가 개최됩니다.',
@@ -261,15 +277,19 @@ const mockNewsData: NewsItem[] = [
       category: NewsCategoryType.UNITED_SEMINAR
     },
     thumbnailPath: undefined,
-    writerId: '정우현',
     tags: ['연합세미나', '보안트렌드'],
     createdAt: new Date(2025, 0, 5).toISOString(),
     updatedAt: new Date(2025, 0, 5).toISOString(),
     likeCount: 41,
-    viewCount: 278
+    viewCount: 278,
+    writer: {
+      username: '정우현',
+      nickname: '정우현',
+      realname: '정우현',
+    },
   },
   {
-    id: '6',
+    id: 6,
     content: {
       title: 'DEF CON Korea 컨퍼런스 참가',
       summary: 'SSG 동아리원들이 DEF CON Korea 컨퍼런스에 참가합니다.',
@@ -277,15 +297,19 @@ const mockNewsData: NewsItem[] = [
       category: NewsCategoryType.CONFERENCE
     },
     thumbnailPath: undefined,
-    writerId: '강예린',
     tags: ['컨퍼런스', 'DEF CON'],
     createdAt: new Date(2025, 0, 3).toISOString(),
     updatedAt: new Date(2025, 0, 3).toISOString(),
     likeCount: 53,
-    viewCount: 345
+    viewCount: 345,
+    writer: {
+      username: '강예린',
+      nickname: '강예린',
+      realname: '강예린',
+    },
   },
   {
-    id: '7',
+    id: 7,
     content: {
       title: 'CTF 대회 준비 스터디',
       summary: 'CTF 대회 준비를 위한 스터디가 시작됩니다.',
@@ -293,15 +317,19 @@ const mockNewsData: NewsItem[] = [
       category: NewsCategoryType.CTF
     },
     thumbnailPath: undefined,
-    writerId: '최수진',
     tags: ['CTF', '대회', '스터디'],
     createdAt: new Date(2025, 0, 1).toISOString(),
     updatedAt: new Date(2025, 0, 1).toISOString(),
     likeCount: 39,
-    viewCount: 267
+    viewCount: 267,
+    writer: {
+      username: '최수진',
+      nickname: '최수진',
+      realname: '최수진',
+    },
   },
   {
-    id: '8',
+    id: 8,
     content: {
       title: '시스템 해킹 스터디 모집',
       summary: '시스템 해킹 심화 스터디를 모집합니다.',
@@ -309,12 +337,16 @@ const mockNewsData: NewsItem[] = [
       category: NewsCategoryType.STUDY
     },
     thumbnailPath: undefined,
-    writerId: '김민수',
     tags: ['스터디', '시스템해킹'],
     createdAt: new Date(2024, 11, 28).toISOString(),
     updatedAt: new Date(2024, 11, 28).toISOString(),
     likeCount: 24,
-    viewCount: 145
+    viewCount: 145,
+    writer: {
+      username: '김민수',
+      nickname: '김민수',
+      realname: '김민수',
+    },
   }
 ];
 
