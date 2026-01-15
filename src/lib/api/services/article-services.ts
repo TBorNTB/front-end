@@ -1,5 +1,6 @@
 // src/lib/api/services/article.ts
 import { ARTICLE_ENDPOINTS, getArticleApiUrl } from '@/lib/api/endpoints/article-endpoints';
+import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
 
 export interface ArticleResponse {
   id: number;
@@ -22,19 +23,6 @@ export interface ArticleUpdateRequest {
   content: string;
   category: string;
 }
-
-// Helper function to get access token from cookies
-const getAccessToken = (): string | null => {
-  if (typeof document === 'undefined') return null;
-  const cookies = document.cookie.split(';');
-  for (const cookie of cookies) {
-    const [name, value] = cookie.trim().split('=');
-    if (name === 'accessToken') {
-      return decodeURIComponent(value);
-    }
-  }
-  return null;
-};
 
 /**
  * ID로 아티클 상세 정보 가져오기
@@ -81,18 +69,12 @@ export const fetchArticleById = async (id: string | number): Promise<ArticleResp
 export const updateArticle = async (id: string | number, data: ArticleUpdateRequest): Promise<ArticleResponse> => {
   const endpoint = ARTICLE_ENDPOINTS.ARTICLE.UPDATE.replace(':id', String(id));
   const url = getArticleApiUrl(endpoint);
-
-  const accessToken = getAccessToken();
   const headers: HeadersInit = {
     'accept': 'application/json',
     'Content-Type': 'application/json',
   };
 
-  if (accessToken) {
-    headers['Authorization'] = `Bearer ${accessToken}`;
-  }
-
-  const response = await fetch(url, {
+  const response = await fetchWithRefresh(url, {
     method: 'PUT',
     headers,
     credentials: 'include',
@@ -114,17 +96,11 @@ export const updateArticle = async (id: string | number, data: ArticleUpdateRequ
 export const deleteArticle = async (id: string | number): Promise<void> => {
   const endpoint = ARTICLE_ENDPOINTS.ARTICLE.DELETE.replace(':id', String(id));
   const url = getArticleApiUrl(endpoint);
-
-  const accessToken = getAccessToken();
   const headers: HeadersInit = {
     'accept': '*/*',
   };
 
-  if (accessToken) {
-    headers['Authorization'] = `Bearer ${accessToken}`;
-  }
-
-  const response = await fetch(url, {
+  const response = await fetchWithRefresh(url, {
     method: 'DELETE',
     headers,
     credentials: 'include',
@@ -143,18 +119,12 @@ export const deleteArticle = async (id: string | number): Promise<void> => {
  */
 export const createArticle = async (data: ArticleCreateRequest): Promise<ArticleResponse> => {
   const url = getArticleApiUrl(ARTICLE_ENDPOINTS.ARTICLE.CREATE);
-
-  const accessToken = getAccessToken();
   const headers: HeadersInit = {
     'accept': 'application/json',
     'Content-Type': 'application/json',
   };
 
-  if (accessToken) {
-    headers['Authorization'] = `Bearer ${accessToken}`;
-  }
-
-  const response = await fetch(url, {
+  const response = await fetchWithRefresh(url, {
     method: 'POST',
     headers,
     credentials: 'include',

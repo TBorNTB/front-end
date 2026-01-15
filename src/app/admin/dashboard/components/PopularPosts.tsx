@@ -113,9 +113,9 @@ export default function PopularPosts() {
       ) : (
         <>
           <div className="space-y-4">
-            {displayedPosts.map((post) => (
+            {displayedPosts.map((post, index) => (
               <div 
-                key={post.id} 
+                key={`${post.contentType}-${post.id}-${index}`} 
                 className="flex items-start space-x-4 p-4 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer"
               >
                 <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getContentTypeColor(post.contentType)}`}>

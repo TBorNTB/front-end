@@ -23,7 +23,8 @@ export class GatewayAPIClient {
   private baseURL: string;
 
   constructor() {
-    this.baseURL = BASE_URL;
+    // In the browser, go through Next.js BFF so httpOnly cookie auth can be injected.
+    this.baseURL = typeof window === 'undefined' ? BASE_URL : '/api/gateway';
   }
 
   // Note: In the browser, httpOnly auth cookies are NOT readable via document.cookie.

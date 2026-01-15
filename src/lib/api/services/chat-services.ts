@@ -1,8 +1,6 @@
 'use client';
 
-import { getApiUrl } from '@/lib/api/config';
-import { USER_ENDPOINTS } from '@/lib/api/endpoints/user-endpoints';
-import { requireAccessTokenFromCookies } from '@/lib/api/helpers';
+import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
 
 // Chat room types
 export interface ChatRoomMemberResponse {
@@ -78,20 +76,17 @@ export const getChatRooms = async (
   params: { size?: number; cursorAt?: string; cursorRoomId?: string } = {}
 ): Promise<ChatRoomsCursorPage> => {
   const { size = 5, cursorAt, cursorRoomId } = params;
-  const urlObj = new URL(getApiUrl(USER_ENDPOINTS.CHAT.GET_ROOMS));
-  urlObj.searchParams.set('size', String(size));
-  if (cursorAt) urlObj.searchParams.set('cursorAt', cursorAt);
-  if (cursorRoomId) urlObj.searchParams.set('cursorRoomId', cursorRoomId);
 
-  const token = requireAccessTokenFromCookies();
+  const query = new URLSearchParams();
+  query.set('size', String(size));
+  if (cursorAt) query.set('cursorAt', cursorAt);
+  if (cursorRoomId) query.set('cursorRoomId', cursorRoomId);
 
-  const response = await fetch(urlObj.toString(), {
+  const url = `/api/chat/rooms?${query.toString()}`;
+
+  const response = await fetchWithRefresh(url, {
     method: 'GET',
-    headers: {
-      'accept': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    },
-    credentials: 'include',
+    headers: { accept: 'application/json' },
   });
 
   if (!response.ok) {
@@ -113,17 +108,12 @@ export const getChatRooms = async (
 // Create group chat room
 export const createGroupChat = async (data: CreateGroupChatRequest): Promise<CreateChatRoomResponse> => {
   // 최신 스펙: POST /user-service/chat/rooms
-  const url = getApiUrl(USER_ENDPOINTS.CHAT.CREATE_ROOM);
-  const token = requireAccessTokenFromCookies();
-
-  const response = await fetch(url, {
+  const response = await fetchWithRefresh('/api/chat/rooms', {
     method: 'POST',
     headers: {
-      'accept': 'application/json',
+      accept: 'application/json',
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
     },
-    credentials: 'include',
     body: JSON.stringify(data),
   });
 
@@ -142,21 +132,20 @@ export const getRoomChatHistory = async (
   params: { cursorId?: number; size?: number } = {}
 ): Promise<ChatHistoryResponse> => {
   const { cursorId, size = 10 } = params;
-  const endpoint = USER_ENDPOINTS.CHAT.GET_ROOM_CHAT.replace('{roomId}', encodeURIComponent(roomId));
-  const urlObj = new URL(getApiUrl(endpoint));
-  urlObj.searchParams.set('size', String(size));
+
+  const query = new URLSearchParams();
+  query.set('size', String(size));
   if (cursorId !== undefined) {
-    urlObj.searchParams.set('cursorId', String(cursorId));
+    query.set('cursorId', String(cursorId));
   }
 
-  const token = requireAccessTokenFromCookies();
-  const response = await fetch(urlObj.toString(), {
+  const url = `/api/chat/rooms/${encodeURIComponent(roomId)}/chat?${query.toString()}`;
+
+  const response = await fetchWithRefresh(url, {
     method: 'GET',
     headers: {
       accept: 'application/json',
-      Authorization: `Bearer ${token}`,
     },
-    credentials: 'include',
   });
 
   const data = (await response.json().catch(() => null)) as any;
@@ -175,17 +164,11 @@ export const getRoomChatHistory = async (
 // Leave chat room
 // DELETE /user-service/chat/room/{roomId}
 export const leaveChatRoom = async (roomId: string): Promise<LeaveChatRoomResponse> => {
-  const endpoint = USER_ENDPOINTS.CHAT.LEAVE_ROOM.replace('{roomId}', encodeURIComponent(roomId));
-  const url = getApiUrl(endpoint);
-  const token = requireAccessTokenFromCookies();
-
-  const response = await fetch(url, {
+  const response = await fetchWithRefresh(`/api/chat/room/${encodeURIComponent(roomId)}`, {
     method: 'DELETE',
     headers: {
       accept: 'application/json',
-      Authorization: `Bearer ${token}`,
     },
-    credentials: 'include',
   });
 
   const data = (await response.json().catch(() => null)) as any;
@@ -203,17 +186,11 @@ export const leaveChatRoom = async (roomId: string): Promise<LeaveChatRoomRespon
 // Mark chat room as read
 // PUT /user-service/chat/rooms/{roomId}/read
 export const markChatRoomAsRead = async (roomId: string): Promise<MarkRoomReadResponse> => {
-  const endpoint = USER_ENDPOINTS.CHAT.READ_ROOM.replace('{roomId}', encodeURIComponent(roomId));
-  const url = getApiUrl(endpoint);
-  const token = requireAccessTokenFromCookies();
-
-  const response = await fetch(url, {
+  const response = await fetchWithRefresh(`/api/chat/rooms/${encodeURIComponent(roomId)}/read`, {
     method: 'PUT',
     headers: {
       accept: 'application/json',
-      Authorization: `Bearer ${token}`,
     },
-    credentials: 'include',
   });
 
   const data = (await response.json().catch(() => null)) as any;

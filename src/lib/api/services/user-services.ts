@@ -3,6 +3,7 @@
 // User 관련 API 서비스 함수
 import { apiClient } from '@/lib/api/client';
 import { USER_ENDPOINTS, getUserApiUrl } from '@/lib/api/endpoints/user-endpoints';
+import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
 
 // API 응답 타입 정의
 export interface UserResponse {
@@ -198,10 +199,11 @@ export const memberService = {
 // ✅ profileService (DRY!)
 export const profileService = {
   getProfile: async (): Promise<UserResponse> => {
-    const url = getUserApiUrl(USER_ENDPOINTS.USER.PROFILE);
-    const accessToken = getAccessTokenFromCookies(); // Keep your helper!
+    const response = await fetchWithRefresh('/api/user/profile', {
+      method: 'GET',
+      headers: { accept: 'application/json' },
+    });
 
-    const response = await fetch(url, createFetchRequest(url, accessToken));
     const data = await response.json().catch(() => null as never);
 
     if (!response.ok) {
@@ -215,11 +217,12 @@ export const profileService = {
   },
 
   updateProfile: async (data: Partial<UserResponse>): Promise<UserResponse> => {
-    const url = getUserApiUrl(USER_ENDPOINTS.USER.UPDATE_USER);
-    const accessToken = getAccessTokenFromCookies();
-
-    const response = await fetch(url, {
-      ...createFetchRequest(url, accessToken, { method: 'PATCH' }),
+    const response = await fetchWithRefresh('/api/user/profile', {
+      method: 'PATCH',
+      headers: {
+        accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(data),
     });
 
@@ -241,10 +244,11 @@ export const profileService = {
     totalLikeCount: number;
     totalCommentCount: number;
   }> => {
-    const url = getUserApiUrl(USER_ENDPOINTS.USER.ACTIVITY_STATS);
-    const accessToken = getAccessTokenFromCookies();
+    const response = await fetchWithRefresh('/api/user/activity/stats', {
+      method: 'GET',
+      headers: { accept: 'application/json' },
+    });
 
-    const response = await fetch(url, createFetchRequest(url, accessToken));
     const data = await response.json().catch(() => null as never);
 
     if (!response.ok) {
@@ -279,27 +283,12 @@ export const s3Service = {
     fileUrl?: string;
   }> => {
     try {
-      const url = getUserApiUrl(USER_ENDPOINTS.S3.PRESIGNED_URL);
-      
-      // 쿠키에서 accessToken 추출
-      const accessToken = getAccessTokenFromCookies();
-      
-      // Authorization 헤더 준비
-      const headers: HeadersInit = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      };
-      
-      // Bearer 토큰이 있으면 Authorization 헤더에 추가
-      if (accessToken) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
-      }
-
-      const response = await fetch(url, {
+      const response = await fetchWithRefresh('/api/s3/presigned-url', {
         method: 'POST',
-        headers,
-        credentials: 'include',
-        cache: 'no-store',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           fileName,
           contentType,
@@ -467,30 +456,15 @@ export interface LikeStatusResponse {
   status: 'LIKED' | 'NOT_LIKED';
 }
 
-// Get access token from cookies
-const getAccessToken = (): string | null => {
-  if (typeof document === 'undefined') return null;
-  const cookies = document.cookie.split(';');
-  for (const cookie of cookies) {
-    const [name, value] = cookie.trim().split('=');
-    if (name === 'accessToken') {
-      return decodeURIComponent(value);
-    }
-  }
-  return null;
-};
-
 // Fetch like status for current user
 export const fetchLikeStatus = async (id: string | number, postType: string = 'PROJECT'): Promise<LikeStatusResponse> => {
   const endpoint = USER_ENDPOINTS.LIKE.STATUS.replace(':id', String(id));
   const url = getUserApiUrl(`${endpoint}?postType=${postType}`);
-  const token = getAccessToken();
 
-  const response = await fetch(url, {
+  const response = await fetchWithRefresh(url, {
     method: 'GET',
     headers: {
       'accept': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
     },
     credentials: 'include',
   });
@@ -511,20 +485,18 @@ export const fetchLikeStatus = async (id: string | number, postType: string = 'P
 export const toggleLike = async (id: string | number, postType: string = 'PROJECT'): Promise<LikeStatusResponse> => {
   const endpoint = USER_ENDPOINTS.LIKE.TOGGLE.replace(':id', String(id));
   const url = getUserApiUrl(`${endpoint}?postType=${postType}`);
-  const token = getAccessToken();
 
-  if (!token) {
-    throw new Error('로그인이 필요합니다.');
-  }
-
-  const response = await fetch(url, {
+  const response = await fetchWithRefresh(url, {
     method: 'POST',
     headers: {
       'accept': 'application/json',
-      'Authorization': `Bearer ${token}`,
     },
     credentials: 'include',
   });
+
+  if (response.status === 401 || response.status === 403) {
+    throw new Error('로그인이 필요합니다.');
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -604,19 +576,20 @@ export const createComment = async (
 ): Promise<Comment> => {
   const endpoint = USER_ENDPOINTS.COMMENT.CREATE.replace(':postId', String(postId));
   const url = getUserApiUrl(`${endpoint}?postType=${postType}`);
-  const token = getAccessToken();
 
-
-  const response = await fetch(url, {
+  const response = await fetchWithRefresh(url, {
     method: 'POST',
     headers: {
       'accept': 'application/json',
       'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
     },
     credentials: 'include',
     body: JSON.stringify(data),
   });
+
+  if (response.status === 401 || response.status === 403) {
+    throw new Error('로그인이 필요합니다.');
+  }
 
 
   if (!response.ok) {
@@ -640,19 +613,20 @@ export const createReply = async (
     .replace(':postId', String(postId))
     .replace(':parentId', String(parentId));
   const url = getUserApiUrl(`${endpoint}?postType=${postType}`);
-  const token = getAccessToken();
 
-
-  const response = await fetch(url, {
+  const response = await fetchWithRefresh(url, {
     method: 'POST',
     headers: {
       'accept': 'application/json',
       'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
     },
     credentials: 'include',
     body: JSON.stringify(data),
   });
+
+  if (response.status === 401 || response.status === 403) {
+    throw new Error('로그인이 필요합니다.');
+  }
 
 
   if (!response.ok) {
@@ -672,19 +646,20 @@ export const updateComment = async (
 ): Promise<Comment> => {
   const endpoint = USER_ENDPOINTS.COMMENT.UPDATE.replace(':commentId', String(commentId));
   const url = getUserApiUrl(endpoint);
-  const token = getAccessToken();
 
-
-  const response = await fetch(url, {
+  const response = await fetchWithRefresh(url, {
     method: 'PATCH',
     headers: {
       'accept': 'application/json',
       'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
     },
     credentials: 'include',
     body: JSON.stringify(data),
   });
+
+  if (response.status === 401 || response.status === 403) {
+    throw new Error('로그인이 필요합니다.');
+  }
 
 
   if (!response.ok) {
@@ -701,17 +676,18 @@ export const updateComment = async (
 export const deleteComment = async (commentId: number): Promise<void> => {
   const endpoint = USER_ENDPOINTS.COMMENT.DELETE.replace(':commentId', String(commentId));
   const url = getUserApiUrl(endpoint);
-  const token = getAccessToken();
 
-
-  const response = await fetch(url, {
+  const response = await fetchWithRefresh(url, {
     method: 'DELETE',
     headers: {
       'accept': '*/*',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
     },
     credentials: 'include',
   });
+
+  if (response.status === 401 || response.status === 403) {
+    throw new Error('로그인이 필요합니다.');
+  }
 
 
   if (!response.ok) {
@@ -805,13 +781,6 @@ export const fetchUsers = async (
 
   return response.json();
 
-};
-
-// ✅ Shared utilities
-const getAccessTokenFromCookies = (): string | null => {
-  if (typeof window === 'undefined') return null;
-  const match = document.cookie.match(/accessToken=([^;]+)/);
-  return match ? decodeURIComponent(match[1]) : null;
 };
 
 const cleanUserResponse = (data: any): UserResponse => {

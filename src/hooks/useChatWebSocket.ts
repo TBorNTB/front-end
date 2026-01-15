@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useCallback, useState } from "react";
+import { fetchWithRefresh } from "@/lib/api/fetch-with-refresh";
 
 // 웹소켓 메시지 타입 정의
 export interface WebSocketMessage {
@@ -32,7 +33,7 @@ interface UseChatWebSocketOptions {
 /**
  * 채팅 웹소켓 연결 훅
  * NEXT_PUBLIC_API_URL을 기반으로 ws/wss URL을 구성하여 /user-service/ws/chat 경로로 연결
- * 쿠키의 accessToken을 사용하여 인증
+ * httpOnly 쿠키 기반 인증을 사용 (브라우저에서 accessToken을 읽지 않음)
  */
 export const useChatWebSocket = ({
   onConnected,
@@ -43,29 +44,6 @@ export const useChatWebSocket = ({
   const wsRef = useRef<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
-
-  /**
-   * 쿠키에서 accessToken 추출
-   */
-  const getAccessToken = (): string | null => {
-    if (typeof document === "undefined") {
-      return null;
-    }
-
-    try {
-      const cookies = document.cookie.split(";");
-      for (const cookie of cookies) {
-        const [key, value] = cookie.trim().split("=");
-        if (key === "accessToken" && value) {
-          return decodeURIComponent(value);
-        }
-      }
-      return null;
-    } catch (error) {
-      console.error("❌ Error extracting token:", error);
-      return null;
-    }
-  };
 
   const sendJsonMessageOnSocket = useCallback(
     (ws: WebSocket, message: WebSocketMessage) => {
@@ -98,16 +76,10 @@ export const useChatWebSocket = ({
   /**
    * AUTH 메시지 전송 (연결 직후 자동으로 호출)
    */
-  const sendAuthMessage = useCallback(
-    (token: string) => {
-      const authMessage: WebSocketMessage = {
-        type: "AUTH",
-        token,
-      };
-      sendJsonMessage(authMessage);
-    },
-    [sendJsonMessage]
-  );
+  const sendAuthMessage = useCallback(() => {
+    const authMessage: WebSocketMessage = { type: "AUTH" };
+    sendJsonMessage(authMessage);
+  }, [sendJsonMessage]);
 
   /**
    * JOIN 메시지 전송 (채팅방 입장)
@@ -161,7 +133,7 @@ export const useChatWebSocket = ({
   /**
    * 웹소켓 연결
    */
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     // 이미 연결되어 있으면 반환
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       console.log("✅ WebSocket already connected");
@@ -173,24 +145,38 @@ export const useChatWebSocket = ({
       return;
     }
 
-    // 쿠키에서 토큰 확인
-    const token = getAccessToken();
-    if (!token) {
-      console.error("❌ Access token not found in cookies");
-      onError?.(new Error("인증 토큰을 찾을 수 없습니다. 로그인이 필요합니다."));
-      return;
-    }
-
     setIsConnecting(true);
 
     try {
+      // Obtain a token for WS auth via server (httpOnly cookies + auto reissue)
+      const tokenResponse = await fetchWithRefresh('/api/auth/ws-token', {
+        method: 'GET',
+        headers: { accept: 'application/json' },
+        cache: 'no-store',
+      });
+
+      if (!tokenResponse.ok) {
+        setIsConnecting(false);
+        onError?.(new Error('로그인이 필요합니다.'));
+        return;
+      }
+
+      const tokenPayload = (await tokenResponse.json().catch(() => null)) as
+        | { accessToken?: string }
+        | null;
+      const token = tokenPayload?.accessToken;
+      if (!token) {
+        setIsConnecting(false);
+        onError?.(new Error('로그인이 필요합니다.'));
+        return;
+      }
+
       const rawApiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       const apiBase = /^https?:\/\//.test(rawApiBase) ? rawApiBase : `https://${rawApiBase}`;
       const origin = new URL(apiBase).origin;
       const wsProtocol = origin.startsWith("https://") ? "wss://" : "ws://";
       const wsUrl = `${wsProtocol}${origin.replace(/^https?:\/\//, "")}/user-service/ws/chat`;
       console.log("🔗 Connecting to WebSocket:", wsUrl);
-      console.log("🍪 Token found in cookies");
 
       // WebSocket 생성 (쿠키는 자동으로 전송됨)
       const ws = new WebSocket(wsUrl);

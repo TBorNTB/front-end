@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from "react";
 import { io, Socket } from "socket.io-client";
+import { fetchWithRefresh } from "@/lib/api/fetch-with-refresh";
 import {
   WebSocketOutgoingMessage,
   WebSocketIncomingMessage,
@@ -19,41 +20,6 @@ interface UseSocketOptions {
   onConnected?: () => void;
   onDisconnected?: () => void;
 }
-
-/**
- * 쿠키에서 accessToken 추출
- */
-const getAccessToken = (): string | null => {
-  if (typeof document === "undefined") {
-    console.log("📱 Document is undefined (SSR)");
-    return null;
-  }
-
-  try {
-    console.log("🔍 Looking for accessToken in cookies...");
-    console.log("📋 All cookies:", document.cookie);
-
-    const cookies = document.cookie.split(";");
-    console.log("📋 Parsed cookies count:", cookies.length);
-
-    for (const cookie of cookies) {
-      const [key, value] = cookie.trim().split("=");
-      console.log(`  - Cookie: "${key}" = "${value?.substring(0, 20)}..."`);
-
-      if (key === "accessToken" && value) {
-        const decoded = decodeURIComponent(value);
-        console.log("✅ accessToken found, length:", decoded.length);
-        return decoded;
-      }
-    }
-
-    console.error("❌ accessToken not found in cookies");
-    return null;
-  } catch (error) {
-    console.error("❌ Error extracting token:", error);
-    return null;
-  }
-};
 
 export const useSocket = ({
   roomId,
@@ -73,7 +39,7 @@ export const useSocket = ({
   /**
    * Socket.IO 연결
    */
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     // 이미 연결되어 있으면 반환
     if (socketRef.current?.connected) {
       console.log("✅ Socket already connected");
@@ -88,32 +54,40 @@ export const useSocket = ({
     setIsConnecting(true);
 
     try {
-      // Step 1: 토큰 가져오기
-      const token = getAccessToken();
+      // Obtain a token for WS auth via server (httpOnly cookies + auto reissue)
+      const tokenResponse = await fetchWithRefresh('/api/auth/ws-token', {
+        method: 'GET',
+        headers: { accept: 'application/json' },
+        cache: 'no-store',
+      });
 
-      if (!token) {
-        console.error("❌ Access token not found in cookies");
+      if (!tokenResponse.ok) {
         setIsConnecting(false);
-        onError?.(new Error("인증 토큰을 찾을 수 없습니다"));
+        onError?.(new Error('로그인이 필요합니다.'));
         return;
       }
 
-      console.log("✅ Token found, length:", token.length);
+      const tokenPayload = (await tokenResponse.json().catch(() => null)) as
+        | { accessToken?: string }
+        | null;
+      const token = tokenPayload?.accessToken;
+      if (!token) {
+        setIsConnecting(false);
+        onError?.(new Error('로그인이 필요합니다.'));
+        return;
+      }
 
-      // Step 2: Socket.IO 생성 (Authorization 헤더로 토큰 전송)
-      console.log(
-        "🔗 Connecting to Socket.IO:",
-        "http://api.sejongssg.kr/user-service"
-      );
-      console.log("🔐 Authorization header: Bearer [token]");
+      const rawApiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const apiBase = /^https?:\/\//.test(rawApiBase) ? rawApiBase : `https://${rawApiBase}`;
+      const origin = new URL(apiBase).origin;
+      const socketUrl = `${origin}/user-service`;
 
-      socketRef.current = io("http://api.sejongssg.kr/user-service", {
+      // Socket.IO 생성 (브라우저는 httpOnly 쿠키를 자동 전송)
+      socketRef.current = io(socketUrl, {
         auth: {
           token: `Bearer ${token}`,
         },
-        extraHeaders: {
-          Authorization: `Bearer ${token}`,
-        },
+        withCredentials: true,
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,

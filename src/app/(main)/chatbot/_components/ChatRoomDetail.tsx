@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import ChatInput from "./ChatInput";
 import { useChatWebSocket, WebSocketServerMessage } from "@/hooks/useChatWebSocket";
 import { getRoomChatHistory, ChatHistoryItem, leaveChatRoom, markChatRoomAsRead } from "@/lib/api/services/chat-services";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 interface ChatRoomDetailProps {
   roomId: string;
@@ -54,45 +55,11 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
   const forceScrollToBottomOnOpenRef = useRef(true);
   const lastJoinNoticeRef = useRef<{ key: string; at: number } | null>(null);
 
-  const getAccessTokenFromCookie = (): string | null => {
-    if (typeof document === "undefined") return null;
-    try {
-      const cookies = document.cookie.split(";");
-      for (const cookie of cookies) {
-        const [key, value] = cookie.trim().split("=");
-        if (key === "accessToken" && value) return decodeURIComponent(value);
-      }
-      return null;
-    } catch {
-      return null;
-    }
-  };
-
-  const decodeJwtUsername = (token: string | null): string | null => {
-    if (!token) return null;
-    try {
-      const parts = token.split(".");
-      if (parts.length < 2) return null;
-      const base64Url = parts[1];
-      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split("")
-          .map((c) => `%${("00" + c.charCodeAt(0).toString(16)).slice(-2)}`)
-          .join("")
-      );
-      const payload = JSON.parse(jsonPayload) as { username?: string };
-      return payload.username ?? null;
-    } catch {
-      return null;
-    }
-  };
+  const { user: currentUser } = useCurrentUser();
 
   useEffect(() => {
-    if (currentUsernameRef.current) return;
-    const token = getAccessTokenFromCookie();
-    currentUsernameRef.current = decodeJwtUsername(token);
-  }, []);
+    currentUsernameRef.current = currentUser?.username ?? null;
+  }, [currentUser?.username]);
 
   const [position, setPosition] = useState(() => {
     if (initialPosition) {

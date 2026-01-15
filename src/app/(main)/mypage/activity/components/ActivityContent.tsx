@@ -23,9 +23,8 @@ import { Badge } from '@/components/ui/badge';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { ELASTIC_ENDPOINTS, getElasticApiUrl } from '@/lib/api/endpoints/elastic-endpoints';
-import { META_ENDPOINTS, getMetaApiUrl } from '@/lib/api/endpoints/meta-endpoints';
 import { USER_ENDPOINTS, getUserApiUrl } from '@/lib/api/endpoints/user-endpoints';
-import { getApiUrl } from '@/lib/api/config';
+import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
 
 // API Response Types
 interface ProjectResponse {
@@ -101,27 +100,7 @@ interface PaginatedResponse<T> {
   totalPages: number;
 }
 
-// Like and Comment Response Types
-interface LikeResponse {
-  id: string;
-  postId: string;
-  postType: 'PROJECT' | 'ARTICLE' | 'NEWS' | 'COMMENT';
-  userId: string;
-  createdAt: string;
-}
-
 interface LikedPostsResponse {
-  message: string;
-  size: number;
-  page: number;
-  totalPage: number;
-  data: Array<{
-    postType: 'PROJECT' | 'ARTICLE' | 'NEWS';
-    postId: number;
-  }>;
-}
-
-interface CommentedPostsResponse {
   message: string;
   size: number;
   page: number;
@@ -142,20 +121,6 @@ interface PostDetailResponse {
     nickname: string;
     realname: string;
   };
-}
-
-interface CommentResponse {
-  id: number;
-  postId: number;
-  postType: 'PROJECT' | 'ARTICLE' | 'NEWS';
-  content: string;
-  author: {
-    username: string;
-    nickname: string;
-    realname: string;
-  };
-  createdAt: string;
-  updatedAt: string;
 }
 
 // Activity Item Type
@@ -197,7 +162,7 @@ export default function ActivityContent() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  const [totalElements, setTotalElements] = useState(0);
+  const [_totalElements, setTotalElements] = useState(0);
   const [tabCounts, setTabCounts] = useState({
     project: 0,
     CSnote: 0,
@@ -348,38 +313,22 @@ export default function ActivityContent() {
     };
   };
 
-  // Get access token from cookies
-  const getAccessToken = (): string | null => {
-    if (typeof document === 'undefined') return null;
-    const cookies = document.cookie.split(';');
-    for (const cookie of cookies) {
-      const [name, value] = cookie.trim().split('=');
-      if (name === 'accessToken') {
-        return decodeURIComponent(value);
-      }
-    }
-    return null;
-  };
-
   // Fetch liked posts
   const fetchLikedPosts = async (page: number) => {
-    const token = getAccessToken();
-    if (!token) {
-      throw new Error('로그인이 필요합니다.');
-    }
-
     // Step 1: Get liked posts list
     const likedPostsUrl = `${getUserApiUrl(USER_ENDPOINTS.USER.LIKED_POSTS)}?page=${page}&size=${ITEMS_PER_PAGE}&sortDirection=DESC&sortBy=createdAt`;
-    const likedPostsResponse = await fetch(likedPostsUrl, {
+    const likedPostsResponse = await fetchWithRefresh(likedPostsUrl, {
       method: 'GET',
       headers: {
         'accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
       credentials: 'include',
     });
 
     if (!likedPostsResponse.ok) {
+      if (likedPostsResponse.status === 401 || likedPostsResponse.status === 403) {
+        throw new Error('로그인이 필요합니다.');
+      }
       throw new Error(`Failed to fetch liked posts: ${likedPostsResponse.status}`);
     }
 
@@ -425,17 +374,13 @@ export default function ActivityContent() {
     // Map to ActivityItem format
     const items: ActivityItem[] = limitedPostDetails.map((post) => {
       let link = '';
-      let type: 'project' | 'CSnote' | 'news' = 'project';
 
       if (post.postType === 'PROJECT') {
         link = `/projects/${post.postId}`;
-        type = 'project';
       } else if (post.postType === 'ARTICLE') {
         link = `/articles/${post.postId}`;
-        type = 'CSnote';
       } else if (post.postType === 'NEWS') {
         link = `/community/news/${post.postId}`;
-        type = 'news';
       }
 
       return {
@@ -464,23 +409,20 @@ export default function ActivityContent() {
 
   // Fetch commented posts
   const fetchCommentedPosts = async (page: number) => {
-    const token = getAccessToken();
-    if (!token) {
-      throw new Error('로그인이 필요합니다.');
-    }
-
     // Step 1: Get commented posts list
     const commentedPostsUrl = `${getUserApiUrl(USER_ENDPOINTS.USER.COMMENTED_POSTS)}?page=${page}&size=${ITEMS_PER_PAGE}&sortDirection=DESC&sortBy=createdAt`;
-    const commentedPostsResponse = await fetch(commentedPostsUrl, {
+    const commentedPostsResponse = await fetchWithRefresh(commentedPostsUrl, {
       method: 'GET',
       headers: {
         'accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
       credentials: 'include',
     });
 
     if (!commentedPostsResponse.ok) {
+      if (commentedPostsResponse.status === 401 || commentedPostsResponse.status === 403) {
+        throw new Error('로그인이 필요합니다.');
+      }
       throw new Error(`Failed to fetch commented posts: ${commentedPostsResponse.status}`);
     }
 
@@ -526,17 +468,13 @@ export default function ActivityContent() {
     // Map to ActivityItem format
     const items: ActivityItem[] = limitedPostDetails.map((post) => {
       let link = '';
-      let type: 'project' | 'CSnote' | 'news' = 'project';
 
       if (post.postType === 'PROJECT') {
         link = `/projects/${post.postId}`;
-        type = 'project';
       } else if (post.postType === 'ARTICLE') {
         link = `/articles/${post.postId}`;
-        type = 'CSnote';
       } else if (post.postType === 'NEWS') {
         link = `/community/news/${post.postId}`;
-        type = 'news';
       }
 
       return {
@@ -579,28 +517,16 @@ export default function ActivityContent() {
           headers: { 'accept': 'application/json' },
           credentials: 'include',
         }),
-        (async () => {
-          const token = getAccessToken();
-          if (!token) return Promise.reject(new Error('No token'));
-          return fetch(`${getUserApiUrl(USER_ENDPOINTS.USER.LIKED_POSTS)}?page=0&size=1&sortDirection=DESC&sortBy=createdAt`, {
-            headers: {
-              'accept': 'application/json',
-              'Authorization': `Bearer ${token}`,
-            },
-            credentials: 'include',
-          });
-        })(),
-        (async () => {
-          const token = getAccessToken();
-          if (!token) return Promise.reject(new Error('No token'));
-          return fetch(`${getUserApiUrl(USER_ENDPOINTS.USER.COMMENTED_POSTS)}?page=0&size=1&sortDirection=DESC&sortBy=createdAt`, {
-            headers: {
-              'accept': 'application/json',
-              'Authorization': `Bearer ${token}`,
-            },
-            credentials: 'include',
-          });
-        })(),
+        fetchWithRefresh(`${getUserApiUrl(USER_ENDPOINTS.USER.LIKED_POSTS)}?page=0&size=1&sortDirection=DESC&sortBy=createdAt`, {
+          method: 'GET',
+          headers: { 'accept': 'application/json' },
+          credentials: 'include',
+        }),
+        fetchWithRefresh(`${getUserApiUrl(USER_ENDPOINTS.USER.COMMENTED_POSTS)}?page=0&size=1&sortDirection=DESC&sortBy=createdAt`, {
+          method: 'GET',
+          headers: { 'accept': 'application/json' },
+          credentials: 'include',
+        }),
       ]);
 
       const counts = { project: 0, CSnote: 0, news: 0, like: 0, comment: 0 };

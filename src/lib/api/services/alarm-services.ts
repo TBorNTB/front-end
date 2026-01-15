@@ -1,21 +1,8 @@
 // lib/api/services/alarm-service.ts
-import { BASE_URL } from '@/lib/api/config';
+import { getApiUrl } from '@/lib/api/config';
 import { USER_ENDPOINTS } from '@/lib/api/endpoints';
 import { AlarmType } from '@/types/services/alarm';
-
-// Get access token from cookies
-const getAccessToken = (): string | null => {
-  if (typeof document === 'undefined') return null;
-  
-  const cookies = document.cookie.split(';');
-  for (const cookie of cookies) {
-    const [name, value] = cookie.trim().split('=');
-    if (name === 'accessToken') {
-      return decodeURIComponent(value);
-    }
-  }
-  return null;
-};
+import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
 
 export interface AlarmResponse {
   id: string;
@@ -46,21 +33,16 @@ export const alarmService = {
    */
   getReceivedAlarms: async (alarmType?: AlarmType): Promise<AlarmResponse[]> => {
     try {
-      const token = getAccessToken();
-      if (!token) {
-        throw new Error('Authentication required');
-      }
+      const params = new URLSearchParams();
+      if (alarmType) params.append('alarmType', alarmType);
+      const url = params.size
+        ? `${getApiUrl(USER_ENDPOINTS.ALARM.RECEIVED)}?${params.toString()}`
+        : getApiUrl(USER_ENDPOINTS.ALARM.RECEIVED);
 
-      const url = new URL(`${BASE_URL}${USER_ENDPOINTS.ALARM.RECEIVED}`);
-      if (alarmType) {
-        url.searchParams.append('alarmType', alarmType);
-      }
-
-      const response = await fetch(url.toString(), {
+      const response = await fetchWithRefresh(url, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         credentials: 'include',
         cache: 'no-store',
@@ -87,18 +69,12 @@ export const alarmService = {
    */
   markAsSeen: async (alarmId: string): Promise<void> => {
     try {
-      const token = getAccessToken();
-      if (!token) {
-        throw new Error('Authentication required');
-      }
+      const url = getApiUrl(USER_ENDPOINTS.ALARM.MARK_AS_SEEN.replace('{alarmId}', alarmId));
 
-      const url = `${BASE_URL}${USER_ENDPOINTS.ALARM.MARK_AS_SEEN.replace('{alarmId}', alarmId)}`;
-
-      const response = await fetch(url, {
+      const response = await fetchWithRefresh(url, {
         method: 'POST',
         headers: {
           'Accept': '*/*',
-          'Authorization': `Bearer ${token}`,
         },
         credentials: 'include',
         cache: 'no-store',

@@ -105,34 +105,11 @@ export default function AdminDashboardPage() {
         setRoleChangeLoading(true);
         setRoleChangeError(null);
 
-        // 쿠키에서 accessToken 가져오기
-        const getAccessToken = (): string | null => {
-          if (typeof document === 'undefined') return null;
-          const cookies = document.cookie.split(';');
-          for (const cookie of cookies) {
-            const [name, value] = cookie.trim().split('=');
-            if (name === 'accessToken') {
-              return decodeURIComponent(value);
-            }
-          }
-          return null;
-        };
-
-        const accessToken = getAccessToken();
-        const headers: HeadersInit = {
-          'accept': 'application/json',
-        };
-
-        // 토큰이 있으면 Authorization 헤더 추가
-        if (accessToken) {
-          headers['Authorization'] = `Bearer ${accessToken}`;
-        }
-
         const response = await fetch(
           getApiUrl(USER_ENDPOINTS.USER.ROLE_ALL),
           {
             method: 'GET',
-            headers,
+            headers: { 'accept': 'application/json' },
             credentials: 'include',
           }
         );
@@ -189,36 +166,15 @@ export default function AdminDashboardPage() {
     try {
       setProcessingIds(prev => new Set(prev).add(requestId));
 
-      // 쿠키에서 accessToken 가져오기
-      const getAccessToken = (): string | null => {
-        if (typeof document === 'undefined') return null;
-        const cookies = document.cookie.split(';');
-        for (const cookie of cookies) {
-          const [name, value] = cookie.trim().split('=');
-          if (name === 'accessToken') {
-            return decodeURIComponent(value);
-          }
-        }
-        return null;
-      };
-
-      const accessToken = getAccessToken();
-      const headers: HeadersInit = {
-        'accept': 'application/json',
-        'Content-Type': 'application/json',
-      };
-
-      // 토큰이 있으면 Authorization 헤더 추가
-      if (accessToken) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
-      }
-
       const endpoint = USER_ENDPOINTS.USER.ROLE_MANAGE.replace(':id', requestId.toString());
       const response = await fetch(
         getApiUrl(endpoint),
         {
           method: 'PATCH',
-          headers,
+          headers: {
+            'accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
           credentials: 'include',
           body: JSON.stringify({ approved }),
         }

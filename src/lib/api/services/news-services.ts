@@ -1,17 +1,5 @@
 import { getApiUrl } from '../config';
-
-// Get access token from cookies
-const getAccessToken = (): string | null => {
-  if (typeof document === 'undefined') return null;
-  const cookies = document.cookie.split(';');
-  for (const cookie of cookies) {
-    const [name, value] = cookie.trim().split('=');
-    if (name === 'accessToken') {
-      return decodeURIComponent(value);
-    }
-  }
-  return null;
-};
+import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
 
 // News creation types
 export interface CreateNewsRequest {
@@ -69,7 +57,6 @@ export interface UpdateNewsResponse {
 // Create a news item
 export const createNews = async (data: CreateNewsRequest): Promise<CreateNewsResponse> => {
   const url = getApiUrl('/project-service/news');
-  const token = getAccessToken();
 
   // Only include thumbnailPath if it has a value
   const requestBody: any = {
@@ -90,7 +77,6 @@ export const createNews = async (data: CreateNewsRequest): Promise<CreateNewsRes
     headers: {
       'accept': 'application/json',
       'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
     },
     credentials: 'include',
     body: JSON.stringify(requestBody),
@@ -110,7 +96,6 @@ export const updateNews = async (
   data: UpdateNewsRequest
 ): Promise<UpdateNewsResponse> => {
   const url = getApiUrl(`/project-service/news/${id}`);
-  const token = getAccessToken();
 
   // Only include thumbnailPath if it has a value
   const requestBody: any = {
@@ -126,12 +111,11 @@ export const updateNews = async (
     requestBody.thumbnailPath = data.thumbnailPath;
   }
 
-  const response = await fetch(url, {
+  const response = await fetchWithRefresh(url, {
     method: 'PUT',
     headers: {
       'accept': 'application/json',
       'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
     },
     credentials: 'include',
     body: JSON.stringify(requestBody),
@@ -148,13 +132,11 @@ export const updateNews = async (
 // Delete a news item
 export const deleteNews = async (id: string | number): Promise<void> => {
   const url = getApiUrl(`/project-service/news/${id}`);
-  const token = getAccessToken();
 
-  const response = await fetch(url, {
+  const response = await fetchWithRefresh(url, {
     method: 'DELETE',
     headers: {
       'accept': '*/*',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
     },
     credentials: 'include',
   });
