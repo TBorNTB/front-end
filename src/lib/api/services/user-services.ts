@@ -22,15 +22,19 @@ export interface UserResponse {
 }
 
 export interface MembersPageResponse {
-  userResponses: UserResponse[];
+  message: string;
+  data: UserResponse[];
   size: number;
   page: number;
-  totalElements: number;
+  totalPage: number;
 }
 
 export interface GetMembersParams {
   page?: number;
   size?: number;
+  roles?: string[];
+  realName?: string;
+  nickname?: string;
 }
 
 // Cursor-based pagination types
@@ -76,48 +80,6 @@ const createFetchRequest = (url: string, accessToken: string | null = null, opti
   ...options,
 });
 
-// ✅ Generic error handler (DRY!)
-const handleApiError = (error: unknown, context: string): never => {
-  const err = error as Error;
-  
-  // Network errors
-  if (err.name === 'TypeError' || err.message.includes('fetch')) {
-    throw new Error('네트워크 연결을 확인해주세요.');
-  }
-  
-  // Preserve original message
-  throw new Error(err.message || `${context} 실패`);
-};
-
-// ✅ Types (extract to types.ts)
-export interface UserResponse {
-  id: number;
-  nickname: string;
-  role: string;
-  realName: string;
-  email: string;
-  username: string;
-  description: string;
-  githubUrl: string;
-  linkedinUrl: string;
-  blogUrl: string;
-  profileImageUrl: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface MembersPageResponse {
-  userResponses: UserResponse[];
-  size: number;
-  page: number;
-  totalElements: number;
-}
-
-export interface GetMembersParams {
-  page?: number;
-  size?: number;
-}
-
 // ✅ userService (apiClient - simple)
 export const userService = {
   sendVerificationCode: (payload: { email: string }, request?: Request) =>
@@ -130,8 +92,31 @@ export const userService = {
 // ✅ memberService
 export const memberService = {
   getMembers: async (params: GetMembersParams = {}): Promise<MembersPageResponse> => {
-    const { page = 0, size = 6 } = params;
-    const url = `${getUserApiUrl(USER_ENDPOINTS.USER.GET_PAGED)}?size=${size}&page=${page}`;
+    const { page = 0, size = 6, roles, realName, nickname } = params;
+
+    // 필터가 있으면 roles 엔드포인트 사용, 없으면 기본 page 엔드포인트
+    const hasFilters = (roles && roles.length > 0) || realName || nickname;
+    const baseUrl = hasFilters
+      ? getUserApiUrl(USER_ENDPOINTS.USER.GET_BY_ROLES)
+      : getUserApiUrl(USER_ENDPOINTS.USER.GET_PAGED);
+
+    const queryParams = new URLSearchParams();
+    queryParams.set('page', String(page));
+    queryParams.set('size', String(size));
+    queryParams.set('sortDirection', 'ASC');
+    queryParams.set('sortBy', 'id');
+
+    if (roles && roles.length > 0) {
+      roles.forEach(role => queryParams.append('roles', role));
+    }
+    if (realName) {
+      queryParams.set('realName', realName);
+    }
+    if (nickname) {
+      queryParams.set('nickname', nickname);
+    }
+
+    const url = `${baseUrl}?${queryParams.toString()}`;
 
     const response = await fetch(url, createFetchRequest(url));
     const data = await response.json().catch(() => null as never);
@@ -141,11 +126,24 @@ export const memberService = {
     }
 
     return {
-      userResponses: data.userResponses || [],
+      message: data.message || '',
+      data: data.data || [],
       size: data.size || 0,
       page: data.page || 0,
-      totalElements: data.totalElements || 0,
+      totalPage: data.totalPage || 0,
     };
+  },
+
+  getAllRoles: async (): Promise<string[]> => {
+    const url = getUserApiUrl(USER_ENDPOINTS.USER.GET_ALL_ROLES);
+    const response = await fetch(url, createFetchRequest(url));
+    const data = await response.json().catch(() => []);
+
+    if (!response.ok) {
+      throw new Error('Role 목록 조회 실패');
+    }
+
+    return data;
   },
 
   getMembersByCursor: async (params: GetCursorUsersParams = {}): Promise<CursorUsersResponse> => {

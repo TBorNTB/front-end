@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import Image, { ImageProps } from 'next/image';
 import { cn } from '@/lib/utils';
+import Image, { ImageProps } from 'next/image';
+import React, { useEffect, useState } from 'react';
 
 interface ImageWithFallbackProps extends Omit<ImageProps, 'src'> {
   src: string;
@@ -29,7 +29,7 @@ const isValidUrl = (url: string | null | undefined): boolean => {
 
 export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   src,
-  fallbackSrc = '/images/placeholder.jpg', // Default fallback image
+  fallbackSrc = '/default-avatar.svg',
   alt,
   className,
   showPlaceholder = true,
@@ -38,15 +38,22 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
 }) => {
   // 유효한 URL인지 확인
   const validSrc = isValidUrl(src) ? src : null;
-  const [imgSrc, setImgSrc] = useState<string>(validSrc || fallbackSrc);
-  const [isLoading, setIsLoading] = useState(true);
+  const initialSrc = validSrc || fallbackSrc;
+  // 로컬 파일은 로딩 상태 건너뛰기
+  const isLocalFile = initialSrc.startsWith('/');
+
+  const [imgSrc, setImgSrc] = useState<string>(initialSrc);
+  const [isLoading, setIsLoading] = useState(!isLocalFile);
   const [hasError, setHasError] = useState(!validSrc);
 
   // Reset states when src changes
   useEffect(() => {
     const newValidSrc = isValidUrl(src) ? src : null;
-    setImgSrc(newValidSrc || fallbackSrc);
-    setIsLoading(true);
+    const newSrc = newValidSrc || fallbackSrc;
+    const newIsLocalFile = newSrc.startsWith('/');
+
+    setImgSrc(newSrc);
+    setIsLoading(!newIsLocalFile);
     setHasError(!newValidSrc);
   }, [src, fallbackSrc]);
 
@@ -67,40 +74,6 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     return null;
   }
 
-  // If both src and fallbackSrc fail, show a placeholder div
-  if (hasError && (imgSrc === fallbackSrc || !validSrc)) {
-    return (
-      <div
-        className={cn(
-          'flex items-center justify-center bg-gradient-to-br from-primary-100 to-secondary-100 text-primary-600',
-          className
-        )}
-        // Fix: Replace 'any' with proper type
-        style={props.style}
-        {...(props.width && { style: { width: props.width } })}
-        {...(props.height && { style: { height: props.height } })}
-      >
-        <div className="text-center">
-          <svg
-            className="mx-auto h-12 w-12 text-primary-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            aria-hidden="true"
-          >
-            <path
-              vectorEffect="non-scaling-stroke"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2z"
-            />
-          </svg>
-          <p className="mt-2 text-sm font-medium">이미지를 불러올 수 없습니다</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className={cn('relative overflow-hidden', className)}>
@@ -133,6 +106,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
         )}
         onError={handleError}
         onLoad={handleLoad}
+        unoptimized={imgSrc.endsWith('.svg')}
         {...props}
       />
     </div>

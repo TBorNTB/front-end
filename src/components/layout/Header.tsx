@@ -10,7 +10,7 @@ import AlarmPopup from "./AlarmPopup";
 import SearchModal from "./SearchModal";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
-import { getRoleDisplayLabel, hasAdminAccess, pickRole } from "@/lib/role-utils";
+import { getRoleDisplayLabel, hasAdminAccess } from "@/lib/role-utils";
 
 const navList = [
   { name: "About", 
@@ -31,7 +31,7 @@ const navList = [
 ];
 
 const Header = () => {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, loading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const [dropdowns, setDropdowns] = useState<Record<string, boolean>>({});
@@ -124,7 +124,7 @@ const Header = () => {
   const profileImageUrl = isValidImageUrl(profileData?.profileImageUrl) || isValidImageUrl(user?.profile_image) || null;
 
   // Role handling
-  const combinedRole = pickRole(profileData?.role, user?.role);
+  const combinedRole = profileData?.role ?? user?.role;
   const displayRole = getRoleDisplayLabel(combinedRole);
   const isAdmin = hasAdminAccess(combinedRole);
 
@@ -235,7 +235,9 @@ const Header = () => {
 
             {/* Authentication - Desktop */}
             <div className="hidden sm:block">
-              {!isAuthenticated ? (
+              {loading ? (
+                <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />
+              ) : !isAuthenticated ? (
                  <Link href="/login">
                     <button className="btn btn-primary cursor-pointer">
                       로그인
@@ -382,7 +384,9 @@ const Header = () => {
 
               {/* Mobile Auth */}
               <div className="px-4 pt-4 border-t border-gray-200">
-                {!isAuthenticated ? (
+                {loading ? (
+                  <div className="w-full h-10 bg-gray-200 rounded-lg animate-pulse" />
+                ) : !isAuthenticated ? (
                   <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
                     <button className="btn btn-primary w-full cursor-pointer">
                       로그인

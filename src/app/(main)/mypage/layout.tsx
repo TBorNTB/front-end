@@ -93,7 +93,7 @@ export default function MyPageLayout({
   const displayName = profile?.realName || profile?.nickname || profile?.username || '사용자';
   const displayEmail = profile?.email || 'API 연결이 필요합니다';
   const displayRole = profile?.role || 'Member';
-  const displayAvatar = isValidImageUrl(profile?.profileImageUrl) || '/default-avatar.png';
+  const displayAvatar = isValidImageUrl(profile?.profileImageUrl) || '/default-avatar.svg';
 
   // 통계 정보는 API 응답에 없으므로 -1로 표시
   const stats = {

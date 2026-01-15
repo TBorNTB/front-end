@@ -6,20 +6,11 @@ import Link from 'next/link';
 import { ArrowLeft, Plus, X, Upload, FileText, User, Search, UserCircle, AtSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import TipTapEditor from '@/components/editor/TipTapEditor';
 import Image from 'next/image';
 import { fetchCategories, createProject } from '@/lib/api/services/project-services';
-import { UserResponse, memberService, CursorUserResponse } from '@/lib/api/services/user-services';
+import { memberService, CursorUserResponse } from '@/lib/api/services/user-services';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-
-const TECH_STACK_CATEGORIES = [
-  'LANGUAGE',
-  'FRAMEWORK',
-  'DATABASE',
-  'TOOL',
-  'PLATFORM',
-];
 
 interface FormData {
   title: string;
@@ -50,7 +41,6 @@ export default function NewProjectForm() {
   const [subGoalInput, setSubGoalInput] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
   const [thumbnailPreview, setThumbnailPreview] = useState<string>('');
-  const [collaboratorInput, setCollaboratorInput] = useState({ name: '', email: '', role: 'CONTRIBUTOR' });
   
   // API data states
   const [categories, setCategories] = useState<Array<{ id: number; name: string; description: string }>>([]);
@@ -61,7 +51,6 @@ export default function NewProjectForm() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [nicknameSearch, setNicknameSearch] = useState('');
   const [realNameSearch, setRealNameSearch] = useState('');
-  const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [nextCursorId, setNextCursorId] = useState<number>(0);
   const [hasNext, setHasNext] = useState<boolean>(true);
   const [searchNextCursorId, setSearchNextCursorId] = useState<number>(0);
@@ -260,7 +249,7 @@ export default function NewProjectForm() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (userSearchRef.current && !userSearchRef.current.contains(event.target as Node)) {
-        setShowUserDropdown(false);
+        setIsSearchMode(false);
       }
     };
 
@@ -438,7 +427,7 @@ export default function NewProjectForm() {
       }));
       setNicknameSearch('');
       setRealNameSearch('');
-      setShowUserDropdown(false);
+      setIsSearchMode(false);
     }
   };
 

@@ -15,6 +15,8 @@ export const USER_ENDPOINTS = {
     ACTIVITY_STATS: '/user-service/users/activity/stats',
     LIKED_POSTS: '/user-service/users/liked-posts',
     COMMENTED_POSTS: '/user-service/users/commented-posts',
+    GET_BY_ROLES: '/user-service/users/search',
+    GET_ALL_ROLES: '/user-service/users/role',
 
     //admin endpoints
     GET_ALL: '/user-service/users',
@@ -38,7 +40,6 @@ export const USER_ENDPOINTS = {
   // Token management
   TOKEN: {
     REISSUE: '/user-service/token/reissue',
-    REFRESH: '/user-service/token/refresh',
   },
 
   // S3 File management

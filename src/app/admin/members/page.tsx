@@ -6,19 +6,17 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { 
   Search, 
   Filter, 
-  MoreHorizontal, 
   Users, 
   Clock,
   Edit3,
   AlertCircle,
   RefreshCw,
   Loader2,
-  Check,
   X
 } from "lucide-react";
 import { getApiUrl } from "@/lib/api/config";
 import { USER_ENDPOINTS } from "@/lib/api/endpoints/user-endpoints";
-import { UserRoleDisplay } from "@/types/core";
+import { getRoleBadgeColor, getRoleColor, getRoleDescription, getRoleDisplayLabel } from "@/lib/role-utils";
 
 interface Member {
   id: number;
@@ -105,11 +103,11 @@ export default function AdminMembersContent() {
   
   // 등급 관리 관련 상태
   const [gradeStats, setGradeStats] = useState<GradeStat[]>([
-    { role: "외부인", count: 0, color: "gray" },
-    { role: "준회원", count: 0, color: "blue" },
-    { role: "정회원", count: 0, color: "green" },
-    { role: "선배님", count: 0, color: "purple" },
-    { role: "운영진", count: 0, color: "orange" }
+    { role: "GUEST", count: 0, color: "gray" },
+    { role: "ASSOCIATE_MEMBER", count: 0, color: "blue" },
+    { role: "FULL_MEMBER", count: 0, color: "green" },
+    { role: "SENIOR", count: 0, color: "purple" },
+    { role: "ADMIN", count: 0, color: "orange" }
   ]);
   const [totalMemberCount, setTotalMemberCount] = useState(0);
   const [gradeStatsLoading, setGradeStatsLoading] = useState(false);
@@ -142,21 +140,8 @@ export default function AdminMembersContent() {
     setRoleChangePage(0);
   };
 
-  // 한국어 역할명을 API 역할 값으로 변환
-  const getRoleValueFromKorean = (koreanRole: string): string => {
-    const roleMap: Record<string, string> = {
-      '외부인': 'GUEST',
-      '준회원': 'ASSOCIATE_MEMBER',
-      '정회원': 'FULL_MEMBER',
-      '선배님': 'SENIOR',
-      '운영진': 'ADMIN'
-    };
-    return roleMap[koreanRole] || '';
-  };
-
   // 역할별 회원 관리 버튼 클릭 핸들러
-  const handleRoleManagement = (koreanRole: string) => {
-    const roleValue = getRoleValueFromKorean(koreanRole);
+  const handleRoleManagement = (roleValue: string) => {
     setSelectedRole(roleValue);
     setPage(0);
     setNicknameSearch('');
@@ -255,11 +240,11 @@ export default function AdminMembersContent() {
         if (response.ok) {
           const data: RoleCountResponse = await response.json();
           setGradeStats([
-            { role: "외부인", count: data.guestCount || 0, color: "gray" },
-            { role: "준회원", count: data.associateMemberCount || 0, color: "blue" },
-            { role: "정회원", count: data.fullMemberCount || 0, color: "green" },
-            { role: "선배님", count: data.seniorCount || 0, color: "purple" },
-            { role: "운영진", count: data.adminCount || 0, color: "orange" }
+            { role: "GUEST", count: data.guestCount || 0, color: "gray" },
+            { role: "ASSOCIATE_MEMBER", count: data.associateMemberCount || 0, color: "blue" },
+            { role: "FULL_MEMBER", count: data.fullMemberCount || 0, color: "green" },
+            { role: "SENIOR", count: data.seniorCount || 0, color: "purple" },
+            { role: "ADMIN", count: data.adminCount || 0, color: "orange" }
           ]);
           setTotalMemberCount(data.totalCount || 0);
         }
@@ -358,11 +343,11 @@ export default function AdminMembersContent() {
         if (response.ok) {
           const data: RoleCountResponse = await response.json();
           setGradeStats([
-            { role: "외부인", count: data.guestCount || 0, color: "gray" },
-            { role: "준회원", count: data.associateMemberCount || 0, color: "blue" },
-            { role: "정회원", count: data.fullMemberCount || 0, color: "green" },
-            { role: "선배님", count: data.seniorCount || 0, color: "purple" },
-            { role: "운영진", count: data.adminCount || 0, color: "orange" }
+            { role: "GUEST", count: data.guestCount || 0, color: "gray" },
+            { role: "ASSOCIATE_MEMBER", count: data.associateMemberCount || 0, color: "blue" },
+            { role: "FULL_MEMBER", count: data.fullMemberCount || 0, color: "green" },
+            { role: "SENIOR", count: data.seniorCount || 0, color: "purple" },
+            { role: "ADMIN", count: data.adminCount || 0, color: "orange" }
           ]);
           setTotalMemberCount(data.totalCount || 0);
         }
@@ -597,11 +582,11 @@ export default function AdminMembersContent() {
         
         // API 응답을 gradeStats 형식으로 변환
         setGradeStats([
-          { role: "외부인", count: data.guestCount || 0, color: "gray" },
-          { role: "준회원", count: data.associateMemberCount || 0, color: "blue" },
-          { role: "정회원", count: data.fullMemberCount || 0, color: "green" },
-          { role: "선배님", count: data.seniorCount || 0, color: "purple" },
-          { role: "운영진", count: data.adminCount || 0, color: "orange" }
+          { role: "GUEST", count: data.guestCount || 0, color: "gray" },
+          { role: "ASSOCIATE_MEMBER", count: data.associateMemberCount || 0, color: "blue" },
+          { role: "FULL_MEMBER", count: data.fullMemberCount || 0, color: "green" },
+          { role: "SENIOR", count: data.seniorCount || 0, color: "purple" },
+          { role: "ADMIN", count: data.adminCount || 0, color: "orange" }
         ]);
         
         setTotalMemberCount(data.totalCount || 0);
@@ -810,33 +795,6 @@ export default function AdminMembersContent() {
   const handleRefresh = () => {
     // 페이지를 0으로 리셋하고 다시 조회
     setPage(0);
-  };
-
-  const getRoleColor = (role: string) => {
-    const colorMap: Record<string, string> = {
-      'GUEST': 'bg-gray-100 text-gray-800',
-      'ASSOCIATE': 'bg-blue-100 text-blue-800',
-      'ASSOCIATE_MEMBER': 'bg-blue-100 text-blue-800',
-      'REGULAR': 'bg-green-100 text-green-800',
-      'FULL_MEMBER': 'bg-green-100 text-green-800',
-      'SENIOR': 'bg-purple-100 text-purple-800',
-      'ADMIN': 'bg-orange-100 text-orange-800'
-    };
-    return colorMap[role] || 'bg-gray-100 text-gray-800';
-  };
-
-  const getRoleDisplayLabel = (role: string): string => {
-    // API에서 받은 role을 UserRoleDisplay에 매핑
-    const roleMap: Record<string, string> = {
-      'GUEST': UserRoleDisplay.GUEST,
-      'ASSOCIATE': UserRoleDisplay.ASSOCIATE,
-      'ASSOCIATE_MEMBER': UserRoleDisplay.ASSOCIATE,
-      'REGULAR': UserRoleDisplay.REGULAR,
-      'FULL_MEMBER': UserRoleDisplay.REGULAR,
-      'SENIOR': UserRoleDisplay.SENIOR,
-      'ADMIN': UserRoleDisplay.ADMIN,
-    };
-    return roleMap[role] || role;
   };
 
   // 이름의 첫 글자 추출
@@ -1244,7 +1202,7 @@ export default function AdminMembersContent() {
                               </button>
                             </div>
                           ) : (
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(member.role)}`}>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(member.role)}`}>
                               {getRoleDisplayLabel(member.role)}
                             </span>
                           )}
@@ -1399,8 +1357,8 @@ export default function AdminMembersContent() {
                   {roleChangeRequests.map((item) => {
                     const request = item.roleChange;
                     const style = getRoleChangeStyle(request.requestedRole);
-                    const previousRoleLabel = UserRoleDisplay[request.previousRole as keyof typeof UserRoleDisplay] || request.previousRole;
-                    const requestedRoleLabel = UserRoleDisplay[request.requestedRole as keyof typeof UserRoleDisplay] || request.requestedRole;
+                    const previousRoleLabel = getRoleDisplayLabel(request.previousRole);
+                    const requestedRoleLabel = getRoleDisplayLabel(request.requestedRole);
                     
                     return (
                       <div key={request.id} className={`border ${style.borderColor} rounded-lg p-6 hover:shadow-md transition-shadow ${style.bgColor}`}>
@@ -1496,39 +1454,35 @@ export default function AdminMembersContent() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {gradeStats.map((grade, index) => (
                 <div key={index} className={`p-6 rounded-lg border-2 hover:shadow-lg transition-all cursor-pointer ${
-                  grade.color === 'gray' ? 'bg-gray-50 border-gray-200 hover:border-gray-300' :
-                  grade.color === 'blue' ? 'bg-blue-50 border-blue-200 hover:border-blue-300' :
-                  grade.color === 'green' ? 'bg-green-50 border-green-200 hover:border-green-300' :
-                  grade.color === 'purple' ? 'bg-purple-50 border-purple-200 hover:border-purple-300' :
+                  getRoleColor(grade.role) === 'gray' ? 'bg-gray-50 border-gray-200 hover:border-gray-300' :
+                  getRoleColor(grade.role) === 'blue' ? 'bg-blue-50 border-blue-200 hover:border-blue-300' :
+                  getRoleColor(grade.role) === 'green' ? 'bg-green-50 border-green-200 hover:border-green-300' :
+                  getRoleColor(grade.role) === 'purple' ? 'bg-purple-50 border-purple-200 hover:border-purple-300' :
                   'bg-orange-50 border-orange-200 hover:border-orange-300'
                 }`}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
                       <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                        grade.color === 'gray' ? 'bg-gray-100' :
-                        grade.color === 'blue' ? 'bg-blue-100' :
-                        grade.color === 'green' ? 'bg-green-100' :
-                        grade.color === 'purple' ? 'bg-purple-100' :
+                        getRoleColor(grade.role) === 'gray' ? 'bg-gray-100' :
+                        getRoleColor(grade.role) === 'blue' ? 'bg-blue-100' :
+                        getRoleColor(grade.role) === 'green' ? 'bg-green-100' :
+                        getRoleColor(grade.role) === 'purple' ? 'bg-purple-100' :
                         'bg-orange-100'
                       }`}>
                         <span className={`text-sm font-bold ${
-                          grade.color === 'gray' ? 'text-gray-600' :
-                          grade.color === 'blue' ? 'text-blue-600' :
-                          grade.color === 'green' ? 'text-green-600' :
-                          grade.color === 'purple' ? 'text-purple-600' :
+                          getRoleColor(grade.role) === 'gray' ? 'text-gray-600' :
+                          getRoleColor(grade.role) === 'blue' ? 'text-blue-600' :
+                          getRoleColor(grade.role) === 'green' ? 'text-green-600' :
+                          getRoleColor(grade.role) === 'purple' ? 'text-purple-600' :
                           'text-orange-600'
                         }`}>
-                          {grade.role.charAt(0)}
+                          {getRoleDisplayLabel(grade.role).charAt(0)}
                         </span>
                       </div>
                       <div>
-                        <h4 className="font-bold text-gray-900 text-lg">{grade.role}</h4>
+                        <h4 className="font-bold text-gray-900 text-lg">{getRoleDisplayLabel(grade.role)}</h4>
                         <p className="text-sm text-gray-500">
-                          {grade.role === '외부인' && '제한된 권한을 가진 방문자'}
-                          {grade.role === '준회원' && '기본 권한을 가진 회원'}
-                          {grade.role === '정회원' && '모든 기능을 사용할 수 있는 회원'}
-                          {grade.role === '선배님' && '경험과 지식을 가진 선배 회원'}
-                          {grade.role === '운영진' && '관리 권한을 가진 회원'}
+                          {getRoleDescription(grade.role)}
                         </p>
                       </div>
                     </div>

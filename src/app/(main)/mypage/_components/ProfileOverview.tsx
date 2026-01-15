@@ -21,6 +21,7 @@ import toast from 'react-hot-toast';
 import { profileService, s3Service, UserResponse } from '@/lib/api/services/user-services';
 import { useAuth } from '@/context/AuthContext';
 import { validateImageFile } from '@/lib/form-utils';
+import { getRoleDisplayLabel } from '@/lib/role-utils';
 
 // 날짜 포맷팅 헬퍼 함수
 const formatDate = (dateString: string) => {
@@ -28,34 +29,9 @@ const formatDate = (dateString: string) => {
   return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
 };
 
-const recentActivity = [
-  {
-    id: 1,
-    type: 'article',
-    title: 'Advanced SQL Injection Techniques in 2024',
-    date: '2024.10.15',
-    views: 342,
-    likes: 23
-  },
-  {
-    id: 2,
-    type: 'comment',
-    title: 'CTF WriteUp: HackTheBox - Pilgrimage',
-    date: '2024.10.12',
-    action: '댓글 작성'
-  },
-  {
-    id: 3,
-    type: 'badge',
-    title: 'Security Expert 배지 획득',
-    date: '2024.10.10',
-    action: '배지 획득'
-  }
-];
-
 export default function ProfileContent() {
   const router = useRouter();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user: _user } = useAuth();
   const [profile, setProfile] = useState<UserResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
@@ -156,19 +132,10 @@ export default function ProfileContent() {
   const displayName = profile.realName || profile.nickname || profile.username || '사용자';
   const displayEmail = profile.email || '';
   const displayBio = profile.description || '';
-  const displayRole = profile.role || 'Member';
+  const displayRole = profile.role || 'GUEST';
   const displayJoinDate = profile.createdAt ? formatDate(profile.createdAt) : '';
-  const displayAvatar = isValidImageUrl(profile.profileImageUrl) || '/default-avatar.png';
-  
-  // 역할 한글 매핑
-  const roleDisplayMap: Record<string, string> = {
-    'GUEST': '외부인',
-    'ASSOCIATE_MEMBER': '준회원',
-    'FULL_MEMBER': '정회원',
-    'SENIOR': '선배님',
-    'ADMIN': '운영진',
-  };
-  const displayRoleLabel = roleDisplayMap[displayRole] || displayRole;
+  const displayAvatar = isValidImageUrl(profile.profileImageUrl) || '/default-avatar.svg';
+  const displayRoleLabel = getRoleDisplayLabel(displayRole);
 
   // 통계 정보
   const stats = {

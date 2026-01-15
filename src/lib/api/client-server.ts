@@ -45,6 +45,13 @@ export class GatewayAPIServerClient {
     }
   }
 
+  // Extract accessToken from cookie string
+  private extractAccessToken(cookieHeader: string | null): string | null {
+    if (!cookieHeader) return null;
+    const match = cookieHeader.match(/accessToken=([^;]+)/);
+    return match ? match[1] : null;
+  }
+
   private hasAuthCookies(cookieHeader: string | null): boolean {
     if (!cookieHeader) return false;
     return (
@@ -68,8 +75,9 @@ export class GatewayAPIServerClient {
 
     try {
       const cookieHeader = await this.getCookieHeader(request);
+      const accessToken = this.extractAccessToken(cookieHeader);
 
-      if (requireAuth && !this.hasAuthCookies(cookieHeader)) {
+      if (requireAuth && !accessToken) {
         return {
           success: false,
           error: 'Authentication required',
@@ -82,7 +90,7 @@ export class GatewayAPIServerClient {
         headers: {
           Accept: 'application/json',
           'Content-Type': 'application/json',
-          ...(cookieHeader && { Cookie: cookieHeader }),
+          ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
           ...headers,
         },
         cache: 'no-store',
@@ -112,9 +120,10 @@ export class GatewayAPIServerClient {
       }
 
       const errorData = await res.json().catch(() => ({}));
+      console.error('❌ API error:', res.status, endpoint, errorData);
       return {
         success: false,
-        error: (errorData as any).message || 'Request failed',
+        error: (errorData as any).message || (errorData as any).error || 'Request failed',
         status: res.status,
       };
     } catch (error) {
