@@ -1,4 +1,5 @@
 // src/app/api/auth/user/route.ts
+// 인증 실패 시 401 반환 → fetchWithRefresh가 reissue 시도
 import { serverApiClient } from '@/lib/api/client-server';
 import { USER_ENDPOINTS } from '@/lib/api/endpoints/user-endpoints';
 import { NextResponse } from 'next/server';
@@ -7,7 +8,7 @@ export async function GET(request: Request) {
   try {
     const cookieHeader = request.headers.get('cookie');
     if (!cookieHeader?.includes('accessToken')) {
-      return NextResponse.json({ authenticated: false, user: null });
+      return NextResponse.json({ authenticated: false, user: null }, { status: 401 });
     }
 
     const profileResponse = await serverApiClient.request(
@@ -16,7 +17,11 @@ export async function GET(request: Request) {
     );
 
     if (!profileResponse.success) {
-      return NextResponse.json({ authenticated: false, user: null });
+      // 백엔드 401/403이면 그대로 전달 → fetchWithRefresh가 reissue 시도
+      const status = profileResponse.status === 401 || profileResponse.status === 403
+        ? profileResponse.status
+        : 401;
+      return NextResponse.json({ authenticated: false, user: null }, { status });
     }
 
     const profile = profileResponse.data as {
