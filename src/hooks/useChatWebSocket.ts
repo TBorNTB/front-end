@@ -184,7 +184,7 @@ export const useChatWebSocket = ({
     setIsConnecting(true);
 
     try {
-      const wsUrl = "ws://localhost:8000/user-service/ws/chat";
+      const wsUrl = "wss://api.sejongsgg.kr/user-service/ws/chat";
       console.log("🔗 Connecting to WebSocket:", wsUrl);
       console.log("🍪 Token found in cookies");
 
