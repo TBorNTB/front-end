@@ -17,7 +17,9 @@ const ChatBot = () => {
   const [openChatRooms, setOpenChatRooms] = useState<Array<{
     id: string;
     name: string;
-    type: "1:1" | "group";
+    type: "group";
+    memberCount?: number;
+    members?: Array<{ username: string; nickname: string; realName: string; thumbnailUrl?: string | null }>;
   }>>([]);
 
   const toggleChat = () => {
@@ -40,11 +42,28 @@ const ChatBot = () => {
     setIsChatRoomOpen(false);
   };
 
-  const handleSelectRoom = (room: { id: string; name: string; type: "1:1" | "group" }) => {
-    // 이미 열려있는 채팅방인지 확인
-    if (!openChatRooms.some(r => r.id === room.id)) {
-      setOpenChatRooms(prev => [...prev, room]);
-    }
+  const handleSelectRoom = (room: {
+    id: string;
+    name: string;
+    type: "group";
+    memberCount?: number;
+    members?: Array<{ username: string; nickname: string; realName: string; thumbnailUrl?: string | null }>;
+  }) => {
+    setOpenChatRooms((prev) => {
+      const existingIdx = prev.findIndex((r) => r.id === room.id);
+      if (existingIdx === -1) return [...prev, room];
+
+      // 이미 열려 있으면 members/memberCount만 최신 값으로 보정
+      const existing = prev[existingIdx];
+      const next = [...prev];
+      next[existingIdx] = {
+        ...existing,
+        name: room.name ?? existing.name,
+        memberCount: room.memberCount ?? existing.memberCount,
+        members: room.members ?? existing.members,
+      };
+      return next;
+    });
     // 채팅방 목록 창은 그대로 유지
   };
 
@@ -152,6 +171,8 @@ const ChatBot = () => {
           roomId={room.id}
           roomName={room.name}
           roomType={room.type}
+          memberCount={room.memberCount}
+          members={room.members}
           onClose={() => handleCloseChatRoomDetail(room.id)}
           onBack={() => handleCloseChatRoomDetail(room.id)}
           initialPosition={getInitialPosition(index)}

@@ -80,6 +80,9 @@ export const USER_ENDPOINTS = {
     GET_ROOMS: '/user-service/chat/rooms',
     CREATE_ROOM: '/user-service/chat/rooms',
     CREATE_GROUP_ROOM: '/user-service/chat/rooms/group',
+    GET_ROOM_CHAT: '/user-service/chat/rooms/{roomId}/chat',
+    READ_ROOM: '/user-service/chat/rooms/{roomId}/read',
+    LEAVE_ROOM: '/user-service/chat/room/{roomId}',
   },
 
 } as const;

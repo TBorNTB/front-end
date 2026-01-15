@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { X, Minimize2, Users, MessageSquare, User, Search, Plus, ChevronDown } from "lucide-react";
 import toast from "react-hot-toast";
-import { getChatRooms, createOneOnOneChat, createGroupChat, ChatRoomResponse } from "@/lib/api/services/chat-services";
+import { getChatRooms, createGroupChat, ChatRoomResponse } from "@/lib/api/services/chat-services";
 import { fetchUsers, UserListResponse } from "@/lib/api/services/user-services";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 interface ChatRoomWindowProps {
   onClose: () => void;
@@ -25,12 +26,15 @@ interface User {
 interface ChatRoom {
   id: string;
   name: string;
-  type: "1:1" | "group";
+  type: "group";
   avatar?: string;
   lastMessage?: string;
   lastMessageTime?: string;
+  lastMessageImageUrl?: string;
+  lastSenderNickname?: string;
   unreadCount?: number;
-  participants?: User[];
+  members?: Array<{ username: string; nickname: string; realName: string; thumbnailUrl?: string | null }>;
+  memberCount?: number;
 }
 
 const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowProps) => {
@@ -42,6 +46,9 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
   const [isCreating, setIsCreating] = useState(false);
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
   const [isLoadingRooms, setIsLoadingRooms] = useState(false);
+  const [roomsNextCursorAt, setRoomsNextCursorAt] = useState<string | null>(null);
+  const [roomsNextCursorRoomId, setRoomsNextCursorRoomId] = useState<string | null>(null);
+  const [hasMoreRooms, setHasMoreRooms] = useState(true);
   const [users, setUsers] = useState<User[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
@@ -49,10 +56,47 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
   const [totalPages, setTotalPages] = useState(0);
   const usersContainerRef = useRef<HTMLDivElement>(null);
 
+  const { user: currentUser } = useCurrentUser();
+  const selfUsername = currentUser?.username ?? null;
+  const selfUser: User | null = currentUser
+    ? {
+        id: String(currentUser.id),
+        username: currentUser.username,
+        name: currentUser.realName || currentUser.nickname || currentUser.username,
+        nickname: currentUser.nickname,
+        realName: currentUser.realName,
+        avatar: currentUser.profileImageUrl,
+        profileImageUrl: currentUser.profileImageUrl,
+      }
+    : null;
+
+  const friendUsersCount = selfUsername ? selectedUsers.filter((u) => u.username !== selfUsername).length : selectedUsers.length;
+  const hasRoomTitle = groupRoomName.trim().length > 0;
+  const createDisabledReason = !hasRoomTitle
+    ? "채팅방 제목을 입력해주세요."
+    : friendUsersCount === 0
+      ? "나를 제외한 사용자를 최소 1명 선택해주세요."
+      : null;
+
+  // Sync unreadCount updates when a room is opened/read in detail window
+  useEffect(() => {
+    const handler = (ev: Event) => {
+      const e = ev as CustomEvent<{ roomId: string; unreadCount: number }>;
+      const detail = e.detail;
+      if (!detail?.roomId) return;
+      setChatRooms((prev) =>
+        prev.map((r) => (r.id === detail.roomId ? { ...r, unreadCount: detail.unreadCount ?? 0 } : r))
+      );
+    };
+
+    window.addEventListener("chat:roomRead", handler as EventListener);
+    return () => window.removeEventListener("chat:roomRead", handler as EventListener);
+  }, []);
+
   // Fetch chat rooms when component mounts or when switching to rooms tab
   useEffect(() => {
     if (activeTab === "rooms") {
-      fetchChatRooms();
+      fetchChatRooms("initial");
     }
   }, [activeTab]);
 
@@ -102,24 +146,68 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
     }
   }, [currentPage, hasMoreUsers, isLoadingUsers]);
 
-  const fetchChatRooms = async () => {
+  const fetchChatRooms = async (mode: "initial" | "append") => {
+    if (isLoadingRooms) return;
+    if (mode === "append" && !hasMoreRooms) return;
+
     setIsLoadingRooms(true);
     try {
-      const rooms: ChatRoomResponse[] = await getChatRooms();
+      const pageSize = 5;
+      const res = await getChatRooms(
+        mode === "append" && roomsNextCursorAt && roomsNextCursorRoomId
+          ? { size: pageSize, cursorAt: roomsNextCursorAt, cursorRoomId: roomsNextCursorRoomId }
+          : { size: pageSize }
+      );
+
+      const rooms: ChatRoomResponse[] = res.items;
+
+      const formatRoomTime = (iso: string): string => {
+        const date = new Date(iso);
+        if (Number.isNaN(date.getTime())) return "";
+        const hours = date.getHours();
+        const minutes = date.getMinutes();
+        const period = hours >= 12 ? "오후" : "오전";
+        const displayHours = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
+        return `${period} ${displayHours}:${minutes.toString().padStart(2, "0")}`;
+      };
       
       // Transform API response to ChatRoom format
-      const transformedRooms: ChatRoom[] = rooms.map((room) => ({
-        id: room.roomId,
-        name: room.roomName || "이름 없음", // roomName이 null인 경우 처리
-        type: room.roomName ? "group" : "1:1", // roomName이 null이면 1:1 채팅방
-        avatar: undefined,
-        lastMessage: undefined,
-        lastMessageTime: undefined,
-        unreadCount: 0,
-        participants: undefined,
-      }));
-      
-      setChatRooms(transformedRooms);
+      const transformedRooms: ChatRoom[] = rooms
+        .map((room) => {
+          const lastMessageText = (room.lastMessage ?? "").trim();
+          const lastPreview = lastMessageText.length > 0 ? lastMessageText : room.lastMessageImageUrl ? "[이미지]" : "";
+          return {
+            id: room.roomId,
+            name: room.roomName || "이름 없음",
+            type: "group",
+            avatar: undefined,
+            lastMessage: lastPreview,
+            lastMessageTime: formatRoomTime(room.lastMessageAt),
+            lastMessageImageUrl: room.lastMessageImageUrl ?? undefined,
+            lastSenderNickname: room.lastSenderNickname,
+            unreadCount: typeof room.unreadCount === "number" ? room.unreadCount : 0,
+            members: Array.isArray(room.members) ? room.members : [],
+            memberCount: typeof room.memberCount === "number" ? room.memberCount : Array.isArray(room.members) ? room.members.length : undefined,
+          };
+        });
+
+      // cursor update
+      setRoomsNextCursorAt(res.nextCursorAt ?? null);
+      setRoomsNextCursorRoomId(res.nextCursorRoomId ?? null);
+      setHasMoreRooms(!!(res.nextCursorAt && res.nextCursorRoomId));
+
+      if (mode === "initial") {
+        setChatRooms(transformedRooms);
+      } else {
+        setChatRooms((prev) => {
+          const seen = new Set(prev.map((r) => r.id));
+          const merged = [...prev];
+          for (const r of transformedRooms) {
+            if (!seen.has(r.id)) merged.push(r);
+          }
+          return merged;
+        });
+      }
     } catch (error) {
       console.error("채팅방 목록 조회 오류:", error);
       toast.error("채팅방 목록을 불러오는 중 오류가 발생했습니다.");
@@ -127,6 +215,12 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
       setIsLoadingRooms(false);
     }
   };
+
+  const loadMoreRooms = useCallback(() => {
+    if (!isLoadingRooms && hasMoreRooms) {
+      fetchChatRooms("append");
+    }
+  }, [hasMoreRooms, isLoadingRooms, roomsNextCursorAt, roomsNextCursorRoomId]);
 
   const filteredUsers = users.filter((user) => {
     const searchLower = searchQuery.toLowerCase();
@@ -142,30 +236,35 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
     room.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleCreateOneOnOneChat = async (user: User) => {
-    setIsCreating(true);
-    try {
-      await createOneOnOneChat({
-        friendUsername: user.username,
-      });
-      
-      toast.success(`${user.name}님과의 채팅방이 생성되었습니다.`);
-      
-      // 채팅방 목록 새로고침
-      if (activeTab === "rooms") {
-        await fetchChatRooms();
+  const handleUserClickForGroupCreation = (user: User) => {
+    // 사용자 클릭으로 채팅방 자동 생성 금지
+    // 반드시 "그룹 채팅방 만들기" 플로우로만 생성
+    setShowCreateGroupModal(true);
+    setGroupRoomName(""); // 제목은 항상 빈칸에서 시작
+    setSelectedUsers((prev) => {
+      const next = [...prev];
+
+      // 나(self)는 항상 강제 선택
+      if (selfUser && !next.some((u) => u.username === selfUser.username)) {
+        next.unshift(selfUser);
       }
-      // 채팅방 탭으로 전환
-      setActiveTab("rooms");
-    } catch (error) {
-      console.error("채팅방 생성 오류:", error);
-      toast.error("채팅방 생성 중 오류가 발생했습니다.");
-    } finally {
-      setIsCreating(false);
-    }
+
+      // 클릭한 유저 추가 (self 제외)
+      if (user.username !== selfUsername && !next.some((u) => u.id === user.id)) {
+        next.push(user);
+      }
+
+      return next;
+    });
+
+    toast.success("그룹 채팅방 만들기에서 생성해주세요.");
   };
 
   const handleToggleUserSelection = (user: User) => {
+    // 나(self)는 강제 선택(해제 불가)
+    if (selfUsername && user.username === selfUsername) {
+      return;
+    }
     if (selectedUsers.some(u => u.id === user.id)) {
       setSelectedUsers(selectedUsers.filter(u => u.id !== user.id));
     } else {
@@ -178,19 +277,38 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
       toast.error("채팅방 이름을 입력해주세요.");
       return;
     }
-    if (selectedUsers.length === 0) {
+    // self만 선택되어 있는 경우도 생성 불가 (친구 최소 1명)
+    const friendUsers = selfUsername ? selectedUsers.filter((u) => u.username !== selfUsername) : selectedUsers;
+    if (friendUsers.length === 0) {
       toast.error("최소 1명 이상의 사용자를 선택해주세요.");
       return;
     }
 
     setIsCreating(true);
     try {
-      await createGroupChat({
+      const created = await createGroupChat({
         roomName: groupRoomName,
-        friendsUsername: selectedUsers.map(u => u.username),
+        friendsUsername: friendUsers.map(u => u.username),
       });
       
       toast.success("그룹 채팅방이 생성되었습니다.");
+
+      onSelectRoom?.({
+        id: created.roomId,
+        name: created.roomName || groupRoomName,
+        type: "group",
+        memberCount: friendUsers.length + 1,
+        members: [
+          ...(selfUser ? [selfUser] : []),
+          ...friendUsers.map((u) => ({
+            username: u.username,
+            nickname: (u.nickname ?? u.name ?? u.username) as string,
+            realName: (u.realName ?? u.name ?? u.username) as string,
+            thumbnailUrl: (u.profileImageUrl ?? u.avatar) as string | undefined,
+          })),
+        ],
+      });
+
       setShowCreateGroupModal(false);
       setSelectedUsers([]);
       setGroupRoomName("");
@@ -287,7 +405,11 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
         </div>
         {activeTab === "users" && (
           <button
-            onClick={() => setShowCreateGroupModal(true)}
+            onClick={() => {
+              setShowCreateGroupModal(true);
+              setGroupRoomName(""); // 제목은 항상 빈칸에서 시작
+              setSelectedUsers(selfUser ? [selfUser] : []); // 나(self) 강제 선택
+            }}
             className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
           >
             <Plus className="w-4 h-4" />
@@ -315,9 +437,8 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                 {filteredUsers.map((user) => (
                   <button
                     key={user.id}
-                    onClick={() => handleCreateOneOnOneChat(user)}
-                    disabled={isCreating}
-                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-white hover:shadow-md transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={() => handleUserClickForGroupCreation(user)}
+                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-white hover:shadow-md transition-all duration-200 group"
                   >
                     <div className="relative">
                       {user.profileImageUrl || user.avatar ? (
@@ -333,24 +454,10 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                       )}
                     </div>
                     <div className="flex-1 text-left">
-                      <div className="flex items-center gap-2">
-                        {user.realName && (
-                          <h4 className="font-semibold text-gray-900 group-hover:text-purple-600 transition-colors">
-                            {user.realName}
-                          </h4>
-                        )}
-                        {user.nickname && (
-                          <span className="text-sm text-gray-600">
-                            ({user.nickname})
-                          </span>
-                        )}
-                        {!user.realName && !user.nickname && (
-                          <h4 className="font-semibold text-gray-900 group-hover:text-purple-600 transition-colors">
-                            {user.name}
-                          </h4>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-500 mt-0.5">@{user.username}</p>
+                      <h4 className="font-semibold text-gray-900 group-hover:text-purple-600 transition-colors">
+                        {user.nickname || user.name || "이름 없음"}
+                      </h4>
+                      <p className="text-xs text-gray-500 mt-0.5">{user.realName || user.name || ""}</p>
                     </div>
                   </button>
                 ))}
@@ -391,72 +498,127 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                 <p className="text-sm">채팅방이 없습니다</p>
               </div>
             ) : (
-              filteredChatRooms.map((room) => (
-                <button
-                  key={room.id}
-                  onClick={() => {
-                    if (onSelectRoom) {
-                      onSelectRoom(room);
-                    }
-                  }}
-                  className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-white hover:shadow-md transition-all duration-200 group"
-                >
-                  <div className="relative">
-                    {room.avatar ? (
-                      <img
-                        src={room.avatar}
-                        alt={room.name}
-                        className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 group-hover:border-purple-300 transition-colors"
-                      />
-                    ) : room.type === "group" ? (
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center border-2 border-gray-200 group-hover:border-purple-300 transition-colors">
-                        <Users className="w-6 h-6 text-white" />
-                      </div>
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center border-2 border-gray-200 group-hover:border-purple-300 transition-colors">
-                        <User className="w-6 h-6 text-purple-600" />
-                      </div>
-                    )}
-                    {room.type === "group" && (
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center border-2 border-white">
-                        <Users className="w-2 h-2 text-white" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 text-left min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <h4 className="font-semibold text-gray-900 group-hover:text-purple-600 transition-colors truncate">
-                        {room.name}
-                      </h4>
-                      {room.lastMessageTime && (
-                        <span className="text-xs text-gray-500 flex-shrink-0">
-                          {room.lastMessageTime}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between gap-2 mt-1">
-                      {room.lastMessage ? (
-                        <p className="text-xs text-gray-600 truncate">{room.lastMessage}</p>
+              <>
+                {filteredChatRooms.map((room) => (
+                  <button
+                    key={room.id}
+                    onClick={() => {
+                      if (onSelectRoom) {
+                        onSelectRoom(room);
+                      }
+                    }}
+                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-white hover:shadow-md transition-all duration-200 group"
+                  >
+                    <div className="relative">
+                      {room.avatar ? (
+                        <img
+                          src={room.avatar}
+                          alt={room.name}
+                          className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 group-hover:border-purple-300 transition-colors"
+                        />
+                      ) : room.type === "group" ? (
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center border-2 border-gray-200 group-hover:border-purple-300 transition-colors">
+                          <Users className="w-6 h-6 text-white" />
+                        </div>
                       ) : (
-                        <p className="text-xs text-gray-400">메시지 없음</p>
+                        <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center border-2 border-gray-200 group-hover:border-purple-300 transition-colors">
+                          <User className="w-6 h-6 text-purple-600" />
+                        </div>
                       )}
-                      {room.unreadCount && room.unreadCount > 0 && (
-                        <span className="flex-shrink-0 bg-purple-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                          {room.unreadCount > 99 ? "99+" : room.unreadCount}
-                        </span>
+                      {room.type === "group" && (
+                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center border-2 border-white">
+                          <Users className="w-2 h-2 text-white" />
+                        </div>
                       )}
                     </div>
-                    {room.type === "group" && room.participants && (
-                      <div className="flex items-center gap-1 mt-1">
-                        <Users className="w-3 h-3 text-gray-400" />
-                        <span className="text-xs text-gray-500">
-                          {room.participants.length}명
-                        </span>
+                    <div className="flex-1 text-left min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <h4 className="font-semibold text-gray-900 group-hover:text-purple-600 transition-colors truncate">
+                          {room.name}
+                        </h4>
+                        {room.lastMessageTime && (
+                          <span className="text-xs text-gray-500 flex-shrink-0">
+                            {room.lastMessageTime}
+                          </span>
+                        )}
                       </div>
+                      <div className="flex items-center justify-between gap-2 mt-1">
+                        {room.lastMessage ? (
+                          <p className="text-xs text-gray-600 truncate">
+                            {room.lastSenderNickname ? `${room.lastSenderNickname}: ` : ""}
+                            {room.lastMessage}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-gray-400">메시지 없음</p>
+                        )}
+                        {room.unreadCount && room.unreadCount > 0 && (
+                          <span className="flex-shrink-0 bg-purple-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                            {room.unreadCount > 99 ? "99+" : room.unreadCount}
+                          </span>
+                        )}
+                      </div>
+                      {room.memberCount !== undefined && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <Users className="w-3 h-3 text-gray-400" />
+                          <span className="text-xs text-gray-500">{room.memberCount}명</span>
+                        </div>
+                      )}
+
+                      {room.members && room.members.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {room.members.map((m) => {
+                            const thumb = (m.thumbnailUrl ?? "").trim();
+                            const initial = (m.nickname ?? m.username ?? "?").trim().charAt(0) || "?";
+                            const showThumb = thumb.length > 0 && thumb !== "string" && thumb !== "null" && thumb !== "undefined";
+
+                            return (
+                              <span
+                                key={m.username}
+                                title={m.realName}
+                                className="inline-flex items-center gap-1 text-[11px] text-gray-600 bg-gray-100 border border-gray-200 rounded-full pl-1 pr-2 py-0.5"
+                              >
+                                {showThumb ? (
+                                  <img
+                                    src={thumb}
+                                    alt={m.nickname}
+                                    className="w-4 h-4 rounded-full object-cover border border-gray-200"
+                                  />
+                                ) : (
+                                  <div className="w-4 h-4 rounded-full bg-white border border-gray-200 flex items-center justify-center text-[10px] text-gray-500">
+                                    {initial}
+                                  </div>
+                                )}
+                                <span className="leading-none">{m.nickname}</span>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                ))}
+
+                {/* Load More Button */}
+                {!searchQuery && hasMoreRooms && (
+                  <button
+                    onClick={loadMoreRooms}
+                    disabled={isLoadingRooms}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-purple-600 hover:bg-purple-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoadingRooms ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+                        <span>불러오는 중...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>더보기</span>
+                        <ChevronDown className="w-4 h-4" />
+                      </>
                     )}
-                  </div>
-                </button>
-              ))
+                  </button>
+                )}
+              </>
             )}
           </div>
         )}
@@ -509,13 +671,15 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                         key={user.id}
                         className="flex items-center gap-2 px-3 py-1.5 bg-purple-100 text-purple-700 rounded-full text-sm"
                       >
-                        <span>{user.name}</span>
-                        <button
-                          onClick={() => handleToggleUserSelection(user)}
-                          className="hover:bg-purple-200 rounded-full p-0.5"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
+                        <span>{user.nickname || user.realName || user.name}</span>
+                        {!(selfUsername && user.username === selfUsername) && (
+                          <button
+                            onClick={() => handleToggleUserSelection(user)}
+                            className="hover:bg-purple-200 rounded-full p-0.5"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -530,13 +694,15 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                 <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-lg divide-y">
                   {users.map((user) => {
                     const isSelected = selectedUsers.some(u => u.id === user.id);
+                    const isSelf = !!(selfUsername && user.username === selfUsername);
                     return (
                       <button
                         key={user.id}
                         onClick={() => handleToggleUserSelection(user)}
+                        disabled={isSelf}
                         className={`w-full flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors ${
                           isSelected ? "bg-purple-50" : ""
-                        }`}
+                        } ${isSelf ? "opacity-75 cursor-not-allowed" : ""}`}
                       >
                         <div className="relative">
                           {user.avatar ? (
@@ -552,8 +718,8 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                           )}
                         </div>
                         <div className="flex-1 text-left">
-                          <h4 className="font-medium text-gray-900">{user.name}</h4>
-                          <p className="text-xs text-gray-500">@{user.username}</p>
+                          <h4 className="font-medium text-gray-900">{user.nickname || user.realName || user.name}</h4>
+                          <p className="text-xs text-gray-500">{user.realName || user.name || ""}</p>
                         </div>
                         {isSelected && (
                           <div className="w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center">
@@ -570,25 +736,31 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-gray-200 flex gap-3">
-              <button
-                onClick={() => {
-                  setShowCreateGroupModal(false);
-                  setSelectedUsers([]);
-                  setGroupRoomName("");
-                }}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
-                disabled={isCreating}
-              >
-                취소
-              </button>
-              <button
-                onClick={handleCreateGroupChat}
-                disabled={isCreating || !groupRoomName.trim() || selectedUsers.length === 0}
-                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isCreating ? "생성 중..." : "생성하기"}
-              </button>
+            <div className="px-6 py-4 border-t border-gray-200">
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowCreateGroupModal(false);
+                    setSelectedUsers([]);
+                    setGroupRoomName("");
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+                  disabled={isCreating}
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleCreateGroupChat}
+                  disabled={isCreating || !!createDisabledReason}
+                  className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isCreating ? "생성 중..." : "생성하기"}
+                </button>
+              </div>
+
+              {createDisabledReason && (
+                <p className="mt-2 text-xs text-red-500">{createDisabledReason}</p>
+              )}
             </div>
           </div>
         </div>
