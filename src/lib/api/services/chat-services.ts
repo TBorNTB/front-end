@@ -2,19 +2,7 @@
 
 import { getApiUrl } from '@/lib/api/config';
 import { USER_ENDPOINTS } from '@/lib/api/endpoints/user-endpoints';
-
-// Get access token from cookies
-const getAccessToken = (): string | null => {
-  if (typeof document === 'undefined') return null;
-  const cookies = document.cookie.split(';');
-  for (const cookie of cookies) {
-    const [name, value] = cookie.trim().split('=');
-    if (name === 'accessToken') {
-      return decodeURIComponent(value);
-    }
-  }
-  return null;
-};
+import { requireAccessTokenFromCookies } from '@/lib/api/helpers';
 
 // Chat room types
 export interface ChatRoomMemberResponse {
@@ -95,13 +83,13 @@ export const getChatRooms = async (
   if (cursorAt) urlObj.searchParams.set('cursorAt', cursorAt);
   if (cursorRoomId) urlObj.searchParams.set('cursorRoomId', cursorRoomId);
 
-  const token = getAccessToken();
+  const token = requireAccessTokenFromCookies();
 
   const response = await fetch(urlObj.toString(), {
     method: 'GET',
     headers: {
       'accept': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
+      'Authorization': `Bearer ${token}`,
     },
     credentials: 'include',
   });
@@ -126,14 +114,14 @@ export const getChatRooms = async (
 export const createGroupChat = async (data: CreateGroupChatRequest): Promise<CreateChatRoomResponse> => {
   // 최신 스펙: POST /user-service/chat/rooms
   const url = getApiUrl(USER_ENDPOINTS.CHAT.CREATE_ROOM);
-  const token = getAccessToken();
+  const token = requireAccessTokenFromCookies();
 
   const response = await fetch(url, {
     method: 'POST',
     headers: {
       'accept': 'application/json',
       'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
+      'Authorization': `Bearer ${token}`,
     },
     credentials: 'include',
     body: JSON.stringify(data),
@@ -161,12 +149,12 @@ export const getRoomChatHistory = async (
     urlObj.searchParams.set('cursorId', String(cursorId));
   }
 
-  const token = getAccessToken();
+  const token = requireAccessTokenFromCookies();
   const response = await fetch(urlObj.toString(), {
     method: 'GET',
     headers: {
       accept: 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
+      Authorization: `Bearer ${token}`,
     },
     credentials: 'include',
   });
@@ -189,13 +177,13 @@ export const getRoomChatHistory = async (
 export const leaveChatRoom = async (roomId: string): Promise<LeaveChatRoomResponse> => {
   const endpoint = USER_ENDPOINTS.CHAT.LEAVE_ROOM.replace('{roomId}', encodeURIComponent(roomId));
   const url = getApiUrl(endpoint);
-  const token = getAccessToken();
+  const token = requireAccessTokenFromCookies();
 
   const response = await fetch(url, {
     method: 'DELETE',
     headers: {
       accept: 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
+      Authorization: `Bearer ${token}`,
     },
     credentials: 'include',
   });
@@ -217,13 +205,13 @@ export const leaveChatRoom = async (roomId: string): Promise<LeaveChatRoomRespon
 export const markChatRoomAsRead = async (roomId: string): Promise<MarkRoomReadResponse> => {
   const endpoint = USER_ENDPOINTS.CHAT.READ_ROOM.replace('{roomId}', encodeURIComponent(roomId));
   const url = getApiUrl(endpoint);
-  const token = getAccessToken();
+  const token = requireAccessTokenFromCookies();
 
   const response = await fetch(url, {
     method: 'PUT',
     headers: {
       accept: 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
+      Authorization: `Bearer ${token}`,
     },
     credentials: 'include',
   });

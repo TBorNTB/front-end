@@ -17,11 +17,38 @@ import { UserResponse } from '@/lib/api/services/user-services'; // Adjust impor
 export const getAccessTokenFromCookies = (): string | undefined => {
   // Server-safe check
   if (typeof document === 'undefined') return undefined;
-  
-  const cookies = document.cookie.split('; ');
-  const tokenCookie = cookies.find(cookie => cookie.startsWith('accessToken='));
-  
-  return tokenCookie?.split('=')[1];
+
+  try {
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const trimmed = cookie.trim();
+      if (!trimmed) continue;
+      if (trimmed.startsWith('accessToken=')) {
+        const rawValue = trimmed.slice('accessToken='.length);
+        try {
+          return decodeURIComponent(rawValue);
+        } catch {
+          return rawValue;
+        }
+      }
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+/**
+ * Extract access token from browser cookies and throw if missing
+ * Useful for APIs that require Authorization header on every request
+ */
+export const requireAccessTokenFromCookies = (): string => {
+  const token = getAccessTokenFromCookies();
+  if (!token) {
+    throw new Error('로그인이 필요합니다. (accessToken 쿠키 없음)');
+  }
+
+  return token;
 };
 
 /**

@@ -31,7 +31,7 @@ interface UseChatWebSocketOptions {
 
 /**
  * 채팅 웹소켓 연결 훅
- * wss://api.sejongssg.kr/user-service/ws/chat 경로로 연결
+ * NEXT_PUBLIC_API_URL을 기반으로 ws/wss URL을 구성하여 /user-service/ws/chat 경로로 연결
  * 쿠키의 accessToken을 사용하여 인증
  */
 export const useChatWebSocket = ({
@@ -184,7 +184,11 @@ export const useChatWebSocket = ({
     setIsConnecting(true);
 
     try {
-      const wsUrl = "wss://api.sejongsgg.kr/user-service/ws/chat";
+      const rawApiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const apiBase = /^https?:\/\//.test(rawApiBase) ? rawApiBase : `https://${rawApiBase}`;
+      const origin = new URL(apiBase).origin;
+      const wsProtocol = origin.startsWith("https://") ? "wss://" : "ws://";
+      const wsUrl = `${wsProtocol}${origin.replace(/^https?:\/\//, "")}/user-service/ws/chat`;
       console.log("🔗 Connecting to WebSocket:", wsUrl);
       console.log("🍪 Token found in cookies");
 
