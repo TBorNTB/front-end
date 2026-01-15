@@ -29,7 +29,6 @@ export const USER_ENDPOINTS = {
   // Token management
   TOKEN: {
     REISSUE: '/user-service/token/reissue',
-    REFRESH: '/user-service/token/refresh',
   },
 
   // S3 File management
