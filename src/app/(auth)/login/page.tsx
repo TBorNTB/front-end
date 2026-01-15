@@ -198,7 +198,7 @@ export default function LogInPage() {
   };
 
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-gradient-background">
+    <div className="flex h-screen w-full items-center justify-center bg-authentication-background">
       <div className="absolute top-0 left-0 h-full w-full bg-[radial-gradient(circle_at_center,_rgba(58,_77,_161,_0.08)_0,_transparent_30%)]" />
       <div className="flex h-[550px] w-[850px] rounded-xl bg-white shadow-xl shadow-primary-500/10 overflow-hidden z-10 border border-gray-200">
         
@@ -349,7 +349,7 @@ export default function LogInPage() {
             onClick={handleGithubLogin}
             disabled={isLoading}
             type="button"
-            className="w-full btn-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-primary-500 hover:text-primary-600 transition-colors rounded-lg font-medium flex items-center justify-center cursor-pointer"
+            className="w-full h-12 px-6 text-base bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-primary-500 hover:text-primary-600 transition-colors rounded-lg font-medium flex items-center justify-center cursor-pointer flex-shrink-0"
           >
             <Github className="mr-2 h-4 w-4" />
             깃허브로 간편 로그인

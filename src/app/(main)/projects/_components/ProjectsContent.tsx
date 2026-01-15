@@ -5,6 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ExternalLink, Github, Grid, List, Plus, Search, ChevronDown, ChevronLeft, ChevronRight, Heart, Eye, Crown, Users } from 'lucide-react';
 import TitleBanner from '@/components/layout/TitleBanner';
+import ContentFilterBar from '@/components/layout/TopSection';
+import CategoryFilter from '@/components/layout/CategoryFilter';
 import { CategoryHelpers, CategoryType, CategoryDisplayNames } from '@/types/services/category';
 import Image from 'next/image';
 import { USE_MOCK_DATA } from '@/lib/api/env';
@@ -582,106 +584,43 @@ export default function ProjectsContent() {
       />
       <div className="w-full px-3 sm:px-4 lg:px-10 py-10">
         {/* Top Controls */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8 bg-white rounded-xl p-6 shadow-lg border border-gray-200">
-          <div className="flex items-center justify-between w-full gap-4">
-            {/* Search Bar */}
-            <div className="relative flex-1 max-w-md">
-              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${isSearching ? 'text-primary animate-pulse' : 'text-gray-400'}`} />
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="프로젝트 검색..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setShowSuggestions(e.target.value.length > 0);
-                }}
-                onFocus={() => {
-                  if (searchSuggestions.length > 0) setShowSuggestions(true);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleSearchSubmit();
-                  }
-                }}
-                className="w-full h-10 pl-10 pr-4 text-sm bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
-              />
-              {isSearching && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                </div>
-              )}
-              
-              {/* Search Suggestions */}
-              {showSuggestions && searchSuggestions.length > 0 && searchTerm.length > 0 && (
-                <div
-                  ref={suggestionsRef}
-                  className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto"
-                >
-                  <div className="py-2">
-                    {searchSuggestions.map((suggestion, index) => {
-                      const parts = suggestion.split(new RegExp(`(${searchTerm})`, 'gi'));
-                      return (
-                        <button
-                          key={index}
-                          onClick={() => handleSuggestionClick(suggestion)}
-                          className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center"
-                        >
-                          <Search className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
-                          <span className="flex-1">
-                            {parts.map((part, i) =>
-                              part.toLowerCase() === searchTerm.toLowerCase() ? (
-                                <span key={i} className="text-primary font-semibold">{part}</span>
-                              ) : (
-                                <span key={i}>{part}</span>
-                              )
-                            )}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* View Toggle */}
-            <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 ${viewMode === 'grid' ? 'bg-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                title="Grid View"
-              >
-                <Grid size={16} />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 ${viewMode === 'list' ? 'bg-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                title="List View"
-              >
-                <List size={16} />
-              </button>
-            </div>
-
-            {/* Create Button */}
-            <Link href="/projects/create" className="bg-primary text-white px-6 py-2 rounded-lg font-semibold hover:bg-primary-700 transition-colors flex items-center gap-2 whitespace-nowrap">
-              <Plus size={16} />
-              <span className="hidden sm:inline">새 프로젝트</span>
-            </Link>
-          </div>
-        </div>
+        <ContentFilterBar
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          onSearchSubmit={handleSearchSubmit}
+          isSearching={isSearching}
+          suggestions={searchSuggestions}
+          showSuggestions={showSuggestions}
+          onSuggestionSelect={handleSuggestionClick}
+          onSuggestionsShow={setShowSuggestions}
+          isLoadingSuggestions={isSearching}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          sortBy={sortBy}
+          sortOptions={sortOptions}
+          onSortChange={(nextSort) => {
+            setSortBy(nextSort);
+            setCurrentPage(0);
+          }}
+          showViewMode={true}
+          showSort={true}
+          showCreateButton={true}
+          createButtonText="새 프로젝트"
+          createButtonHref="/projects/create"
+          placeholderText="프로젝트 검색..."
+        />
 
         {/* Main Content with Sidebar */}
         <section className="flex gap-8">
           {/* Sidebar Filter */}
-          <aside className="w-64 flex-shrink-0 hidden md:block">
+          <aside className="w-64 flex-shrink-0 hidden md:block space-y-6">
+            {/* Status Filter Box */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-gray-900">필터</h3>
-                {(selectedCategories.length > 0 || selectedStatuses.length > 1) && (
+                <h3 className="text-sm font-semibold text-gray-900">프로젝트 상태</h3>
+                {selectedStatuses.length > 1 && (
                   <button
-                    onClick={clearAllFilters}
+                    onClick={() => setSelectedStatuses(['진행중'])}
                     className="text-xs text-primary hover:underline"
                   >
                     초기화
@@ -690,12 +629,12 @@ export default function ProjectsContent() {
               </div>
 
               {/* Status Filters */}
-              <div className="space-y-3 mb-6">
-                <h4 className="text-base font-semibold text-gray-900">프로젝트 상태</h4>
+              <div className="space-y-3">
                 {statuses.map((status) => {
-                  const isSelected = status === '전체' 
-                    ? selectedStatuses.length === 0 
+                  const isSelected = status === '전체'
+                    ? selectedStatuses.length === 0
                     : selectedStatuses.includes(status);
+
                   return (
                     <label key={status} className="flex items-center cursor-pointer">
                       <input
@@ -721,29 +660,26 @@ export default function ProjectsContent() {
                   );
                 })}
               </div>
-
-              {/* Category Filters */}
-              <h4 className="text-xs font-semibold text-gray-900 uppercase mb-3">학습 주제</h4>
-              <div className="space-y-1">
-                {categories.length > 0 ? (
-                  categories.map((category) => (
-                    <button
-                      key={category.id}
-                      onClick={() => handleCategoryToggle(category.name)}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                        selectedCategories.includes(category.name)
-                          ? 'bg-primary-600 text-white'
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      {category.name}
-                    </button>
-                  ))
-                ) : (
-                  <div className="text-xs text-gray-400 py-2">카테고리를 불러오는 중...</div>
-                )}
-              </div>
             </div>
+
+            {/* Category Filter Box */}
+            <CategoryFilter
+              categories={categories.map((category) => ({
+                id: category.name,
+                name: category.name,
+                count: 0,
+              }))}
+              selectedCategory={selectedCategories.length === 0 ? 'all' : selectedCategories[0]}
+              onCategoryChange={(categoryId) => {
+                if (categoryId === 'all') {
+                  setSelectedCategories([]);
+                } else {
+                  setSelectedCategories([categoryId]);
+                }
+                setCurrentPage(0);
+              }}
+              title="학습 주제"
+            />
           </aside>
 
           {/* Main Content */}
@@ -755,36 +691,6 @@ export default function ProjectsContent() {
                 {searchTerm && ` (검색어: "${searchTerm}")`}
                 {currentTopicName && ` (주제: ${currentTopicName})`}
               </p>
-
-              {/* Sort Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowSortDropdown(!showSortDropdown)}
-                  className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  {sortBy}
-                  <ChevronDown size={16} className={`transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
-                </button>
-
-                {showSortDropdown && (
-                  <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                    {sortOptions.map((option) => (
-                      <button
-                        key={option}
-                        onClick={() => {
-                          setSortBy(option);
-                          setShowSortDropdown(false);
-                        }}
-                        className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors ${
-                          sortBy === option ? 'text-primary font-medium' : 'text-gray-700'
-                        }`}
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
             </div>
 
             {/* Loading State */}

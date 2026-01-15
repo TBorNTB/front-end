@@ -13,6 +13,8 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import TitleBanner from '@/components/layout/TitleBanner';
+import ContentFilterBar from '@/components/layout/TopSection';
+import CategoryFilter from '@/components/layout/CategoryFilter';
 import ArticleCard from './_components/ArticleCard';
 import { searchCSKnowledge, getCSKnowledgeSuggestion, type CSKnowledgeSearchResponse } from '@/lib/api/services/elastic-services';
 import { categoryService, type CategoryItem } from '@/lib/api/services/category-services';
@@ -80,7 +82,6 @@ function ArticlesContent() {
   const [articlesError, setArticlesError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeSearchTerm, setActiveSearchTerm] = useState(''); // 실제 검색에 사용되는 검색어
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState('최신순');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
@@ -106,7 +107,6 @@ function ArticlesContent() {
         
         // API 응답을 Category 형식으로 변환
         const transformedCategories: Category[] = [
-          { name: '전체', slug: 'all' }, // 전체 카테고리 추가
           ...response.categories.map((apiCategory: CategoryItem) => {
             const type = getCategoryTypeByName(apiCategory.name);
             const slug = type ? CategorySlugs[type] : createSlugFromName(apiCategory.name, apiCategory.id);
@@ -266,13 +266,13 @@ function ArticlesContent() {
       console.log('Search params:', {
         selectedCategory,
         apiCategory,
-        keyword: activeSearchTerm,
+        keyword: searchTerm,
         sortBy,
         page: page - 1,
       });
       
       const results = await searchCSKnowledge({
-        keyword: activeSearchTerm && activeSearchTerm.trim() ? activeSearchTerm.trim() : undefined,
+        keyword: searchTerm && searchTerm.trim() ? searchTerm.trim() : undefined,
         category: apiCategory,
         sortType: convertSortToApiType(sortBy),
         page: page - 1, // API는 0부터 시작하므로 -1
@@ -287,22 +287,19 @@ function ArticlesContent() {
     } finally {
       setIsSearching(false);
     }
-  }, [selectedCategory, categories, activeSearchTerm, sortBy, page]);
+  }, [selectedCategory, categories, searchTerm, sortBy, page]);
 
-  // 검색하기 버튼 클릭 핸들러
-  const handleSearch = () => {
-    setActiveSearchTerm(searchTerm);
-    setPage(1);
-    setShowSuggestions(false);
-  };
-
-  // 게시글 조회 API 호출 (카테고리, 정렬, 페이지 변경 시 자동 실행, 검색어는 버튼 클릭 시에만)
+  // 게시글 조회 API 호출 (카테고리, 정렬, 페이지, 검색어 변경 시 자동 실행)
   useEffect(() => {
     // 카테고리가 로드된 후에만 검색 실행
     if (!categoriesLoading) {
+      // 검색어가 변경되면 페이지를 1로 리셋
+      if (searchTerm) {
+        setPage(1);
+      }
       performSearch();
     }
-  }, [categoriesLoading, performSearch, selectedCategory, page, sortBy]);
+  }, [categoriesLoading, performSearch, searchTerm]);
 
   // 검색 결과를 Article 형식으로 변환
   const apiResultsAsArticles: Array<{
@@ -341,7 +338,7 @@ function ArticlesContent() {
     likes: item.likeCount || 0,
     comments: 0,
     tags: [],
-    image: '/api/placeholder/400/250',
+    image: '/images/placeholder/article.png',
   })) || [];
 
   // 페이지네이션 계산
@@ -391,142 +388,64 @@ function ArticlesContent() {
           <div className="text-center py-8 text-red-500">{articlesError}</div>
         )}
 
-        {/* 검색/뷰모드/새 글 쓰기 – 기존 디자인에 맞게 배치 */}
-        <section className="flex flex-col md:flex-row gap-4 mb-6">
-          {/* 검색 인풋 */}
-          <div className="flex-1 relative">
-            <div className="relative flex gap-2">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  placeholder="찾고자 할 컨텐츠를 작성해주세요"
-                  value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleSearch();
-                    }
-                  }}
-                  onFocus={() => {
-                    if (suggestions.length > 0) {
-                      setShowSuggestions(true);
-                    }
-                  }}
-                  className="w-full h-11 pl-10 pr-4 rounded-xl border border-gray-200 bg-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-              {/* 검색하기 버튼 */}
-              <button
-                onClick={handleSearch}
-                disabled={isSearching}
-                className="px-6 py-2 h-11 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-              >
-                {isSearching ? '검색 중...' : '검색하기'}
-              </button>
-            </div>
-
-            {/* Suggestion 드롭다운 */}
-            {showSuggestions && (
-              <div
-                ref={suggestionsRef}
-                className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto"
-              >
-                {isLoadingSuggestions ? (
-                  <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                    검색 중...
-                  </div>
-                ) : suggestions.length > 0 ? (
-                  <div className="py-2">
-                    {suggestions.map((suggestion, index) => (
-                      <button
-                        key={index}
-                        onClick={() => {
-                          setSearchTerm(suggestion);
-                          setShowSuggestions(false);
-                        }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Search className="w-4 h-4 text-gray-400" />
-                          <span>{suggestion}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                    검색 결과가 없습니다
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* 오른쪽: 뷰모드 + 정렬 + 새 글쓰기 */}
-          <div className="flex items-center justify-end gap-3">
-            {/* 새 글 쓰기 버튼 (디자인 유지용) */}
-            <Link href="/articles/create" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700">
-              <Plus className="w-4 h-4" />
-              새 글 쓰기
-            </Link>
-          </div>
-        </section>
+        <ContentFilterBar
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          isSearching={isSearching}
+          suggestions={suggestions}
+          showSuggestions={showSuggestions}
+          onSuggestionSelect={(suggestion) => {
+            setSearchTerm(suggestion);
+            setShowSuggestions(false);
+          }}
+          onSuggestionsShow={setShowSuggestions}
+          isLoadingSuggestions={isLoadingSuggestions}
+          viewMode={viewMode as 'grid' | 'list'}
+          onViewModeChange={(mode) => setViewMode(mode)}
+          sortBy={sortBy}
+          sortOptions={['최신순', '인기순', '조회순']}
+          onSortChange={setSortBy}
+          showViewMode={true}
+          showSort={true}
+          showCreateButton={true}
+          createButtonText="새 글 쓰기"
+          createButtonHref="/articles/create"
+          placeholderText="찾고자 할 컨텐츠를 작성해주세요"
+        />
 
         {/* 본문 영역: 좌측 카테고리 + 우측 리스트 (디자인 유지) */}
         <section className="flex gap-8">
           {/* 왼쪽 카테고리 패널 */}
           <aside className="w-64 flex-shrink-0 hidden md:block">
-            <div className="bg-white rounded-2xl border border-gray-200 p-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-4">
-                카테고리
-              </h3>
-              <div className="space-y-1">
-                {categoriesLoading ? (
-                  <div className="px-3 py-2 text-sm text-gray-500 text-center">
-                    로딩 중...
-                  </div>
-                ) : (
-                  categories.map((cat) => {
-                    const isActive = selectedCategory === cat.slug;
-
-                    return (
-                      <button
-                        key={cat.slug}
-                        onClick={() => {
-                          setSelectedCategory(cat.slug);
-                          setPage(1);
-                          const params = new URLSearchParams(
-                            searchParams.toString(),
-                          );
-                          if (cat.slug === 'all') {
-                            params.delete('topic');
-                          } else {
-                            params.set('topic', cat.slug);
-                          }
-                          router.push(`/articles?${params.toString()}`);
-                          // 카테고리 변경 시 selectedCategory가 변경되면 useEffect가 자동으로 검색 실행
-                        }}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
-                          isActive
-                            ? 'bg-primary-600 text-white'
-                            : 'text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        <span>{cat.name}</span>
-                      </button>
-                    );
-                  })
-                )}
+            {categoriesLoading ? (
+              <div className="bg-white rounded-2xl border border-gray-200 p-4">
+                <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                  로딩 중...
+                </div>
               </div>
-            </div>
+            ) : (
+              <CategoryFilter
+                categories={categories.map(cat => ({
+                  id: cat.slug,
+                  name: cat.name,
+                }))}
+                selectedCategory={selectedCategory}
+                onCategoryChange={(slug) => {
+                  setSelectedCategory(slug);
+                  setPage(1);
+                  const params = new URLSearchParams(searchParams.toString());
+                  if (slug === 'all') {
+                    params.delete('topic');
+                  } else {
+                    params.set('topic', slug);
+                  }
+                  router.push(`/articles?${params.toString()}`);
+                }}
+                title="카테고리"
+              />
+            )}
           </aside>
 
-          {/* 오른쪽 리스트 영역 */}
           <div className="flex-1">
             {/* 결과 수 + 필터 (같은 라인) */}
             <div className="flex items-center justify-between mb-4">
@@ -537,7 +456,7 @@ function ArticlesContent() {
                     {totalArticles}
                   </span>
                   개의 글
-                  {activeSearchTerm && ` (검색어: "${activeSearchTerm}")`}
+                  {searchTerm && ` (검색어: "${searchTerm}")`}
                   {currentTopicName && ` (주제: ${currentTopicName})`}
                 </p>
                 {isSearching && (
@@ -546,62 +465,6 @@ function ArticlesContent() {
                 {searchError && (
                   <span className="text-xs text-red-500">{searchError}</span>
                 )}
-              </div>
-
-              {/* 오른쪽 필터/정렬/뷰모드 영역 */}
-              <div className="flex items-center gap-3">
-                {/* 뷰모드 토글 */}
-                <div className="flex rounded-xl border border-gray-200 overflow-hidden">
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`px-3 py-1.5 flex items-center justify-center ${
-                      viewMode === 'grid'
-                        ? 'bg-primary-600 text-white'
-                        : 'bg-white text-gray-500'
-                    }`}
-                  >
-                    <Grid className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`px-3 py-1.5 flex items-center justify-center ${
-                      viewMode === 'list'
-                        ? 'bg-primary-600 text-white'
-                        : 'bg-white text-gray-500'
-                    }`}
-                  >
-                    <List className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* 정렬 드롭다운 */}
-                <div className="relative">
-                  <button
-                    onClick={() => setShowSortDropdown((prev) => !prev)}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-xs sm:text-sm text-gray-700"
-                  >
-                    {sortBy}
-                    <ChevronDown className="w-4 h-4" />
-                  </button>
-                  {showSortDropdown && (
-                    <div className="absolute right-0 mt-1 w-28 bg-white border border-gray-200 rounded-xl shadow-lg z-10">
-                      {sortOptions.map((option) => (
-                        <button
-                          key={option}
-                          onClick={() => {
-                            setSortBy(option);
-                            setShowSortDropdown(false);
-                          }}
-                          className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${
-                            sortBy === option ? 'text-primary-600 font-medium' : ''
-                          }`}
-                        >
-                          {option}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
 

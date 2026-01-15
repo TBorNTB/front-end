@@ -5,7 +5,7 @@ import { X, Minimize2 } from "lucide-react";
 import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
 import { Message } from "@/types";
-import ChatBotCharacter from "./ChatBotCharacter";
+import ChatBotIcon from "./ChatBotIcon";
 import { queryRAG } from "../../../../lib/api/services/chatbot-service";
 import toast from "react-hot-toast";
 
@@ -157,12 +157,12 @@ const ChatWindow = ({ onClose, isMinimized }: ChatWindowProps) => {
         className={`bg-gradient-to-r from-primary-600 via-primary-600 to-primary-700 text-white px-5 py-4 flex items-center justify-between shadow-md ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
       >
         <div className="flex items-center gap-3">
-            <div className="relative">
-              <ChatBotCharacter size={40} className="text-white" showBubble={false} />
-              <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-300 rounded-full animate-pulse"></div>
+            <div className="relative w-12 h-12 bg-white rounded-full flex items-center justify-center">
+              <ChatBotIcon size={42} className="text-white" showBubble={false} />
+              <div className="absolute top-1 right-1 w-2 h-2 bg-green-300 rounded-full"></div>
             </div>
           <div>
-            <h3 className="font-bold text-sm">SSG 챗봇</h3>
+            <h3 className="font-bold text-sm">SSG봇</h3>
             <p className="text-xs text-white/85">어떻게 도와드릴까요?</p>
           </div>
         </div>
@@ -199,8 +199,8 @@ const ChatWindow = ({ onClose, isMinimized }: ChatWindowProps) => {
         {/* Typing Indicator */}
         {isTyping && (
           <div className="flex items-end gap-2 animate-fade-in">
-            <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
-              <ChatBotCharacter size={40} className="text-primary-600" animated />
+            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center flex-shrink-0">
+              <ChatBotIcon size={48} className="text-primary-600" animated />
             </div>
             <div className="flex-1 bg-gradient-to-r from-gray-100 to-gray-50 rounded-3xl rounded-tl-sm px-5 py-4 shadow-sm border border-gray-200 backdrop-blur-sm">
               <div className="flex gap-1.5">

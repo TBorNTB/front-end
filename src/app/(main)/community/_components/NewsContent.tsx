@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Grid, List, Search, ChevronDown, X, ChevronLeft, ChevronRight, Heart, Eye, Calendar, User, Plus } from 'lucide-react';
 import { NewsCard } from './NewsCard';
+import ContentFilterBar from '@/components/layout/TopSection';
+import CategoryFilter from '@/components/layout/CategoryFilter';
 import Link from 'next/link';
 // News API Response Types
 interface NewsSearchParams {
@@ -333,11 +335,8 @@ export default function NewsContent({ createHref = '/community/news/create' }: N
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState('최신순');
-  const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const suggestionsRef = useRef<HTMLDivElement>(null);
 
   // URL 파라미터에서 초기값 설정
   useEffect(() => {
@@ -411,7 +410,7 @@ export default function NewsContent({ createHref = '/community/news/create' }: N
       if (searchTerm && searchTerm.trim().length > 0) {
         const suggestionsData = await fetchElasticSearchSuggestions(searchTerm);
         setSuggestions(suggestionsData);
-        setShowSuggestions(true);
+        setShowSuggestions(suggestionsData.length > 0);
       } else {
         setSuggestions([]);
         setShowSuggestions(false);
@@ -421,41 +420,6 @@ export default function NewsContent({ createHref = '/community/news/create' }: N
     const timeoutId = setTimeout(loadSuggestions, 300);
     return () => clearTimeout(timeoutId);
   }, [searchTerm]);
-
-  // 외부 클릭 시 제안 닫기
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        suggestionsRef.current &&
-        !suggestionsRef.current.contains(event.target as Node) &&
-        searchInputRef.current &&
-        !searchInputRef.current.contains(event.target as Node)
-      ) {
-        setShowSuggestions(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  // 정렬 옵션 닫기
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (showSortDropdown) {
-        setShowSortDropdown(false);
-      }
-    };
-
-    if (showSortDropdown) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
-    }
-  }, [showSortDropdown]);
 
   // 검색하기 버튼 클릭 핸들러
   const handleSearch = () => {
@@ -610,90 +574,53 @@ export default function NewsContent({ createHref = '/community/news/create' }: N
       </div>
 
       {/* Top Controls - aligned with Articles styling */}
-      <section className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="flex items-center justify-between w-full">
-          {/* Search Bar */}
-          <div className="relative flex-1 max-w-md flex gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="뉴스 검색..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleSearch();
-                  }
-                }}
-                className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            
-              {/* Search Suggestions */}
-              {showSuggestions && suggestions.length > 0 && (
-                <div
-                  ref={suggestionsRef}
-                  className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto"
-                >
-                  {suggestions.map((suggestion, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleSuggestionClick(suggestion)}
-                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
-                    >
-                      {suggestion}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            <button
-              onClick={handleSearch}
-              className="h-11 px-4 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors text-sm font-medium whitespace-nowrap"
-            >
-              검색
-            </button>
-          </div>
-
-          {/* Controls */}
-          <div className="flex items-center gap-3">
-            {/* New Post Button */}
-            <Link
-              href={createHref}
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary-600 px-4 text-white hover:bg-primary-700 transition-colors"
-            >
-              <Plus size={16} />
-              <span className="text-sm font-medium">새 글 쓰기</span>
-            </Link>
-          </div>
-        </div>
-      </section>
+      <ContentFilterBar
+        searchTerm={searchTerm}
+        onSearchChange={(value) => {
+          setSearchTerm(value);
+          setCurrentPage(0);
+        }}
+        onSearchSubmit={handleSearch}
+        isSearching={loading}
+        suggestions={suggestions}
+        showSuggestions={showSuggestions}
+        onSuggestionSelect={handleSuggestionClick}
+        onSuggestionsShow={setShowSuggestions}
+        isLoadingSuggestions={false}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        sortBy={sortBy}
+        sortOptions={sortOptions}
+        onSortChange={(nextSort) => {
+          setSortBy(nextSort);
+          setCurrentPage(0);
+          updateURL({ page: 0 });
+        }}
+        showViewMode={true}
+        showSort={true}
+        showCreateButton={true}
+        createButtonText="새 글 쓰기"
+        createButtonHref={createHref}
+        placeholderText="뉴스 검색..."
+      />
 
       {/* Main Content with Sidebar */}
       <div className="flex gap-8">
         {/* Sidebar Filter - aligned with Articles styling */}
         <aside className="w-64 flex-shrink-0 hidden md:block">
-          <div className="bg-white rounded-2xl border border-gray-200 p-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">카테고리</h3>
-            <div className="space-y-1">
-              {newsCategories.map((category) => {
-                const isActive = selectedCategory === category.value;
-
-                return (
-                  <button
-                    key={category.value}
-                    onClick={() => handleCategoryChange(category.value)}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all ${
-                      isActive ? 'bg-primary-600 text-white' : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <span>{category.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <CategoryFilter
+            categories={newsCategories.filter(cat => cat.value !== 'all').map(category => {
+              const categoryCount = mockNewsData.filter(n => n.content.category === category.value).length;
+              return {
+                id: String(category.value),
+                name: category.name,
+                count: categoryCount,
+              };
+            })}
+            selectedCategory={selectedCategory}
+            onCategoryChange={handleCategoryChange}
+            title="카테고리"
+          />
         </aside>
 
         {/* Main Content */}
@@ -705,58 +632,7 @@ export default function NewsContent({ createHref = '/community/news/create' }: N
               {activeSearchTerm && ` (검색어: "${activeSearchTerm}")`}
               {selectedCategory !== 'all' && ` (카테고리: ${newsCategories.find(c => c.value === selectedCategory)?.name})`}
             </p>
-          {/* Controls */}
-          <div className="flex items-center gap-3">
-            {/* View Mode Toggle */}
-            <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 ${viewMode === 'grid' ? 'bg-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-              >
-                <Grid size={16} />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 ${viewMode === 'list' ? 'bg-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-              >
-                <List size={16} />
-              </button>
-            </div>
-
-            {/* Sort Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setShowSortDropdown(!showSortDropdown)}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                {sortBy}
-                <ChevronDown size={16} className={`transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {showSortDropdown && (
-                <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                  {sortOptions.map((option) => (
-                    <button
-                      key={option}
-                      onClick={() => {
-                        setSortBy(option);
-                        setShowSortDropdown(false);
-                        setCurrentPage(0);
-                      }}
-                      className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors ${
-                        sortBy === option ? 'text-primary font-medium' : 'text-gray-700'
-                      }`}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
-          </div>
-
-        
 
         {/* Loading State */}
         {loading ? (

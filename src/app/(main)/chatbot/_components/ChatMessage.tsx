@@ -2,7 +2,7 @@
 
 import { User } from "lucide-react";
 import { Message } from "@/types";
-import ChatBotCharacter from "../_components/ChatBotCharacter";
+import ChatBotIcon from "./ChatBotIcon";
 
 interface ChatMessageProps {
   message: Message;
@@ -18,13 +18,13 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
         className={`flex items-center justify-center flex-shrink-0 ${
           isUser
             ? "w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-full shadow-sm"
-            : "w-10 h-10"
+            : "w-12 h-12 -mt-2"
         }`}
       >
         {isUser ? (
           <User className="w-5 h-5" />
         ) : (
-          <ChatBotCharacter size={40} className="text-primary-600" animated showBubble={false}/> 
+          <ChatBotIcon size={60} className="text-primary-600" animated showBubble={false}/>
         )}
       </div>
 
@@ -40,13 +40,13 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
           <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
             {message.content}
           </p>
+          <span className={`text-xs ${isUser ? "text-white/70" : "text-gray-400"}`}>
+            {message.timestamp.toLocaleTimeString("ko-KR", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </span>
         </div>
-        <span className="text-xs text-gray-400 px-2">
-          {message.timestamp.toLocaleTimeString("ko-KR", {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </span>
       </div>
     </div>
   );
