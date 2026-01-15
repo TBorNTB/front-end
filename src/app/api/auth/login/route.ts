@@ -22,11 +22,18 @@ export async function POST(request: Request) {
       }
     );
 
-    const data = await backendResponse.json();
-    const response = NextResponse.json(data, { status: backendResponse.status });
+    const data = await backendResponse.json().catch(() => null);
+    const response = NextResponse.json(data ?? { message: 'OK' }, { status: backendResponse.status });
+
+    // If the backend sets auth cookies, forward them to the browser.
+    // (Common pattern: accessToken/refreshToken are httpOnly Set-Cookie, not JSON body.)
+    const setCookieHeaders = backendResponse.headers.getSetCookie?.() ?? [];
+    setCookieHeaders.forEach((cookie) => {
+      response.headers.append('Set-Cookie', cookie);
+    });
 
     // 백엔드가 토큰을 body로 보내줌 → 쿠키로 설정
-    if (backendResponse.ok && data.accessToken) {
+    if (backendResponse.ok && (data as any)?.accessToken) {
       const cookieOptions = {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -34,13 +41,13 @@ export async function POST(request: Request) {
         path: '/',
       };
 
-      response.cookies.set('accessToken', data.accessToken, {
+      response.cookies.set('accessToken', (data as any).accessToken, {
         ...cookieOptions,
         maxAge: 60 * 60, // 1시간 (백엔드 만료시간에 맞춰서 조정)
       });
 
-      if (data.refreshToken) {
-        response.cookies.set('refreshToken', data.refreshToken, {
+      if ((data as any).refreshToken) {
+        response.cookies.set('refreshToken', (data as any).refreshToken, {
           ...cookieOptions,
           maxAge: 60 * 60 * 24 * 7, // 7일
         });
