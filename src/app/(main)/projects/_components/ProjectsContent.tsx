@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ExternalLink, Github, Grid, List, Plus, Search, ChevronDown, ChevronLeft, ChevronRight, Heart, Eye, Crown, Users } from 'lucide-react';
+import { ExternalLink, Github, ChevronLeft, ChevronRight, Heart, Eye, Crown, Users } from 'lucide-react';
 import TitleBanner from '@/components/layout/TitleBanner';
 import ContentFilterBar from '@/components/layout/TopSection';
 import CategoryFilter from '@/components/layout/CategoryFilter';
@@ -147,10 +147,6 @@ const sortMap: Record<string, string> = {
 
 const statusToEnglish = (status: string) => statusMap[status] || '';
 const sortToEnglish = (sort: string) => sortMap[sort] || 'LATEST';
-const categoryToEnglish = (categoryName: string): string | null => {
-  const categoryType = CategoryHelpers.getTypeByDisplayName(categoryName);
-  return categoryType ? categoryType.replace(/_/g, '-') : null;
-};
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -280,7 +276,6 @@ export default function ProjectsContent() {
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [sortBy, setSortBy] = useState('최신순');
-  const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isSearching, setIsSearching] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -453,7 +448,7 @@ export default function ProjectsContent() {
       setTotalPages(response.totalPages);
       setTotalElements(response.totalElements);
       setCurrentPage(response.page);
-    } catch (error) {
+    } catch (_error) {
       setProjects([]);
     } finally {
       setIsLoading(false);
@@ -496,22 +491,6 @@ export default function ProjectsContent() {
   }, [selectedCategories, selectedStatuses, sortBy, currentPage]);
 
   // Handlers
-  const handleCategoryToggle = async (categoryName: string) => {
-    const isSelected = selectedCategories.includes(categoryName);
-    
-    if (isSelected) {
-      // 카테고리 해제 시 전체 조회
-      setSelectedCategories([]);
-    } else {
-      // 카테고리 선택 (단일 선택)
-      setSelectedCategories([categoryName]);
-    }
-    
-    setCurrentPage(0);
-    // 카테고리 변경 시 즉시 검색 실행 (useEffect에서도 실행되지만 명시적으로 호출)
-    await loadProjects(0);
-  };
-
   const handleStatusToggle = (status: string) => {
     if (status === '전체') {
       setSelectedStatuses([]); // 전체는 빈 배열
