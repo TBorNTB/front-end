@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { X, Minimize2, Users, MessageSquare, User, Search, Plus, ChevronDown } from "lucide-react";
 import toast from "react-hot-toast";
 import { getChatRooms, createGroupChat, ChatRoomResponse } from "@/lib/api/services/chat-services";
 import { fetchUsers, UserListResponse } from "@/lib/api/services/user-services";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useAuth } from "@/context/AuthContext";
+import { UserRole } from "@/types/core";
 
 interface ChatRoomWindowProps {
   onClose: () => void;
@@ -38,6 +41,10 @@ interface ChatRoom {
 }
 
 const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowProps) => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { isAuthenticated, user: authUser, loading: authLoading } = useAuth();
+
   const [activeTab, setActiveTab] = useState<"users" | "rooms">("users");
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
@@ -58,6 +65,30 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
 
   const { user: currentUser } = useCurrentUser();
   const selfUsername = currentUser?.username ?? null;
+
+  const ensureChatAccess = () => {
+    const isGuestRole = (role: unknown) => role === UserRole.GUEST || role === 'GUEST';
+
+    if (authLoading) {
+      toast("로그인 정보를 확인 중입니다. 잠시만 기다려주세요.");
+      return false;
+    }
+
+    if (!isAuthenticated) {
+      toast.error("로그인이 필요합니다. 먼저 로그인 해주세요.");
+      const next = encodeURIComponent(pathname || "/");
+      router.push(`/login?next=${next}`);
+      return false;
+    }
+
+    const role: unknown = currentUser?.role ?? authUser?.role;
+    if (isGuestRole(role)) {
+      toast.error("해당 서비스는 GUEST가 이용 불가합니다.");
+      return false;
+    }
+
+    return true;
+  };
   const selfUser: User | null = currentUser
     ? {
         id: String(currentUser.id),
@@ -237,6 +268,7 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
   );
 
   const handleUserClickForGroupCreation = (user: User) => {
+    if (!ensureChatAccess()) return;
     // 사용자 클릭으로 채팅방 자동 생성 금지
     // 반드시 "그룹 채팅방 만들기" 플로우로만 생성
     setShowCreateGroupModal(true);
@@ -273,6 +305,7 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
   };
 
   const handleCreateGroupChat = async () => {
+    if (!ensureChatAccess()) return;
     if (!groupRoomName.trim()) {
       toast.error("채팅방 이름을 입력해주세요.");
       return;
@@ -379,7 +412,10 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
           </div>
         </button>
         <button
-          onClick={() => setActiveTab("rooms")}
+          onClick={() => {
+            if (!ensureChatAccess()) return;
+            setActiveTab("rooms");
+          }}
           className={`flex-1 px-4 py-3 text-sm font-medium transition-all duration-200 ${
             activeTab === "rooms"
               ? "text-purple-600 border-b-2 border-purple-600 bg-white"
@@ -408,6 +444,7 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
         {activeTab === "users" && (
           <button
             onClick={() => {
+              if (!ensureChatAccess()) return;
               setShowCreateGroupModal(true);
               setGroupRoomName(""); // 제목은 항상 빈칸에서 시작
               setSelectedUsers(selfUser ? [selfUser] : []); // 나(self) 강제 선택
@@ -505,9 +542,8 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                   <button
                     key={room.id}
                     onClick={() => {
-                      if (onSelectRoom) {
-                        onSelectRoom(room);
-                      }
+                      if (!ensureChatAccess()) return;
+                      onSelectRoom?.(room);
                     }}
                     className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-white hover:shadow-md transition-all duration-200 group"
                   >

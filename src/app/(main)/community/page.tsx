@@ -2,11 +2,15 @@
 "use client";
 
 import { useState, Suspense } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { Megaphone, Calendar, User, Pin, Users, MessageSquare, Send, Trash2, Lock, Plus, X, HelpCircle } from "lucide-react";
 import TitleBanner from "@/components/layout/TitleBanner";
 import NewsContent from "./_components/NewsContent";
 import ChattingRoom from "./_components/ChattingRoom";
 import QnAContent from "./_components/QnAContent";
+import toast from "react-hot-toast";
+import { useAuth } from "@/context/AuthContext";
+import { UserRole } from "@/types/core";
 
 type Tab = "announcements" | "posts" | "chatrooms" | "qna";
 
@@ -60,6 +64,34 @@ const announcements: Announcement[] = [
 ];
 
 export default function CommunityPage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { isAuthenticated, user, loading: authLoading } = useAuth();
+
+  const ensureChatAccess = () => {
+    const isGuestRole = (role: unknown) => role === UserRole.GUEST || role === 'GUEST';
+
+    if (authLoading) {
+      toast("로그인 정보를 확인 중입니다. 잠시만 기다려주세요.");
+      return false;
+    }
+
+    if (!isAuthenticated) {
+      toast.error("로그인이 필요합니다. 먼저 로그인 해주세요.");
+      const next = encodeURIComponent(pathname || "/");
+      router.push(`/login?next=${next}`);
+      return false;
+    }
+
+    const role: unknown = user?.role;
+    if (isGuestRole(role)) {
+      toast.error("해당 서비스는 GUEST가 이용 불가합니다.");
+      return false;
+    }
+
+    return true;
+  };
+
   const [activeTab, setActiveTab] = useState<Tab>("announcements");
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([
     {
@@ -197,6 +229,7 @@ export default function CommunityPage() {
               handleCreateRoom={handleCreateRoom}
               handleDeleteRoom={handleDeleteRoom}
               setActiveChatRoom={setActiveChatRoom}
+              ensureChatAccess={ensureChatAccess}
             />
           )}
         </section>
@@ -363,6 +396,7 @@ interface ChatRoomsSectionProps {
   handleCreateRoom: () => void;
   handleDeleteRoom: (id: string) => void;
   setActiveChatRoom: (room: ChatRoom | null) => void;
+  ensureChatAccess: () => boolean;
 }
 
 function ChatRoomsSection({
@@ -376,6 +410,7 @@ function ChatRoomsSection({
   handleCreateRoom,
   handleDeleteRoom,
   setActiveChatRoom,
+  ensureChatAccess,
 }: ChatRoomsSectionProps) {
   return (
     <div>
@@ -490,7 +525,10 @@ function ChatRoomsSection({
         {chatRooms.map((room) => (
           <div
             key={room.id}
-            onClick={() => setSelectedRoom(room)}
+            onClick={() => {
+              if (!ensureChatAccess()) return;
+              setSelectedRoom(room);
+            }}
             className="border border-gray-200 rounded-lg p-5 bg-white hover:shadow-lg hover:border-primary-300 transition-all cursor-pointer"
           >
             <div className="flex items-start justify-between mb-3">
@@ -518,7 +556,14 @@ function ChatRoomsSection({
                 {room.members}/{room.maxMembers}명
               </span>
             </div>
-            <button className="w-full px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium flex items-center justify-center gap-2" onClick={(e) => { e.stopPropagation(); setSelectedRoom(room); }}>
+            <button
+              className="w-full px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!ensureChatAccess()) return;
+                setSelectedRoom(room);
+              }}
+            >
               <Send className="w-4 h-4" />
               채팅 입장
             </button>
@@ -600,7 +645,14 @@ function ChatRoomsSection({
               >
                 닫기
               </button>
-              <button className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium flex items-center justify-center gap-2" onClick={() => { setActiveChatRoom(selectedRoom); setSelectedRoom(null); }}>
+              <button
+                className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium flex items-center justify-center gap-2"
+                onClick={() => {
+                  if (!ensureChatAccess()) return;
+                  setActiveChatRoom(selectedRoom);
+                  setSelectedRoom(null);
+                }}
+              >
                 <Send className="w-4 h-4" />
                 채팅 시작하기
               </button>

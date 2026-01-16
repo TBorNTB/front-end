@@ -1,13 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { MessageSquare } from "lucide-react";
+import toast from "react-hot-toast";
 import ChatWindow from "./_components/ChatWindow";
 import ChatRoomWindow from "./_components/ChatRoomWindow";
 import ChatRoomDetail from "./_components/ChatRoomDetail";
 import ChatBotIcon from "./_components/ChatBotIcon";
+import { useAuth } from "@/context/AuthContext";
+import { UserRole } from "@/types/core";
 
 const ChatBot = () => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { isAuthenticated, user, loading: authLoading } = useAuth();
+
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -32,7 +40,32 @@ const ChatBot = () => {
     setIsOpen(false);
   };
 
+  const ensureChatRoomAccess = () => {
+    const isGuestRole = (role: unknown) => role === UserRole.GUEST || role === 'GUEST';
+
+    if (authLoading) {
+      toast("로그인 정보를 확인 중입니다. 잠시만 기다려주세요.");
+      return false;
+    }
+
+    if (!isAuthenticated) {
+      toast.error("로그인이 필요합니다. 먼저 로그인 해주세요.");
+      const next = encodeURIComponent(pathname || "/");
+      router.push(`/login?next=${next}`);
+      return false;
+    }
+
+    const role: unknown = user?.role;
+    if (isGuestRole(role)) {
+      toast.error("해당 서비스는 GUEST가 이용 불가합니다.");
+      return false;
+    }
+
+    return true;
+  };
+
   const toggleChatRoom = () => {
+    if (!ensureChatRoomAccess()) return;
     setIsChatRoomOpen(!isChatRoomOpen);
     setIsChatRoomMinimized(false);
   };
