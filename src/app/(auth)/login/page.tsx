@@ -198,7 +198,7 @@ export default function LogInPage() {
   };
 
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-authentication-background">
+    <div className="flex h-screen w-full items-center justify-center bg-gradient-background">
       <div className="absolute top-0 left-0 h-full w-full bg-[radial-gradient(circle_at_center,_rgba(58,_77,_161,_0.08)_0,_transparent_30%)]" />
       <div className="flex h-[550px] w-[850px] rounded-xl bg-white shadow-xl shadow-primary-500/10 overflow-hidden z-10 border border-gray-200">
         

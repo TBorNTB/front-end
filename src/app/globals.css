@@ -9,7 +9,6 @@
   --color-foreground: #060810;
     /* Gradient Backgrounds */
   --color-gradient-background: linear-gradient(to bottom, #000000, #3a4da1);
-  --color-authentication-background: radial-gradient(ellipse at top, #a4add4, #202a59);
   
   /* Primary Scale */
   --color-primary-50: #ebedf6;
@@ -81,13 +80,6 @@
 @layer components {
   .bg-gradient-background {
     background: var(--color-gradient-background);
-    border: 1px solid rgba(108, 170, 239, 0.3);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .bg-authentication-background {
-    background: var(--color-authentication-background);
     border: 1px solid rgba(108, 170, 239, 0.3);
     position: relative;
     overflow: hidden;

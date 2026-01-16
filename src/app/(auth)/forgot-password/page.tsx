@@ -56,17 +56,18 @@ export default function ForgotPasswordPage() {
   const resetForm = useForm<ResetPasswordFormData>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: { email: "", verificationCode: "", newPassword: "", confirmPassword: "" },
+    mode: 'onSubmit',
   });
 
   // Derived values for reset step
-  const verificationCode = (resetForm.watch('verificationCode') ?? '').replace(/\D/g, '');
+  const verificationCode = (resetForm.watch('verificationCode') ?? '').toUpperCase().trim();
   const newPassword = resetForm.watch('newPassword') ?? '';
   const confirmPassword = resetForm.watch('confirmPassword') ?? '';
   const isResetDisabled =
     isLoading ||
     verificationCode.length !== 8 ||
-    !newPassword ||
-    !confirmPassword ||
+    newPassword.length < 6 ||
+    confirmPassword.length < 6 ||
     newPassword !== confirmPassword;
 
   // Step 1: Send password reset email
@@ -165,7 +166,7 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
     resetStates();
 
-    const code = (values.verificationCode ?? '').replace(/\D/g, '');
+    const code = (values.verificationCode ?? '').toUpperCase();
     if (code.length !== 8) {
       handleError(new Error("인증코드를 정확히 8자리 입력해주세요."));
       setIsLoading(false);
@@ -289,8 +290,6 @@ export default function ForgotPasswordPage() {
     </div>
   );
 
-  const renderVerificationStep = () => null;
-
   const renderResetStep = () => (
     <div className="flex h-screen w-full items-center justify-center bg-gradient-background">
       <div className="absolute top-0 left-0 h-full w-full bg-[radial-gradient(circle_at_center,_rgba(58,_77,_161,_0.08)_0,_transparent_30%)]" />
@@ -300,7 +299,7 @@ export default function ForgotPasswordPage() {
         <div className="flex flex-col items-center justify-center w-1/3 bg-gradient-to-br from-primary-500 to-primary-700 p-10 text-center">
           <Lock className="w-16 h-16 text-white mb-4" />
           <h2 className="mb-2 text-2xl font-bold text-white">비밀번호 재설정</h2>
-          <p className="mb-6 text-green-100">인증코드이메일로 발송된 8자리 인증코드와 새 비밀번호를 입력하세요</p>
+          <p className="mb-6 text-primary-100">인증코드이메일로 발송된 8자리 인증코드와 새 비밀번호를 입력하세요</p>
           <div className="px-4 py-2 bg-white/20 rounded-lg text-white text-sm">
             2단계 / 2단계
           </div>
@@ -332,7 +331,9 @@ export default function ForgotPasswordPage() {
                         <OTPInput
                           length={8}
                           value={field.value || ''}
-                          onChange={(val) => field.onChange((val || '').replace(/\D/g, ''))}
+                          onChange={(val) => field.onChange((val || '').toUpperCase())}
+                          onComplete={(val) => field.onBlur()}
+                          onBlur={() => field.onBlur()}
                           hasError={!!fieldState.error}
                           disabled={isLoading}
                           autoFocus
@@ -431,7 +432,7 @@ export default function ForgotPasswordPage() {
 
               <button 
                 type="submit" 
-                className="btn btn-primary btn-lg w-full mt-6 disabled:opacity-50 disabled:cursor-not-allowed" 
+                className="btn btn-primary btn-lg w-full mt-6 disabled:opacity-50" 
                 disabled={isResetDisabled}
               >
                 {isLoading ? "설정 중..." : "비밀번호 재설정"}

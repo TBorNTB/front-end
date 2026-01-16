@@ -15,11 +15,14 @@ export const verifyCodeSchema = z.object({
 
 export const resetPasswordSchema = z.object({
   email: z.string().email(),
-  verificationCode: z.string().length(8),
+  verificationCode: z.string()
+    .length(8, { message: "인증코드는 8자리입니다." })
+    .regex(/^[a-zA-Z0-9]{8}$/, { message: "인증코드는 숫자와 영어조합만 입력 가능합니다." }),
   newPassword: z.string()
     .min(6, { message: "비밀번호는 최소 6글자 이상이어야 합니다." })
     .max(128, { message: "비밀번호는 128글자 이하여야 합니다." }),
-  confirmPassword: z.string(),
+  confirmPassword: z.string()
+    .min(1, { message: "비밀번호 확인을 입력해주세요." }),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: "비밀번호가 일치하지 않습니다.",
   path: ["confirmPassword"],
