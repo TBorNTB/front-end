@@ -95,6 +95,15 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
 
   // Ensure we have either fill or width/height
   const hasSize = props.fill || (props.width && props.height);
+  const shouldUseFill = !hasSize ? true : props.fill;
+  
+  // Remove width/height if using fill
+  const imageProps = { ...props };
+  if (shouldUseFill) {
+    delete imageProps.width;
+    delete imageProps.height;
+    delete imageProps.fill;
+  }
 
   return (
     <div className={cn('relative overflow-hidden', className)}>
@@ -128,8 +137,8 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
         onError={handleError}
         onLoad={handleLoad}
         unoptimized={imgSrc.endsWith('.svg')}
-        fill={!hasSize ? true : props.fill}
-        {...props}
+        fill={shouldUseFill}
+        {...imageProps}
       />
     </div>
   );

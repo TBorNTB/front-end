@@ -7,7 +7,6 @@ import StatsCards from "./components/StatsCards";
 import WeeklyVisitorsChart from "./components/WeeklyVisitorsChart";
 import PopularPosts from "./components/PopularPosts";
 import { 
-  AlertCircle,
   RefreshCw,
   Users,
   ChevronRight,
@@ -15,7 +14,7 @@ import {
 } from "lucide-react";
 import { getApiUrl } from "@/lib/api/config";
 import { USER_ENDPOINTS } from "@/lib/api/endpoints/user-endpoints";
-import { UserRoleDisplay } from "@/types/core";
+import { getRoleDisplayLabel } from "@/lib/role-utils"; 
 
 interface RoleChangeRequest {
   roleChange: {
