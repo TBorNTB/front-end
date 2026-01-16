@@ -134,7 +134,7 @@ export default function ProfileContent() {
   const displayBio = profile.description || '';
   const displayRole = profile.role || 'GUEST';
   const displayJoinDate = profile.createdAt ? formatDate(profile.createdAt) : '';
-  const displayAvatar = isValidImageUrl(profile.profileImageUrl) || '/default-avatar.svg';
+  const displayAvatar = isValidImageUrl(profile.profileImageUrl) || '/images/placeholder/default-avatar.svg';
   const displayRoleLabel = getRoleDisplayLabel(displayRole);
 
   // 통계 정보

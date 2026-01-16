@@ -8,7 +8,7 @@ import TitleBanner from '@/components/layout/TitleBanner';
 import ContentFilterBar from '@/components/layout/TopSection';
 import CategoryFilter from '@/components/layout/CategoryFilter';
 import { CategoryHelpers, CategoryType, CategoryDisplayNames } from '@/types/services/category';
-import Image from 'next/image';
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { USE_MOCK_DATA } from '@/lib/api/env';
 import { getProjects as getMockProjects, type Project } from '@/lib/mock-data';
 import { categoryService, type CategoryItem } from '@/lib/api/services/category-services';
@@ -158,10 +158,9 @@ const getStatusColor = (status: string) => {
 };
 
 const getValidImageUrl = (url: string | null | undefined): string => {
-  const defaultImageUrl = 'https://images.pexels.com/photos/577585/pexels-photo-577585.jpeg?auto=compress&cs=tinysrgb&w=800';
-  if (!url || typeof url !== 'string' || !url.trim()) return defaultImageUrl;
+  if (!url || typeof url !== 'string' || !url.trim()) return '/images/placeholder/project.png';
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/')) return url;
-  return defaultImageUrl;
+  return '/images/placeholder/project.png';
 };
 
 // ============================================================================
@@ -193,12 +192,13 @@ const AvatarStack = ({
             className="relative inline-block"
             title={creator.nickname}
           >
-            <Image
+            <ImageWithFallback
               src={creator.avatar}
+              fallbackSrc="/images/placeholder/default-avatar.svg"
               alt={creator.nickname}
               width={28}
               height={28}
-              className="w-7 h-7 rounded-full border-2 border-yellow-400 bg-gray-200 hover:z-10 relative shadow-sm"
+              className="w-7 h-7 rounded-full border-2 border-yellow-400 bg-gray-200 shadow-sm"
             />
           </div>
           <span 
@@ -226,12 +226,13 @@ const AvatarStack = ({
                     className="relative inline-block"
                     title={contributor.nickname}
                   >
-                    <Image
+                    <ImageWithFallback
                       src={contributor.avatar}
+                      fallbackSrc="/images/placeholder/default-avatar.svg"
                       alt={contributor.nickname}
                       width={24}
                       height={24}
-                      className="w-6 h-6 rounded-full border-2 border-white bg-gray-200 hover:z-10 relative"
+                      className="w-6 h-6 rounded-full border-2 border-white bg-gray-200"
                     />
                   </div>
                 ))}
@@ -693,8 +694,9 @@ export default function ProjectsContent() {
                     }`}>
                       {/* Image */}
                       <div className={`relative ${viewMode === 'list' ? 'w-56 flex-shrink-0 overflow-hidden' : 'overflow-hidden'}`}>
-                        <Image
+                        <ImageWithFallback
                           src={project.image}
+                          fallbackSrc="/images/placeholder/project.png"
                           alt={project.title}
                           width={viewMode === 'list' ? 224 : 400}
                           height={viewMode === 'list' ? 224 : 240}

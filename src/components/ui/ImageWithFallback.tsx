@@ -4,10 +4,12 @@ import { cn } from '@/lib/utils';
 import Image, { ImageProps } from 'next/image';
 import React, { useEffect, useState } from 'react';
 
-interface ImageWithFallbackProps extends Omit<ImageProps, 'src'> {
+interface ImageWithFallbackProps extends Omit<ImageProps, 'src' | 'alt'> {
   src: string;
+  alt?: string;
   fallbackSrc?: string;
   showPlaceholder?: boolean;
+  type?: 'avatar' | 'article' | 'project';
 }
 
 // URL 유효성 검사 함수
@@ -29,16 +31,33 @@ const isValidUrl = (url: string | null | undefined): boolean => {
 
 export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   src,
-  fallbackSrc = '/default-avatar.svg',
+  fallbackSrc,
   alt,
   className,
   showPlaceholder = true,
+  type = 'avatar',
   onError,
   ...props
 }) => {
+  // Smart default fallback based on type
+  const getDefaultFallback = () => {
+    if (fallbackSrc) return fallbackSrc;
+    
+    switch (type) {
+      case 'article':
+        return '/images/placeholder/article.png';
+      case 'project':
+        return '/images/placeholder/project.png';
+      case 'avatar':
+      default:
+        return '/images/placeholder/default-avatar.svg';
+    }
+  };
+  
+  const defaultFallback = getDefaultFallback();
   // 유효한 URL인지 확인
   const validSrc = isValidUrl(src) ? src : null;
-  const initialSrc = validSrc || fallbackSrc;
+  const initialSrc = validSrc || defaultFallback;
   // 로컬 파일은 로딩 상태 건너뛰기
   const isLocalFile = initialSrc.startsWith('/');
 
@@ -49,17 +68,17 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   // Reset states when src changes
   useEffect(() => {
     const newValidSrc = isValidUrl(src) ? src : null;
-    const newSrc = newValidSrc || fallbackSrc;
+    const newSrc = newValidSrc || defaultFallback;
     const newIsLocalFile = newSrc.startsWith('/');
 
     setImgSrc(newSrc);
     setIsLoading(!newIsLocalFile);
     setHasError(!newValidSrc);
-  }, [src, fallbackSrc]);
+  }, [src, defaultFallback]);
 
   const handleError = (error: React.SyntheticEvent<HTMLImageElement, Event>) => {
     if (!hasError) {
-      setImgSrc(fallbackSrc);
+      setImgSrc(defaultFallback);
       setHasError(true);
     }
     onError?.(error);
@@ -74,6 +93,8 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     return null;
   }
 
+  // Ensure we have either fill or width/height
+  const hasSize = props.fill || (props.width && props.height);
 
   return (
     <div className={cn('relative overflow-hidden', className)}>
@@ -99,7 +120,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
       
       <Image
         src={imgSrc}
-        alt={alt}
+        alt={alt || 'Image'}
         className={cn(
           'transition-opacity duration-300',
           isLoading ? 'opacity-0' : 'opacity-100'
@@ -107,6 +128,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
         onError={handleError}
         onLoad={handleLoad}
         unoptimized={imgSrc.endsWith('.svg')}
+        fill={!hasSize ? true : props.fill}
         {...props}
       />
     </div>

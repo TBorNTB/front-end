@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { Heart, Eye, MessageCircle, User } from 'lucide-react';
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 
 type Article = {
   id: number;
@@ -51,8 +51,9 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
       >
         {/* 썸네일 */}
         <div className={viewMode === 'list' ? 'w-64 flex-shrink-0 relative' : 'relative w-full h-48'}>
-          <Image
+          <ImageWithFallback
             src={article.image}
+            fallbackSrc="/images/placeholder/article.png"
             alt={article.title}
             fill={viewMode !== 'list'}
             width={viewMode === 'list' ? 256 : undefined}
@@ -119,11 +120,9 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
                   {article.author.avatarUrl ? (
-                    <Image
+                    <ImageWithFallback
                       src={article.author.avatarUrl}
-                      alt={article.author.nickname}
-                      width={24}
-                      height={24}
+                      fallbackSrc="/images/placeholder/default-avatar.svg"
                       className="w-full h-full rounded-full object-cover"
                     />
                   ) : (
