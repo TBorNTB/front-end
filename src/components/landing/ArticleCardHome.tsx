@@ -1,8 +1,8 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { Heart, Eye, Calendar } from 'lucide-react';
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 
 interface ArticleCardHomeProps {
   article: {
@@ -22,18 +22,6 @@ interface ArticleCardHomeProps {
   };
 }
 
-// URL 유효성 검사 함수
-const isValidImageUrl = (url?: string): string | null => {
-  if (!url || url === 'null' || url === 'undefined') return null;
-  if (url.startsWith('/')) return url;
-  try {
-    new URL(url);
-    return url;
-  } catch {
-    return null;
-  }
-};
-
 const formatDate = (dateString?: string) => {
   if (!dateString) return '';
   return new Date(dateString).toLocaleDateString('ko-KR', {
@@ -44,7 +32,6 @@ const formatDate = (dateString?: string) => {
 };
 
 export function ArticleCardHome({ article }: ArticleCardHomeProps) {
-  const thumbnailUrl = isValidImageUrl(article.thumbnailImage);
   const defaultAvatar = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face';
 
   return (
@@ -52,25 +39,14 @@ export function ArticleCardHome({ article }: ArticleCardHomeProps) {
       <article className="group bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-primary hover:shadow-lg transition-all duration-200 hover:-translate-y-1">
         {/* Image */}
         <div className="relative h-56 overflow-hidden">
-          {thumbnailUrl ? (
-            <Image
-              src={thumbnailUrl}
-              alt={article.title}
-              width={400}
-              height={224}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-              unoptimized={thumbnailUrl.startsWith('http')}
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-              <span className="text-4xl text-gray-400 font-bold">
-                {article.title.charAt(0)}
-              </span>
-            </div>
-          )}
+          <ImageWithFallback
+            src={article.thumbnailImage}
+            fallbackSrc="/images/placeholder/article.png"
+            alt={article.title}
+            width={400}
+            height={224}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+          />
           
           {/* Category Badge */}
           {article.category && (
@@ -109,8 +85,9 @@ export function ArticleCardHome({ article }: ArticleCardHomeProps) {
           <div className="mb-3">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-full overflow-hidden border-2 border-white bg-gray-200">
-                <Image
-                  src={article.author.profileImage || defaultAvatar}
+                <ImageWithFallback
+                  src={article.author.profileImage}
+                  fallbackSrc="/images/placeholder/default-avatar.svg"
                   alt={article.author.name}
                   width={28}
                   height={28}

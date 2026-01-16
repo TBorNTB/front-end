@@ -22,17 +22,6 @@ const ChatBotIcon = ({
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
-      <defs>
-        <linearGradient id="robotGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style={{ stopColor: '#60a5fa', stopOpacity: 1 }} />
-          <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 1 }} />
-        </linearGradient>
-        <linearGradient id="faceGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" style={{ stopColor: '#ffffff', stopOpacity: 1 }} />
-          <stop offset="100%" style={{ stopColor: '#f0f9ff', stopOpacity: 1 }} />
-        </linearGradient>
-      </defs>
-
       {/* Chatbot Icon - embedded as foreignObject */}
       <foreignObject x="3" y="10" width="120" height="100">
         <img src="/icon/chatbot.svg" alt="Chatbot" style={{ width: '100%', height: '100%' }} />

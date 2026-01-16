@@ -1,8 +1,8 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { Heart, Eye, Crown, Users } from 'lucide-react';
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 
 interface FeaturedProjectCardProps {
   project: {
@@ -31,43 +31,18 @@ interface FeaturedProjectCardProps {
   };
 }
 
-// URL 유효성 검사 함수
-const isValidImageUrl = (url: string | null | undefined): boolean => {
-  if (!url || typeof url !== 'string') return false;
-  if (url.trim() === '' || url === 'string' || url === 'null' || url === 'undefined') return false;
-  
-  // 상대 경로는 유효함 (/, /images/...)
-  if (url.startsWith('/')) return true;
-  
-  // 절대 URL 검사
-  try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
-};
-
 export function FeaturedProjectCard({ project }: FeaturedProjectCardProps) {
-  const hasValidImage = isValidImageUrl(project.thumbnailImage);
-  
   return (
     <div className="relative overflow-hidden rounded-2xl shadow-lg group">
       {/* Background Image */}
       <div className="relative h-80 bg-gradient-to-br from-slate-800 to-slate-900">
-        {hasValidImage ? (
-          <Image
-            src={project.thumbnailImage}
-            alt={project.title}
-            fill
-            className="object-cover opacity-80"
-            unoptimized={project.thumbnailImage.startsWith('http')}
-            onError={(e) => {
-              // 이미지 로드 실패 시 기본 그라데이션만 표시
-              e.currentTarget.style.display = 'none';
-            }}
-          />
-        ) : null}
+        <ImageWithFallback
+          src={project.thumbnailImage}
+          fallbackSrc="/images/placeholder/project.png"
+          alt={project.title}
+          fill
+          className="object-cover opacity-80"
+        />
         
         {/* Overlay Gradient */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -127,8 +102,9 @@ export function FeaturedProjectCard({ project }: FeaturedProjectCardProps) {
                   <Crown size={14} className="text-yellow-400" />
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full overflow-hidden border-2 border-yellow-400 bg-gray-200">
-                      <Image
-                        src={project.owner.avatarUrl || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'}
+                      <ImageWithFallback
+                        src={project.owner.avatarUrl || ''}
+                        fallbackSrc="/images/placeholder/default-avatar.svg"
                         alt={project.owner.nickname || project.owner.realname || 'Owner'}
                         width={24}
                         height={24}
@@ -153,8 +129,9 @@ export function FeaturedProjectCard({ project }: FeaturedProjectCardProps) {
                           key={index}
                           className="w-6 h-6 rounded-full overflow-hidden border-2 border-white/50 bg-gray-200"
                         >
-                          <Image
-                            src={collab.avatarUrl || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'}
+                          <ImageWithFallback
+                            src={collab.avatarUrl || ''}
+                            fallbackSrc="/images/placeholder/default-avatar.svg"
                             alt={collab.nickname || collab.realname || 'Collaborator'}
                             width={24}
                             height={24}

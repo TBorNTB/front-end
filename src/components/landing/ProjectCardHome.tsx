@@ -1,8 +1,8 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { Heart, Eye, Crown, Users } from 'lucide-react';
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 
 interface ProjectCardHomeProps {
   project: {
@@ -34,13 +34,6 @@ const getStatusColor = (status: string) => {
   }
 };
 
-const getValidImageUrl = (url: string | null | undefined): string => {
-  const defaultImageUrl = 'https://images.pexels.com/photos/577585/pexels-photo-577585.jpeg?auto=compress&cs=tinysrgb&w=800';
-  if (!url || typeof url !== 'string' || !url.trim()) return defaultImageUrl;
-  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/')) return url;
-  return defaultImageUrl;
-};
-
 // Avatar Stack Component
 const AvatarStack = ({
   owner,
@@ -54,7 +47,6 @@ const AvatarStack = ({
   const visibleContributors = collaborators.slice(0, maxVisible);
   const remainingCount = collaborators.length - maxVisible;
 
-  const ownerAvatar = owner?.avatarUrl || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face';
   const ownerName = owner?.nickname || owner?.realname || owner?.username || 'Unknown';
 
   return (
@@ -71,12 +63,13 @@ const AvatarStack = ({
               className="relative inline-block"
               title={ownerName}
             >
-              <Image
-                src={ownerAvatar}
+              <ImageWithFallback
+                src={owner.avatarUrl || ''}
+                fallbackSrc="/images/placeholder/default-avatar.svg"
                 alt={ownerName}
                 width={28}
                 height={28}
-                className="w-7 h-7 rounded-full border-2 border-yellow-400 bg-gray-200 hover:z-10 relative shadow-sm"
+                className="w-7 h-7 rounded-full border-2 border-yellow-400 bg-gray-200 shadow-sm"
               />
             </div>
             <span 
@@ -103,12 +96,13 @@ const AvatarStack = ({
                   key={index} 
                   className="relative inline-block"
                 >
-                  <Image
-                    src={contributor.profileImage || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'}
+                  <ImageWithFallback
+                    src={contributor.profileImage || ''}
+                    fallbackSrc="/images/placeholder/default-avatar.svg"
                     alt="Collaborator"
                     width={24}
                     height={24}
-                    className="w-6 h-6 rounded-full border-2 border-white bg-gray-200 hover:z-10 relative"
+                    className="w-6 h-6 rounded-full border-2 border-white bg-gray-200"
                   />
                 </div>
               ))}
@@ -132,17 +126,14 @@ const AvatarStack = ({
 };
 
 export function ProjectCardHome({ project }: ProjectCardHomeProps) {
-  const projectImage = getValidImageUrl(project.thumbnailUrl);
-
   return (
     <Link href={`/projects/${project.id}`}>
       <div className="group bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-primary hover:shadow-lg transition-all duration-200 hover:-translate-y-1">
         {/* Image */}
         <div className="relative overflow-hidden">
-          <Image
-            src={projectImage}
-            alt={project.title}
-            width={400}
+          <ImageWithFallback
+            src={project.thumbnailUrl || ''}
+            fallbackSrc="/images/placeholder/project.png"
             height={240}
             className="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-200"
           />
