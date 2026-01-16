@@ -11,7 +11,7 @@ export default function RootLayoutClient({
   const pathname = usePathname();
   
   // Hide chatbot only on login and signup pages
-  const isLoginOrSignup = pathname === '/login' || pathname === '/signup';
+  const isLoginOrSignup = pathname === '/login' || pathname === '/signup' || pathname === '/admin' || pathname === '/forgot-password';
   const shouldShowChatBot = !isLoginOrSignup;
 
   return (
