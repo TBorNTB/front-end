@@ -23,7 +23,7 @@ const ChatBotIcon = ({
       className={className}
     >
       {/* Chatbot Icon - embedded as foreignObject */}
-      <foreignObject x="3" y="10" width="120" height="100">
+      <foreignObject x="-5" y="-10" width="130" height="130">
         <img src="/icon/chatbot.svg" alt="Chatbot" style={{ width: '100%', height: '100%' }} />
       </foreignObject>
 

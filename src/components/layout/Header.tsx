@@ -88,6 +88,7 @@ const Header = () => {
   };
 
   const handleLogout = async () => {
+    toast.success('로그아웃되었습니다.');
     await logout();
     setDropdowns({});
     setIsMobileMenuOpen(false);
