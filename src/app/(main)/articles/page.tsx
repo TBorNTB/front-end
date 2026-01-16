@@ -4,7 +4,25 @@
 import { useState, useEffect, useRef, Suspense, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getArticles, type Article } from '@/lib/mock-data';
+
+type Article = {
+  topicSlug: string;
+  id: string;
+  content: {
+    title: string;
+    summary: string;
+    content: string;
+    category: string;
+  };
+  thumbnailPath: string;
+  writerId: string;
+  participantIds: string[];
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+  likeCount: number;
+  viewCount: number;
+};
 import {
   Search,
   Plus,
@@ -160,14 +178,14 @@ function ArticlesContent() {
     }
   }, [searchParams]);
 
-  // Load articles (mock-aware)
+  // Load articles from API
   useEffect(() => {
     const load = async () => {
       try {
         setArticlesLoading(true);
         setArticlesError(null);
-        const data = await getArticles();
-        setArticlesData(data);
+        // Articles are loaded via search when filters change, no initial load needed
+        setArticlesData([]);
       } catch (err) {
         console.error('Failed to load articles', err);
         setArticlesError('아티클을 불러오는 데 실패했습니다.');

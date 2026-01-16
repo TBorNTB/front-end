@@ -9,9 +9,33 @@ import ContentFilterBar from '@/components/layout/TopSection';
 import CategoryFilter from '@/components/layout/CategoryFilter';
 import { CategoryHelpers, CategoryType, CategoryDisplayNames } from '@/types/services/category';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
-import { USE_MOCK_DATA } from '@/lib/api/env';
-import { getProjects as getMockProjects, type Project } from '@/lib/mock-data';
 import { categoryService, type CategoryItem } from '@/lib/api/services/category-services';
+
+interface Project {
+  id: string;
+  title: string;
+  description: string;
+  thumbnailUrl: string;
+  projectStatus: 'IN_PROGRESS' | 'COMPLETED' | 'PLANNING' | 'ARCHIVED';
+  projectCategories: string[];
+  projectTechStacks: string[];
+  createdAt: string;
+  updatedAt: string;
+  likeCount: number;
+  viewCount: number;
+  owner?: {
+    username?: string;
+    nickname?: string;
+    realname?: string;
+    avatarUrl?: string;
+  } | null;
+  collaborators?: Array<{
+    username?: string;
+    nickname?: string;
+    realname?: string;
+    avatarUrl?: string;
+  }>;
+}
 
 // ============================================================================
 // 🔧 API Service Layer (Move to src/lib/services/project.ts later)
@@ -329,80 +353,13 @@ export default function ProjectsContent() {
         : undefined;
       const searchQuery = searchTerm.trim();
 
-      if (USE_MOCK_DATA) {
-        const data = await getMockProjects();
-        // Filter mock data...
-        const filtered = data.filter((item: Project) => {
-          const matchesCategory = categoriesParam
-            ? item.projectCategories.some(cat => categoriesParam.split(',').includes(cat))
-            : true;
-          const matchesStatus = statusParam
-            ? statusParam.split(',').includes(item.projectStatus)
-            : true;
-          const matchesSearch = searchQuery
-            ? item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-              item.description.toLowerCase().includes(searchQuery.toLowerCase())
-            : true;
-          return matchesCategory && matchesStatus && matchesSearch;
-        });
-
-        const start = page * PAGE_SIZE;
-        const pageItems = filtered.slice(start, start + PAGE_SIZE);
-        
-        const transformedProjects = pageItems.map((item: Project) => ({
-          id: item.id,
-          title: item.title || '제목 없음',
-          description: item.description || '',
-          image: getValidImageUrl(item.thumbnailUrl),
-          tags: item.projectTechStacks || [],
-          category: item.projectCategories?.[0] ?
-            CategoryDisplayNames[item.projectCategories[0] as CategoryType] || item.projectCategories[0] :
-            '',
-          topicSlug: item.projectCategories?.[0] ?
-            CategoryHelpers.getSlug(item.projectCategories[0] as CategoryType) :
-            '',
-          status: item.projectStatus === 'IN_PROGRESS' ? '진행중' :
-                  item.projectStatus === 'COMPLETED' ? '완료' :
-                  item.projectStatus === 'ARCHIVED' ? '계획중' : '진행중',
-          stars: item.likeCount || 0,
-          likeCount: item.likeCount || 0,
-          viewCount: item.viewCount || 0,
-          creator: (item as any).owner ? {
-            username: (item as any).owner.username || '',
-            nickname: (item as any).owner.nickname || 'Unknown',
-            realname: (item as any).owner.realname || '',
-            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
-          } : {
-            username: '',
-            nickname: 'Unknown',
-            realname: '',
-            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
-          },
-          contributors: ((item as any).collaborators || []).map((collab: any) => ({
-            username: collab.username || '',
-            nickname: collab.nickname || 'Unknown',
-            realname: collab.realname || '',
-            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
-          })),
-          lastUpdate: item.updatedAt || item.createdAt || '',
-          github: '',
-          demo: null
-        }));
-
-        setProjects(transformedProjects);
-        setTotalPages(Math.ceil(filtered.length / PAGE_SIZE));
-        setTotalElements(filtered.length);
-        setCurrentPage(page);
-        return;
-      }
-
       const response = await fetchProjects({
-        query: searchQuery || undefined, // undefined로 전달하면 query 파라미터가 안보내짐
+        query: searchQuery,
         projectStatus: statusParam,
         categories: categoriesParam,
         projectSortType: sortToEnglish(sortBy),
         size: PAGE_SIZE,
-        page: page
+        page: page,
       });
 
       const transformedProjects = response.content.map((item: any) => ({
@@ -455,6 +412,7 @@ export default function ProjectsContent() {
       setIsLoading(false);
     }
   };
+
 
   // Search suggestions debounce
   useEffect(() => {

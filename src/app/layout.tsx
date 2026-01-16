@@ -36,19 +36,27 @@ export default function RootLayout({
                 fontSize: '14px',
                 borderRadius: '8px',
                 padding: '12px 16px',
+                cursor: 'pointer',
               },
+              // Default options
+              duration: 4000,
               // Success toast
               success: {
                 style: {
                   background: '#22c55e', // Tailwind green-500
                 },
+                duration: 3000,
               },
               // Error toast
               error: {
                 style: {
                   background: '#ef4444', // Tailwind red-500
                 },
+                duration: 4000,
               },
+            }}
+            containerStyle={{
+              zIndex: 9999,
             }}
           />
         </AuthProvider>
