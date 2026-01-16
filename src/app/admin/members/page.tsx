@@ -232,10 +232,10 @@ export default function AdminMembersContent() {
 
       await fetchRoleCounts();
 
-      alert('역할이 성공적으로 변경되었습니다.');
+      toast('역할이 성공적으로 변경되었습니다.');
     } catch (err) {
       console.error('Error changing role:', err);
-      alert('역할 변경 중 오류가 발생했습니다.');
+      toast('역할 변경 중 오류가 발생했습니다.');
     } finally {
       setSingleRoleChangeLoading(null);
     }
