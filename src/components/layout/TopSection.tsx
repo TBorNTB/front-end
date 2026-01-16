@@ -49,7 +49,7 @@ export default function ContentFilterBar({
   createButtonText = '새 글 쓰기',
   createButtonHref = '/articles/create',
   additionalFilters,
-  placeholderText = '찾고자 할 컨텐츠를 작성해주세요',
+  placeholderText = '찾고자 하는 콘텐츠를 작성해주세요',
 }: ContentFilterBarProps) {
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
