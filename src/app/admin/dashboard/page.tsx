@@ -306,8 +306,8 @@ export default function AdminDashboardPage() {
                   {roleChangeRequests.map((item) => {
                     const request = item.roleChange;
                     const style = getRoleChangeStyle(request.requestedRole);
-                    const previousRoleLabel = UserRoleDisplay[request.previousRole as keyof typeof UserRoleDisplay] || request.previousRole;
-                    const requestedRoleLabel = UserRoleDisplay[request.requestedRole as keyof typeof UserRoleDisplay] || request.requestedRole;
+                    const previousRoleLabel = getRoleDisplayLabel(request.previousRole) || request.previousRole;
+                    const requestedRoleLabel = getRoleDisplayLabel(request.requestedRole) || request.requestedRole;
                     
                     return (
                       <div key={request.id} className={`flex items-center justify-between p-3 ${style.bgColor} border ${style.borderColor} rounded-lg`}>
