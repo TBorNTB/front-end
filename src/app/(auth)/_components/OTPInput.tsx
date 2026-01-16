@@ -9,6 +9,7 @@ interface OTPInputProps {
   value: string;
   onChange: (value: string) => void;
   onComplete?: (value: string) => void;
+  onBlur?: () => void;
   hasError?: boolean;
   disabled?: boolean;
   autoFocus?: boolean;
@@ -16,16 +17,19 @@ interface OTPInputProps {
 
 export function OTPInput({ 
   length = 6, 
-  value, 
+  value = '',
   onChange, 
   onComplete,
+  onBlur,
   hasError = false,
   disabled = false,
   autoFocus = false
 }: OTPInputProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  // Use local state for immediate display, independent of form validation
+  // This is the source of truth for what the user sees
+  const [displayValue, setDisplayValue] = useState('');
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const padded = (value ?? '').toString().slice(0, length).padEnd(length, ' ');
 
   useEffect(() => {
     if (autoFocus && inputRefs.current[0]) {
@@ -33,48 +37,61 @@ export function OTPInput({
     }
   }, [autoFocus]);
 
-  // Safely pad the current value for fixed-length rendering
-  const getPadded = () => (value ?? '').toString().slice(0, length).padEnd(length, ' ');
+  // Sync displayValue with form value when form updates externally (e.g., paste)
+  useEffect(() => {
+    if (value && value.length > displayValue.length) {
+      setDisplayValue(value);
+    }
+  }, [value]);
 
-  const handleChange = (index: number, raw: string) => {
-    // Allow alphanumeric (A-Z, 0-9), keep only the last entered char
-    const char = raw.replace(/[^a-zA-Z0-9]/g, '').slice(-1).toUpperCase();
+  const handleChange = (index: number, inputValue: string) => {
+    // Get only the last character and validate it's alphanumeric
+    const char = inputValue.slice(-1).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    
     if (!char) return;
 
-    const padded = getPadded();
-    const nextChars = padded.split('');
-    nextChars[index] = char;
-    const updatedValue = nextChars.join('').replace(/\s+$/, '');
+    // Build new value based on displayValue (what user sees)
+    const chars = displayValue.split('');
+    chars[index] = char;
+    const newValue = chars.join('').substring(0, length);
 
-    onChange(updatedValue);
+    // Update display immediately (user sees character instantly)
+    setDisplayValue(newValue);
+    
+    // Also update form (for submission)
+    onChange(newValue);
 
-    // Auto-focus next input when a char is entered
-    if (index < length - 1) {
-      inputRefs.current[index + 1]?.focus();
-      setActiveIndex(index + 1);
+    // Auto-focus next input
+    if (index < length - 1 && newValue.length > index) {
+      setTimeout(() => {
+        inputRefs.current[index + 1]?.focus();
+        setActiveIndex(index + 1);
+      }, 0);
     }
 
-    if (updatedValue.length === length) {
-      onComplete?.(updatedValue);
+    // Call onComplete if full
+    if (newValue.length === length) {
+      onComplete?.(newValue);
     }
   };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    const padded = getPadded();
-
     if (e.key === 'Backspace') {
       e.preventDefault();
-      const nextChars = padded.split('');
-      if (nextChars[index] !== ' ') {
-        // Clear current cell
-        nextChars[index] = ' ';
-        onChange(nextChars.join('').replace(/\s+$/, ''));
+      const chars = displayValue.split('');
+      
+      if (chars[index]) {
+        chars[index] = '';
+        const newValue = chars.join('');
+        setDisplayValue(newValue);
+        onChange(newValue);
       } else if (index > 0) {
-        // Move left and clear previous cell
+        chars[index - 1] = '';
+        const newValue = chars.join('');
+        setDisplayValue(newValue);
+        onChange(newValue);
         inputRefs.current[index - 1]?.focus();
         setActiveIndex(index - 1);
-        nextChars[index - 1] = ' ';
-        onChange(nextChars.join('').replace(/\s+$/, ''));
       }
       return;
     }
@@ -96,43 +113,53 @@ export function OTPInput({
       .getData('text')
       .replace(/[^a-zA-Z0-9]/g, '')
       .toUpperCase()
-      .slice(0, length);
+      .substring(0, length);
 
-    if (!pasted) return;
-
-    const nextValue = pasted;
-    onChange(nextValue);
-
-    // Focus the next empty input or the last input
-    const nextIndex = Math.min(nextValue.length, length - 1);
-    inputRefs.current[nextIndex]?.focus();
-    setActiveIndex(nextIndex);
-    
-    if (nextValue.length === length) {
-      onComplete?.(nextValue);
+    if (pasted) {
+      setDisplayValue(pasted);
+      onChange(pasted);
+      
+      const nextIndex = Math.min(pasted.length, length - 1);
+      setTimeout(() => {
+        inputRefs.current[nextIndex]?.focus();
+        setActiveIndex(nextIndex);
+      }, 0);
+      
+      if (pasted.length === length) {
+        onComplete?.(pasted);
+      }
     }
   };
 
   return (
     <div className="flex gap-3 justify-center">
-      {Array.from({ length }, (_, index) => (
-        <input
-          key={index}
-          ref={(el) => { inputRefs.current[index] = el }}
-          type="text"
-          inputMode="text"
-          pattern="[a-zA-Z0-9]*"
-          maxLength={1}
-          value={(padded[index] && padded[index] !== ' ') ? padded[index] : ''}
-          onChange={(e) => handleChange(index, e.target.value)}
-          onKeyDown={(e) => handleKeyDown(index, e)}
-          onPaste={handlePaste}
-          onFocus={() => setActiveIndex(index)}
-          disabled={disabled}
-          className={getOTPInputClassName(hasError, activeIndex === index) + " caret-primary-600"}
-          autoComplete="one-time-code"
-        />
-      ))}
+      {Array.from({ length }, (_, index) => {
+        // Priority: displayValue (what user typed) > value prop (from form) > empty
+        // displayValue is the source of truth for what the user sees
+        const char = displayValue[index] || '';
+        
+        return (
+          <input
+            key={index}
+            ref={(el) => { inputRefs.current[index] = el }}
+            type="text"
+            inputMode="text"
+            pattern="[a-zA-Z0-9]*"
+            maxLength={1}
+            value={char}
+            onChange={(e) => handleChange(index, e.target.value)}
+            onKeyDown={(e) => handleKeyDown(index, e)}
+            onPaste={handlePaste}
+            onFocus={() => setActiveIndex(index)}
+            onBlur={() => {
+              if (index === length - 1) onBlur?.();
+            }}
+            disabled={disabled}
+            className={getOTPInputClassName(hasError, activeIndex === index) + " caret-primary-600"}
+            autoComplete="one-time-code"
+          />
+        );
+      })}
     </div>
   );
 }
