@@ -6,9 +6,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Check, User, Lock, Github, X, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AuthUser } from "@/app/(auth)/types/auth";
 import { UserRole } from "@/types/core";
 import {
@@ -37,11 +37,15 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-export default function LogInPage() {
+function LogInPageInner() {
   const { isLoading, error, setIsLoading, handleError } = useAuthFormState();
   const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const nextParam = searchParams.get('next');
+  const safeNextPath = nextParam && nextParam.startsWith('/') ? nextParam : null;
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -66,7 +70,7 @@ export default function LogInPage() {
 
   login(mockUser, true);
   console.log("🔓 DEV MODE: Bypassing authentication with mock user");
-  router.push("/");
+  router.push(safeNextPath || "/");
 };
 
 
@@ -160,12 +164,12 @@ export default function LogInPage() {
               login(authUser, values.keepSignedIn);
             }
 
-            router.push("/");
+            router.push(safeNextPath || "/");
           } catch (timeoutError) {
             console.error('❌ Error during post-login processing:', timeoutError);
             // Still login with initial data if fresh fetch fails
             login(authUser, values.keepSignedIn);
-            router.push("/");
+            router.push(safeNextPath || "/");
           }
         }, 100);
         
@@ -198,7 +202,7 @@ export default function LogInPage() {
   };
 
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-gradient-background">
+    <div className="flex h-screen w-full items-center justify-center bg-authentication-background">
       <div className="absolute top-0 left-0 h-full w-full bg-[radial-gradient(circle_at_center,_rgba(58,_77,_161,_0.08)_0,_transparent_30%)]" />
       <div className="flex h-[550px] w-[850px] rounded-xl bg-white shadow-xl shadow-primary-500/10 overflow-hidden z-10 border border-gray-200">
         
@@ -349,7 +353,7 @@ export default function LogInPage() {
             onClick={handleGithubLogin}
             disabled={isLoading}
             type="button"
-            className="w-full btn-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-primary-500 hover:text-primary-600 transition-colors rounded-lg font-medium flex items-center justify-center cursor-pointer"
+            className="w-full h-12 px-6 text-base bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-primary-500 hover:text-primary-600 transition-colors rounded-lg font-medium flex items-center justify-center cursor-pointer flex-shrink-0"
           >
             <Github className="mr-2 h-4 w-4" />
             깃허브로 간편 로그인
@@ -357,5 +361,19 @@ export default function LogInPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LogInPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-screen w-full items-center justify-center bg-authentication-background">
+          <div className="text-sm text-gray-600">로딩 중...</div>
+        </div>
+      }
+    >
+      <LogInPageInner />
+    </Suspense>
   );
 }

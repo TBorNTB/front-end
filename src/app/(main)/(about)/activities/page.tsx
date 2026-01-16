@@ -6,9 +6,16 @@ import {
   BookOpen,
 } from 'lucide-react';
 
+import TitleBanner from '@/components/layout/TitleBanner';
+
 export default function Activities() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <TitleBanner
+        title="Activities"
+        description="SSG의 주요 활동과 프로그램을 한눈에 살펴보세요."
+        backgroundImage="/images/BgHeader.png"
+      />
       <main className="container mx-auto px-4 py-8 flex-1">
         
         {/* Activities Section */}

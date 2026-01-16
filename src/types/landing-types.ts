@@ -10,6 +10,18 @@ export interface FeaturedProject {
   viewText: string;
   likes?: number;
   views?: number;
+  owner?: {
+    username?: string;
+    nickname?: string;
+    realname?: string;
+    avatarUrl?: string;
+  };
+  collaborators?: Array<{
+    username?: string;
+    nickname?: string;
+    realname?: string;
+    avatarUrl?: string;
+  }>;
 }
 
 export interface ProjectCardData {
@@ -22,6 +34,13 @@ export interface ProjectCardData {
   likes: number;
   views?: number;
   techStacks?: string[];
+  owner?: {
+    username?: string;
+    nickname?: string;
+    realname?: string;
+    avatarUrl?: string;
+  };
+  thumbnailUrl?: string;
 }
 
 export interface ArticleCardData {
@@ -37,4 +56,5 @@ export interface ArticleCardData {
   likes: number;
   views: number;
   tags?: string[];
+  createdAt?: string;
 }

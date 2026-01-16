@@ -1,5 +1,6 @@
 // src/lib/api/services/article.ts
 import { ARTICLE_ENDPOINTS, getArticleApiUrl } from '@/lib/api/endpoints/article-endpoints';
+import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
 
 export interface ArticleResponse {
   id: number;
@@ -11,24 +12,17 @@ export interface ArticleResponse {
   createdAt: string;
 }
 
-export interface ArticleUpdateRequest {
+export interface ArticleCreateRequest {
   title: string;
   content: string;
   category: string;
 }
 
-// Helper function to get access token from cookies
-const getAccessToken = (): string | null => {
-  if (typeof document === 'undefined') return null;
-  const cookies = document.cookie.split(';');
-  for (const cookie of cookies) {
-    const [name, value] = cookie.trim().split('=');
-    if (name === 'accessToken') {
-      return decodeURIComponent(value);
-    }
-  }
-  return null;
-};
+export interface ArticleUpdateRequest {
+  title: string;
+  content: string;
+  category: string;
+}
 
 /**
  * ID로 아티클 상세 정보 가져오기
@@ -75,18 +69,12 @@ export const fetchArticleById = async (id: string | number): Promise<ArticleResp
 export const updateArticle = async (id: string | number, data: ArticleUpdateRequest): Promise<ArticleResponse> => {
   const endpoint = ARTICLE_ENDPOINTS.ARTICLE.UPDATE.replace(':id', String(id));
   const url = getArticleApiUrl(endpoint);
-
-  const accessToken = getAccessToken();
   const headers: HeadersInit = {
     'accept': 'application/json',
     'Content-Type': 'application/json',
   };
 
-  if (accessToken) {
-    headers['Authorization'] = `Bearer ${accessToken}`;
-  }
-
-  const response = await fetch(url, {
+  const response = await fetchWithRefresh(url, {
     method: 'PUT',
     headers,
     credentials: 'include',
@@ -108,17 +96,11 @@ export const updateArticle = async (id: string | number, data: ArticleUpdateRequ
 export const deleteArticle = async (id: string | number): Promise<void> => {
   const endpoint = ARTICLE_ENDPOINTS.ARTICLE.DELETE.replace(':id', String(id));
   const url = getArticleApiUrl(endpoint);
-
-  const accessToken = getAccessToken();
   const headers: HeadersInit = {
     'accept': '*/*',
   };
 
-  if (accessToken) {
-    headers['Authorization'] = `Bearer ${accessToken}`;
-  }
-
-  const response = await fetch(url, {
+  const response = await fetchWithRefresh(url, {
     method: 'DELETE',
     headers,
     credentials: 'include',
@@ -130,8 +112,36 @@ export const deleteArticle = async (id: string | number): Promise<void> => {
   }
 };
 
+/**
+ * CS 지식 생성
+ * @param data 생성할 데이터 (title, content, category)
+ * @returns 생성된 아티클 정보 (id 포함)
+ */
+export const createArticle = async (data: ArticleCreateRequest): Promise<ArticleResponse> => {
+  const url = getArticleApiUrl(ARTICLE_ENDPOINTS.ARTICLE.CREATE);
+  const headers: HeadersInit = {
+    'accept': 'application/json',
+    'Content-Type': 'application/json',
+  };
+
+  const response = await fetchWithRefresh(url, {
+    method: 'POST',
+    headers,
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to create article: ${response.status} - ${errorText}`);
+  }
+
+  return response.json();
+};
+
 export const articleService = {
   fetchArticleById,
+  createArticle,
   updateArticle,
   deleteArticle,
 };

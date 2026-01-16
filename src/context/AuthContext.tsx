@@ -1,17 +1,17 @@
-// context/AuthContext.tsx - Merged with profileService
+// context/AuthContext.tsx
+// 인증 상태 관리 + 자동 토큰 갱신
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { profileService, UserResponse } from '@/lib/api/services/user-services';
-import { 
-  AuthUser, 
-  AuthContextType, 
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { UserResponse } from '@/lib/api/services/user-services';
+import {
+  AuthUser,
+  AuthContextType,
   mapUserToAuthUser,
-  AuthResponse 
+  AuthResponse
 } from '@/app/(auth)/types/auth';
-import { handleAuthError } from '@/lib/form-utils';
+import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
 
-// ✅ Unified User type (extends both)
 type UnifiedUser = AuthUser & UserResponse;
 
 const AuthContext = createContext<AuthContextType & {
@@ -24,124 +24,70 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<UnifiedUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Your existing token validation
-  const checkTokenValidity = async (): Promise<boolean> => {
-    try {
-      const response = await fetch('/api/auth/user', {
-        method: 'GET',
-        credentials: 'include',
-        cache: 'no-store',
-      });
-      const data: AuthResponse = await response.json();
-      return response.ok && data.authenticated;
-    } catch (error) {
-      console.error('Token validation error:', handleAuthError(error));
-      return false;
-    }
-  };
-
-  // ✅ Enhanced fetchUserProfile (your API + profileService fallback)
+  // 유저 프로필 조회 (401 시 자동 토큰 갱신)
   const fetchUserProfile = async (): Promise<UnifiedUser | null> => {
     try {
-      // 1. Primary: Your existing /api/auth/user
-      const userResponse = await fetch('/api/auth/user', {
-        credentials: 'include',
+      const response = await fetchWithRefresh('/api/auth/user', {
+        method: 'GET',
         cache: 'no-store',
       });
 
-      if (userResponse.ok) {
-        const userData: AuthResponse = await userResponse.json();
-        if (userData.authenticated && userData.user) {
-          return mapUserToAuthUser(userData.user) as UnifiedUser; // ✅ Type mapping
-        }
+      if (!response.ok) return null;
+
+      const data: AuthResponse = await response.json();
+      if (data.authenticated && data.user) {
+        return mapUserToAuthUser(data.user) as UnifiedUser;
       }
-
-      // 2. Fallback: profileService (detailed profile)
-      const profile = await profileService.getProfile();
-      return {
-        ...profile,
-        // Merge AuthUser fields if needed
-      } as UnifiedUser;
-
+      return null;
     } catch (error) {
-      console.error('Profile fetch failed:', handleAuthError(error));
+      console.error('Profile fetch failed:', error);
       return null;
     }
   };
 
-  // ✅ Your existing clearAuthState
   const clearAuthState = () => {
     setUser(null);
     setIsAuthenticated(false);
-    try {
-      localStorage.removeItem('auth_user');
-      localStorage.removeItem('keepSignedIn');
-    } catch {}
   };
 
-  // ✅ Initialize (your logic + profileService)
+  // 초기화: 페이지 로드 시 인증 상태 확인
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const tokenValid = await checkTokenValidity();
-        if (tokenValid) {
-          const serverUser = await fetchUserProfile();
-          if (serverUser) {
-            console.log('✅ Authenticated:', serverUser.nickname);
-            setUser(serverUser);
-            setIsAuthenticated(true);
-          } else {
-            clearAuthState();
-          }
+        const serverUser = await fetchUserProfile();
+        if (serverUser) {
+          setUser(serverUser);
+          setIsAuthenticated(true);
         } else {
           clearAuthState();
         }
-      } catch (error) {
-        console.error('Auth init error:', handleAuthError(error));
+      } catch {
         clearAuthState();
       } finally {
         setLoading(false);
       }
     };
-
     initializeAuth();
   }, []);
 
-  // ✅ Your existing login
-  const login = (userData: AuthUser, keepSignedIn: boolean = false) => {
-    console.log('🔑 Login:', userData.nickname);
+  // 로그인 성공 시 호출 (keepSignedIn은 서버에서 쿠키로 관리하므로 여기선 무시)
+  const login = (userData: AuthUser, _keepSignedIn?: boolean) => {
     setUser(userData as UnifiedUser);
     setIsAuthenticated(true);
-    
-    if (keepSignedIn) {
-      localStorage.setItem('keepSignedIn', 'true');
-      localStorage.setItem('auth_user', JSON.stringify(userData));
-    }
   };
 
-  // ✅ Enhanced refresh (profileService integration)
+  // 유저 정보 새로고침
   const refreshUser = async (): Promise<boolean> => {
-    try {
-      const tokenValid = await checkTokenValidity();
-      if (!tokenValid) {
-        clearAuthState();
-        return false;
-      }
-
-      const freshUser = await fetchUserProfile();
-      if (freshUser) {
-        setUser(freshUser);
-        localStorage.setItem('auth_user', JSON.stringify(freshUser));
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Refresh error:', handleAuthError(error));
-      return false;
+    const freshUser = await fetchUserProfile();
+    if (freshUser) {
+      setUser(freshUser);
+      return true;
     }
+    clearAuthState();
+    return false;
   };
 
-  // ✅ Your existing logout
+  // 로그아웃
   const logout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
@@ -150,7 +96,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     window.location.href = '/';
   };
 
-  // Dedicated loader for consumers that need an on-demand user fetch
+  // 온디맨드 유저 로드
   const loadUser = async () => {
     const freshUser = await fetchUserProfile();
     if (freshUser) {

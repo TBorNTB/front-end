@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { projectsStore } from '../store';
+import { PROJECT_ENDPOINTS, getProjectApiUrl } from '@/lib/api/endpoints/project-endpoints';
 
 export async function GET(
   request: NextRequest,
@@ -8,23 +8,31 @@ export async function GET(
   try {
     const { id } = await params;
 
-    console.log('Fetching project with ID:', id);
-    console.log('All stored project IDs:', projectsStore.getAll().map((p: any) => p.id));
+    // 실제 프로젝트 서비스 API 호출
+    const endpoint = PROJECT_ENDPOINTS.PROJECT.GET_BY_ID.replace(':id', String(id));
+    const url = getProjectApiUrl(endpoint);
 
-    // TODO: Replace with actual database query
-    // For now, check in-memory store
-    const project = projectsStore.get(id);
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'accept': 'application/json',
+      },
+      credentials: 'include',
+      cache: 'no-store',
+    });
 
-    if (!project) {
-      console.log('Project not found in store');
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      console.error(`Project API error: ${response.status} ${response.statusText}`, errorText);
+      
       return NextResponse.json(
         { message: '프로젝트를 찾을 수 없습니다.' },
-        { status: 404 }
+        { status: response.status }
       );
     }
 
-    console.log('Project found:', project.title);
-    return NextResponse.json(project, { status: 200 });
+    const data = await response.json();
+    return NextResponse.json(data, { status: 200 });
   } catch (error) {
     console.error('Error fetching project:', error);
     return NextResponse.json(

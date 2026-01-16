@@ -1,21 +1,8 @@
 // lib/api/services/alarm-service.ts
-import { BASE_URL } from '@/lib/api/config';
+import { getApiUrl } from '@/lib/api/config';
 import { USER_ENDPOINTS } from '@/lib/api/endpoints';
 import { AlarmType } from '@/types/services/alarm';
-
-// Get access token from cookies
-const getAccessToken = (): string | null => {
-  if (typeof document === 'undefined') return null;
-  
-  const cookies = document.cookie.split(';');
-  for (const cookie of cookies) {
-    const [name, value] = cookie.trim().split('=');
-    if (name === 'accessToken') {
-      return decodeURIComponent(value);
-    }
-  }
-  return null;
-};
+import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
 
 export interface AlarmResponse {
   id: string;
@@ -26,6 +13,8 @@ export interface AlarmResponse {
   isRead: boolean;
   createdAt: string;
   link?: string;
+  domainType?: string; // 예: 'PROJECT', 'ARTICLE', 'NEWS', 'CSKNOWLEDGE'
+  domainId?: string | number; // 해당 도메인의 ID
   relatedUser?: {
     nickname: string;
     profileImage?: string;
@@ -44,21 +33,16 @@ export const alarmService = {
    */
   getReceivedAlarms: async (alarmType?: AlarmType): Promise<AlarmResponse[]> => {
     try {
-      const token = getAccessToken();
-      if (!token) {
-        throw new Error('Authentication required');
-      }
+      const params = new URLSearchParams();
+      if (alarmType) params.append('alarmType', alarmType);
+      const url = params.size
+        ? `${getApiUrl(USER_ENDPOINTS.ALARM.RECEIVED)}?${params.toString()}`
+        : getApiUrl(USER_ENDPOINTS.ALARM.RECEIVED);
 
-      const url = new URL(`${BASE_URL}${USER_ENDPOINTS.ALARM.RECEIVED}`);
-      if (alarmType) {
-        url.searchParams.append('alarmType', alarmType);
-      }
-
-      const response = await fetch(url.toString(), {
+      const response = await fetchWithRefresh(url, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         credentials: 'include',
         cache: 'no-store',
@@ -75,6 +59,35 @@ export const alarmService = {
       return Array.isArray(data) ? data : [];
     } catch (error) {
       console.error('Error fetching alarms:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 알람 읽음 처리
+   * @param alarmId 알람 ID
+   */
+  markAsSeen: async (alarmId: string): Promise<void> => {
+    try {
+      const url = getApiUrl(USER_ENDPOINTS.ALARM.MARK_AS_SEEN.replace('{alarmId}', alarmId));
+
+      const response = await fetchWithRefresh(url, {
+        method: 'POST',
+        headers: {
+          'Accept': '*/*',
+        },
+        credentials: 'include',
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          throw new Error('Authentication failed');
+        }
+        throw new Error(`Failed to mark alarm as seen: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error marking alarm as seen:', error);
       throw error;
     }
   },

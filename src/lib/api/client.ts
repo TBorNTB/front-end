@@ -23,36 +23,12 @@ export class GatewayAPIClient {
   private baseURL: string;
 
   constructor() {
-    this.baseURL = BASE_URL;
+    // In the browser, go through Next.js BFF so httpOnly cookie auth can be injected.
+    this.baseURL = typeof window === 'undefined' ? BASE_URL : '/api/gateway';
   }
 
-  // Extract cookies for authorization (client/env-agnostic, no next/headers)
-  private async getCookieHeader(request?: Request): Promise<string | null> {
-    try {
-      if (request?.headers) {
-        return request.headers.get('cookie');
-      }
-
-      // Client-side: document.cookie (httpOnly cookies still ride along with credentials)
-      if (typeof document !== 'undefined') {
-        return document.cookie || null;
-      }
-
-      return null; // SSR without request: caller should supply headers or use server client
-    } catch (error) {
-      console.error('Error extracting cookies:', error);
-      return null;
-    }
-  }
-
-  private hasAuthCookies(cookieHeader: string | null): boolean {
-    if (!cookieHeader) return false;
-    return (
-      cookieHeader.includes('accessToken') ||
-      cookieHeader.includes('refreshToken') ||
-      cookieHeader.includes('sessionToken')
-    );
-  }
+  // Note: In the browser, httpOnly auth cookies are NOT readable via document.cookie.
+  // We therefore must not pre-check auth cookies client-side; rely on the server response.
 
   // Core request method to gateway
   async request<T = unknown>(
@@ -64,29 +40,23 @@ export class GatewayAPIClient {
       body,
       request,
       headers = {},
-      requireAuth = true,
     } = options;
 
     try {
-      const cookieHeader = await this.getCookieHeader(request);
-
-      // Pre-check only if we actually have readable cookies in this environment
-      if (requireAuth && !this.hasAuthCookies(cookieHeader)) {
-        return {
-          success: false,
-          error: 'Authentication required',
-          status: 401,
-        };
-      }
+      const isBrowser = typeof window !== 'undefined';
+      const cookieHeader = request?.headers?.get('cookie') ?? null;
 
       const fetchOptions: RequestInit = {
         method,
         headers: {
           Accept: 'application/json',
           'Content-Type': 'application/json',
-          ...(cookieHeader && { Cookie: cookieHeader }),
+          // Only attach explicit Cookie header in non-browser environments.
+          ...(cookieHeader && !isBrowser ? { Cookie: cookieHeader } : {}),
           ...headers,
         },
+        // Ensure httpOnly cookies are sent with requests (especially cross-origin gateway).
+        credentials: 'include',
         cache: 'no-store',
       };
 

@@ -5,7 +5,7 @@ import { X, Minimize2 } from "lucide-react";
 import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
 import { Message } from "@/types";
-import ChatBotCharacter from "./ChatBotCharacter";
+import ChatBotIcon from "./ChatBotIcon";
 import { queryRAG } from "../../../../lib/api/services/chatbot-service";
 import toast from "react-hot-toast";
 
@@ -15,6 +15,21 @@ interface ChatWindowProps {
 }
 
 const ChatWindow = ({ onClose, isMinimized }: ChatWindowProps) => {
+  const [position, setPosition] = useState(() => {
+    // 기본 위치: 화면 오른쪽 하단
+    if (typeof window !== 'undefined') {
+      return {
+        x: window.innerWidth - 400 - 24,
+        y: window.innerHeight - 650 - 24,
+      };
+    }
+    return { x: 0, y: 0 };
+  });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const windowRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -31,6 +46,60 @@ const ChatWindow = ({ onClose, isMinimized }: ChatWindowProps) => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
+
+  // Drag handlers
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging && windowRef.current) {
+        const newX = e.clientX - dragOffset.x;
+        const newY = e.clientY - dragOffset.y;
+        
+        // 화면 경계 체크
+        const maxX = window.innerWidth - windowRef.current.offsetWidth;
+        const maxY = window.innerHeight - windowRef.current.offsetHeight;
+        
+        setPosition({
+          x: Math.max(0, Math.min(newX, maxX)),
+          y: Math.max(0, Math.min(newY, maxY)),
+        });
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'grabbing';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    };
+  }, [isDragging, dragOffset]);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    // 버튼이나 클릭 가능한 요소를 클릭한 경우 드래그 시작하지 않음
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('a') || target.closest('input') || target.closest('textarea')) {
+      return;
+    }
+    
+    if (headerRef.current && windowRef.current) {
+      const rect = windowRef.current.getBoundingClientRect();
+      setDragOffset({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      });
+      setIsDragging(true);
+    }
+  };
 
   const handleSendMessage = async (content: string) => {
     if (!content.trim()) return;
@@ -72,16 +141,28 @@ const ChatWindow = ({ onClose, isMinimized }: ChatWindowProps) => {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-[calc(100vw-3rem)] h-[calc(100vh-8rem)] max-h-[calc(100vh-3rem)] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-gray-100 animate-slide-up md:w-96 md:h-[650px] md:max-h-[650px] backdrop-blur-sm">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-primary-600 via-primary-600 to-primary-700 text-white px-5 py-4 flex items-center justify-between shadow-md">
+    <div
+      ref={windowRef}
+      className="fixed w-[calc(100vw-3rem)] h-[calc(100vh-8rem)] max-h-[calc(100vh-3rem)] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-gray-100 animate-slide-up md:w-96 md:h-[650px] md:max-h-[650px] backdrop-blur-sm cursor-default"
+      style={{
+        left: `${position.x}px`,
+        top: `${position.y}px`,
+        zIndex: 50,
+      }}
+    >
+      {/* Header - Draggable */}
+      <div
+        ref={headerRef}
+        onMouseDown={handleMouseDown}
+        className={`bg-gradient-to-r from-primary-600 via-primary-600 to-primary-700 text-white px-5 py-4 flex items-center justify-between shadow-md ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+      >
         <div className="flex items-center gap-3">
-            <div className="relative">
-              <ChatBotCharacter size={40} className="text-white" showBubble={false} />
-              <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-300 rounded-full animate-pulse"></div>
+            <div className="relative w-12 h-12 bg-white rounded-full flex items-center justify-center">
+              <ChatBotIcon size={42} className="text-white" showBubble={false} />
+              <div className="absolute top-1 right-1 w-2 h-2 bg-green-300 rounded-full"></div>
             </div>
           <div>
-            <h3 className="font-bold text-sm">SSG 챗봇</h3>
+            <h3 className="font-bold text-sm">SSG봇</h3>
             <p className="text-xs text-white/85">어떻게 도와드릴까요?</p>
           </div>
         </div>
@@ -118,8 +199,8 @@ const ChatWindow = ({ onClose, isMinimized }: ChatWindowProps) => {
         {/* Typing Indicator */}
         {isTyping && (
           <div className="flex items-end gap-2 animate-fade-in">
-            <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
-              <ChatBotCharacter size={40} className="text-primary-600" animated />
+            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center flex-shrink-0">
+              <ChatBotIcon size={48} className="text-primary-600" animated />
             </div>
             <div className="flex-1 bg-gradient-to-r from-gray-100 to-gray-50 rounded-3xl rounded-tl-sm px-5 py-4 shadow-sm border border-gray-200 backdrop-blur-sm">
               <div className="flex gap-1.5">

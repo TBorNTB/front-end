@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Plus, X, Upload } from 'lucide-react';
@@ -9,16 +9,8 @@ import { Input } from '@/components/ui/input';
 import TipTapEditor from '@/components/editor/TipTapEditor';
 import Image from 'next/image';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-
-const ARTICLE_CATEGORIES = [
-  '웹 해킹',
-  '리버싱',
-  '시스템 해킹',
-  '디지털 포렌식',
-  '네트워크 보안',
-  'IoT보안',
-  '암호학',
-];
+import { fetchCategories } from '@/lib/api/services/project-services';
+import { createArticle } from '@/lib/api/services/article-services';
 
 interface FormData {
   title: string;
@@ -41,6 +33,10 @@ export default function NewArticleForm() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [thumbnailPreview, setThumbnailPreview] = useState<string>('');
   
+  // API data states
+  const [categories, setCategories] = useState<Array<{ id: number; name: string; description: string }>>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+  
   const [formData, setFormData] = useState<FormData>({
     title: '',
     category: '',
@@ -49,6 +45,23 @@ export default function NewArticleForm() {
     tags: [],
     thumbnailUrl: '',
   });
+
+  // Load categories on mount
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        setIsLoadingCategories(true);
+        const response = await fetchCategories();
+        setCategories(response.categories);
+      } catch (error) {
+        console.error('Failed to load categories:', error);
+        setCategories([]);
+      } finally {
+        setIsLoadingCategories(false);
+      }
+    };
+    loadCategories();
+  }, []);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -155,22 +168,18 @@ export default function NewArticleForm() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/articles/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      // API 요청 데이터 준비 (API 스펙에 맞게)
+      const articleData = {
+        title: formData.title,
+        content: formData.content,
+        category: formData.category,
+      };
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || '글 작성에 실패했습니다.');
-      }
-
-      const data = await response.json();
+      const response = await createArticle(articleData);
+      
+      // 생성 성공 시 반환된 id로 상세 페이지로 이동
       alert('글이 성공적으로 작성되었습니다!');
-      router.push(`/articles/${data.id}`);
+      router.push(`/articles/${response.id}`);
     } catch (error) {
       alert(error instanceof Error ? error.message : '글 작성에 실패했습니다.');
     } finally {
@@ -241,26 +250,85 @@ export default function NewArticleForm() {
 
           {/* Category */}
           <div>
-            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               카테고리 <span className="text-red-500">*</span>
             </label>
-            <select
-              id="category"
-              name="category"
-              value={formData.category}
-              onChange={handleInputChange}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.category ? 'border-red-500' : 'border-gray-300'
-              }`}
-            >
-              <option value="">카테고리를 선택하세요</option>
-              {ARTICLE_CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-            {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
+            {isLoadingCategories ? (
+              <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50">
+                <span className="text-gray-500">카테고리 로딩 중...</span>
+              </div>
+            ) : (
+              <>
+                <div className={`border rounded-lg p-3 min-h-[120px] max-h-[200px] overflow-y-auto ${
+                  errors.category ? 'border-red-500' : 'border-gray-300'
+                }`}>
+                  {categories.length === 0 ? (
+                    <p className="text-gray-500 text-sm">카테고리가 없습니다</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {categories.map((cat) => {
+                        const isSelected = formData.category === cat.name;
+                        return (
+                          <label
+                            key={cat.id}
+                            className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+                          >
+                            <input
+                              type="radio"
+                              name="category"
+                              checked={isSelected}
+                              onChange={() => {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  category: cat.name,
+                                }));
+                                if (errors.category) {
+                                  setErrors((prev) => ({
+                                    ...prev,
+                                    category: '',
+                                  }));
+                                }
+                              }}
+                              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            />
+                            <div className="flex-1">
+                              <span className="text-sm font-medium text-gray-900">{cat.name}</span>
+                              {cat.description && (
+                                <p className="text-xs text-gray-500 mt-0.5">{cat.description}</p>
+                              )}
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+                {/* Selected Category Display */}
+                {formData.category && (
+                  <div className="mt-3">
+                    <p className="text-xs text-gray-600 mb-2">선택된 카테고리:</p>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
+                        {formData.category}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData((prev) => ({
+                              ...prev,
+                              category: '',
+                            }));
+                          }}
+                          className="hover:text-blue-900"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </span>
+                    </div>
+                  </div>
+                )}
+                {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
+              </>
+            )}
           </div>
 
           {/* Excerpt */}

@@ -88,7 +88,7 @@ const Footer = () => {
                 aria-label="Back to top"
               >
                 <Image
-                  src="/BacktoTop.svg"
+                  src="/icon/BacktoTop.svg"
                   alt="Back to top"
                   width={38}
                   height={38}

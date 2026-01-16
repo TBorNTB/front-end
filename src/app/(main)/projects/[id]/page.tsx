@@ -7,8 +7,11 @@ import { Menu, Transition } from '@headlessui/react';
 import DocumentModal from '../_components/DocumentModal';
 import { fetchProjectDetail, deleteDocument } from '@/lib/api/services/project-services';
 import { 
-  fetchViewCount, 
+  fetchViewCount,
+  incrementViewCount,
   fetchLikeCount,
+  fetchLikeStatus,
+  toggleLike,
   fetchComments,
   createComment,
   createReply,
@@ -104,6 +107,10 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   });
 
   const [project, setProject] = useState<MappedProject | null>(null);
+  
+  // Like states
+  const [isLiked, setIsLiked] = useState(false);
+  const [isTogglingLike, setIsTogglingLike] = useState(false);
 
   // Comment functions - useEffect보다 먼저 정의
   const loadComments = async (postId: string, direction: 'ASC' | 'DESC', reset: boolean = true) => {
@@ -156,7 +163,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         setProject({
           ...project,
           stats: {
-            ...project.stats,
+            ...(project.stats || { views: 0, likes: 0, comments: 0 }),
             comments: response.content.length,
           },
         });
@@ -196,9 +203,15 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   // API 응답을 UI에 맞게 매핑하는 함수
   const mapApiResponseToUI = (apiData: ProjectDetailResponse): MappedProject => {
     // 날짜 포맷팅
-    const formatDate = (dateString: string) => {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const formatDate = (dateString: string | null | undefined) => {
+      if (!dateString) return 'Unknown';
+      try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'Unknown';
+        return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+      } catch {
+        return 'Unknown';
+      }
     };
 
     // 프로젝트 상태 한글 변환
@@ -209,24 +222,32 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     };
 
     // 기간 계산 (생성일 ~ 종료일)
-    const createdDate = new Date(apiData.createdAt);
-    const endedDate = apiData.endedAt ? new Date(apiData.endedAt) : new Date(apiData.updatedAt);
-    const period = `${createdDate.getFullYear()}-${String(createdDate.getMonth() + 1).padStart(2, '0')}-${String(createdDate.getDate()).padStart(2, '0')} ~ ${endedDate.getFullYear()}-${String(endedDate.getMonth() + 1).padStart(2, '0')}-${String(endedDate.getDate()).padStart(2, '0')}`;
+    const formatDateForPeriod = (date: Date) => {
+      if (isNaN(date.getTime())) return 'Unknown';
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    };
+    const createdDate = apiData.createdAt ? new Date(apiData.createdAt) : new Date();
+    const endedDate = apiData.endedAt ? new Date(apiData.endedAt) : (apiData.updatedAt ? new Date(apiData.updatedAt) : new Date());
+    const period = `${formatDateForPeriod(createdDate)} ~ ${formatDateForPeriod(endedDate)}`;
 
     return {
       id: String(apiData.id),
       title: apiData.title,
       subtitle: apiData.description || '',
       author: {
-        username: apiData.username,
-        name: apiData.ownerRealname || apiData.ownerNickname || apiData.username,
+        username: apiData.username || 'unknown',
+        name: apiData.ownerNickname || apiData.ownerRealname || apiData.username || 'Unknown',
         avatar: null,
       },
       createdAt: formatDate(apiData.createdAt),
       updatedAt: formatDate(apiData.updatedAt),
       period,
-      tags: apiData.categories.map(cat => cat.name),
-      technologies: apiData.techStackDtos.map(tech => tech.name),
+      tags: (apiData.categories || [])
+        .filter(cat => cat && cat.name)
+        .map(cat => cat.name),
+      technologies: (apiData.techStackDtos || [])
+        .filter(tech => tech && tech.name)
+        .map(tech => tech.name),
       stats: {
         views: 0, // fetchProjectData에서 실제 API로 업데이트됨
         likes: 0, // fetchProjectData에서 실제 API로 업데이트됨
@@ -236,23 +257,27 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       content: apiData.content || apiData.contentJson || '',
       team: [
         {
-          name: apiData.ownerRealname || apiData.ownerNickname || apiData.username,
+          name: apiData.ownerNickname || apiData.ownerRealname || apiData.username || 'Unknown',
           role: 'Owner',
-          username: apiData.username,
+          username: apiData.username || 'unknown',
         },
-        ...apiData.collaborators.map(collab => ({
-          name: collab.realname || collab.nickname || collab.username,
-          role: 'Collaborator',
-          username: collab.username,
-        })),
+        ...(apiData.collaborators || [])
+          .filter(collab => collab && collab.username)
+          .map(collab => ({
+            name: collab.nickname || collab.realname || collab.username || 'Unknown',
+            role: 'Collaborator',
+            username: collab.username || 'unknown',
+          })),
       ],
-      documents: apiData.documentDtos.map(doc => ({
-        id: String(doc.id),
-        name: doc.title,
-        type: 'document',
-        uploadedAt: formatDate(doc.createdAt),
-        createdBy: doc.description || 'Unknown',
-      })),
+      documents: (apiData.documentDtos || [])
+        .filter(doc => doc && doc.id !== undefined)
+        .map(doc => ({
+          id: String(doc.id),
+          name: doc.title || 'Untitled Document',
+          type: 'document',
+          uploadedAt: doc.createdAt ? formatDate(doc.createdAt) : 'Unknown',
+          createdBy: doc.description || 'Unknown',
+        })),
       relatedProjects: [], // TODO: 연관 프로젝트 API 필요
       projectStatus: statusMap[apiData.projectStatus] || apiData.projectStatus,
       thumbnailUrl: apiData.thumbnailUrl,
@@ -301,25 +326,29 @@ export default function ProjectPage({ params }: ProjectPageProps) {
           { id: '3', title: 'v1.2 DCM기반 탐지 v1', version: 'v1.2 DCM기반 탐지 v1 추가' },
         ],
         projectStatus: '진행중',
+        thumbnailUrl: '',
       });
       setImageError(false);
     }
 
     // 2) 상세/통계 합치기 (항상 시도)
     try {
-      const [apiData, viewCountData, likeCountData] = await Promise.all([
+      // 조회수 증가 API 호출 (페이지 진입 시 자동으로 조회수 증가)
+      const [apiData, viewCountData, likeCountData, likeStatusData] = await Promise.all([
         fetchProjectDetail(id),
-        fetchViewCount(id, 'PROJECT').catch(() => ({ viewCount: 0 })),
+        incrementViewCount(id, 'PROJECT').catch(() => ({ viewCount: 0 })), // 조회수 증가 및 반환
         fetchLikeCount(id, 'PROJECT').catch(() => ({ likedCount: 0 })),
+        fetchLikeStatus(id, 'PROJECT').catch(() => ({ likeCount: 0, status: 'NOT_LIKED' as const })),
       ]);
 
       const mappedData = mapApiResponseToUI(apiData);
       mappedData.stats = {
         views: viewCountData.viewCount,
-        likes: likeCountData.likedCount,
+        likes: likeStatusData.likeCount || likeCountData.likedCount,
         comments: 0,
       };
       setProject(mappedData);
+      setIsLiked(likeStatusData.status === 'LIKED');
     } catch (error) {
       console.error('Error fetching project details:', error);
       setProject((prev) => prev); // keep whatever was set above
@@ -328,7 +357,37 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     }
   };
 
-  if (isLoading) {
+  // Handle like toggle
+  const handleLikeToggle = async () => {
+    if (!projectId || isTogglingLike) return;
+    
+    setIsTogglingLike(true);
+    try {
+      const response = await toggleLike(projectId, 'PROJECT');
+      setIsLiked(response.status === 'LIKED');
+      
+      // Update project stats
+      if (project) {
+        setProject({
+          ...project,
+          stats: {
+            ...(project.stats || { views: 0, likes: 0, comments: 0 }),
+            likes: response.likeCount,
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      // 에러 발생 시 사용자에게 알림 (선택사항)
+      if (error instanceof Error && error.message.includes('로그인이 필요')) {
+        alert('로그인이 필요합니다.');
+      }
+    } finally {
+      setIsTogglingLike(false);
+    }
+  };
+
+  if (isLoading || !project) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -406,7 +465,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         setProject({
           ...project,
           stats: {
-            ...project.stats,
+            ...(project.stats || { views: 0, likes: 0, comments: 0 }),
             comments: response.content.length,
           },
         });
@@ -451,7 +510,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         setProject({
           ...project,
           stats: {
-            ...project.stats,
+            ...(project.stats || { views: 0, likes: 0, comments: 0 }),
             comments: response.content.length,
           },
         });
@@ -580,8 +639,8 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                       <div>
                         <p className="text-gray-600 mb-1">사용 기술</p>
                         <div className="flex flex-wrap gap-1">
-                          {project.technologies.length > 0 ? (
-                            project.technologies.map((tech: string, idx: number) => (
+                          {(project.technologies || []).length > 0 ? (
+                            (project.technologies || []).map((tech: string, idx: number) => (
                               <span key={idx} className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-700">
                                 {tech}
                               </span>
@@ -617,7 +676,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     onClick={() => toggleSection('team')}
                     className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
                   >
-                    <span className="font-bold text-gray-900">팀원 ({project.team.length})</span>
+                    <span className="font-bold text-gray-900">팀원 ({(project.team || []).length})</span>
                     <svg
                       className={`w-5 h-5 text-gray-600 transition-transform ${
                         openSections.team ? 'rotate-180' : ''
@@ -632,19 +691,21 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   
                   {openSections.team && (
                     <div className="p-4 space-y-3">
-                      {project.team.map((member: any, idx: number) => (
+                      {(project.team || [])
+                        .filter(member => member && member.name)
+                        .map((member: any, idx: number) => (
                         <div key={idx} className="flex items-center gap-3">
                           <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
                             <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-500">
-                              {member.name.charAt(0)}
+                              {(member.name || 'U').charAt(0).toUpperCase()}
                             </div>
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-gray-900 text-sm truncate">
-                              {member.name}
+                              {member.name || 'Unknown'}
                             </p>
                             <p className="text-xs text-gray-600 truncate">
-                              {member.role}
+                              {member.role || 'Member'}
                             </p>
                           </div>
                         </div>
@@ -662,7 +723,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     onClick={() => toggleSection('documents')}
                     className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
                   >
-                    <span className="font-bold text-gray-900">도큐먼트 ({project.documents.length})</span>
+                    <span className="font-bold text-gray-900">도큐먼트 ({(project.documents || []).length})</span>
                     <svg
                       className={`w-5 h-5 text-gray-600 transition-transform ${
                         openSections.documents ? 'rotate-180' : ''
@@ -679,8 +740,10 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     <div className="p-4">
                       {/* Document List */}
                       <div className="space-y-1 mb-3">
-                        {project.documents.length > 0 ? (
-                          project.documents.map((doc: any) => (
+                        {(project.documents || []).length > 0 ? (
+                          (project.documents || [])
+                            .filter(doc => doc && doc.id)
+                            .map((doc: any) => (
                           <div
                             key={doc.id}
                             className="group flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 transition-colors"
@@ -695,10 +758,10 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                               </svg>
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm text-gray-900 truncate group-hover:text-primary-600 font-medium">
-                                  {doc.name}
+                                  {doc.name || 'Untitled Document'}
                                 </p>
                                 <p className="text-xs text-gray-500">
-                                  {doc.uploadedAt} · {doc.createdBy}
+                                  {doc.uploadedAt || 'Unknown'} · {doc.createdBy || 'Unknown'}
                                 </p>
                               </div>
                             </Link>
@@ -849,8 +912,8 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   
                   {openSections.related && (
                     <div className="p-4 space-y-2">
-                      {project.relatedProjects.length > 0 ? (
-                        project.relatedProjects.map((related: any) => (
+                      {(project.relatedProjects || []).length > 0 ? (
+                        (project.relatedProjects || []).map((related: any) => (
                           <Link
                             key={related.id}
                             href={`/projects/${related.id}`}
@@ -892,14 +955,14 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     <div className="flex items-center gap-2">
                       <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200">
                         <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
-                          {project.author.name.charAt(0)}
+                          {(project.author?.name || 'U').charAt(0).toUpperCase()}
                         </div>
                       </div>
-                      <span className="font-medium">{project.author.name}</span>
+                      <span className="font-medium">{project.author?.name || 'Unknown'}</span>
                     </div>
-                    <span>👁 {project.stats.views}</span>
-                    <span>❤️ {project.stats.likes}</span>
-                    <span>💬 {project.stats.comments}</span>
+                    <span>👁 {project.stats?.views || 0}</span>
+                    <span>❤️ {project.stats?.likes || 0}</span>
+                    <span>💬 {project.stats?.comments || 0}</span>
                   </div>
                 </header>
 
@@ -950,10 +1013,10 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                 )}
 
                 {/* Tags */}
-                {project.tags.length > 0 && (
+                {(project.tags || []).length > 0 && (
                   <section className="mb-12">
                     <div className="flex flex-wrap gap-2">
-                      {project.tags.map((tag: string, index: number) => (
+                      {(project.tags || []).map((tag: string, index: number) => (
                         <span
                           key={index}
                           className="px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors cursor-pointer"
@@ -967,13 +1030,37 @@ export default function ProjectPage({ params }: ProjectPageProps) {
 
                 {/* Like Button */}
                 <section className="mb-12 flex justify-center py-4">
-                  <button className="flex flex-col items-center gap-2 px-8 py-4 rounded-full border-2 border-gray-300 hover:border-primary-500 hover:bg-primary-50 transition-colors group">
-                    <svg className="w-8 h-8 text-gray-400 group-hover:text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <button 
+                    onClick={handleLikeToggle}
+                    disabled={isTogglingLike}
+                    className={`flex flex-col items-center gap-2 px-8 py-4 rounded-full border-2 transition-colors group ${
+                      isLiked 
+                        ? 'border-red-500 bg-red-50 hover:bg-red-100' 
+                        : 'border-gray-300 hover:border-primary-500 hover:bg-primary-50'
+                    } ${isTogglingLike ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  >
+                    <svg 
+                      className={`w-8 h-8 transition-colors ${
+                        isLiked 
+                          ? 'text-red-500 fill-red-500' 
+                          : 'text-gray-400 group-hover:text-primary-600'
+                      }`} 
+                      fill={isLiked ? 'currentColor' : 'none'} 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
                     </svg>
-                    <span className="text-2xl font-bold text-gray-900 group-hover:text-primary-600">
-                      {project.stats.likes}
+                    <span className={`text-2xl font-bold transition-colors ${
+                      isLiked 
+                        ? 'text-red-600' 
+                        : 'text-gray-900 group-hover:text-primary-600'
+                    }`}>
+                      {project.stats?.likes || 0}
                     </span>
+                    {isTogglingLike && (
+                      <span className="text-xs text-gray-500">처리 중...</span>
+                    )}
                   </button>
                 </section>
 

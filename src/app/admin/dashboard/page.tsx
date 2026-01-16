@@ -7,83 +7,87 @@ import StatsCards from "./components/StatsCards";
 import WeeklyVisitorsChart from "./components/WeeklyVisitorsChart";
 import PopularPosts from "./components/PopularPosts";
 import { 
-  Activity,
-  Shield,
-  Clock,
-  TrendingUp,
-  AlertCircle,
-  CheckCircle,
   RefreshCw,
   Users,
-  ChevronRight
+  ChevronRight,
+  Loader2
 } from "lucide-react";
+import { getApiUrl } from "@/lib/api/config";
+import { USER_ENDPOINTS } from "@/lib/api/endpoints/user-endpoints";
+import { getRoleDisplayLabel } from "@/lib/role-utils"; 
 
-// Enhanced Recent Activities with better data
-const recentActivities = [
-  {
-    id: 1,
-    message: "김철수님이 새로 가입했습니다",
-    time: "2분 전",
-    type: "user",
-    icon: CheckCircle,
-    color: "green"
-  },
-  {
-    id: 2, 
-    message: "React 최신 동향 아티클이 게시되었습니다",
-    time: "15분 전",
-    type: "content",
-    icon: TrendingUp,
-    color: "blue"
-  },
-  {
-    id: 3,
-    message: "프로젝트에 새로운 댓글이 등록되었습니다", 
-    time: "1시간 전",
-    type: "comment",
-    icon: Activity,
-    color: "orange"
-  },
-  {
-    id: 4,
-    message: "이영희님의 등급 변경이 요청되었습니다",
-    time: "2시간 전", 
-    type: "grade",
-    icon: AlertCircle,
-    color: "purple"
-  }
-];
+interface RoleChangeRequest {
+  roleChange: {
+    id: number;
+    realName: string;
+    email: string;
+    previousRole: string;
+    requestedRole: string;
+    requestStatus: string;
+    processedBy: string | null;
+    requestedAt: string;
+    processedAt: string | null;
+  };
+}
 
-// Grade Change Requests (limited for dashboard)
-const gradeChangeRequests = [
-  {
-    id: 1,
-    name: "김철수",
-    initial: "김",
-    fromGrade: "초급",
-    toGrade: "중급",
+// 역할에 따른 색상 및 스타일 매핑
+const getRoleChangeStyle = (requestedRole: string) => {
+  const styleMap: Record<string, {
+    bgColor: string;
+    borderColor: string;
+    avatarBg: string;
+    avatarText: string;
+  }> = {
+    'ASSOCIATE': {
+      bgColor: "bg-blue-50",
+      borderColor: "border-blue-200",
+      avatarBg: "bg-blue-100",
+      avatarText: "text-blue-700"
+    },
+    'REGULAR': {
+      bgColor: "bg-green-50",
+      borderColor: "border-green-200",
+      avatarBg: "bg-green-100",
+      avatarText: "text-green-700"
+    },
+    'SENIOR': {
+      bgColor: "bg-purple-50",
+      borderColor: "border-purple-200",
+      avatarBg: "bg-purple-100",
+      avatarText: "text-purple-700"
+    },
+    'ADMIN': {
+      bgColor: "bg-orange-50",
+      borderColor: "border-orange-200",
+      avatarBg: "bg-orange-100",
+      avatarText: "text-orange-700"
+    },
+  };
+  
+  return styleMap[requestedRole] || {
     bgColor: "bg-yellow-50",
     borderColor: "border-yellow-200",
     avatarBg: "bg-yellow-100",
     avatarText: "text-yellow-700"
-  },
-  {
-    id: 2,
-    name: "이영희",
-    initial: "이", 
-    fromGrade: "중급",
-    toGrade: "고급",
-    bgColor: "bg-blue-50",
-    borderColor: "border-blue-200",
-    avatarBg: "bg-blue-100",
-    avatarText: "text-blue-700"
-  }
-];
+  };
+};
+
+// 이름의 첫 글자 추출
+const getInitial = (name: string): string => {
+  return name ? name.charAt(0) : "?";
+};
 
 export default function AdminDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const router = useRouter();
+  
+  const [roleChangeRequests, setRoleChangeRequests] = useState<RoleChangeRequest[]>([]);
+  const [allRoleChangeRequests, setAllRoleChangeRequests] = useState<RoleChangeRequest[]>([]);
+  const [roleChangeLoading, setRoleChangeLoading] = useState(true);
+  const [roleChangeError, setRoleChangeError] = useState<string | null>(null);
+  const [processingIds, setProcessingIds] = useState<Set<number>>(new Set());
+  const [roleChangePage, setRoleChangePage] = useState(0);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -92,6 +96,125 @@ export default function AdminDashboardPage() {
 
     return () => clearTimeout(timer);
   }, []);
+
+  // 등급 변경 요청 조회
+  useEffect(() => {
+    const fetchRoleChangeRequests = async () => {
+      try {
+        setRoleChangeLoading(true);
+        setRoleChangeError(null);
+
+        const response = await fetch(
+          getApiUrl(USER_ENDPOINTS.USER.ROLE_ALL),
+          {
+            method: 'GET',
+            headers: { 'accept': 'application/json' },
+            credentials: 'include',
+          }
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('API Error:', {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorText,
+          });
+          throw new Error(`Failed to fetch role change requests: ${response.status} ${response.statusText}`);
+        }
+
+        const data: RoleChangeRequest[] = await response.json();
+        
+        // 데이터가 배열인지 확인
+        if (!Array.isArray(data)) {
+          console.warn('Unexpected response format:', data);
+          setRoleChangeRequests([]);
+          return;
+        }
+
+        // PENDING 상태만 필터링 (대시보드에서는 대기 중인 요청만 표시)
+        const pendingRequests = data.filter(
+          item => item.roleChange && item.roleChange.requestStatus === 'PENDING'
+        );
+        
+        // 전체 목록 저장 (개수 표시용)
+        setAllRoleChangeRequests(pendingRequests);
+        
+        // 페이지네이션 처리 (5개씩)
+        const pageSize = 5;
+        const startIndex = roleChangePage * pageSize;
+        const endIndex = startIndex + pageSize;
+        const paginatedRequests = pendingRequests.slice(startIndex, endIndex);
+        
+        setRoleChangeRequests(paginatedRequests);
+      } catch (err) {
+        console.error('Error fetching role change requests:', err);
+        const errorMessage = err instanceof Error ? err.message : '데이터를 불러오는 중 오류가 발생했습니다.';
+        setRoleChangeError(errorMessage);
+        setRoleChangeRequests([]);
+      } finally {
+        setRoleChangeLoading(false);
+      }
+    };
+
+    fetchRoleChangeRequests();
+  }, [roleChangePage]);
+
+  // 등급 변경 요청 승인/거절 처리
+  const handleRoleChangeAction = async (requestId: number, approved: boolean) => {
+    try {
+      setProcessingIds(prev => new Set(prev).add(requestId));
+
+      const endpoint = USER_ENDPOINTS.USER.ROLE_MANAGE.replace(':id', requestId.toString());
+      const response = await fetch(
+        getApiUrl(endpoint),
+        {
+          method: 'PATCH',
+          headers: {
+            'accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ approved }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText,
+        });
+        throw new Error(`Failed to ${approved ? 'approve' : 'reject'} role change request: ${response.status}`);
+      }
+
+      // 성공 시 전체 목록과 현재 페이지 목록에서 제거
+      setAllRoleChangeRequests(prev => 
+        prev.filter(item => item.roleChange.id !== requestId)
+      );
+      setRoleChangeRequests(prev => {
+        const filtered = prev.filter(item => item.roleChange.id !== requestId);
+        // 현재 페이지에 아이템이 없고 이전 페이지가 있으면 이전 페이지로 이동
+        if (filtered.length === 0 && roleChangePage > 0) {
+          setRoleChangePage(prev => prev - 1);
+        }
+        return filtered;
+      });
+
+      // 성공 메시지 (선택사항)
+      console.log(`등급 변경 요청이 ${approved ? '승인' : '거부'}되었습니다.`);
+    } catch (err) {
+      console.error(`Error ${approved ? 'approving' : 'rejecting'} role change request:`, err);
+      alert(`등급 변경 요청 ${approved ? '승인' : '거부'} 중 오류가 발생했습니다.`);
+    } finally {
+      setProcessingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(requestId);
+        return newSet;
+      });
+    }
+  };
 
   const handleRefresh = () => {
     setIsLoading(true);
@@ -145,139 +268,132 @@ export default function AdminDashboardPage() {
           <PopularPosts />
         </div>
 
-        {/* Right Column - Quick Actions & Activities */}
+        {/* Right Column - Quick Actions */}
         <div className="space-y-6">
-                    {/* Grade Change Requests - Separate Card */}
+          {/* Grade Change Requests - Separate Card */}
           <div className="card">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-primary-900">등급 변경 요청</h3>
               <div className="flex items-center space-x-2">
-                <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium">4개 대기중</span>
-                <Users className="h-5 w-5 text-primary-400" />
+                {roleChangeLoading ? (
+                  <Loader2 className="h-4 w-4 text-gray-400 animate-spin" />
+                ) : (
+                  <>
+                    <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium">
+                      {allRoleChangeRequests.length}개 대기중
+                    </span>
+                    <Users className="h-5 w-5 text-primary-400" />
+                  </>
+                )}
               </div>
             </div>
             
-            <div className="space-y-3">
-              {gradeChangeRequests.map((request) => (
-                <div key={request.id} className={`flex items-center justify-between p-3 ${request.bgColor} border ${request.borderColor} rounded-lg`}>
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-8 h-8 ${request.avatarBg} rounded-full flex items-center justify-center`}>
-                      <span className={`text-sm font-bold ${request.avatarText}`}>{request.initial}</span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{request.name}</p>
-                      <p className="text-xs text-gray-500">{request.fromGrade} → {request.toGrade} 요청</p>
-                    </div>
-                  </div>
-                  <div className="flex space-x-2">
-                    <button className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition-colors">
-                      승인
-                    </button>
-                    <button className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors">
-                      거부
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            <div className="mt-6 pt-4 border-t border-gray-100">
-              <button 
-                onClick={() => router.push('/admin/members?tab=grade-requests')}
-                className="w-full flex items-center justify-center space-x-2 text-sm text-primary-600 hover:text-primary-700 font-medium py-2 hover:bg-primary-50 rounded-lg transition-colors"
-              >
-                <span>모든 등급 요청 보기 (4개)</span>
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-          
-          {/* Recent Activities Card */}
-          <div className="card">
-            {/* Recent Activities - Inline */}
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-primary-900">최근 활동</h3>
-                <Activity className="h-5 w-5 text-primary-400" />
+            {roleChangeLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
               </div>
-              
-              <div className="space-y-4">
-                {recentActivities.map((activity) => (
-                  <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                    <div className={`p-2 rounded-lg flex-shrink-0 ${
-                      activity.color === 'green' ? 'bg-green-100' :
-                      activity.color === 'blue' ? 'bg-blue-100' :
-                      activity.color === 'orange' ? 'bg-orange-100' :
-                      'bg-purple-100'
-                    }`}>
-                      <activity.icon className={`h-4 w-4 ${
-                        activity.color === 'green' ? 'text-green-600' :
-                        activity.color === 'blue' ? 'text-blue-600' :
-                        activity.color === 'orange' ? 'text-orange-600' :
-                        'text-purple-600'
-                      }`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 leading-relaxed">
-                        {activity.message}
-                      </p>
-                      <div className="flex items-center mt-1">
-                        <Clock className="h-3 w-3 text-gray-400 mr-1" />
-                        <span className="text-xs text-gray-500">{activity.time}</span>
+            ) : roleChangeError ? (
+              <div className="text-center py-8 text-sm text-red-600">{roleChangeError}</div>
+            ) : roleChangeRequests.length === 0 ? (
+              <div className="text-center py-8">
+                <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-sm text-gray-500">대기 중인 등급 변경 요청이 없습니다.</p>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-3">
+                  {roleChangeRequests.map((item) => {
+                    const request = item.roleChange;
+                    const style = getRoleChangeStyle(request.requestedRole);
+                    const previousRoleLabel = getRoleDisplayLabel(request.previousRole) || request.previousRole;
+                    const requestedRoleLabel = getRoleDisplayLabel(request.requestedRole) || request.requestedRole;
+                    
+                    return (
+                      <div key={request.id} className={`flex items-center justify-between p-3 ${style.bgColor} border ${style.borderColor} rounded-lg`}>
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-8 h-8 ${style.avatarBg} rounded-full flex items-center justify-center`}>
+                            <span className={`text-sm font-bold ${style.avatarText}`}>
+                              {getInitial(request.realName)}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{request.realName}</p>
+                            <p className="text-xs text-gray-500">
+                              {previousRoleLabel} → {requestedRoleLabel} 요청
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          <button 
+                            onClick={() => handleRoleChangeAction(request.id, true)}
+                            disabled={processingIds.has(request.id)}
+                            className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                          >
+                            {processingIds.has(request.id) ? (
+                              <>
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                                처리중
+                              </>
+                            ) : (
+                              '승인'
+                            )}
+                          </button>
+                          <button 
+                            onClick={() => handleRoleChangeAction(request.id, false)}
+                            disabled={processingIds.has(request.id)}
+                            className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                          >
+                            {processingIds.has(request.id) ? (
+                              <>
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                                처리중
+                              </>
+                            ) : (
+                              '거부'
+                            )}
+                          </button>
+                        </div>
                       </div>
+                    );
+                  })}
+                </div>
+                
+                {/* 페이지네이션 */}
+                {Math.ceil(allRoleChangeRequests.length / 5) > 1 && (
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                    <div className="text-xs text-gray-500">
+                      {roleChangePage + 1} / {Math.ceil(allRoleChangeRequests.length / 5)}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => setRoleChangePage(prev => Math.max(0, prev - 1))}
+                        disabled={roleChangePage === 0}
+                        className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        이전
+                      </button>
+                      <button
+                        onClick={() => setRoleChangePage(prev => Math.min(Math.ceil(allRoleChangeRequests.length / 5) - 1, prev + 1))}
+                        disabled={roleChangePage >= Math.ceil(allRoleChangeRequests.length / 5) - 1}
+                        className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        다음
+                      </button>
                     </div>
                   </div>
-                ))}
-              </div>
-              
-              <div className="mt-6 pt-4 border-t border-gray-100">
-                <button className="w-full text-sm text-primary-600 hover:text-primary-700 font-medium py-2 hover:bg-primary-50 rounded-lg transition-colors">
-                  모든 활동 보기 →
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* System Status - Enhanced */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-primary-900">시스템 상태</h3>
-          <Shield className="h-5 w-5 text-primary-400" />
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-green-500 rounded-full mr-3 animate-pulse"></div>
-              <span className="font-medium text-gray-900">웹 서버</span>
-            </div>
-            <span className="text-sm text-green-600 font-medium">정상</span>
-          </div>
-          
-          <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-green-500 rounded-full mr-3 animate-pulse"></div>
-              <span className="font-medium text-gray-900">데이터베이스</span>
-            </div>
-            <span className="text-sm text-green-600 font-medium">정상</span>
-          </div>
-          
-          <div className="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-yellow-500 rounded-full mr-3"></div>
-              <span className="font-medium text-gray-900">이메일 서비스</span>
-            </div>
-            <span className="text-sm text-yellow-600 font-medium">점검중</span>
-          </div>
-
-          <div className="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-blue-500 rounded-full mr-3 animate-pulse"></div>
-              <span className="font-medium text-gray-900">CDN</span>
-            </div>
-            <span className="text-sm text-blue-600 font-medium">정상</span>
+                )}
+                
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <button 
+                    onClick={() => router.push('/admin/members?tab=requests')}
+                    className="w-full flex items-center justify-center space-x-2 text-sm text-primary-600 hover:text-primary-700 font-medium py-2 hover:bg-primary-50 rounded-lg transition-colors"
+                  >
+                    <span>모든 등급 요청 보기 ({allRoleChangeRequests.length}개)</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -13,14 +13,27 @@ export interface CSKnowledgeSearchParams {
   size?: number; // 페이지 크기
 }
 
+export interface CSKnowledgeSearchByMemberParams {
+  name: string; // realName 또는 nickname
+  page?: number; // 페이지 번호 (0부터 시작)
+  size?: number; // 페이지 크기
+}
+
+export interface CSKnowledgeWriter {
+  username: string;
+  nickname: string;
+  realname: string;
+}
+
 export interface CSKnowledgeItem {
-  id: string;
+  id: number;
   title: string;
   content: string;
   category: string;
   createdAt: string;
   likeCount: number;
   viewCount: number;
+  writer: CSKnowledgeWriter;
 }
 
 export interface CSKnowledgeSearchResponse {
@@ -71,18 +84,123 @@ export const searchCSKnowledge = async (
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to search CS knowledge: ${response.status}`);
+      console.error(`CS Knowledge API error: ${response.status} ${response.statusText}`);
+      // Return empty results instead of throwing
+      return {
+        content: [],
+        page: params.page || 0,
+        size: params.size || 6,
+        totalElements: 0,
+        totalPages: 0,
+      };
     }
 
     const data: CSKnowledgeSearchResponse = await response.json();
     return data;
   } catch (error) {
     console.error('Error searching CS knowledge:', error);
-    throw error;
+    // Return empty results instead of throwing
+    return {
+      content: [],
+      page: 0,
+      size: 6,
+      totalElements: 0,
+      totalPages: 0,
+    };
+  }
+};
+
+/**
+ * CS 지식 저자별 검색 API 호출
+ * @param params 검색 파라미터 (name: realName 또는 nickname)
+ * @returns 검색 결과 (페이지네이션 포함)
+ */
+export const searchCSKnowledgeByMember = async (
+  params: CSKnowledgeSearchByMemberParams
+): Promise<CSKnowledgeSearchResponse> => {
+  try {
+    const queryParams = new URLSearchParams();
+
+    // name은 필수 파라미터
+    queryParams.append('name', params.name.trim());
+
+    // size와 page는 항상 전송
+    queryParams.append('size', (params.size || 10).toString());
+    queryParams.append('page', (params.page !== undefined ? params.page : 0).toString());
+
+    const url = `${getElasticApiUrl(ELASTIC_ENDPOINTS.ELASTIC.ARTICLE_SEARCH_BY_MEMBER)}?${queryParams.toString()}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+      credentials: 'include',
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      console.error(`CS Knowledge By Member API error: ${response.status} ${response.statusText}`);
+      // Return empty results instead of throwing
+      return {
+        content: [],
+        page: params.page || 0,
+        size: params.size || 10,
+        totalElements: 0,
+        totalPages: 0,
+      };
+    }
+
+    const data: CSKnowledgeSearchResponse = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error searching CS knowledge by member:', error);
+    // Return empty results instead of throwing
+    return {
+      content: [],
+      page: 0,
+      size: 10,
+      totalElements: 0,
+      totalPages: 0,
+    };
+  }
+};
+
+/**
+ * CS 지식 검색 제안 API 호출 (API 라우트를 통해 호출)
+ * @param params 검색 파라미터 (query: 검색어)
+ * @returns 검색 제안 목록 (문자열 배열)
+ */
+export const getCSKnowledgeSuggestion = async (
+  params: CSKnowledgeSuggestionParams
+): Promise<string[]> => {
+  try {
+    if (!params.query || !params.query.trim()) {
+      return [];
+    }
+
+    // API 라우트를 통해 호출 (Projects와 동일한 방식)
+    const response = await fetch(
+      `/api/articles/suggestions?query=${encodeURIComponent(params.query.trim())}`
+    );
+
+    if (!response.ok) {
+      console.error(`CS Knowledge Suggestion API error: ${response.status} ${response.statusText}`);
+      return [];
+    }
+
+    const data: string[] = await response.json();
+    // 배열이 아니거나 빈 배열인 경우 빈 배열 반환
+    return Array.isArray(data) ? data.slice(0, 5) : [];
+  } catch (error) {
+    console.error('Error fetching CS knowledge suggestions:', error);
+    return [];
   }
 };
 
 export const elasticService = {
   searchCSKnowledge,
+  searchCSKnowledgeByMember,
+  getCSKnowledgeSuggestion,
 };
 

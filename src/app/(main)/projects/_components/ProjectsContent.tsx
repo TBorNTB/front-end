@@ -3,11 +3,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ExternalLink, Github, Grid, List, Plus, Search, ChevronDown, ChevronLeft, ChevronRight, Heart, Eye } from 'lucide-react';
+import { ExternalLink, Github, ChevronLeft, ChevronRight, Heart, Eye, Crown, Users } from 'lucide-react';
+import TitleBanner from '@/components/layout/TitleBanner';
+import ContentFilterBar from '@/components/layout/TopSection';
+import CategoryFilter from '@/components/layout/CategoryFilter';
 import { CategoryHelpers, CategoryType, CategoryDisplayNames } from '@/types/services/category';
-import Image from 'next/image';
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { USE_MOCK_DATA } from '@/lib/api/env';
 import { getProjects as getMockProjects, type Project } from '@/lib/mock-data';
+import { categoryService, type CategoryItem } from '@/lib/api/services/category-services';
 
 // ============================================================================
 // 🔧 API Service Layer (Move to src/lib/services/project.ts later)
@@ -28,6 +32,7 @@ interface ProjectSearchResponse {
   size: number;
   totalElements: number;
   totalPages: number;
+  error?: string;
 }
 
 /**
@@ -38,9 +43,11 @@ const fetchProjects = async (params: ProjectSearchParams): Promise<ProjectSearch
   try {
     const queryParams = new URLSearchParams();
     
-    // Query: send space if empty (API requirement)
-    const queryValue = params.query?.trim() || ' ';
-    queryParams.append('query', queryValue);
+    // Query: only append if provided and not empty
+    const queryValue = params.query?.trim();
+    if (queryValue && queryValue !== ' ') {
+      queryParams.append('query', queryValue);
+    }
     
     // Project status: only append if selected
     if (params.projectStatus) {
@@ -63,8 +70,6 @@ const fetchProjects = async (params: ProjectSearchParams): Promise<ProjectSearch
 
     const url = `/api/projects/search?${queryParams.toString()}`; // ✅ Use API route
 
-    console.log('🔍 Fetching projects:', { url, params });
-
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -75,48 +80,49 @@ const fetchProjects = async (params: ProjectSearchParams): Promise<ProjectSearch
         || response.statusText
         || `API error: ${response.status}`;
 
-      console.error('API Error', {
-        status: response.status,
-        statusText: response.statusText,
-        url,
-        params,
-        data: errorData,
-      });
-
-      throw new Error(message);
+      return {
+        content: [],
+        page: 0,
+        size: 0,
+        totalElements: 0,
+        totalPages: 0,
+        error: message,
+      };
     }
 
     return await response.json();
   } catch (error) {
-    console.error('Error fetching projects:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error while fetching projects';
     return {
       content: [],
       page: 0,
       size: 0,
       totalElements: 0,
-      totalPages: 0
+      totalPages: 0,
+      error: message,
     };
   }
 };
 
 /**
  * Fetch search suggestions from Elasticsearch
- * TODO: Move to src/lib/services/elastic.ts
+ * 최대 5개 제안 반환
  */
 const fetchSearchSuggestions = async (query: string): Promise<string[]> => {
   if (!query?.trim()) return [];
 
   try {
     const response = await fetch(
-      `/api/projects/suggestions?query=${encodeURIComponent(query)}` // ✅ Use API route
+      `/api/projects/suggestions?query=${encodeURIComponent(query.trim())}`
     );
 
     if (!response.ok) return [];
 
     const data = await response.json();
-    return Array.isArray(data) ? data : [];
+    // API 라우트에서 이미 5개로 제한하지만, 안전을 위해 여기서도 제한
+    return Array.isArray(data) ? data.slice(0, 5) : [];
   } catch (error) {
-    console.error('Error fetching suggestions:', error);
+    console.error('Error fetching search suggestions:', error);
     return [];
   }
 };
@@ -141,10 +147,6 @@ const sortMap: Record<string, string> = {
 
 const statusToEnglish = (status: string) => statusMap[status] || '';
 const sortToEnglish = (sort: string) => sortMap[sort] || 'LATEST';
-const categoryToEnglish = (categoryName: string): string | null => {
-  const categoryType = CategoryHelpers.getTypeByDisplayName(categoryName);
-  return categoryType ? categoryType.replace(/_/g, '-') : null;
-};
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -156,10 +158,9 @@ const getStatusColor = (status: string) => {
 };
 
 const getValidImageUrl = (url: string | null | undefined): string => {
-  const defaultImageUrl = 'https://images.pexels.com/photos/577585/pexels-photo-577585.jpeg?auto=compress&cs=tinysrgb&w=800';
-  if (!url || typeof url !== 'string' || !url.trim()) return defaultImageUrl;
+  if (!url || typeof url !== 'string' || !url.trim()) return '/images/placeholder/project.png';
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/')) return url;
-  return defaultImageUrl;
+  return '/images/placeholder/project.png';
 };
 
 // ============================================================================
@@ -171,43 +172,88 @@ const AvatarStack = ({
   contributors,
   maxVisible = 3
 }: {
-  creator: { name: string; avatar: string };
-  contributors: { name: string; avatar: string }[];
+  creator: { username: string; nickname: string; realname: string; avatar: string };
+  contributors: { username: string; nickname: string; realname: string; avatar: string }[];
   maxVisible?: number;
 }) => {
   const visibleContributors = contributors.slice(0, maxVisible);
   const remainingCount = contributors.length - maxVisible;
 
-  const getCreatorText = () => {
-    return contributors.length === 0
-      ? creator.name
-      : `${creator.name} 등 ${contributors.length + 1}명`;
-  };
-
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex -space-x-2">
-        {visibleContributors.map((contributor, index) => (
-          <div key={index} className="relative inline-block" title={contributor.name}>
-            <Image
-              src={contributor.avatar}
-              alt={contributor.name}
-              width={24}
-              height={24}
-              className="w-6 h-6 rounded-full border-2 border-white bg-gray-200 hover:z-10 relative"
+    <div className="space-y-2">
+      {/* Owner Section */}
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          <Crown size={14} className="text-yellow-500" />
+          <span className="text-xs font-medium text-gray-600">소유자</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div 
+            className="relative inline-block"
+            title={creator.nickname}
+          >
+            <ImageWithFallback
+              src={creator.avatar}
+              fallbackSrc="/images/placeholder/default-avatar.svg"
+              alt={creator.nickname}
+              width={28}
+              height={28}
+              className="w-7 h-7 rounded-full border-2 border-yellow-400 bg-gray-200 shadow-sm"
             />
           </div>
-        ))}
-        {remainingCount > 0 && (
-          <div
-            className="w-6 h-6 rounded-full border-2 border-white bg-gray-300 flex items-center justify-center relative"
-            title={`+${remainingCount} more contributors`}
+          <span 
+            className="text-xs text-gray-700 font-medium"
+            title={creator.nickname}
           >
-            <span className="text-xs font-medium text-gray-600">+{remainingCount}</span>
-          </div>
-        )}
+            {creator.nickname}
+          </span>
+        </div>
       </div>
-      <span className="text-xs text-gray-500">by {getCreatorText()}</span>
+
+      {/* Collaborators Section */}
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          <Users size={14} className="text-blue-500" />
+          <span className="text-xs font-medium text-gray-600">협력자</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {contributors.length > 0 ? (
+            <>
+              <div className="flex -space-x-2">
+                {visibleContributors.map((contributor, index) => (
+                  <div 
+                    key={contributor.username || index} 
+                    className="relative inline-block"
+                    title={contributor.nickname}
+                  >
+                    <ImageWithFallback
+                      src={contributor.avatar}
+                      fallbackSrc="/images/placeholder/default-avatar.svg"
+                      alt={contributor.nickname}
+                      width={24}
+                      height={24}
+                      className="w-6 h-6 rounded-full border-2 border-white bg-gray-200"
+                    />
+                  </div>
+                ))}
+                {remainingCount > 0 && (
+                  <div
+                    className="w-6 h-6 rounded-full border-2 border-white bg-gray-300 flex items-center justify-center relative"
+                    title={`+${remainingCount} more contributors`}
+                  >
+                    <span className="text-xs font-medium text-gray-600">+{remainingCount}</span>
+                  </div>
+                )}
+              </div>
+              <span className="text-xs text-gray-500">
+                {contributors.length}명
+              </span>
+            </>
+          ) : (
+            <span className="text-xs text-gray-400">없음</span>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
@@ -216,22 +262,21 @@ const AvatarStack = ({
 // 📄 Main Component
 // ============================================================================
 
-const categories = ['웹 해킹', '리버싱', '시스템 해킹', '디지털 포렌식', '네트워크 보안', 'IoT보안', '암호학'];
-const statuses = ['진행중', '완료', '계획중'];
+const statuses = ['전체', '진행중', '완료', '계획중'];
 const sortOptions = ['최신순', '인기순', '이름순'];
 
 export default function ProjectsContent() {
   const searchParams = useSearchParams();
   
   // State
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(['진행중']);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]); // 전체 상태로 시작
   const [searchTerm, setSearchTerm] = useState('');
   const [projects, setProjects] = useState<any[]>([]);
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [sortBy, setSortBy] = useState('최신순');
-  const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isSearching, setIsSearching] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -242,6 +287,22 @@ export default function ProjectsContent() {
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  // Fetch categories from API
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const response = await categoryService.getCategories();
+        setCategories(response.categories || []);
+      } catch (error) {
+        console.error('Failed to load categories:', error);
+        // 에러 발생 시 빈 배열로 설정
+        setCategories([]);
+      }
+    };
+    
+    loadCategories();
+  }, []);
 
   // Initialize from URL
   useEffect(() => {
@@ -259,8 +320,9 @@ export default function ProjectsContent() {
   const loadProjects = async (page: number = 0) => {
     setIsLoading(true);
     try {
+      // API에서 받은 카테고리 이름을 그대로 사용
       const categoriesParam = selectedCategories.length > 0
-        ? selectedCategories.map(cat => categoryToEnglish(cat)).filter(Boolean).join(',')
+        ? selectedCategories.join(',')
         : undefined;
       const statusParam = selectedStatuses.length > 0
         ? selectedStatuses.map(status => statusToEnglish(status)).join(',')
@@ -305,8 +367,23 @@ export default function ProjectsContent() {
           stars: item.likeCount || 0,
           likeCount: item.likeCount || 0,
           viewCount: item.viewCount || 0,
-          creator: { name: 'Unknown', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face' },
-          contributors: [],
+          creator: (item as any).owner ? {
+            username: (item as any).owner.username || '',
+            nickname: (item as any).owner.nickname || 'Unknown',
+            realname: (item as any).owner.realname || '',
+            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+          } : {
+            username: '',
+            nickname: 'Unknown',
+            realname: '',
+            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+          },
+          contributors: ((item as any).collaborators || []).map((collab: any) => ({
+            username: collab.username || '',
+            nickname: collab.nickname || 'Unknown',
+            realname: collab.realname || '',
+            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+          })),
           lastUpdate: item.updatedAt || item.createdAt || '',
           github: '',
           demo: null
@@ -320,7 +397,7 @@ export default function ProjectsContent() {
       }
 
       const response = await fetchProjects({
-        query: searchQuery || ' ',
+        query: searchQuery || undefined, // undefined로 전달하면 query 파라미터가 안보내짐
         projectStatus: statusParam,
         categories: categoriesParam,
         projectSortType: sortToEnglish(sortBy),
@@ -346,8 +423,23 @@ export default function ProjectsContent() {
         stars: item.likeCount || 0,
         likeCount: item.likeCount || 0,
         viewCount: item.viewCount || 0,
-        creator: { name: 'Unknown', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face' },
-        contributors: [],
+        creator: item.owner ? {
+          username: item.owner.username || '',
+          nickname: item.owner.nickname || 'Unknown',
+          realname: item.owner.realname || '',
+          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+        } : {
+          username: '',
+          nickname: 'Unknown',
+          realname: '',
+          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+        },
+        contributors: (item.collaborators || []).map((collab: any) => ({
+          username: collab.username || '',
+          nickname: collab.nickname || 'Unknown',
+          realname: collab.realname || '',
+          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+        })),
         lastUpdate: item.updatedAt || item.createdAt || '',
         github: '',
         demo: null
@@ -357,8 +449,7 @@ export default function ProjectsContent() {
       setTotalPages(response.totalPages);
       setTotalElements(response.totalElements);
       setCurrentPage(response.page);
-    } catch (error) {
-      console.error('Error loading projects:', error);
+    } catch (_error) {
       setProjects([]);
     } finally {
       setIsLoading(false);
@@ -384,7 +475,7 @@ export default function ProjectsContent() {
       setSearchSuggestions([]);
       setShowSuggestions(false);
       setIsSearching(false);
-      setCurrentPage(0);
+      // 검색어가 비어있을 때는 검색 실행하지 않음 (제안만 닫음)
     }
 
     return () => {
@@ -394,41 +485,46 @@ export default function ProjectsContent() {
     };
   }, [searchTerm]);
 
-  // Load projects when filters/sort/page change
+  // Load projects when filters/sort/page change (searchTerm 제외 - 제안 클릭이나 Enter 시에만 검색)
   useEffect(() => {
     loadProjects(currentPage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategories, selectedStatuses, sortBy, currentPage]);
 
   // Handlers
-  const handleCategoryToggle = (category: string) => {
-    setSelectedCategories(prev =>
-      prev.includes(category)
-        ? prev.filter(c => c !== category)
-        : [...prev, category]
-    );
-    setCurrentPage(0);
-  };
-
   const handleStatusToggle = (status: string) => {
-    setSelectedStatuses([status]);
+    if (status === '전체') {
+      setSelectedStatuses([]); // 전체는 빈 배열
+    } else {
+      setSelectedStatuses([status]);
+    }
     setCurrentPage(0);
   };
 
   const clearAllFilters = () => {
     setSelectedCategories([]);
-    setSelectedStatuses(['진행중']);
+    setSelectedStatuses([]); // 전체 상태로 초기화
     setSearchTerm('');
     setShowSuggestions(false);
     setSearchSuggestions([]);
     setCurrentPage(0);
   };
 
-  const handleSuggestionClick = (suggestion: string) => {
+  const handleSuggestionClick = async (suggestion: string) => {
     setSearchTerm(suggestion);
     setShowSuggestions(false);
     setCurrentPage(0);
     searchInputRef.current?.blur();
+    // 검색어를 설정한 후 프로젝트 검색 실행
+    await loadProjects(0);
+  };
+
+  const handleSearchSubmit = async () => {
+    setShowSuggestions(false);
+    setCurrentPage(0);
+    searchInputRef.current?.blur();
+    // 현재 검색어로 프로젝트 검색 실행
+    await loadProjects(0);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -461,114 +557,50 @@ export default function ProjectsContent() {
 
   return (
     <div className="min-h-screen bg-background">
+      <TitleBanner
+        title="Projects"
+        description="동아리 멤버들이 만들어낸 프로젝트를 만나보세요."
+        backgroundImage="/images/BgHeader.png"
+      />
       <div className="w-full px-3 sm:px-4 lg:px-10 py-10">
-        {/* Hero Section */}
-        <section className="mb-8">
-          <div className="relative overflow-hidden rounded-2xl bg-black px-6 py-10 sm:px-10 flex justify-center bg-gradient-to-r from-primary-600/40 via-primary-500 to-secondary-500/10">
-            <div className="relative z-10 text-center max-w-3xl">
-              <h1 className="mt-2 text-3xl sm:text-4xl font-bold text-white">Projects</h1>
-              <p className="mt-3 text-primary-100 text-base sm:text-lg">
-                동아리 멤버들이 만들어낸 프로젝트를 만나보세요.
-              </p>
-            </div>
-          </div>
-        </section>
-
         {/* Top Controls */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8 bg-white rounded-xl p-6 shadow-lg border border-gray-200">
-          <div className="flex items-center justify-between w-full gap-4">
-            {/* Search Bar */}
-            <div className="relative flex-1 max-w-md">
-              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${isSearching ? 'text-primary animate-pulse' : 'text-gray-400'}`} />
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="프로젝트 검색..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setShowSuggestions(e.target.value.length > 0);
-                }}
-                onFocus={() => {
-                  if (searchSuggestions.length > 0) setShowSuggestions(true);
-                }}
-                className="w-full h-10 pl-10 pr-4 text-sm bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
-              />
-              {isSearching && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                </div>
-              )}
-              
-              {/* Search Suggestions */}
-              {showSuggestions && searchSuggestions.length > 0 && searchTerm.length > 0 && (
-                <div
-                  ref={suggestionsRef}
-                  className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto"
-                >
-                  <div className="py-2">
-                    {searchSuggestions.map((suggestion, index) => {
-                      const parts = suggestion.split(new RegExp(`(${searchTerm})`, 'gi'));
-                      return (
-                        <button
-                          key={index}
-                          onClick={() => handleSuggestionClick(suggestion)}
-                          className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center"
-                        >
-                          <Search className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
-                          <span className="flex-1">
-                            {parts.map((part, i) =>
-                              part.toLowerCase() === searchTerm.toLowerCase() ? (
-                                <span key={i} className="text-primary font-semibold">{part}</span>
-                              ) : (
-                                <span key={i}>{part}</span>
-                              )
-                            )}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* View Toggle */}
-            <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 ${viewMode === 'grid' ? 'bg-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                title="Grid View"
-              >
-                <Grid size={16} />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 ${viewMode === 'list' ? 'bg-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                title="List View"
-              >
-                <List size={16} />
-              </button>
-            </div>
-
-            {/* Create Button */}
-            <Link href="/projects/create" className="bg-primary text-white px-6 py-2 rounded-lg font-semibold hover:bg-primary-700 transition-colors flex items-center gap-2 whitespace-nowrap">
-              <Plus size={16} />
-              <span className="hidden sm:inline">새 프로젝트</span>
-            </Link>
-          </div>
-        </div>
+        <ContentFilterBar
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          onSearchSubmit={handleSearchSubmit}
+          isSearching={isSearching}
+          suggestions={searchSuggestions}
+          showSuggestions={showSuggestions}
+          onSuggestionSelect={handleSuggestionClick}
+          onSuggestionsShow={setShowSuggestions}
+          isLoadingSuggestions={isSearching}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          sortBy={sortBy}
+          sortOptions={sortOptions}
+          onSortChange={(nextSort) => {
+            setSortBy(nextSort);
+            setCurrentPage(0);
+          }}
+          showViewMode={true}
+          showSort={true}
+          showCreateButton={true}
+          createButtonText="새 프로젝트"
+          createButtonHref="/projects/create"
+          placeholderText="프로젝트 검색..."
+        />
 
         {/* Main Content with Sidebar */}
         <section className="flex gap-8">
           {/* Sidebar Filter */}
-          <aside className="w-64 flex-shrink-0 hidden md:block">
+          <aside className="w-64 flex-shrink-0 hidden md:block space-y-6">
+            {/* Status Filter Box */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-gray-900">필터</h3>
-                {(selectedCategories.length > 0 || selectedStatuses.length > 1) && (
+                <h3 className="text-sm font-semibold text-gray-900">프로젝트 상태</h3>
+                {selectedStatuses.length > 1 && (
                   <button
-                    onClick={clearAllFilters}
+                    onClick={() => setSelectedStatuses(['진행중'])}
                     className="text-xs text-primary hover:underline"
                   >
                     초기화
@@ -577,51 +609,57 @@ export default function ProjectsContent() {
               </div>
 
               {/* Status Filters */}
-              <div className="space-y-3 mb-6">
-                <h4 className="text-base font-semibold text-gray-900">프로젝트 상태</h4>
-                {statuses.map((status) => (
-                  <label key={status} className="flex items-center cursor-pointer">
-                    <input
-                      type="radio"
-                      name="projectStatus"
-                      checked={selectedStatuses.includes(status)}
-                      onChange={() => handleStatusToggle(status)}
-                      className="sr-only"
-                    />
-                    <div className={`w-4 h-4 border-2 rounded mr-3 flex items-center justify-center ${
-                      selectedStatuses.includes(status)
-                        ? 'bg-primary border-primary'
-                        : 'border-gray-300'
-                    }`}>
-                      {selectedStatuses.includes(status) && (
-                        <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </div>
-                    <span className="text-gray-700">{status}</span>
-                  </label>
-                ))}
-              </div>
+              <div className="space-y-3">
+                {statuses.map((status) => {
+                  const isSelected = status === '전체'
+                    ? selectedStatuses.length === 0
+                    : selectedStatuses.includes(status);
 
-              {/* Category Filters */}
-              <h4 className="text-xs font-semibold text-gray-900 uppercase mb-3">학습 주제</h4>
-              <div className="space-y-1">
-                {categories.map((category) => (
-                  <button
-                    key={category}
-                    onClick={() => handleCategoryToggle(category)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm ${
-                      selectedCategories.includes(category)
-                        ? 'bg-primary-600 text-white'
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    {category}
-                  </button>
-                ))}
+                  return (
+                    <label key={status} className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="projectStatus"
+                        checked={isSelected}
+                        onChange={() => handleStatusToggle(status)}
+                        className="sr-only"
+                      />
+                      <div className={`w-4 h-4 border-2 rounded mr-3 flex items-center justify-center ${
+                        isSelected
+                          ? 'bg-primary border-primary'
+                          : 'border-gray-300'
+                      }`}>
+                        {isSelected && (
+                          <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </div>
+                      <span className="text-gray-700">{status}</span>
+                    </label>
+                  );
+                })}
               </div>
             </div>
+
+            {/* Category Filter Box */}
+            <CategoryFilter
+              categories={categories.map((category) => ({
+                id: category.name,
+                name: category.name,
+                count: 0,
+              }))}
+              selectedCategory={selectedCategories.length === 0 ? 'all' : selectedCategories[0]}
+              onCategoryChange={(categoryId) => {
+                if (categoryId === 'all') {
+                  setSelectedCategories([]);
+                } else {
+                  setSelectedCategories([categoryId]);
+                }
+                setCurrentPage(0);
+              }}
+              title="학습 주제"
+            />
           </aside>
 
           {/* Main Content */}
@@ -633,36 +671,6 @@ export default function ProjectsContent() {
                 {searchTerm && ` (검색어: "${searchTerm}")`}
                 {currentTopicName && ` (주제: ${currentTopicName})`}
               </p>
-
-              {/* Sort Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowSortDropdown(!showSortDropdown)}
-                  className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  {sortBy}
-                  <ChevronDown size={16} className={`transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
-                </button>
-
-                {showSortDropdown && (
-                  <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                    {sortOptions.map((option) => (
-                      <button
-                        key={option}
-                        onClick={() => {
-                          setSortBy(option);
-                          setShowSortDropdown(false);
-                        }}
-                        className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors ${
-                          sortBy === option ? 'text-primary font-medium' : 'text-gray-700'
-                        }`}
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
             </div>
 
             {/* Loading State */}
@@ -686,8 +694,9 @@ export default function ProjectsContent() {
                     }`}>
                       {/* Image */}
                       <div className={`relative ${viewMode === 'list' ? 'w-56 flex-shrink-0 overflow-hidden' : 'overflow-hidden'}`}>
-                        <Image
+                        <ImageWithFallback
                           src={project.image}
+                          fallbackSrc="/images/placeholder/project.png"
                           alt={project.title}
                           width={viewMode === 'list' ? 224 : 400}
                           height={viewMode === 'list' ? 224 : 240}

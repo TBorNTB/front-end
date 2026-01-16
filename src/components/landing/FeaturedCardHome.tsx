@@ -1,8 +1,8 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
-import { Heart, Eye } from 'lucide-react';
+import { Heart, Eye, Crown, Users } from 'lucide-react';
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 
 interface FeaturedProjectCardProps {
   project: {
@@ -16,46 +16,33 @@ interface FeaturedProjectCardProps {
     viewText: string;
     likes?: number;
     views?: number;
+    owner?: {
+      username?: string;
+      nickname?: string;
+      realname?: string;
+      avatarUrl?: string;
+    };
+    collaborators?: Array<{
+      username?: string;
+      nickname?: string;
+      realname?: string;
+      avatarUrl?: string;
+    }>;
   };
 }
 
-// URL 유효성 검사 함수
-const isValidImageUrl = (url: string | null | undefined): boolean => {
-  if (!url || typeof url !== 'string') return false;
-  if (url.trim() === '' || url === 'string' || url === 'null' || url === 'undefined') return false;
-  
-  // 상대 경로는 유효함 (/, /images/...)
-  if (url.startsWith('/')) return true;
-  
-  // 절대 URL 검사
-  try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
-};
-
 export function FeaturedProjectCard({ project }: FeaturedProjectCardProps) {
-  const hasValidImage = isValidImageUrl(project.thumbnailImage);
-  
   return (
     <div className="relative overflow-hidden rounded-2xl shadow-lg group">
       {/* Background Image */}
       <div className="relative h-80 bg-gradient-to-br from-slate-800 to-slate-900">
-        {hasValidImage ? (
-          <Image
-            src={project.thumbnailImage}
-            alt={project.title}
-            fill
-            className="object-cover opacity-80"
-            unoptimized={project.thumbnailImage.startsWith('http')}
-            onError={(e) => {
-              // 이미지 로드 실패 시 기본 그라데이션만 표시
-              e.currentTarget.style.display = 'none';
-            }}
-          />
-        ) : null}
+        <ImageWithFallback
+          src={project.thumbnailImage}
+          fallbackSrc="/images/placeholder/project.png"
+          alt={project.title}
+          fill
+          className="object-cover opacity-80"
+        />
         
         {/* Overlay Gradient */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -105,6 +92,67 @@ export function FeaturedProjectCard({ project }: FeaturedProjectCardProps) {
               </span>
             ))}
           </div>
+
+          {/* Owner and Collaborators */}
+          {(project.owner || (project.collaborators && project.collaborators.length > 0)) && (
+            <div className="mb-4 space-y-2">
+              {/* Owner */}
+              {project.owner && (
+                <div className="flex items-center gap-2">
+                  <Crown size={14} className="text-yellow-400" />
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full overflow-hidden border-2 border-yellow-400 bg-gray-200">
+                      <ImageWithFallback
+                        src={project.owner.avatarUrl || ''}
+                        fallbackSrc="/images/placeholder/default-avatar.svg"
+                        alt={project.owner.nickname || project.owner.realname || 'Owner'}
+                        width={24}
+                        height={24}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <span className="text-white text-xs font-medium">
+                      {project.owner.nickname || project.owner.realname || project.owner.username || '소유자'}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Collaborators */}
+              {project.collaborators && project.collaborators.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <Users size={14} className="text-blue-300" />
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex -space-x-2">
+                      {project.collaborators.slice(0, 3).map((collab, index) => (
+                        <div 
+                          key={index}
+                          className="w-6 h-6 rounded-full overflow-hidden border-2 border-white/50 bg-gray-200"
+                        >
+                          <ImageWithFallback
+                            src={collab.avatarUrl || ''}
+                            fallbackSrc="/images/placeholder/default-avatar.svg"
+                            alt={collab.nickname || collab.realname || 'Collaborator'}
+                            width={24}
+                            height={24}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ))}
+                      {project.collaborators.length > 3 && (
+                        <div className="w-6 h-6 rounded-full border-2 border-white/50 bg-white/20 flex items-center justify-center">
+                          <span className="text-white text-xs font-medium">+{project.collaborators.length - 3}</span>
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-white/80 text-xs">
+                      {project.collaborators.length}명
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* View More Button */}
           <Link

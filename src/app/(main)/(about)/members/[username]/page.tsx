@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 
+import TitleBanner from '@/components/layout/TitleBanner';
+
 interface MemberPageProps {
   params: Promise<{ username: string }>;
 }
@@ -83,9 +85,13 @@ export default async function MemberPage({ params }: MemberPageProps) {
   if (!member) {
     notFound();
   }
-
-   return (
+  return (
     <div className="min-h-screen bg-background flex flex-col">
+      <TitleBanner
+        title="Member Profile"
+        description="SSG 멤버의 프로필과 활동을 확인하세요."
+        backgroundImage="/images/BgHeader.png"
+      />
       <div className="container flex-1 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
           {/* Left Sidebar - Fixed, Compact */}

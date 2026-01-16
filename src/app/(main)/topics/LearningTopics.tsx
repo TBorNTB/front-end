@@ -4,6 +4,8 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Star, Users, Clock, ArrowRight, Globe, Shield, Code, Lock, Search, Wifi, Cpu, Key } from 'lucide-react';
+import TitleBanner from '@/components/layout/TitleBanner';
+import CategoryFilter from '@/components/layout/CategoryFilter';
 import type { LucideIcon } from 'lucide-react';
 import { categoryService, CategoryItem } from '@/lib/api/services/category-services';
 import { CategoryType, CategorySlugs, CategoryDisplayNames, CategoryDescriptions } from '@/types/services/category';
@@ -34,6 +36,17 @@ const CategoryColors: Record<CategoryType, string> = {
 const getCategoryTypeByName = (name: string): CategoryType | null => {
   const entry = Object.entries(CategoryDisplayNames).find(([_, displayName]) => displayName === name);
   return entry ? (entry[0] as CategoryType) : null;
+};
+
+// CategoryType을 API 형식으로 변환 (WEB_HACKING -> WEB-HACKING)
+const convertCategoryTypeToApiFormat = (categoryType: CategoryType): string => {
+  return categoryType.replace(/_/g, '-');
+};
+
+// 카테고리 이름을 API 형식으로 변환 (한글 이름 -> API 형식)
+const getCategoryApiFormat = (categoryName: string): string => {
+  const type = getCategoryTypeByName(categoryName);
+  return type ? convertCategoryTypeToApiFormat(type) : categoryName;
 };
 
 // API 응답을 컴포넌트에서 사용하는 형식으로 변환
@@ -75,14 +88,29 @@ Buffer Overflow, Format String Bug, Use-After-Free와 같은 메모리 corruptio
 
 // 범용 slug 생성 함수 - 어떤 카테고리 이름이 와도 자동으로 처리
 const createSlugFromName = (name: string, id: number): string => {
+  // 한글 카테고리 이름을 영문 slug로 변환하는 매핑
+  const koreanToSlugMap: Record<string, string> = {
+    '웹 해킹': 'web-hacking',
+    '리버싱': 'reversing',
+    '시스템 해킹': 'system-hacking',
+    '디지털 포렌식': 'digital-forensics',
+    '네트워크 보안': 'network-security',
+    'IoT보안': 'iot-security',
+    '암호학': 'cryptography',
+  };
+
+  // 매핑에 있으면 사용
+  if (koreanToSlugMap[name]) {
+    return koreanToSlugMap[name];
+  }
+
   // 영문/숫자만 있는 경우: 공백을 하이픈으로, 소문자 변환
   if (/^[a-zA-Z0-9\s-]+$/.test(name)) {
     return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
   }
   
-  // 한글이나 특수문자가 포함된 경우: ID 기반 slug 사용 (안정적이고 고유함)
-  // 예: "임시" -> "category-0", "임시2" -> "category-1"
-  return `category-${id}`;
+  // 한글이나 특수문자가 포함된 경우: 공백을 제거하고 소문자로 변환
+  return name.toLowerCase().replace(/\s+/g, '-');
 };
 
 const transformCategoryData = (apiCategory: CategoryItem): CategoryDisplayData | null => {
@@ -601,41 +629,110 @@ export function LearningTopics() {
     }
   };
 
-  // Filter projects and articles based on selected category
-  const filteredProjects = selectedCategory 
-    ? projects.filter(project => project.categorySlug === selectedCategory)
-    : projects;
-    
-  const filteredArticles = selectedCategory 
-    ? articles.filter(article => article.categorySlug === selectedCategory)
-    : articles;
-
+  // Find current category based on selected slug
   const currentCategory = categories.find(cat => cat.slug === selectedCategory);
+
+  // State for projects and articles
+  const [filteredProjects, setFilteredProjects] = useState<any[]>([]);
+  const [filteredArticles, setFilteredArticles] = useState<any[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [loadingArticles, setLoadingArticles] = useState(false);
+
+  // Fetch projects and articles when category is selected
+  useEffect(() => {
+    if (!selectedCategory || !currentCategory) {
+      setFilteredProjects([]);
+      setFilteredArticles([]);
+      return;
+    }
+
+    const fetchProjectsAndArticles = async () => {
+      const categoryApiFormat = getCategoryApiFormat(currentCategory.name);
+      
+      // Fetch projects
+      setLoadingProjects(true);
+      try {
+        const projectParams = new URLSearchParams();
+        projectParams.append('categories', currentCategory.name); // API는 한글 카테고리 이름을 받음
+        projectParams.append('size', '5');
+        projectParams.append('page', '0');
+        projectParams.append('projectSortType', 'LATEST');
+
+        const projectResponse = await fetch(`/api/projects/search?${projectParams.toString()}`);
+        if (projectResponse.ok) {
+          const projectData = await projectResponse.json();
+          const transformedProjects = (projectData.content || []).map((item: any) => ({
+            id: String(item.id),
+            title: item.title || '제목 없음',
+            description: item.description || '',
+            category: item.projectCategories?.[0] || currentCategory.name,
+            status: item.projectStatus === 'IN_PROGRESS' ? 'In Progress' :
+                    item.projectStatus === 'COMPLETED' ? 'Completed' :
+                    item.projectStatus === 'PLANNING' ? 'Planning' : 'In Progress',
+            tags: item.projectTechStacks || [],
+            stars: item.likeCount || 0,
+            contributors: (item.collaborators || []).length + (item.owner ? 1 : 0),
+            categorySlug: selectedCategory
+          }));
+          setFilteredProjects(transformedProjects);
+        } else {
+          setFilteredProjects([]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch projects:', error);
+        setFilteredProjects([]);
+      } finally {
+        setLoadingProjects(false);
+      }
+
+      // Fetch articles (CS Knowledge)
+      setLoadingArticles(true);
+      try {
+        const articleParams = new URLSearchParams();
+        articleParams.append('category', currentCategory.name); // API는 한글 카테고리 이름을 받음
+        articleParams.append('size', '5');
+        articleParams.append('page', '0');
+        articleParams.append('sortType', 'LATEST');
+
+        const articleResponse = await fetch(`/api/articles/search?${articleParams.toString()}`);
+        if (articleResponse.ok) {
+          const articleData = await articleResponse.json();
+          const transformedArticles = (articleData.content || []).map((item: any) => ({
+            id: String(item.id),
+            title: item.title || '제목 없음',
+            description: typeof item.content === 'string' 
+              ? item.content.substring(0, 150) 
+              : '',
+            category: item.category || currentCategory.name,
+            author: item.writer?.nickname || item.writer?.realname || '작성자',
+            publishDate: item.createdAt ? new Date(item.createdAt).toLocaleDateString('ko-KR') : '',
+            readTime: '5분 읽기',
+            views: item.viewCount || 0,
+            comments: 0,
+            categorySlug: selectedCategory
+          }));
+          setFilteredArticles(transformedArticles);
+        } else {
+          setFilteredArticles([]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch articles:', error);
+        setFilteredArticles([]);
+      } finally {
+        setLoadingArticles(false);
+      }
+    };
+
+    fetchProjectsAndArticles();
+  }, [selectedCategory, currentCategory]);
   
   // 선택된 카테고리가 없으면 상세 페이지를 표시하지 않음
   if (selectedCategory && !currentCategory) {
     console.warn(`Category not found for slug: "${selectedCategory}"`);
   }
 
-  // Common Header Component
-  const renderHeader = () => (
-    <div className="relative overflow-hidden rounded-2xl bg-black px-6 py-10 sm:px-10 flex justify-center bg-gradient-to-r from-primary-600/40 via-primary-500 to-secondary-500/10">
-      <div className="relative z-10 text-center max-w-3xl">
-        <h1 className="mt-2 text-3xl sm:text-4xl font-bold text-white">
-          Learning Topics
-        </h1>
-        <p className="mt-3 text-primary-100 text-base sm:text-lg">
-          사이버보안의 다양한 분야를 탐구하고 실무 경험을 쌓을 수 있는 학습 주제들을 확인하세요.
-        </p>
-      </div>
-    </div>
-  );
-
   const renderAllCategories = () => (
     <div className="space-y-8">
-      {/* Header Section */}
-      {renderHeader()}
-
       {/* Categories Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {categories.map((category) => {
@@ -686,84 +783,76 @@ export function LearningTopics() {
     const cat = currentCategory;
     return (
       <div className="space-y-6">
-        {/* Header Section */}
-        {renderHeader()}
-
-        <div className="flex gap-8 items-start">
-          {/* Sidebar - Sticky */}
-          <div className="w-64 flex-shrink-0">
-            <div className="sticky top-8 bg-white rounded-xl shadow-sm border border-gray-200">
-              <button
-                onClick={() => router.push('/topics')}
-                className="w-full p-4 border-b border-gray-200 text-left hover:bg-gray-50 transition-colors cursor-pointer"
-              >
-                <h3 className="text-base font-semibold text-gray-900">전체 카테고리</h3>
-              </button>
-              <div className="p-2 max-h-[calc(100vh-10rem)] overflow-y-auto">
-                {categories.map((category) => {
-                  const isActive = selectedCategory === category.slug;
-                  return (
-                    <button
-                      key={category.slug}
-                      onClick={() => handleCategoryClick(category.slug)}
-                      className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-sm transition-all ${
-                        isActive
-                          ? 'bg-primary-600 text-white font-medium'
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      <span>{category.name}</span>
-                      <span className={`px-2 py-0.5 rounded-full text-xs ${
-                        isActive
-                          ? 'bg-white bg-opacity-20 text-white'
-                          : 'bg-gray-200 text-gray-600'
-                      }`}>
-                        {category.articles + category.projects}
-                      </span>
-                    </button>
-                  );
-                })}
+        {/* Full Width Header */}
+        {cat ? (
+          <div className="bg-gradient-background rounded-xl p-8">
+            {/* Animated background grid pattern */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(58,77,161,0.1)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
+            </div>
+            <div className="relative z-10 flex items-start space-x-4">
+              <div className={`w-16 h-16 rounded-xl ${CategoryColors[cat.type]} flex items-center justify-center flex-shrink-0`}>
+                {(() => {
+                  const Icon = CategoryIcons[cat.type];
+                  return <Icon className="w-8 h-8 text-white" />;
+                })()}
+              </div>
+              <div className="flex-1">
+                <h1 className="text-3xl font-bold text-white mb-2">{cat.name}</h1>
+                <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-line">
+                  {cat.longDescription}
+                </p>
               </div>
             </div>
           </div>
-
-          {/* Right Side Content */}
-          <div className="flex-1 space-y-6">
-            {/* Category Header - Without background */}
-            {cat ? (
-              <div className="pb-4 border-b border-gray-200">
-                <div className="flex items-start space-x-4">
-                  <div className={`w-14 h-14 rounded-xl ${CategoryColors[cat.type]} flex items-center justify-center flex-shrink-0`}>
-                    {(() => {
-                      const Icon = CategoryIcons[cat.type];
-                      return <Icon className="w-7 h-7 text-white" />;
-                    })()}
-                  </div>
-                  <div className="flex-1">
-                    <h1 className="text-2xl font-bold text-foreground mb-2">{cat.name}</h1>
-                    <p className="text-sm text-gray-900 leading-relaxed whitespace-pre-line">
-                      {cat.longDescription}
-                    </p>
-                  </div>
-                </div>
+        ) : (
+          <div className="bg-gradient-background rounded-xl p-8">
+            {/* Animated background grid pattern */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(58,77,161,0.1)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
+            </div>
+            <div className="relative z-10 flex items-start space-x-4">
+              <div className="w-16 h-16 rounded-xl bg-gray-700 flex items-center justify-center flex-shrink-0">
+                <Shield className="w-8 h-8 text-gray-400" />
               </div>
-            ) : (
-              <div className="pb-6 mb-6 border-b border-gray-200">
-                <div className="flex items-start space-x-4">
-                  <div className="w-14 h-14 rounded-xl bg-gray-400 flex items-center justify-center flex-shrink-0">
-                    <Shield className="w-7 h-7 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <h1 className="text-2xl font-bold text-foreground mb-2">카테고리를 찾을 수 없습니다</h1>
-                    <p className="text-sm text-gray-600 leading-relaxed">
-                      선택하신 카테고리 정보를 불러올 수 없습니다.
-                    </p>
-                  </div>
-                </div>
+              <div className="flex-1">
+                <h1 className="text-3xl font-bold text-white mb-2">카테고리를 찾을 수 없습니다</h1>
+                <p className="text-sm text-gray-300 leading-relaxed">
+                  선택하신 카테고리 정보를 불러올 수 없습니다.
+                </p>
               </div>
-            )}
+            </div>
+          </div>
+        )}
 
-            {/* Content Area with white background */}
+        {/* Main Content Area */}
+        <div className="flex gap-8">
+          {/* Left Sidebar - Category Navigation */}
+          <div className="w-64 flex-shrink-0 hidden lg:block">
+            <div className="sticky top-8">
+              <CategoryFilter
+                categories={[
+                  ...categories.map(category => ({
+                    id: category.slug,
+                    name: category.name,
+                    count: category.articles + category.projects,
+                  }))
+                ]}
+                selectedCategory={selectedCategory}
+                onCategoryChange={(slug) => {
+                  if (slug === 'all') {
+                    router.push('/topics');
+                  } else {
+                    router.push(`/topics?category=${slug}`);
+                  }
+                }}
+                title="전체 카테고리"
+              />
+            </div>
+          </div>
+
+          {/* Right Content Area */}
+          <div className="flex-1">
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
               {/* Content Sections */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -777,7 +866,12 @@ export function LearningTopics() {
                   </div>
 
                   <div className="space-y-4">
-                    {filteredProjects.length > 0 ? (
+                    {loadingProjects ? (
+                      <div className="bg-gray-50 rounded-lg p-8 text-center border border-gray-200">
+                        <div className="inline-block w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-gray-600 mt-2">프로젝트를 불러오는 중...</p>
+                      </div>
+                    ) : filteredProjects.length > 0 ? (
                       filteredProjects.map((project) => (
                         <div key={project.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-200">
                           <div className="flex items-start justify-between mb-3">
@@ -788,11 +882,13 @@ export function LearningTopics() {
                           </div>
                           <p className="text-gray-600 text-sm mb-4">{project.description}</p>
                           <div className="flex items-center space-x-2 mb-4">
-                            {project.tags.map((tag, index) => (
-                              <span key={index} className="bg-white text-gray-700 px-2 py-1 rounded text-xs border border-gray-200">
-                                {tag}
-                              </span>
-                            ))}
+                            {project.tags && project.tags.length > 0 ? (
+                              project.tags.slice(0, 3).map((tag: string, index: number) => (
+                                <span key={index} className="bg-white text-gray-700 px-2 py-1 rounded text-xs border border-gray-200">
+                                  {tag}
+                                </span>
+                              ))
+                            ) : null}
                           </div>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3 text-xs text-gray-500">
@@ -805,7 +901,10 @@ export function LearningTopics() {
                                 <span>{project.contributors}</span>
                               </div>
                             </div>
-                            <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                            <button 
+                              onClick={() => router.push(`/projects/${project.id}`)}
+                              className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                            >
                               자세히 보기 →
                             </button>
                           </div>
@@ -839,7 +938,12 @@ export function LearningTopics() {
                   </div>
 
                   <div className="space-y-4">
-                    {filteredArticles.length > 0 ? (
+                    {loadingArticles ? (
+                      <div className="bg-gray-50 rounded-lg p-8 text-center border border-gray-200">
+                        <div className="inline-block w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-gray-600 mt-2">아티클을 불러오는 중...</p>
+                      </div>
+                    ) : filteredArticles.length > 0 ? (
                       filteredArticles.map((article) => (
                         <div key={article.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-200">
                           <h3 className="text-base font-bold text-foreground mb-2">{article.title}</h3>
@@ -859,7 +963,10 @@ export function LearningTopics() {
                                 <span>{article.readTime}</span>
                               </div>
                             </div>
-                            <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                            <button 
+                              onClick={() => router.push(`/community/news/${article.id}`)}
+                              className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                            >
                               읽어보기 →
                             </button>
                           </div>
@@ -939,6 +1046,13 @@ export function LearningTopics() {
 
   return (
     <div className="min-h-screen bg-background">
+      {!selectedCategory && (
+        <TitleBanner
+          title="Learning Topics"
+          description="사이버보안의 다양한 분야를 탐구하고 실무 경험을 쌓을 수 있는 학습 주제들을 확인하세요."
+          backgroundImage="/images/BgHeader.png"
+        />
+      )}
       <div className="container py-8">
         {selectedCategory && currentCategory ? renderCategoryDetail() : renderAllCategories()}
       </div>

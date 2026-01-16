@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { BASE_URL } from '@/lib/api/config';
+import { getApiUrl } from '@/lib/api/config';
+import { META_ENDPOINTS } from '@/lib/api/endpoints/meta-endpoints';
 import { USE_MOCK_DATA } from '@/lib/api/env';
 import { MOCK_PROJECTS, MOCK_ARTICLES, MOCK_CATEGORIES } from '@/lib/mock-data';
 
@@ -16,7 +17,7 @@ interface ApiCountResponse {
   userCount: number;
   projectCount: number;
   articleCount: number;
-  csCount: number;
+  categoryCount: number;
 }
 
 // 숫자 포맷팅 함수
@@ -131,18 +132,17 @@ export default function StatisticsSection({ className = "" }: StatisticsSectionP
         return;
       }
       try {
-        const response = await fetch(
-          `${BASE_URL}/user-service/api/meta/count`,
-          {
-            method: 'GET',
-            headers: {
-              'accept': 'application/json',
-            },
-          }
-        );
+        const url = getApiUrl(META_ENDPOINTS.META.COUNT);
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'accept': 'application/json',
+          },
+          credentials: 'include',
+        });
 
         if (!response.ok) {
-          throw new Error('Failed to fetch statistics');
+          throw new Error(`Failed to fetch statistics: ${response.status}`);
         }
 
         const data: ApiCountResponse = await response.json();
@@ -164,13 +164,16 @@ export default function StatisticsSection({ className = "" }: StatisticsSectionP
             description: '활발한 커뮤니티'
           },
           {
-            number: formatNumber(data.csCount),
+            number: formatNumber(data.categoryCount),
             label: 'Learning Topics',
             description: '학습 주제'
           }
         ]);
       } catch (error) {
-        console.error('Error fetching statistics:', error);
+        // 에러 발생 시 조용히 fallback 데이터 사용 (콘솔 에러는 개발 환경에서만)
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Failed to fetch statistics, using fallback data:', error);
+        }
         // Fall back to mock data on error
         setStatistics([
           {
@@ -194,7 +197,6 @@ export default function StatisticsSection({ className = "" }: StatisticsSectionP
             description: '학습 주제'
           }
         ]);
-        // 에러 발생 시 기본값 유지
       } finally {
         setLoading(false);
       }

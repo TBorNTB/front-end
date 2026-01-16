@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Grid, List, Search, ChevronDown, X, ChevronLeft, ChevronRight, Heart, Eye, Calendar, User, Plus } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { NewsCard } from './NewsCard';
-import Link from 'next/link';
-import { BASE_URL } from '@/lib/api/config';
-
+import ContentFilterBar from '@/components/layout/TopSection';
+import CategoryFilter from '@/components/layout/CategoryFilter';
 // News API Response Types
 interface NewsSearchParams {
-  query?: string;
+  keyword?: string;
+  category?: string;
+  postSortType?: string;
   size?: number;
   page?: number;
 }
@@ -20,81 +21,97 @@ interface NewsSearchResponse {
   size: number;
   totalElements: number;
   totalPages: number;
+  error?: string;
 }
 
 interface NewsItem {
-  id: string;
+  id: number;
   content: {
     title: string;
     summary: string;
     content: string;
-    category?: string;
+    category: string;
   };
   thumbnailPath?: string;
-  writerId: string;
   tags: string[];
   createdAt: string;
   updatedAt: string;
   likeCount: number;
   viewCount: number;
+  writer: {
+    username: string;
+    nickname: string;
+    realname: string;
+  };
+  participants?: Array<{
+    username: string;
+    nickname: string;
+    realname: string;
+  }>;
 }
 
-// News 검색 API 호출 함수
+/**
+ * Fetch news from Elasticsearch API via API route
+ */
 const fetchNews = async (params: NewsSearchParams): Promise<NewsSearchResponse> => {
   try {
     const queryParams = new URLSearchParams();
     
-    if (params.query && params.query.trim()) {
-      queryParams.append('query', params.query.trim());
-    } else {
-      queryParams.append('query', ' ');
+    // Keyword: only append if provided and not empty
+    if (params.keyword && params.keyword.trim() && params.keyword.trim() !== ' ') {
+      queryParams.append('keyword', params.keyword.trim());
     }
     
-    if (params.size !== undefined) {
-      queryParams.append('size', params.size.toString());
-    }
+    // Category: default to MT for member news
+    const category = params.category && params.category !== 'all' ? params.category : 'MT';
+    queryParams.append('category', category);
     
-    if (params.page !== undefined) {
-      queryParams.append('page', params.page.toString());
-    }
+    // Sort type: default to LATEST
+    queryParams.append('postSortType', params.postSortType || 'LATEST');
+    
+    // Size and page: always include
+    queryParams.append('size', (params.size || PAGE_SIZE).toString());
+    queryParams.append('page', (params.page !== undefined ? params.page : 0).toString());
 
-    const url = `${BASE_URL}/elastic-service/api/elastic/news/search?${queryParams.toString()}`;
+    const url = `/api/news/search?${queryParams.toString()}`;
     
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'accept': 'application/json',
-      },
-    });
+    const response = await fetch(url);
 
     if (!response.ok) {
-      let errorMessage = `API error: ${response.status}`;
-      try {
-        const errorData = await response.json();
-        console.error('API Error Response:', errorData);
-        errorMessage = errorData.message || errorData.error || errorMessage;
-      } catch (e) {
-        const errorText = await response.text();
-        console.error('API Error Text:', errorText);
-      }
-      throw new Error(errorMessage);
+      const errorData = await response.json().catch(() => ({} as Record<string, unknown>));
+      const message = (errorData as { message?: string; error?: string })?.message
+        || (errorData as { error?: string })?.error
+        || response.statusText
+        || `API error: ${response.status}`;
+
+      return {
+        content: [],
+        page: params.page || 0,
+        size: params.size || PAGE_SIZE,
+        totalElements: 0,
+        totalPages: 0,
+        error: message,
+      };
     }
 
-    const data: NewsSearchResponse = await response.json();
-    return data;
+    return await response.json();
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error fetching news:', error);
     return {
       content: [],
-      page: 0,
-      size: 0,
+      page: params.page || 0,
+      size: params.size || PAGE_SIZE,
       totalElements: 0,
-      totalPages: 0
+      totalPages: 0,
+      error: message,
     };
   }
 };
 
-// Elasticsearch 검색 제안 API 호출 함수
+/**
+ * Fetch search suggestions from Elasticsearch API via API route
+ */
 const fetchElasticSearchSuggestions = async (query: string): Promise<string[]> => {
   if (!query || query.trim().length === 0) {
     return [];
@@ -102,24 +119,18 @@ const fetchElasticSearchSuggestions = async (query: string): Promise<string[]> =
 
   try {
     const response = await fetch(
-      `${BASE_URL}/elastic-service/api/elastic/news/suggestion?query=${encodeURIComponent(query)}`,
-      {
-        method: 'GET',
-        headers: {
-          'accept': 'application/json',
-        },
-      }
+      `/api/news/suggestions?query=${encodeURIComponent(query.trim())}`
     );
 
     if (!response.ok) {
-      console.error('Elasticsearch API error:', response.status);
+      console.error('News suggestion API error:', response.status);
       return [];
     }
 
     const data = await response.json();
     return Array.isArray(data) ? data : [];
   } catch (error) {
-    console.error('Error fetching Elasticsearch suggestions:', error);
+    console.error('Error fetching news suggestions:', error);
     return [];
   }
 };
@@ -128,6 +139,20 @@ const fetchElasticSearchSuggestions = async (query: string): Promise<string[]> =
 const PAGE_SIZE = 6;
 
 const sortOptions = ['최신순', '인기순', '조회순'];
+
+// 정렬 옵션을 API 형식으로 변환
+const convertSortToApiType = (sortBy: string): string => {
+  switch (sortBy) {
+    case '최신순':
+      return 'LATEST';
+    case '인기순':
+      return 'POPULAR';
+    case '조회순':
+      return 'VIEWS';
+    default:
+      return 'LATEST';
+  }
+};
 
 // News 카테고리 정의
 export enum NewsCategoryType {
@@ -164,7 +189,7 @@ const newsCategories = [
 // 목 데이터 (예시용)
 const mockNewsData: NewsItem[] = [
   {
-    id: '1',
+    id: 1,
     content: {
       title: '2025년 신입생 OT 개최 안내',
       summary: '세종대학교 정보보안 동아리 SSG의 2025년 신입생 오리엔테이션이 개최됩니다.',
@@ -172,15 +197,19 @@ const mockNewsData: NewsItem[] = [
       category: NewsCategoryType.OT
     },
     thumbnailPath: undefined,
-    writerId: '관리자',
     tags: ['OT', '신입생', '안내'],
     createdAt: new Date(2025, 0, 15).toISOString(),
     updatedAt: new Date(2025, 0, 15).toISOString(),
     likeCount: 45,
-    viewCount: 234
+    viewCount: 234,
+    writer: {
+      username: '관리자',
+      nickname: '관리자',
+      realname: '관리자',
+    },
   },
   {
-    id: '2',
+    id: 2,
     content: {
       title: '웹 해킹 스터디 3기 모집',
       summary: '웹 해킹 기초부터 실전까지 함께 공부하는 스터디를 모집합니다.',
@@ -188,15 +217,19 @@ const mockNewsData: NewsItem[] = [
       category: NewsCategoryType.STUDY
     },
     thumbnailPath: undefined,
-    writerId: '김민수',
     tags: ['스터디', '웹해킹', '모집'],
     createdAt: new Date(2025, 0, 12).toISOString(),
     updatedAt: new Date(2025, 0, 12).toISOString(),
     likeCount: 32,
-    viewCount: 189
+    viewCount: 189,
+    writer: {
+      username: '김민수',
+      nickname: '김민수',
+      realname: '김민수',
+    },
   },
   {
-    id: '3',
+    id: 3,
     content: {
       title: '리버싱 세미나 개최',
       summary: 'IDA Pro를 활용한 리버싱 기초 세미나가 개최됩니다.',
@@ -204,15 +237,19 @@ const mockNewsData: NewsItem[] = [
       category: NewsCategoryType.SEMINAR
     },
     thumbnailPath: undefined,
-    writerId: '박지영',
     tags: ['세미나', '리버싱', 'IDA Pro'],
     createdAt: new Date(2025, 0, 10).toISOString(),
     updatedAt: new Date(2025, 0, 10).toISOString(),
     likeCount: 28,
-    viewCount: 156
+    viewCount: 156,
+    writer: {
+      username: '박지영',
+      nickname: '박지영',
+      realname: '박지영',
+    },
   },
   {
-    id: '4',
+    id: 4,
     content: {
       title: '2025년 MT 일정 안내',
       summary: '2025년도 MT(Membership Training) 일정을 안내드립니다.',
@@ -220,15 +257,19 @@ const mockNewsData: NewsItem[] = [
       category: NewsCategoryType.MT
     },
     thumbnailPath: undefined,
-    writerId: '이준호',
     tags: ['MT', '일정', '안내'],
     createdAt: new Date(2025, 0, 8).toISOString(),
     updatedAt: new Date(2025, 0, 8).toISOString(),
     likeCount: 67,
-    viewCount: 312
+    viewCount: 312,
+    writer: {
+      username: '이준호',
+      nickname: '이준호',
+      realname: '이준호',
+    },
   },
   {
-    id: '5',
+    id: 5,
     content: {
       title: '연합 세미나: 사이버 보안 트렌드',
       summary: '다른 대학 동아리와 함께하는 연합 세미나가 개최됩니다.',
@@ -236,15 +277,19 @@ const mockNewsData: NewsItem[] = [
       category: NewsCategoryType.UNITED_SEMINAR
     },
     thumbnailPath: undefined,
-    writerId: '정우현',
     tags: ['연합세미나', '보안트렌드'],
     createdAt: new Date(2025, 0, 5).toISOString(),
     updatedAt: new Date(2025, 0, 5).toISOString(),
     likeCount: 41,
-    viewCount: 278
+    viewCount: 278,
+    writer: {
+      username: '정우현',
+      nickname: '정우현',
+      realname: '정우현',
+    },
   },
   {
-    id: '6',
+    id: 6,
     content: {
       title: 'DEF CON Korea 컨퍼런스 참가',
       summary: 'SSG 동아리원들이 DEF CON Korea 컨퍼런스에 참가합니다.',
@@ -252,15 +297,19 @@ const mockNewsData: NewsItem[] = [
       category: NewsCategoryType.CONFERENCE
     },
     thumbnailPath: undefined,
-    writerId: '강예린',
     tags: ['컨퍼런스', 'DEF CON'],
     createdAt: new Date(2025, 0, 3).toISOString(),
     updatedAt: new Date(2025, 0, 3).toISOString(),
     likeCount: 53,
-    viewCount: 345
+    viewCount: 345,
+    writer: {
+      username: '강예린',
+      nickname: '강예린',
+      realname: '강예린',
+    },
   },
   {
-    id: '7',
+    id: 7,
     content: {
       title: 'CTF 대회 준비 스터디',
       summary: 'CTF 대회 준비를 위한 스터디가 시작됩니다.',
@@ -268,15 +317,19 @@ const mockNewsData: NewsItem[] = [
       category: NewsCategoryType.CTF
     },
     thumbnailPath: undefined,
-    writerId: '최수진',
     tags: ['CTF', '대회', '스터디'],
     createdAt: new Date(2025, 0, 1).toISOString(),
     updatedAt: new Date(2025, 0, 1).toISOString(),
     likeCount: 39,
-    viewCount: 267
+    viewCount: 267,
+    writer: {
+      username: '최수진',
+      nickname: '최수진',
+      realname: '최수진',
+    },
   },
   {
-    id: '8',
+    id: 8,
     content: {
       title: '시스템 해킹 스터디 모집',
       summary: '시스템 해킹 심화 스터디를 모집합니다.',
@@ -284,18 +337,22 @@ const mockNewsData: NewsItem[] = [
       category: NewsCategoryType.STUDY
     },
     thumbnailPath: undefined,
-    writerId: '김민수',
     tags: ['스터디', '시스템해킹'],
     createdAt: new Date(2024, 11, 28).toISOString(),
     updatedAt: new Date(2024, 11, 28).toISOString(),
     likeCount: 24,
-    viewCount: 145
+    viewCount: 145,
+    writer: {
+      username: '김민수',
+      nickname: '김민수',
+      realname: '김민수',
+    },
   }
 ];
 
 type NewsContentProps = { createHref?: string };
 
-export default function NewsContent({ createHref = '/news/new' }: NewsContentProps) {
+export default function NewsContent({ createHref = '/community/news/create' }: NewsContentProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [news, setNews] = useState<NewsItem[]>([]);
@@ -305,15 +362,12 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeSearchTerm, setActiveSearchTerm] = useState(''); // 실제 검색에 사용되는 검색어
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState('최신순');
-  const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [useMockData, setUseMockData] = useState(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const suggestionsRef = useRef<HTMLDivElement>(null);
 
   // URL 파라미터에서 초기값 설정
   useEffect(() => {
@@ -323,6 +377,7 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
     
     if (queryParam) {
       setSearchTerm(queryParam);
+      setActiveSearchTerm(queryParam);
     }
     
     if (categoryParam) {
@@ -340,81 +395,45 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
     }
   }, [searchParams]);
 
-  // News 데이터 가져오기
+  // News 데이터 가져오기 (카테고리, 정렬, 페이지 변경 시 자동 실행, 검색어는 버튼 클릭 시에만)
   useEffect(() => {
     const loadNews = async () => {
       setLoading(true);
       setError(null);
       
       try {
+        const apiCategory = selectedCategory !== 'all' ? selectedCategory : 'MT';
         const response = await fetchNews({
-          query: searchTerm || undefined,
+          keyword: activeSearchTerm && activeSearchTerm.trim() ? activeSearchTerm.trim() : undefined,
+          category: apiCategory,
+          postSortType: convertSortToApiType(sortBy),
           page: currentPage,
           size: PAGE_SIZE
         });
         
-        // API 응답이 비어있거나 에러가 있으면 목 데이터 사용
-        if (!response.content || response.content.length === 0) {
-          setUseMockData(true);
-          // 목 데이터 필터링
-          let filteredMock = mockNewsData;
-          
-          if (selectedCategory !== 'all') {
-            filteredMock = filteredMock.filter(item => item.content.category === selectedCategory);
-          }
-          
-          if (searchTerm) {
-            filteredMock = filteredMock.filter(item => 
-              item.content.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              item.content.summary.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-          }
-          
-          // 페이지네이션 적용
-          const startIndex = currentPage * PAGE_SIZE;
-          const endIndex = startIndex + PAGE_SIZE;
-          const paginatedMock = filteredMock.slice(startIndex, endIndex);
-          
-          setNews(paginatedMock);
-          setTotalPages(Math.ceil(filteredMock.length / PAGE_SIZE));
-          setTotalElements(filteredMock.length);
+        if (response.error) {
+          setError(response.error);
+          setNews([]);
+          setTotalPages(0);
+          setTotalElements(0);
         } else {
-          setUseMockData(false);
           setNews(response.content || []);
           setTotalPages(response.totalPages || 0);
           setTotalElements(response.totalElements || 0);
         }
       } catch (err) {
         console.error('Error loading news:', err);
-        // 에러 발생 시 목 데이터 사용
-        setUseMockData(true);
-        let filteredMock = mockNewsData;
-        
-        if (selectedCategory !== 'all') {
-          filteredMock = filteredMock.filter(item => item.content.category === selectedCategory);
-        }
-        
-        if (searchTerm) {
-          filteredMock = filteredMock.filter(item => 
-            item.content.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.content.summary.toLowerCase().includes(searchTerm.toLowerCase())
-          );
-        }
-        
-        const startIndex = currentPage * PAGE_SIZE;
-        const endIndex = startIndex + PAGE_SIZE;
-        const paginatedMock = filteredMock.slice(startIndex, endIndex);
-        
-        setNews(paginatedMock);
-        setTotalPages(Math.ceil(filteredMock.length / PAGE_SIZE));
-        setTotalElements(filteredMock.length);
+        setError(err instanceof Error ? err.message : '뉴스를 불러오는 중 오류가 발생했습니다.');
+        setNews([]);
+        setTotalPages(0);
+        setTotalElements(0);
       } finally {
         setLoading(false);
       }
     };
 
     loadNews();
-  }, [currentPage, searchTerm, selectedCategory]);
+  }, [currentPage, activeSearchTerm, selectedCategory, sortBy]);
 
   // 검색어 입력 시 제안 가져오기
   useEffect(() => {
@@ -422,7 +441,7 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
       if (searchTerm && searchTerm.trim().length > 0) {
         const suggestionsData = await fetchElasticSearchSuggestions(searchTerm);
         setSuggestions(suggestionsData);
-        setShowSuggestions(true);
+        setShowSuggestions(suggestionsData.length > 0);
       } else {
         setSuggestions([]);
         setShowSuggestions(false);
@@ -433,49 +452,19 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
     return () => clearTimeout(timeoutId);
   }, [searchTerm]);
 
-  // 외부 클릭 시 제안 닫기
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        suggestionsRef.current &&
-        !suggestionsRef.current.contains(event.target as Node) &&
-        searchInputRef.current &&
-        !searchInputRef.current.contains(event.target as Node)
-      ) {
-        setShowSuggestions(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  // 정렬 옵션 닫기
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (showSortDropdown) {
-        setShowSortDropdown(false);
-      }
-    };
-
-    if (showSortDropdown) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
-    }
-  }, [showSortDropdown]);
-
-  const handleSearch = (value: string) => {
-    setSearchTerm(value);
+  // 검색하기 버튼 클릭 핸들러
+  const handleSearch = () => {
+    setActiveSearchTerm(searchTerm);
     setCurrentPage(0);
-    updateURL({ query: value, page: 0 });
+    updateURL({ query: searchTerm, page: 0 });
+    setShowSuggestions(false);
   };
 
   const handleSuggestionClick = (suggestion: string) => {
-    handleSearch(suggestion);
+    setSearchTerm(suggestion);
+    setActiveSearchTerm(suggestion);
+    setCurrentPage(0);
+    updateURL({ query: suggestion, page: 0 });
     setShowSuggestions(false);
   };
 
@@ -514,11 +503,12 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
       }
     }
     
-    router.push(`/news?${newSearchParams.toString()}`, { scroll: false });
+    router.push(`/community?${newSearchParams.toString()}`, { scroll: false });
   };
 
   const clearFilters = () => {
     setSearchTerm('');
+    setActiveSearchTerm('');
     setSelectedCategory('all');
     setCurrentPage(0);
     updateURL({ query: '', category: 'all', page: 0 });
@@ -532,12 +522,29 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
 
   // News 데이터 변환
   const transformedNews = news.map((item) => ({
-    id: item.id,
+    id: item.id.toString(),
     title: item.content.title,
     summary: item.content.summary || item.content.content?.substring(0, 150) || '',
     content: item.content.content,
     thumbnailPath: item.thumbnailPath,
-    writerId: item.writerId || '작성자',
+    writerId: item.writer?.nickname || item.writer?.realname || item.writer?.username || '작성자',
+    writer: item.writer ? {
+      username: item.writer.username || '',
+      nickname: item.writer.nickname || 'Unknown',
+      realname: item.writer.realname || '',
+      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+    } : {
+      username: '',
+      nickname: 'Unknown',
+      realname: '',
+      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+    },
+    participants: (item.participants || []).map((participant: any) => ({
+      username: participant.username || '',
+      nickname: participant.nickname || 'Unknown',
+      realname: participant.realname || '',
+      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+    })),
     tags: item.tags || [],
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
@@ -550,15 +557,17 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
     <div className="w-full">
       {/* Header Section */}
       <div className="text-center mb-0">
-        {(searchTerm || selectedCategory !== 'all') && (
+        {(activeSearchTerm || selectedCategory !== 'all') && (
           <div className="flex-wrap items-center justify-center gap-2">
-            {searchTerm && (
+            {activeSearchTerm && (
               <div className="inline-flex items-center space-x-2 bg-primary-50 text-primary-700 px-4 py-2 rounded-lg border border-primary-200">
                 <span className="text-sm">검색어:</span>
-                <span className="font-semibold">{searchTerm}</span>
+                <span className="font-semibold">{activeSearchTerm}</span>
                 <button
                   onClick={() => {
                     setSearchTerm('');
+                    setActiveSearchTerm('');
+                    setCurrentPage(0);
                     updateURL({ query: '', page: 0 });
                   }}
                   className="ml-2 hover:text-primary-900"
@@ -583,7 +592,7 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
                 </button>
               </div>
             )}
-            {(searchTerm || selectedCategory !== 'all') && (
+            {(activeSearchTerm || selectedCategory !== 'all') && (
               <button
                 onClick={clearFilters}
                 className="text-sm text-primary-600 hover:text-primary-800 hover:underline"
@@ -596,90 +605,53 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
       </div>
 
       {/* Top Controls - aligned with Articles styling */}
-      <section className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="flex items-center justify-between w-full">
-          {/* Search Bar */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              ref={searchInputRef}
-              type="text"
-              placeholder="뉴스 검색..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleSearch(searchTerm);
-                  setShowSuggestions(false);
-                }
-              }}
-              className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-            
-            {/* Search Suggestions */}
-            {showSuggestions && suggestions.length > 0 && (
-              <div
-                ref={suggestionsRef}
-                className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto"
-              >
-                {suggestions.map((suggestion, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Controls */}
-          <div className="flex items-center gap-3">
-            {/* New Post Button */}
-            <Link
-              href={createHref}
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary-600 px-4 text-white hover:bg-primary-700 transition-colors"
-            >
-              <Plus size={16} />
-              <span className="text-sm font-medium">새 글 쓰기</span>
-            </Link>
-          </div>
-        </div>
-      </section>
+      <ContentFilterBar
+        searchTerm={searchTerm}
+        onSearchChange={(value) => {
+          setSearchTerm(value);
+          setCurrentPage(0);
+        }}
+        onSearchSubmit={handleSearch}
+        isSearching={loading}
+        suggestions={suggestions}
+        showSuggestions={showSuggestions}
+        onSuggestionSelect={handleSuggestionClick}
+        onSuggestionsShow={setShowSuggestions}
+        isLoadingSuggestions={false}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        sortBy={sortBy}
+        sortOptions={sortOptions}
+        onSortChange={(nextSort) => {
+          setSortBy(nextSort);
+          setCurrentPage(0);
+          updateURL({ page: 0 });
+        }}
+        showViewMode={true}
+        showSort={true}
+        showCreateButton={true}
+        createButtonText="새 글 쓰기"
+        createButtonHref={createHref}
+        placeholderText="뉴스 검색..."
+      />
 
       {/* Main Content with Sidebar */}
       <div className="flex gap-8">
         {/* Sidebar Filter - aligned with Articles styling */}
         <aside className="w-64 flex-shrink-0 hidden md:block">
-          <div className="bg-white rounded-2xl border border-gray-200 p-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">카테고리</h3>
-            <div className="space-y-1">
-              {newsCategories.map((category) => {
-                const isActive = selectedCategory === category.value;
-                // 목 데이터에서 카운트 계산
-                const categoryCount = category.value === 'all'
-                  ? mockNewsData.length
-                  : mockNewsData.filter(n => n.content.category === category.value).length;
-
-                return (
-                  <button
-                    key={category.value}
-                    onClick={() => handleCategoryChange(category.value)}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all ${
-                      isActive ? 'bg-primary-600 text-white' : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <span>{category.name}</span>
-                    <span className={`${isActive ? 'text-primary-50' : 'text-gray-400'} text-xs`}>
-                      {categoryCount}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <CategoryFilter
+            categories={newsCategories.filter(cat => cat.value !== 'all').map(category => {
+              const categoryCount = mockNewsData.filter(n => n.content.category === category.value).length;
+              return {
+                id: String(category.value),
+                name: category.name,
+                count: categoryCount,
+              };
+            })}
+            selectedCategory={selectedCategory}
+            onCategoryChange={handleCategoryChange}
+            title="카테고리"
+          />
         </aside>
 
         {/* Main Content */}
@@ -688,60 +660,10 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
           <div className="flex items-center justify-between mb-6">
             <p className="text-sm text-gray-600">
               총 <span className="font-semibold text-primary">{totalElements}</span>개의 뉴스
-              {searchTerm && ` (검색어: "${searchTerm}")`}
+              {activeSearchTerm && ` (검색어: "${activeSearchTerm}")`}
               {selectedCategory !== 'all' && ` (카테고리: ${newsCategories.find(c => c.value === selectedCategory)?.name})`}
             </p>
-          {/* Controls */}
-          <div className="flex items-center gap-3">
-            {/* View Mode Toggle */}
-            <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 ${viewMode === 'grid' ? 'bg-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-              >
-                <Grid size={16} />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 ${viewMode === 'list' ? 'bg-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-              >
-                <List size={16} />
-              </button>
-            </div>
-
-            {/* Sort Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setShowSortDropdown(!showSortDropdown)}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                {sortBy}
-                <ChevronDown size={16} className={`transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {showSortDropdown && (
-                <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                  {sortOptions.map((option) => (
-                    <button
-                      key={option}
-                      onClick={() => {
-                        setSortBy(option);
-                        setShowSortDropdown(false);
-                      }}
-                      className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors ${
-                        sortBy === option ? 'text-primary font-medium' : 'text-gray-700'
-                      }`}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
-          </div>
-
-        
 
         {/* Loading State */}
         {loading ? (
@@ -755,7 +677,7 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
             <button
               onClick={() => {
                 setError(null);
-                handleSearch(searchTerm);
+                handleSearch();
               }}
               className="text-primary hover:underline"
             >
@@ -765,7 +687,7 @@ export default function NewsContent({ createHref = '/news/new' }: NewsContentPro
         ) : transformedNews.length === 0 ? (
           <div className="text-center py-20">
             <div className="text-gray-600 text-xl mb-4">검색 결과가 없습니다.</div>
-            {searchTerm && (
+            {activeSearchTerm && (
               <button 
                 onClick={clearFilters}
                 className="text-primary hover:underline"

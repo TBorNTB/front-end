@@ -84,27 +84,7 @@ export default function AdminPage() {
     }
   }, [loading, isAuthenticated, user, router]);
 
-  // JWT Parser Function
-  const parseJWT = (token: string) => {
-    try {
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
-      return JSON.parse(jsonPayload);
-    } catch (error) {
-      console.error('JWT parse error:', error);
-      return null;
-    }
-  };
-
-  // Extract Access Token from Cookies
-  const getAccessTokenFromCookies = (): string | null => {
-    const cookies = document.cookie;
-    const accessTokenMatch = cookies.match(/accessToken=([^;]+)/);
-    return accessTokenMatch ? accessTokenMatch[1] : null;
-  };
+  // NOTE: accessToken is stored as httpOnly cookie, so it is not readable in the browser.
 
   async function onSubmit(values: FormData) {
     setIsLoading(true);
@@ -124,37 +104,37 @@ export default function AdminPage() {
       if (data.message === "로그인 성공" || data.authenticated) {
         setTimeout(() => {
           try {
-            const accessToken = getAccessTokenFromCookies();
-            let userRole = UserRole.GUEST;
-            let username = "admin";
+            // Verify admin role via server (uses httpOnly cookies)
+            fetch('/api/auth/user', { method: 'GET', credentials: 'include' })
+              .then((r) => (r.ok ? r.json() : null))
+              .then((auth) => {
+                const role = auth?.user?.role as UserRole | undefined;
+                if (role !== UserRole.ADMIN) {
+                  handleError(
+                    new Error(
+                      `❌ 관리자 권한이 필요합니다.\n\n` +
+                        `일반 사용자는 일반 로그인을 사용하세요.`
+                    )
+                  );
+                  return;
+                }
 
-            if (accessToken) {
-              const jwtPayload = parseJWT(accessToken);
-              if (jwtPayload) {
-                userRole = jwtPayload.role as UserRole || UserRole.GUEST;
-                username = jwtPayload.username || "admin";
-              }
-            }
+                const backendUser = auth?.user || data.user || data;
+                const authUser: AuthUser = {
+                  nickname: backendUser?.nickname || 'admin',
+                  full_name: backendUser?.realName || backendUser?.fullName || 'admin',
+                  email: backendUser?.email || values.email,
+                  role: UserRole.ADMIN,
+                  profile_image: backendUser?.profileImageUrl || backendUser?.profile_image,
+                };
 
-            const backendUser = data.user || data;
-            const authUser: AuthUser = {
-              nickname: backendUser?.nickname || username,
-              full_name: backendUser?.realName || username,
-              email: backendUser?.email || values.email,
-              role: userRole,
-              profile_image: backendUser?.profileImageUrl,
-            };
-
-            if (authUser.role !== UserRole.ADMIN) {
-              handleError(new Error(
-                `❌ 관리자 권한이 필요합니다.\n\n` +
-                `일반 사용자는 일반 로그인을 사용하세요.`
-              ));
-              return;
-            }
-
-            login(authUser, values.keepSignedIn);
-            router.push("/admin/dashboard");
+                login(authUser, values.keepSignedIn);
+                router.push('/admin/dashboard');
+              })
+              .catch((e) => {
+                console.error('Admin auth check failed:', e);
+                handleError(e, '권한 확인 중 오류가 발생했습니다.');
+              });
           } catch (timeoutError) {
             console.error('Timeout error:', timeoutError);
             handleError(timeoutError, "처리 중 오류가 발생했습니다.");

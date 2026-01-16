@@ -7,7 +7,9 @@
   --color-text: #1f2937;
   --color-background: #e2eefc;
   --color-foreground: #060810;
-  --color-gradient-background: radial-gradient(ellipse at top, #e2eefc, #3a4da1);
+    /* Gradient Backgrounds */
+  --color-gradient-background: linear-gradient(to bottom, #000000, #3a4da1);
+  --color-authentication-background: radial-gradient(ellipse at top, #a4add4, #202a59);
   
   /* Primary Scale */
   --color-primary-50: #ebedf6;
@@ -78,8 +80,19 @@
 
 @layer components {
   .bg-gradient-background {
-  background: var(--color-gradient-background);
-}
+    background: var(--color-gradient-background);
+    border: 1px solid rgba(108, 170, 239, 0.3);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .bg-authentication-background {
+    background: var(--color-authentication-background);
+    border: 1px solid rgba(108, 170, 239, 0.3);
+    position: relative;
+    overflow: hidden;
+  }
+
   .btn {
     @apply inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer border-0 outline-none px-4 py-2;
   }

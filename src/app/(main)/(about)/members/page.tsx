@@ -2,7 +2,9 @@
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
+import TitleBanner from '@/components/layout/TitleBanner';
 import { memberService, UserResponse } from '@/lib/api/services/user-services';
+import { getRoleDisplayLabel, getRoleBadgeColor } from '@/lib/role-utils';
 import {
   AlertCircle,
   Calendar,
@@ -12,15 +14,6 @@ import {
   Search,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-
-// 회원 등급 라벨 (API role -> 한글)
-const roleLabelMap: Record<string, string> = {
-  'GUEST': '게스트',
-  'ASSOCIATE_MEMBER': '준회원',
-  'FULL_MEMBER': '정회원',
-  'SENIOR': '선배님',
-  'ADMIN': '운영진',
-};
 
 // 날짜 포맷팅 헬퍼
 const formatDate = (dateString: string) => {
@@ -106,27 +99,6 @@ export default function MembersPage() {
     setSelectedLevels([]);
   };
 
-  const getLevelBadgeColor = (role: string) => {
-    switch (role) {
-      case 'GUEST':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-      case 'ASSOCIATE_MEMBER':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'FULL_MEMBER':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'SENIOR':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'ADMIN':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getLevelLabel = (role: string) => {
-    return roleLabelMap[role] || role;
-  };
-
   // 표시용 이름 가져오기
   const getDisplayName = (member: UserResponse) => {
     return member.realName || member.nickname || member.username;
@@ -170,7 +142,11 @@ export default function MembersPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-
+      <TitleBanner
+        title="Members"
+        description="SSG를 만들어가는 멤버들을 만나보세요."
+        backgroundImage="/images/BgHeader.png"
+      />
       {/* Background Effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-1/4 w-96 h-96 bg-primary-500/3 rounded-full blur-3xl"></div>
@@ -227,7 +203,7 @@ export default function MembersPage() {
                         : 'bg-white text-gray-700 border-gray-300 hover:border-primary-400'
                     }`}
                   >
-                    {getLevelLabel(role)}
+                    {getRoleDisplayLabel(role)}
                   </button>
                 ))}
               </div>
@@ -262,7 +238,7 @@ export default function MembersPage() {
                         <div className="text-center mb-4">
                           <div className="relative inline-block">
                             <ImageWithFallback
-                              src={member.profileImageUrl || '/default-avatar.svg'}
+                              src={member.profileImageUrl || '/images/placeholder/default-avatar.svg'}
                               alt={getDisplayName(member)}
                               width={80}
                               height={80}
@@ -278,8 +254,8 @@ export default function MembersPage() {
                         {/* Member Info */}
                         <div className="space-y-3 mb-4">
                           <div className="flex items-center justify-center">
-                            <Badge className={getLevelBadgeColor(member.role)}>
-                              {getLevelLabel(member.role)}
+                            <Badge className={getRoleBadgeColor(member.role)}>
+                              {getRoleDisplayLabel(member.role)}
                             </Badge>
                           </div>
 

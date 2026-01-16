@@ -95,6 +95,26 @@ const CategoryHelpers = {
   },
 };
 
+// Helper function to generate slug from category name
+const generateSlugFromName = (name: string): string => {
+  // 먼저 CategoryHelpers를 사용해 한글 카테고리 이름을 slug로 변환
+  const type = CategoryHelpers.getTypeByName(name);
+  if (type) {
+    return CategoryHelpers.getSlug(type);
+  }
+
+  // 영문/숫자만 있는 경우: 공백을 하이픈으로, 소문자 변환
+  if (/^[a-zA-Z0-9\s-]+$/.test(name)) {
+    return name
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '');
+  }
+
+  // 그 외의 경우: 공백을 제거하고 소문자로 변환
+  return name.toLowerCase().replace(/\s+/g, '-');
+};
+
 // API 응답을 Topic 형식으로 변환
 const transformApiResponseToTopics = (apiCategories: CategoryItem[]): Topic[] => {
   return apiCategories
@@ -108,7 +128,7 @@ const transformApiResponseToTopics = (apiCategories: CategoryItem[]): Topic[] =>
       // slug 생성: 타입이 있으면 해당 slug, 없으면 name 기반으로 생성
       const slug = type 
         ? CategoryHelpers.getSlug(type)
-        : category.name.toLowerCase().replace(/\s+/g, '-');
+        : generateSlugFromName(category.name);
 
       return {
         id: `topic-${category.id}`,

@@ -1,18 +1,6 @@
 import { ProjectDetailResponse } from '@/types/services/project';
 import { PROJECT_ENDPOINTS, getProjectApiUrl } from '../endpoints/project-endpoints';
-
-// Get access token from cookies
-const getAccessToken = (): string | null => {
-  if (typeof document === 'undefined') return null;
-  const cookies = document.cookie.split(';');
-  for (const cookie of cookies) {
-    const [name, value] = cookie.trim().split('=');
-    if (name === 'accessToken') {
-      return decodeURIComponent(value);
-    }
-  }
-  return null;
-};
+import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
 
 // Fetch project detail by ID
 export const fetchProjectDetail = async (id: string | number): Promise<ProjectDetailResponse> => {
@@ -66,14 +54,12 @@ export const createDocument = async (
 ): Promise<Document> => {
   const endpoint = PROJECT_ENDPOINTS.DOCUMENT.CREATE.replace(':projectId', String(projectId));
   const url = getProjectApiUrl(endpoint);
-  const token = getAccessToken();
 
-  const response = await fetch(url, {
+  const response = await fetchWithRefresh(url, {
     method: 'POST',
     headers: {
       'accept': 'application/json',
       'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
     },
     credentials: 'include',
     body: JSON.stringify(data),
@@ -114,14 +100,12 @@ export const updateDocument = async (
 ): Promise<Document> => {
   const endpoint = PROJECT_ENDPOINTS.DOCUMENT.UPDATE.replace(':id', String(documentId));
   const url = getProjectApiUrl(endpoint);
-  const token = getAccessToken();
 
-  const response = await fetch(url, {
+  const response = await fetchWithRefresh(url, {
     method: 'PUT',
     headers: {
       'accept': 'application/json',
       'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
     },
     credentials: 'include',
     body: JSON.stringify(data),
@@ -139,13 +123,11 @@ export const updateDocument = async (
 export const deleteDocument = async (documentId: string | number): Promise<void> => {
   const endpoint = PROJECT_ENDPOINTS.DOCUMENT.DELETE.replace(':id', String(documentId));
   const url = getProjectApiUrl(endpoint);
-  const token = getAccessToken();
 
-  const response = await fetch(url, {
+  const response = await fetchWithRefresh(url, {
     method: 'DELETE',
     headers: {
       'accept': '*/*',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
     },
     credentials: 'include',
   });
@@ -202,21 +184,22 @@ export interface CreateProjectRequest {
 }
 
 export interface CreateProjectResponse {
+  id: number;
   title: string;
   message: string;
+  content?: string;
+  endedAt?: string;
 }
 
 // Create a project
 export const createProject = async (data: CreateProjectRequest): Promise<CreateProjectResponse> => {
   const url = getProjectApiUrl(PROJECT_ENDPOINTS.PROJECT.CREATE);
-  const token = getAccessToken();
 
-  const response = await fetch(url, {
+  const response = await fetchWithRefresh(url, {
     method: 'POST',
     headers: {
       'accept': 'application/json',
       'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
     },
     credentials: 'include',
     body: JSON.stringify(data),

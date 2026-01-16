@@ -3,6 +3,7 @@
 // User 관련 API 서비스 함수
 import { apiClient } from '@/lib/api/client';
 import { USER_ENDPOINTS, getUserApiUrl } from '@/lib/api/endpoints/user-endpoints';
+import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
 
 // API 응답 타입 정의
 export interface UserResponse {
@@ -37,6 +38,36 @@ export interface GetMembersParams {
   nickname?: string;
 }
 
+// Cursor-based pagination types
+export interface CursorUserResponse {
+  id: number;
+  username: string;
+  realName: string;
+  nickname: string;
+  profileImageUrl: string;
+  email: string;
+}
+
+export interface CursorUsersResponse {
+  hasNext: boolean;
+  content: CursorUserResponse[];
+  nextCursorId: number;
+}
+
+export interface GetCursorUsersParams {
+  cursorId?: number;
+  size?: number;
+  direction?: 'ASC' | 'DESC';
+}
+
+export interface GetCursorUsersByNameParams {
+  cursorId?: number;
+  size?: number;
+  direction?: 'ASC' | 'DESC';
+  nickname?: string;
+  realName?: string;
+}
+
 // ✅ Shared fetch logic (DRY!)
 const createFetchRequest = (url: string, accessToken: string | null = null, options: RequestInit = {}) => ({
   method: options.method || 'GET',
@@ -49,19 +80,6 @@ const createFetchRequest = (url: string, accessToken: string | null = null, opti
   cache: 'no-store' as const,
   ...options,
 });
-
-// ✅ Generic error handler (DRY!)
-const handleApiError = (error: unknown, context: string): never => {
-  const err = error as Error;
-  
-  // Network errors
-  if (err.name === 'TypeError' || err.message.includes('fetch')) {
-    throw new Error('네트워크 연결을 확인해주세요.');
-  }
-  
-  // Preserve original message
-  throw new Error(err.message || `${context} 실패`);
-};
 
 // ✅ userService (apiClient - simple)
 export const userService = {
@@ -121,20 +139,71 @@ export const memberService = {
     const url = getUserApiUrl(USER_ENDPOINTS.USER.GET_ALL_ROLES);
     const response = await fetch(url, createFetchRequest(url));
     const data = await response.json().catch(() => []);
+
     if (!response.ok) {
       throw new Error('Role 목록 조회 실패');
     }
+
     return data;
+  },
+
+  getMembersByCursor: async (params: GetCursorUsersParams = {}): Promise<CursorUsersResponse> => {
+    const { cursorId = 0, size = 20, direction = 'ASC' } = params;
+    const url = `${getUserApiUrl(USER_ENDPOINTS.USER.SEARCH_CURSOR)}?cursorId=${cursorId}&size=${size}&direction=${direction}`;
+
+    const response = await fetch(url, createFetchRequest(url));
+    const data = await response.json().catch(() => null as never);
+
+    if (!response.ok) {
+      throw new Error(data?.message || data?.error || `멤버 조회 실패 (${response.status})`);
+    }
+
+    return {
+      hasNext: data.hasNext || false,
+      content: data.content || [],
+      nextCursorId: data.nextCursorId || 0,
+    };
+  },
+
+  getMembersByCursorByName: async (params: GetCursorUsersByNameParams = {}): Promise<CursorUsersResponse> => {
+    const { cursorId = 0, size = 7, direction = 'ASC', nickname, realName } = params;
+    const queryParams = new URLSearchParams();
+    queryParams.append('cursorId', cursorId.toString());
+    queryParams.append('size', size.toString());
+    queryParams.append('direction', direction);
+    
+    if (nickname) {
+      queryParams.append('nickname', nickname);
+    }
+    if (realName) {
+      queryParams.append('realName', realName);
+    }
+    
+    const url = `${getUserApiUrl(USER_ENDPOINTS.USER.SEARCH_CURSOR_BY_NAME)}?${queryParams.toString()}`;
+
+    const response = await fetch(url, createFetchRequest(url));
+    const data = await response.json().catch(() => null as never);
+
+    if (!response.ok) {
+      throw new Error(data?.message || data?.error || `멤버 검색 실패 (${response.status})`);
+    }
+
+    return {
+      hasNext: data.hasNext || false,
+      content: data.content || [],
+      nextCursorId: data.nextCursorId || 0,
+    };
   },
 };
 
 // ✅ profileService (DRY!)
 export const profileService = {
   getProfile: async (): Promise<UserResponse> => {
-    const url = getUserApiUrl(USER_ENDPOINTS.USER.PROFILE);
-    const accessToken = getAccessTokenFromCookies(); // Keep your helper!
+    const response = await fetchWithRefresh('/api/user/profile', {
+      method: 'GET',
+      headers: { accept: 'application/json' },
+    });
 
-    const response = await fetch(url, createFetchRequest(url, accessToken));
     const data = await response.json().catch(() => null as never);
 
     if (!response.ok) {
@@ -148,11 +217,12 @@ export const profileService = {
   },
 
   updateProfile: async (data: Partial<UserResponse>): Promise<UserResponse> => {
-    const url = getUserApiUrl(USER_ENDPOINTS.USER.UPDATE_USER);
-    const accessToken = getAccessTokenFromCookies();
-
-    const response = await fetch(url, {
-      ...createFetchRequest(url, accessToken, { method: 'PATCH' }),
+    const response = await fetchWithRefresh('/api/user/profile', {
+      method: 'PATCH',
+      headers: {
+        accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(data),
     });
 
@@ -166,6 +236,34 @@ export const profileService = {
     }
 
     return cleanUserResponse(responseData); // ✅ Shared cleaner
+  },
+
+  getActivityStats: async (): Promise<{
+    totalPostCount: number;
+    totalViewCount: number;
+    totalLikeCount: number;
+    totalCommentCount: number;
+  }> => {
+    const response = await fetchWithRefresh('/api/user/activity/stats', {
+      method: 'GET',
+      headers: { accept: 'application/json' },
+    });
+
+    const data = await response.json().catch(() => null as never);
+
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('로그인이 필요합니다. 다시 로그인해주세요.');
+      }
+      throw new Error(data?.message || data?.error || `활동 통계 조회 실패 (${response.status})`);
+    }
+
+    return {
+      totalPostCount: data.totalPostCount || 0,
+      totalViewCount: data.totalViewCount || 0,
+      totalLikeCount: data.totalLikeCount || 0,
+      totalCommentCount: data.totalCommentCount || 0,
+    };
   },
 };
 
@@ -185,27 +283,12 @@ export const s3Service = {
     fileUrl?: string;
   }> => {
     try {
-      const url = getUserApiUrl(USER_ENDPOINTS.S3.PRESIGNED_URL);
-      
-      // 쿠키에서 accessToken 추출
-      const accessToken = getAccessTokenFromCookies();
-      
-      // Authorization 헤더 준비
-      const headers: HeadersInit = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      };
-      
-      // Bearer 토큰이 있으면 Authorization 헤더에 추가
-      if (accessToken) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
-      }
-
-      const response = await fetch(url, {
+      const response = await fetchWithRefresh('/api/s3/presigned-url', {
         method: 'POST',
-        headers,
-        credentials: 'include',
-        cache: 'no-store',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           fileName,
           contentType,
@@ -322,6 +405,27 @@ export const fetchViewCount = async (id: string | number, postType: string = 'PR
   return response.json();
 };
 
+// Increment view count for a post
+export const incrementViewCount = async (id: string | number, postType: string = 'PROJECT'): Promise<ViewCountResponse> => {
+  const endpoint = USER_ENDPOINTS.VIEW.INCREMENT.replace(':id', String(id));
+  const url = getUserApiUrl(`${endpoint}?postType=${postType}`);
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+    },
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to increment view count: ${response.status} - ${errorText}`);
+  }
+
+  return response.json();
+};
+
 
 // Fetch like count for a post
 export const fetchLikeCount = async (id: string | number, postType: string = 'PROJECT'): Promise<LikeCountResponse> => {
@@ -346,6 +450,61 @@ export const fetchLikeCount = async (id: string | number, postType: string = 'PR
   return response.json();
 };
 
+// Like status response type
+export interface LikeStatusResponse {
+  likeCount: number;
+  status: 'LIKED' | 'NOT_LIKED';
+}
+
+// Fetch like status for current user
+export const fetchLikeStatus = async (id: string | number, postType: string = 'PROJECT'): Promise<LikeStatusResponse> => {
+  const endpoint = USER_ENDPOINTS.LIKE.STATUS.replace(':id', String(id));
+  const url = getUserApiUrl(`${endpoint}?postType=${postType}`);
+
+  const response = await fetchWithRefresh(url, {
+    method: 'GET',
+    headers: {
+      'accept': 'application/json',
+    },
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    // 401이나 403이면 로그인하지 않은 상태로 간주
+    if (response.status === 401 || response.status === 403) {
+      return { likeCount: 0, status: 'NOT_LIKED' };
+    }
+    const errorText = await response.text();
+    throw new Error(`Failed to fetch like status: ${response.status} - ${errorText}`);
+  }
+
+  return response.json();
+};
+
+// Toggle like (like/unlike)
+export const toggleLike = async (id: string | number, postType: string = 'PROJECT'): Promise<LikeStatusResponse> => {
+  const endpoint = USER_ENDPOINTS.LIKE.TOGGLE.replace(':id', String(id));
+  const url = getUserApiUrl(`${endpoint}?postType=${postType}`);
+
+  const response = await fetchWithRefresh(url, {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+    },
+    credentials: 'include',
+  });
+
+  if (response.status === 401 || response.status === 403) {
+    throw new Error('로그인이 필요합니다.');
+  }
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to toggle like: ${response.status} - ${errorText}`);
+  }
+
+  return response.json();
+};
 
 // Comment types
 export interface Comment {
@@ -377,20 +536,6 @@ export interface CreateCommentRequest {
 export interface UpdateCommentRequest {
   content: string;
 }
-
-
-// Get access token from cookies
-const getAccessToken = (): string | null => {
-  if (typeof document === 'undefined') return null;
-  const cookies = document.cookie.split(';');
-  for (const cookie of cookies) {
-    const [name, value] = cookie.trim().split('=');
-    if (name === 'accessToken') {
-      return decodeURIComponent(value);
-    }
-  }
-  return null;
-};
 
 
 // Fetch comments for a post
@@ -431,19 +576,20 @@ export const createComment = async (
 ): Promise<Comment> => {
   const endpoint = USER_ENDPOINTS.COMMENT.CREATE.replace(':postId', String(postId));
   const url = getUserApiUrl(`${endpoint}?postType=${postType}`);
-  const token = getAccessToken();
 
-
-  const response = await fetch(url, {
+  const response = await fetchWithRefresh(url, {
     method: 'POST',
     headers: {
       'accept': 'application/json',
       'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
     },
     credentials: 'include',
     body: JSON.stringify(data),
   });
+
+  if (response.status === 401 || response.status === 403) {
+    throw new Error('로그인이 필요합니다.');
+  }
 
 
   if (!response.ok) {
@@ -467,19 +613,20 @@ export const createReply = async (
     .replace(':postId', String(postId))
     .replace(':parentId', String(parentId));
   const url = getUserApiUrl(`${endpoint}?postType=${postType}`);
-  const token = getAccessToken();
 
-
-  const response = await fetch(url, {
+  const response = await fetchWithRefresh(url, {
     method: 'POST',
     headers: {
       'accept': 'application/json',
       'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
     },
     credentials: 'include',
     body: JSON.stringify(data),
   });
+
+  if (response.status === 401 || response.status === 403) {
+    throw new Error('로그인이 필요합니다.');
+  }
 
 
   if (!response.ok) {
@@ -499,19 +646,20 @@ export const updateComment = async (
 ): Promise<Comment> => {
   const endpoint = USER_ENDPOINTS.COMMENT.UPDATE.replace(':commentId', String(commentId));
   const url = getUserApiUrl(endpoint);
-  const token = getAccessToken();
 
-
-  const response = await fetch(url, {
+  const response = await fetchWithRefresh(url, {
     method: 'PATCH',
     headers: {
       'accept': 'application/json',
       'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
     },
     credentials: 'include',
     body: JSON.stringify(data),
   });
+
+  if (response.status === 401 || response.status === 403) {
+    throw new Error('로그인이 필요합니다.');
+  }
 
 
   if (!response.ok) {
@@ -528,17 +676,18 @@ export const updateComment = async (
 export const deleteComment = async (commentId: number): Promise<void> => {
   const endpoint = USER_ENDPOINTS.COMMENT.DELETE.replace(':commentId', String(commentId));
   const url = getUserApiUrl(endpoint);
-  const token = getAccessToken();
 
-
-  const response = await fetch(url, {
+  const response = await fetchWithRefresh(url, {
     method: 'DELETE',
     headers: {
       'accept': '*/*',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
     },
     credentials: 'include',
   });
+
+  if (response.status === 401 || response.status === 403) {
+    throw new Error('로그인이 필요합니다.');
+  }
 
 
   if (!response.ok) {
@@ -632,13 +781,6 @@ export const fetchUsers = async (
 
   return response.json();
 
-};
-
-// ✅ Shared utilities
-const getAccessTokenFromCookies = (): string | null => {
-  if (typeof window === 'undefined') return null;
-  const match = document.cookie.match(/accessToken=([^;]+)/);
-  return match ? decodeURIComponent(match[1]) : null;
 };
 
 const cleanUserResponse = (data: any): UserResponse => {

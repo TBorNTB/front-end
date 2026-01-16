@@ -8,6 +8,30 @@ import { UserRole } from '@/types/core';
 import Link from 'next/link';
 import { alarmService, AlarmResponse } from '@/lib/api/services/alarm-services';
 
+// domainType과 domainId를 기반으로 URL 생성
+const generateAlarmLink = (domainType?: string, domainId?: string | number, link?: string): string => {
+  // link가 있으면 우선 사용
+  if (link) return link;
+  
+  // domainType과 domainId가 없으면 기본값
+  if (!domainType || !domainId) return '#';
+  
+  const id = String(domainId);
+  
+  // domainType에 따라 URL 생성
+  switch (domainType.toUpperCase()) {
+    case 'PROJECT':
+      return `/projects/${id}`;
+    case 'ARTICLE':
+    case 'CSKNOWLEDGE':
+      return `/community/news/${id}`;
+    case 'NEWS':
+      return `/community/news/${id}`;
+    default:
+      return '#';
+  }
+};
+
 // API 응답을 Alarm 인터페이스로 변환
 const mapAlarmResponseToAlarm = (response: AlarmResponse): Alarm => {
   return {
@@ -18,7 +42,9 @@ const mapAlarmResponseToAlarm = (response: AlarmResponse): Alarm => {
     content: response.message || response.content || '',
     isRead: response.isRead,
     createdAt: response.createdAt,
-    link: response.link,
+    link: generateAlarmLink(response.domainType, response.domainId, response.link),
+    domainType: response.domainType,
+    domainId: response.domainId,
     relatedUser: response.relatedUser,
     relatedPost: response.relatedPost,
   };
@@ -291,15 +317,43 @@ export default function AlarmPopup({ isOpen, onClose }: AlarmPopupProps) {
                   const config = categoryConfig[alarm.type];
                   const Icon = config.icon;
 
+                  const handleAlarmClick = async (e: React.MouseEvent) => {
+                    e.preventDefault();
+                    // 읽지 않은 알람만 읽음 처리
+                    if (!alarm.isRead) {
+                      try {
+                        await alarmService.markAsSeen(alarm.id);
+                        // 로컬 상태 업데이트
+                        setAlarms(prevAlarms => 
+                          prevAlarms.map(a => 
+                            a.id === alarm.id ? { ...a, isRead: true } : a
+                          )
+                        );
+                        setAllAlarms(prevAlarms => 
+                          prevAlarms.map(a => 
+                            a.id === alarm.id ? { ...a, isRead: true } : a
+                          )
+                        );
+                      } catch (error) {
+                        console.error('Failed to mark alarm as seen:', error);
+                      }
+                    }
+                    // 링크로 이동
+                    if (alarm.link && alarm.link !== '#') {
+                      window.location.href = alarm.link;
+                    }
+                    onClose();
+                  };
+
                   return (
                     <Link
                       key={alarm.id}
                       href={alarm.link || '#'}
-                      onClick={onClose}
+                      onClick={handleAlarmClick}
                       className={`block p-4 transition-all ${
                         !alarm.isRead 
                           ? `${config.bgColor} hover:${config.activeBgColor} border-l-4 ${config.borderColor}` 
-                          : 'hover:bg-gray-50'
+                          : 'bg-white hover:bg-gray-50'
                       }`}
                     >
                       <div className="flex items-start space-x-3">

@@ -1,25 +1,16 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, X, Upload, FileText, User, Search } from 'lucide-react';
+import { ArrowLeft, Plus, X, Upload, FileText, User, Search, UserCircle, AtSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import TipTapEditor from '@/components/editor/TipTapEditor';
 import Image from 'next/image';
 import { fetchCategories, createProject } from '@/lib/api/services/project-services';
-import { UserResponse, memberService } from '@/lib/api/services/user-services';
+import { memberService, CursorUserResponse } from '@/lib/api/services/user-services';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-
-const TECH_STACK_CATEGORIES = [
-  'LANGUAGE',
-  'FRAMEWORK',
-  'DATABASE',
-  'TOOL',
-  'PLATFORM',
-];
 
 interface FormData {
   title: string;
@@ -50,16 +41,24 @@ export default function NewProjectForm() {
   const [subGoalInput, setSubGoalInput] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
   const [thumbnailPreview, setThumbnailPreview] = useState<string>('');
-  const [collaboratorInput, setCollaboratorInput] = useState({ name: '', email: '', role: 'CONTRIBUTOR' });
   
   // API data states
   const [categories, setCategories] = useState<Array<{ id: number; name: string; description: string }>>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
-  const [users, setUsers] = useState<UserResponse[]>([]);
+  const [allUsers, setAllUsers] = useState<CursorUserResponse[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<CursorUserResponse[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
-  const [userSearchQuery, setUserSearchQuery] = useState('');
-  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [nicknameSearch, setNicknameSearch] = useState('');
+  const [realNameSearch, setRealNameSearch] = useState('');
+  const [nextCursorId, setNextCursorId] = useState<number>(0);
+  const [hasNext, setHasNext] = useState<boolean>(true);
+  const [searchNextCursorId, setSearchNextCursorId] = useState<number>(0);
+  const [searchHasNext, setSearchHasNext] = useState<boolean>(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isSearchMode, setIsSearchMode] = useState(false);
   const userSearchRef = useRef<HTMLDivElement>(null);
+  const userListRef = useRef<HTMLDivElement>(null);
   
   const [formData, setFormData] = useState<FormData>({
     title: '',
@@ -94,61 +93,163 @@ export default function NewProjectForm() {
     loadCategories();
   }, []);
 
-  // Initialize collaborators with current user as owner
+  // Load initial users with cursor pagination
   useEffect(() => {
-    if (currentUser && !userLoading) {
-      // Only set if not already set
-      if (formData.collaborators.length === 0) {
-        setFormData((prev) => ({
-          ...prev,
-          collaborators: [
-            {
-              name: currentUser.realName || currentUser.nickname || currentUser.username,
-              email: currentUser.username,
-              role: 'OWNER',
-            },
-          ],
-        }));
-      }
-    }
-  }, [currentUser, userLoading]);
-
-  // Load users when search query changes
-  useEffect(() => {
-    const loadUsers = async () => {
-      if (!userSearchQuery.trim()) {
-        setUsers([]);
-        return;
-      }
-
+    const loadInitialUsers = async () => {
       try {
         setIsLoadingUsers(true);
-        const response = await memberService.getMembers({ size: 100 });
-        // Filter users by search query (name, nickname, username)
-        const filtered = response.data.filter(
-          (user: UserResponse) =>
-            user.realName?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
-            user.nickname?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
-            user.username?.toLowerCase().includes(userSearchQuery.toLowerCase())
-        );
-        setUsers(filtered);
-        setShowUserDropdown(true);
+        setNextCursorId(0);
+        setHasNext(true);
+        
+        const response = await memberService.getMembersByCursor({ 
+          cursorId: 0, 
+          size: 7, 
+          direction: 'ASC' 
+        });
+        
+        setAllUsers(response.content);
+        setFilteredUsers(response.content);
+        setNextCursorId(response.nextCursorId);
+        setHasNext(response.hasNext);
       } catch (error) {
         console.error('Failed to load users:', error);
+        setAllUsers([]);
+        setFilteredUsers([]);
       } finally {
         setIsLoadingUsers(false);
       }
     };
+    loadInitialUsers();
+  }, []);
 
-    const debounceTimer = setTimeout(loadUsers, 300);
-    return () => clearTimeout(debounceTimer);
-  }, [userSearchQuery]);
+  // Load more users when scrolling to bottom
+  const loadMoreUsers = useCallback(async () => {
+    if (isLoadingMore || isLoadingUsers) return;
+
+    // If searching, use search API
+    if (isSearchMode) {
+      if (!searchHasNext) return;
+      
+      try {
+        setIsLoadingMore(true);
+        const response = await memberService.getMembersByCursorByName({ 
+          cursorId: searchNextCursorId, 
+          size: 7, 
+          direction: 'ASC',
+          nickname: nicknameSearch.trim() || undefined,
+          realName: realNameSearch.trim() || undefined
+        });
+        
+        setFilteredUsers(prev => [...prev, ...response.content]);
+        setSearchNextCursorId(response.nextCursorId);
+        setSearchHasNext(response.hasNext);
+      } catch (error) {
+        console.error('Failed to load more search results:', error);
+      } finally {
+        setIsLoadingMore(false);
+      }
+    } else {
+      // Normal pagination
+      if (!hasNext) return;
+      
+      try {
+        setIsLoadingMore(true);
+        const response = await memberService.getMembersByCursor({ 
+          cursorId: nextCursorId, 
+          size: 7, 
+          direction: 'ASC' 
+        });
+        
+        setAllUsers(prev => [...prev, ...response.content]);
+        setFilteredUsers(prev => [...prev, ...response.content]);
+        setNextCursorId(response.nextCursorId);
+        setHasNext(response.hasNext);
+      } catch (error) {
+        console.error('Failed to load more users:', error);
+      } finally {
+        setIsLoadingMore(false);
+      }
+    }
+  }, [hasNext, isLoadingMore, isLoadingUsers, nextCursorId, isSearchMode, nicknameSearch, realNameSearch, searchHasNext, searchNextCursorId]);
+
+  // Search users function (called when search button is clicked)
+  const handleSearchUsers = useCallback(async () => {
+    // Reset search if both fields are empty
+    if (!nicknameSearch.trim() && !realNameSearch.trim()) {
+      setFilteredUsers(allUsers);
+      setSearchHasNext(false);
+      setSearchNextCursorId(0);
+      setIsSearchMode(false);
+      return;
+    }
+
+    try {
+      setIsLoadingUsers(true);
+      setIsSearching(true);
+      setIsSearchMode(true);
+      
+      const response = await memberService.getMembersByCursorByName({ 
+        cursorId: 0, 
+        size: 7, 
+        direction: 'ASC',
+        nickname: nicknameSearch.trim() || undefined,
+        realName: realNameSearch.trim() || undefined
+      });
+      
+      setFilteredUsers(response.content);
+      setSearchNextCursorId(response.nextCursorId);
+      setSearchHasNext(response.hasNext);
+    } catch (error) {
+      console.error('Failed to search users:', error);
+      setFilteredUsers([]);
+      setSearchHasNext(false);
+    } finally {
+      setIsLoadingUsers(false);
+      setIsSearching(false);
+    }
+  }, [nicknameSearch, realNameSearch, allUsers]);
+
+  // Reset search and show all users
+  const handleResetSearch = useCallback(() => {
+    setNicknameSearch('');
+    setRealNameSearch('');
+    setFilteredUsers(allUsers);
+    setSearchHasNext(false);
+    setSearchNextCursorId(0);
+    setIsSearchMode(false);
+  }, [allUsers]);
+
+  // Store loadMoreUsers in ref to avoid recreating scroll handler
+  const loadMoreUsersRef = useRef(loadMoreUsers);
+  useEffect(() => {
+    loadMoreUsersRef.current = loadMoreUsers;
+  }, [loadMoreUsers]);
+
+  // Infinite scroll handler - load more when scrolled to bottom
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!userListRef.current || isLoadingMore) return;
+      
+      const { scrollTop, scrollHeight, clientHeight } = userListRef.current;
+      // Load more when scrolled to bottom (with small threshold for smooth loading)
+      const threshold = 10; // 10px threshold
+      if (scrollTop + clientHeight >= scrollHeight - threshold) {
+        loadMoreUsersRef.current();
+      }
+    };
+
+    const listElement = userListRef.current;
+    if (listElement) {
+      listElement.addEventListener('scroll', handleScroll, { passive: true });
+      return () => listElement.removeEventListener('scroll', handleScroll);
+    }
+  }, [isLoadingMore]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (userSearchRef.current && !userSearchRef.current.contains(event.target as Node)) {
-        setShowUserDropdown(false);
+        setIsSearchMode(false);
       }
     };
 
@@ -196,7 +297,7 @@ export default function NewProjectForm() {
     }
   };
 
-  const handleInputChange = (
+  const handleInputChange = useCallback((
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
@@ -205,13 +306,15 @@ export default function NewProjectForm() {
       [name]: value,
     }));
     // Clear error for this field
-    if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: '',
-      }));
-    }
-  };
+    setErrors((prev) => {
+      if (prev[name]) {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      }
+      return prev;
+    });
+  }, []);
 
   const addTag = () => {
     if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
@@ -304,10 +407,10 @@ export default function NewProjectForm() {
     }));
   };
 
-  const addCollaborator = (user: UserResponse) => {
+  const addCollaborator = (user: CursorUserResponse) => {
     // Check if user is already added
     const isAlreadyAdded = formData.collaborators.some(
-      (collab) => collab.email === user.email || collab.name === user.username
+      (collab) => collab.email === user.username || collab.name === (user.realName || user.nickname || user.email)
     );
 
     if (!isAlreadyAdded) {
@@ -316,14 +419,15 @@ export default function NewProjectForm() {
         collaborators: [
           ...prev.collaborators,
           {
-            name: user.realName || user.nickname || user.username,
+            name: user.realName || user.nickname || user.email,
             email: user.username, // Store username in email field for API
             role: 'CONTRIBUTOR',
           },
         ],
       }));
-      setUserSearchQuery('');
-      setShowUserDropdown(false);
+      setNicknameSearch('');
+      setRealNameSearch('');
+      setIsSearchMode(false);
     }
   };
 
@@ -334,12 +438,12 @@ export default function NewProjectForm() {
     }));
   };
 
-  const handleEditorChange = (html: string) => {
+  const handleEditorChange = useCallback((html: string) => {
     setFormData((prev) => ({
       ...prev,
       details: html,
     }));
-  };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -368,7 +472,7 @@ export default function NewProjectForm() {
 
       const response = await createProject(projectData);
       alert(response.message || '프로젝트가 성공적으로 생성되었습니다!');
-      router.push('/projects');
+      router.push(`/projects/${response.id}`);
     } catch (error: any) {
       alert(error.message || '프로젝트 생성에 실패했습니다.');
     } finally {
@@ -728,137 +832,273 @@ export default function NewProjectForm() {
         <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
           <h2 className="text-xl font-semibold text-gray-900">팀원</h2>
 
-          <div className="space-y-3">
-            <div className="grid grid-cols-3 gap-3">
-              <Input
-                placeholder="이름"
-                value={collaboratorInput.name}
-                onChange={(e) => setCollaboratorInput({ ...collaboratorInput, name: e.target.value })}
-              />
-              <Input
-                placeholder="이메일"
-                type="email"
-                value={collaboratorInput.email}
-                onChange={(e) => setCollaboratorInput({ ...collaboratorInput, email: e.target.value })}
-              />
-              <div className="flex gap-2">
-                <select
-                  value={collaboratorInput.role}
-                  onChange={(e) => setCollaboratorInput({ ...collaboratorInput, role: e.target.value })}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="OWNER">소유자</option>
-                  <option value="ADMIN">관리자</option>
-                  <option value="CONTRIBUTOR">기여자</option>
-                  <option value="VIEWER">뷰어</option>
-                </select>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    if (collaboratorInput.name && collaboratorInput.email) {
-                      setFormData((prev) => ({
-                        ...prev,
-                        collaborators: [
-                          ...prev.collaborators,
-                          {
-                            name: collaboratorInput.name,
-                            email: collaboratorInput.email,
-                            role: collaboratorInput.role,
-                          },
-                        ],
-                      }));
-                      setCollaboratorInput({ name: '', email: '', role: 'CONTRIBUTOR' });
-                    }
-                  }}
-                  className="bg-blue-500 hover:bg-blue-600 text-white"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
+          <div className="space-y-4">
             {/* User Search */}
             <div className="relative" ref={userSearchRef}>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  placeholder="이름 또는 닉네임으로 검색..."
-                  value={userSearchQuery}
-                  onChange={(e) => setUserSearchQuery(e.target.value)}
-                  onFocus={() => userSearchQuery && setShowUserDropdown(true)}
-                  className="pl-10"
-                />
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* 닉네임 검색 */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <AtSign className="w-4 h-4 text-blue-500" />
+                      닉네임 검색
+                    </label>
+                    <div className="relative">
+                      <AtSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-blue-500" />
+                      <Input
+                        placeholder="닉네임을 입력하세요"
+                        value={nicknameSearch}
+                        onChange={(e) => setNicknameSearch(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleSearchUsers();
+                          }
+                        }}
+                        className="pl-10 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* 실명 검색 */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <UserCircle className="w-4 h-4 text-green-500" />
+                      실명 검색
+                    </label>
+                    <div className="relative">
+                      <UserCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-green-500" />
+                      <Input
+                        placeholder="실명을 입력하세요"
+                        value={realNameSearch}
+                        onChange={(e) => setRealNameSearch(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleSearchUsers();
+                          }
+                        }}
+                        className="pl-10 border-green-200 focus:border-green-500 focus:ring-green-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* 버튼 영역 */}
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    type="button"
+                    onClick={handleSearchUsers}
+                    disabled={isLoadingUsers}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-6"
+                  >
+                    {isLoadingUsers ? (
+                      <>
+                        <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        조회 중...
+                      </>
+                    ) : (
+                      <>
+                        <Search className="w-4 h-4 mr-2" />
+                        조회하기
+                      </>
+                    )}
+                  </Button>
+                  {isSearchMode && (
+                    <Button
+                      type="button"
+                      onClick={handleResetSearch}
+                      variant="outline"
+                      className="px-4 border-gray-300"
+                    >
+                      <X className="w-4 h-4 mr-2" />
+                      초기화
+                    </Button>
+                  )}
+                </div>
               </div>
+            </div>
 
-              {/* User Dropdown */}
-              {showUserDropdown && (userSearchQuery.trim() || users.length > 0) && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                  {isLoadingUsers ? (
-                    <div className="p-4 text-center text-gray-500">검색 중...</div>
-                  ) : users.length === 0 ? (
-                    <div className="p-4 text-center text-gray-500">검색 결과가 없습니다.</div>
-                  ) : (
-                    users.map((user) => (
-                      <button
-                        key={user.id}
-                        type="button"
-                        onClick={() => addCollaborator(user)}
-                        className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 flex items-center gap-3"
-                      >
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                          {user.profileImageUrl ? (
+            {/* User List - Scrollable */}
+            <div className="border border-gray-300 rounded-lg overflow-hidden">
+              <div 
+                ref={userListRef}
+                className="max-h-96 overflow-y-auto"
+                style={{ 
+                  cursor: 'grab',
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: '#cbd5e0 #f7fafc'
+                }}
+                onMouseDown={(e) => {
+                  if (userListRef.current && e.button === 0) {
+                    e.preventDefault();
+                    const startY = e.clientY;
+                    const startScrollTop = userListRef.current.scrollTop;
+                    let isDragging = true;
+
+                    userListRef.current.style.cursor = 'grabbing';
+                    userListRef.current.style.userSelect = 'none';
+
+                    const handleMouseMove = (e: MouseEvent) => {
+                      if (isDragging && userListRef.current) {
+                        const deltaY = e.clientY - startY;
+                        userListRef.current.scrollTop = startScrollTop - deltaY;
+                      }
+                    };
+
+                    const handleMouseUp = () => {
+                      isDragging = false;
+                      if (userListRef.current) {
+                        userListRef.current.style.cursor = 'grab';
+                        userListRef.current.style.userSelect = 'auto';
+                      }
+                      document.removeEventListener('mousemove', handleMouseMove);
+                      document.removeEventListener('mouseup', handleMouseUp);
+                    };
+
+                    document.addEventListener('mousemove', handleMouseMove);
+                    document.addEventListener('mouseup', handleMouseUp);
+                  }
+                }}
+              >
+                {isLoadingUsers ? (
+                  <div className="p-8 text-center text-gray-500">
+                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mb-2"></div>
+                    <p>{isSearching ? '검색 중...' : '사용자 목록을 불러오는 중...'}</p>
+                  </div>
+                ) : filteredUsers.length === 0 ? (
+                  <div className="p-8 text-center text-gray-500">
+                    {isSearchMode ? '검색 결과가 없습니다.' : '사용자가 없습니다.'}
+                  </div>
+                ) : (
+                  <>
+                    <div className="divide-y divide-gray-200">
+                      {filteredUsers.map((user) => {
+                        const isAlreadyAdded = formData.collaborators.some(
+                          (collab) => collab.email === user.username || collab.name === (user.realName || user.nickname || user.email)
+                        );
+                        
+                        return (
+                          <button
+                            key={user.id}
+                            type="button"
+                            onClick={() => {
+                              if (!isAlreadyAdded) {
+                                addCollaborator(user);
+                              }
+                            }}
+                            disabled={isAlreadyAdded}
+                            className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center gap-3 ${
+                              isAlreadyAdded ? 'opacity-50 cursor-not-allowed bg-gray-100' : 'cursor-pointer'
+                            }`}
+                          >
+                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                              {user.profileImageUrl ? (
+                                <img
+                                  src={user.profileImageUrl}
+                                  alt={user.nickname}
+                                  className="w-full h-full rounded-full object-cover"
+                                />
+                              ) : (
+                                <User className="w-5 h-5 text-blue-600" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-gray-900 truncate">
+                                {user.realName || user.nickname || user.email}
+                              </p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                {user.nickname && user.nickname !== (user.realName || user.email) && (
+                                  <p className="text-sm text-gray-500 truncate">{user.nickname}</p>
+                                )}
+                                <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                              </div>
+                            </div>
+                            {isAlreadyAdded && (
+                              <div className="flex-shrink-0">
+                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                                  추가됨
+                                </span>
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {/* Loading more indicator */}
+                    {isLoadingMore && (
+                      <div className="p-4 text-center text-gray-500">
+                        <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mb-2"></div>
+                        <p className="text-sm">
+                          {isSearchMode ? '더 많은 검색 결과를 불러오는 중...' : '더 많은 사용자를 불러오는 중...'}
+                        </p>
+                      </div>
+                    )}
+                    {!isLoadingMore && filteredUsers.length > 0 && (
+                      <div className="p-4 text-center text-gray-400 text-sm">
+                        {isSearchMode 
+                          ? (!searchHasNext ? '모든 검색 결과를 불러왔습니다.' : '')
+                          : (!hasNext ? '모든 사용자를 불러왔습니다.' : '')
+                        }
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Selected Collaborators List */}
+            {formData.collaborators.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-gray-700">선택된 팀원</h3>
+                {formData.collaborators.map((collaborator, index) => {
+                  const user = allUsers.find(
+                    (u) => u.username === collaborator.email || 
+                           (u.realName || u.nickname || u.email) === collaborator.name
+                  );
+                  
+                  return (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
+                          {user?.profileImageUrl ? (
                             <img
                               src={user.profileImageUrl}
-                              alt={user.nickname}
+                              alt={user.nickname || user.realName}
                               className="w-full h-full rounded-full object-cover"
                             />
                           ) : (
                             <User className="w-4 h-4 text-blue-600" />
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 truncate">
-                            {user.realName || user.nickname || user.username}
-                          </p>
-                          <p className="text-sm text-gray-500 truncate">@{user.username}</p>
+                        <div>
+                          <p className="font-medium text-gray-900">{collaborator.name}</p>
+                          <p className="text-sm text-gray-500">@{user?.username || collaborator.email}</p>
                         </div>
-                      </button>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Collaborators List */}
-            <div className="space-y-2">
-              {formData.collaborators.map((collaborator, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <User className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                          {collaborator.role === 'OWNER' ? '소유자' :
+                           collaborator.role === 'ADMIN' ? '관리자' :
+                           collaborator.role === 'CONTRIBUTOR' ? '기여자' :
+                           collaborator.role === 'VIEWER' ? '뷰어' : collaborator.role}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeCollaborator(index)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{collaborator.name}</p>
-                      <p className="text-sm text-gray-500">@{collaborator.email}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                      {collaborator.role}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => removeCollaborator(index)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 

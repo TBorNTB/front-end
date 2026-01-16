@@ -6,6 +6,12 @@ const nextConfig = {
         protocol: 'https',
         hostname: '**',
       },
+      {
+        protocol: 'https',
+        hostname: 'api.sejongsgg.kr',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
   compiler: {

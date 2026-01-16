@@ -1,7 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { Calendar, Eye, Heart, User } from 'lucide-react';
+import Link from 'next/link';
+import { Calendar, Eye, Heart, User, Crown, Users } from 'lucide-react';
 
 interface NewsItem {
   id: string;
@@ -10,6 +11,18 @@ interface NewsItem {
   content?: string;
   thumbnailPath?: string;
   writerId: string;
+  writer?: {
+    username: string;
+    nickname: string;
+    realname: string;
+    avatar: string;
+  };
+  participants?: Array<{
+    username: string;
+    nickname: string;
+    realname: string;
+    avatar: string;
+  }>;
   tags: string[];
   createdAt: string;
   updatedAt: string;
@@ -22,6 +35,92 @@ interface NewsCardProps {
   news: NewsItem;
   variant?: 'grid' | 'list';
 }
+
+// Avatar Stack Component for Owner and Participants
+const AvatarStack = ({
+  writer,
+  participants,
+  maxVisible = 3
+}: {
+  writer: { username: string; nickname: string; realname: string; avatar: string };
+  participants: { username: string; nickname: string; realname: string; avatar: string }[];
+  maxVisible?: number;
+}) => {
+  const visibleParticipants = participants.slice(0, maxVisible);
+  const remainingCount = participants.length - maxVisible;
+
+  return (
+    <div className="space-y-2">
+      {/* Owner Section */}
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          <Crown size={14} className="text-yellow-500" />
+          <span className="text-xs font-medium text-gray-600">소유자</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div 
+            className="relative inline-block"
+            title={writer.nickname}
+          >
+            <Image
+              src={writer.avatar}
+              alt={writer.nickname}
+              width={28}
+              height={28}
+              className="w-7 h-7 rounded-full border-2 border-yellow-400 bg-gray-200 hover:z-10 relative shadow-sm"
+            />
+          </div>
+          <span 
+            className="text-xs text-gray-700 font-medium"
+            title={writer.nickname}
+          >
+            {writer.nickname}
+          </span>
+        </div>
+      </div>
+
+      {/* Participants Section */}
+      {participants.length > 0 && (
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <Users size={14} className="text-blue-500" />
+            <span className="text-xs font-medium text-gray-600">협력자</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="flex -space-x-2">
+              {visibleParticipants.map((participant, index) => (
+                <div 
+                  key={participant.username || index} 
+                  className="relative inline-block"
+                  title={participant.nickname}
+                >
+                  <Image
+                    src={participant.avatar}
+                    alt={participant.nickname}
+                    width={24}
+                    height={24}
+                    className="w-6 h-6 rounded-full border-2 border-white bg-gray-200 hover:z-10 relative"
+                  />
+                </div>
+              ))}
+              {remainingCount > 0 && (
+                <div
+                  className="w-6 h-6 rounded-full border-2 border-white bg-gray-300 flex items-center justify-center relative"
+                  title={`+${remainingCount} more participants`}
+                >
+                  <span className="text-xs font-medium text-gray-600">+{remainingCount}</span>
+                </div>
+              )}
+            </div>
+            <span className="text-xs text-gray-500">
+              {participants.length}명
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
   const formatDate = (dateString: string) => {
@@ -44,10 +143,20 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
   };
 
   const thumbnailUrl = isValidImageUrl(news.thumbnailPath);
+  
+  // Default writer and participants
+  const writer = news.writer || {
+    username: '',
+    nickname: news.writerId || 'Unknown',
+    realname: '',
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+  };
+  const participants = news.participants || [];
 
   if (variant === 'list') {
     return (
-      <article className="group bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-primary-300 hover:shadow-md transition-all duration-200 flex">
+      <Link href={`/community/news/${news.id}`}>
+        <article className="group bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-primary-300 hover:shadow-md transition-all duration-200 flex cursor-pointer">
         {/* Image - Left side */}
         <div className="w-56 flex-shrink-0 relative overflow-hidden bg-gray-100">
           {thumbnailUrl ? (
@@ -87,6 +196,11 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
             </p>
           </div>
 
+          {/* Owner and Participants */}
+          <div className="mb-3">
+            <AvatarStack writer={writer} participants={participants} />
+          </div>
+
           {/* Meta Info */}
           <div className="flex items-center justify-between text-xs text-gray-500">
             <div className="flex items-center gap-3">
@@ -106,12 +220,14 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
           </div>
         </div>
       </article>
+      </Link>
     );
   }
 
   // Grid variant
   return (
-    <article className="group bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-primary-300 hover:shadow-lg transition-all duration-200 flex flex-col h-full">
+    <Link href={`/community/news/${news.id}`}>
+      <article className="group bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-primary-300 hover:shadow-lg transition-all duration-200 flex flex-col h-full cursor-pointer">
       {/* Image */}
       <div className="relative overflow-hidden bg-gray-100">
         {thumbnailUrl ? (
@@ -161,6 +277,11 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
           </div>
         )}
 
+        {/* Owner and Participants */}
+        <div className="mb-3">
+          <AvatarStack writer={writer} participants={participants} />
+        </div>
+
         {/* Meta Info */}
         <div className="border-t border-gray-100 pt-3 flex items-center justify-between text-xs text-gray-500">
           <div className="flex items-center gap-2">
@@ -181,5 +302,6 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
         </div>
       </div>
     </article>
+    </Link>
   );
 }

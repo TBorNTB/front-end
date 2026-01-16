@@ -7,6 +7,7 @@ import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import ChatBot from '@/app/(main)/chatbot/ChatBot';
 import Topics from '@/components/landing/Topics';
 import{ HeroBanner, StatisticsSection, FeaturedProjectCard, ProjectCardHome, ArticleCardHome, QuickActions } from '@/components/landing';
 import { useLandingData } from '@/hooks/useLandingData';
@@ -52,7 +53,7 @@ export default function Home() {
     }
 
     const first = projects[0];
-    const thumbnail = normalizeImageUrl(first.thumbnailUrl) || '';
+    const thumbnail = normalizeImageUrl(first.thumbnailUrl);
 
     setFeaturedProject({
       id: first.id,
@@ -65,19 +66,37 @@ export default function Home() {
       viewText: '자세히 보기',
       likes: first.likeCount,
       views: first.viewCount,
+      owner: first.owner || undefined,
+      collaborators: first.collaborators || [],
     });
 
-    const rest: ProjectCardData[] = projects.slice(1, 10).map((p) => ({
-      id: p.id,
-      title: p.title,
-      description: p.description,
-      status: convertStatus(p.projectStatus),
-      category: p.projectCategories?.[0] || '프로젝트',
-      collaborators: [],
-      likes: p.likeCount || 0,
-      views: p.viewCount,
-      techStacks: p.projectTechStacks || [],
-    }));
+    const rest: ProjectCardData[] = projects.slice(1, 10).map((p) => {
+      // Build collaborators array (excluding owner, as owner is shown separately)
+      const collaboratorsList: { profileImage: string }[] = [];
+      
+      // Add collaborators (not owner)
+      if (p.collaborators && p.collaborators.length > 0) {
+        p.collaborators.forEach((collab) => {
+          collaboratorsList.push({
+            profileImage: collab.avatarUrl || '',
+          });
+        });
+      }
+      
+      return {
+        id: p.id,
+        title: p.title,
+        description: p.description,
+        status: convertStatus(p.projectStatus),
+        category: p.projectCategories?.[0] || '프로젝트',
+        collaborators: collaboratorsList,
+        likes: p.likeCount || 0,
+        views: p.viewCount,
+        techStacks: p.projectTechStacks || [],
+        owner: p.owner || undefined,
+        thumbnailUrl: p.thumbnailUrl || '',
+      };
+    });
 
     setAllProjects(rest);
     setCurrentProjectIndex(0);
@@ -101,21 +120,31 @@ export default function Home() {
       return;
     }
 
-    const mapped: ArticleCardData[] = articles.map((a) => ({
-      id: a.id,
-      title: a.content.title,
-      description:
-        a.content.summary || a.content.content?.substring(0, 150) || '',
-      author: {
-        name: a.writerId || '작성자',
-        profileImage: '',
-      },
-      category: a.content.category || '기타',
-      thumbnailImage: normalizeImageUrl(a.thumbnailPath) || '',
-      likes: a.likeCount || 0,
-      views: a.viewCount || 0,
-      tags: a.tags || [],
-    }));
+    const mapped: ArticleCardData[] = articles.map((a) => {
+      // Safely extract content string
+      const contentStr = typeof a.content.content === 'string' 
+        ? a.content.content 
+        : '';
+      const description = a.content.summary || 
+        (contentStr ? contentStr.substring(0, 150) : '') || 
+        '';
+      
+      return {
+        id: a.id,
+        title: a.content.title,
+        description,
+        author: {
+          name: a.writerId || '작성자',
+          profileImage: '',
+        },
+        category: a.content.category || '기타',
+        thumbnailImage: normalizeImageUrl(a.thumbnailPath) || '',
+        likes: a.likeCount || 0,
+        views: a.viewCount || 0,
+        tags: a.tags || [],
+        createdAt: a.createdAt,
+      };
+    });
 
     setAllArticles(mapped);
     setArticleIndex(0);
@@ -384,7 +413,7 @@ export default function Home() {
                   )}
                   
                   {/* Articles Grid */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {visibleArticles.map((article) => (
                       <ArticleCardHome key={article.id} article={article} />
                     ))}
@@ -444,9 +473,20 @@ export default function Home() {
             )}
           </div>
         </section>
+
+        {/* FAQs Section */}
+        <FAQsSection
+          faqs={faqs}
+          expandedFaq={expandedFaq}
+          onToggleFaq={toggleFaq}
+        />
+
+      {/* Quick Actions Section */}
+        <QuickActions />
       </div>
 
       <Footer />
+      <ChatBot/>
     </>
   );
 }

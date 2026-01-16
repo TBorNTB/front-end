@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { User, Settings, Award, Activity, Bell } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { profileService, UserResponse } from '@/lib/api/services/user-services';
@@ -47,6 +47,7 @@ export default function MyPageLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [profile, setProfile] = useState<UserResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -56,16 +57,22 @@ export default function MyPageLayout({
         setIsLoading(true);
         const profileData = await profileService.getProfile();
         setProfile(profileData);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to load profile:', err);
-        // 에러가 발생해도 레이아웃은 계속 표시
+        // 인증 에러인 경우 로그인 페이지로 리다이렉트
+        const errorMessage = err.message || '';
+        if (errorMessage.includes('로그인') || errorMessage.includes('인증') || err.response?.status === 401 || err.response?.status === 403) {
+          router.push('/login');
+          return;
+        }
+        // 에러가 발생해도 레이아웃은 계속 표시 (다른 에러인 경우)
       } finally {
         setIsLoading(false);
       }
     };
 
     loadProfile();
-  }, []);
+  }, [router]);
 
   // URL 유효성 검사 함수
   const isValidImageUrl = (url: string | null | undefined): string | null => {
@@ -86,7 +93,7 @@ export default function MyPageLayout({
   const displayName = profile?.realName || profile?.nickname || profile?.username || '사용자';
   const displayEmail = profile?.email || 'API 연결이 필요합니다';
   const displayRole = profile?.role || 'Member';
-  const displayAvatar = isValidImageUrl(profile?.profileImageUrl) || '/default-avatar.svg';
+  const displayAvatar = isValidImageUrl(profile?.profileImageUrl) || '/images/placeholder/default-avatar.svg';
 
   // 통계 정보는 API 응답에 없으므로 -1로 표시
   const stats = {
