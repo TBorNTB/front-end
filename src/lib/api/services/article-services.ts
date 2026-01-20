@@ -1,6 +1,8 @@
 // src/lib/api/services/article.ts
 import { ARTICLE_ENDPOINTS, getArticleApiUrl } from '@/lib/api/endpoints/article-endpoints';
 import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
+import { parseApiError, safeJsonParse } from '@/lib/api/helpers';
+import { INTERNAL_ENDPOINTS, getInternalApiUrl } from '@/lib/api/endpoints';
 
 export interface ArticleResponse {
   id: number;
@@ -94,8 +96,14 @@ export const updateArticle = async (id: string | number, data: ArticleUpdateRequ
  * @param id 아티클 ID
  */
 export const deleteArticle = async (id: string | number): Promise<void> => {
-  const endpoint = ARTICLE_ENDPOINTS.ARTICLE.DELETE.replace(':id', String(id));
-  const url = getArticleApiUrl(endpoint);
+  // Use a dedicated Next.js API route for deletion.
+  // This mirrors the backend curl behavior (Authorization: Bearer ..., accept: */*)
+  // and safely handles 204/empty responses.
+  const endpoint = INTERNAL_ENDPOINTS.CS_KNOWLEDGE.DELETE.replace(
+    ':id',
+    encodeURIComponent(String(id))
+  );
+  const url = getInternalApiUrl(endpoint);
   const headers: HeadersInit = {
     'accept': '*/*',
   };
@@ -107,8 +115,16 @@ export const deleteArticle = async (id: string | number): Promise<void> => {
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to delete article: ${response.status} - ${errorText}`);
+    const data = await safeJsonParse(response.clone());
+    const errorText = (await response.text()).trim();
+    const normalized = errorText || response.statusText || '';
+    const message = parseApiError(response, data, 'CS 지식 삭제');
+
+    throw new Error(
+      normalized
+        ? `${message} (${response.status}) - ${normalized}`
+        : `${message} (${response.status})`
+    );
   }
 };
 

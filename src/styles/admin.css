@@ -1,50 +1,9 @@
 /* src/styles/admin.css */
-@import "tailwindcss";
-
-@theme {
-  /* SSG Brand Colors - Add these directly to admin.css */
-  --color-primary: #3a4da1;
-  --color-secondary: #6caaef;
-  --color-text: #1f2937;
-  --color-background: #e2eefc;
-  --color-foreground: #060810;
-  
-  /* Primary Scale */
-  --color-primary-50: #ebedf6;
-  --color-primary-100: #c2c8e2;
-  --color-primary-200: #a4add4;
-  --color-primary-300: #7b88c0;
-  --color-primary-400: #6171b4;
-  --color-primary-500: #3a4da1;
-  --color-primary-600: #354693;
-  --color-primary-700: #293772;
-  --color-primary-800: #202a59;
-  --color-primary-900: #182044;
-  
-  /* Secondary Scale */
-  --color-secondary-50: #f0f7fd;
-  --color-secondary-100: #e9f2fd;
-  --color-secondary-200: #d1e5fa;
-  --color-secondary-300: #9dc6f4;
-  --color-secondary-400: #89bbf2;
-  --color-secondary-500: #6caaef;
-  --color-secondary-600: #629bd9;
-  --color-secondary-700: #4d79aa;
-  --color-secondary-800: #3b5e83;
-  --color-secondary-900: #2d4764;
-  
-  /* Gray Scale */
-  --color-gray-50: #fbfbfc;
-  --color-gray-100: #f2f3f7;
-  --color-gray-200: #ecedf3;
-  --color-gray-300: #d5d6dd;
-  --color-gray-400: #9ca0ab;
-  --color-gray-500: #6b7280;
-  --color-gray-600: #4b5563;
-  --color-gray-700: #374151;
-  --color-gray-800: #1f2937;
-  --color-gray-900: #111827;
-}
+/*
+  Admin-only component classes.
+  NOTE: This file is imported by src/app/globals.css.
+  Keep it @layer-based and avoid redefining Tailwind/@theme.
+*/
 
 @layer components {
   .admin-container {
@@ -92,7 +51,7 @@
     @apply text-red-300 hover:text-red-200;
   }
 
-    /* Responsive Sidebar */
+  /* Responsive Sidebar */
   .admin-sidebar {
     @apply bg-primary-900 text-primary-100 h-full;
   }
@@ -204,6 +163,27 @@
     @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors;
   }
 
+  .admin-form-label {
+    @apply block text-sm font-medium text-gray-700 mb-2;
+  }
+
+  .admin-form-group {
+    @apply space-y-2;
+  }
+
+  /* Admin Page Header */
+  .admin-page-header {
+    @apply mb-8;
+  }
+
+  .admin-page-title {
+    @apply text-3xl font-bold text-gray-900;
+  }
+
+  .admin-page-subtitle {
+    @apply mt-2 text-gray-600;
+  }
+
   /* Admin Navigation Tabs */
   .admin-tab {
     @apply pb-4 px-1 border-b-2 font-medium text-sm transition-colors;
@@ -215,6 +195,20 @@
 
   .admin-tab.active {
     @apply border-primary-500 text-primary-600;
+  }
+
+  .admin-tabs {
+    @apply flex space-x-8 border-b border-gray-200 overflow-x-auto;
+  }
+
+  /* Tab Content wrapper */
+  .tab-content {
+    @apply mt-6;
+  }
+
+  /* Elevated card container (used by some admin pages) */
+  .admin-card-elevated {
+    @apply bg-white rounded-xl border border-primary-200 shadow-sm;
   }
 
   /* Button variants */

@@ -1,7 +1,7 @@
 // src/app/admin/content/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { 
   FolderOpen, 
   Tag, 
@@ -10,61 +10,168 @@ import {
   Trash2, 
   Eye,
   BookOpen,
+  Newspaper,
 } from "lucide-react";
 
 // Import complex components - REMOVED ArticleManagement
 import ProjectManagement from "./components/ProjectManagement";
 import CSKnowledgeManagement from "./components/CSKnowledgeManagement";
+import NewsManagement from "./components/NewsManagement";
+import { fetchMetaCount } from "@/lib/api/services/meta-services";
+import { fetchCategories } from "@/lib/api/services/project-services";
+import { categoryService } from "@/lib/api/services/category-services";
+import toast from "react-hot-toast";
 
 // UPDATED: Removed "articles" from TabType
-type TabType = "overview" | "projects" | "cs-knowledge" | "categories";
+type TabType = "overview" | "projects" | "cs-knowledge" | "news" | "categories";
 
-// Mock data for categories (inline management)
-const mockCategories = [
-  { id: 1, name: "웹 해킹", slug: "web-hacking", projectCount: 5, articleCount: 12, color: "bg-red-100 text-red-800" },
-  { id: 2, name: "리버싱", slug: "reversing", projectCount: 3, articleCount: 8, color: "bg-purple-100 text-purple-800" },
-  { id: 3, name: "웹 개발", slug: "web-development", projectCount: 4, articleCount: 6, color: "bg-blue-100 text-blue-800" },
-  { id: 4, name: "모바일 보안", slug: "mobile-security", projectCount: 1, articleCount: 3, color: "bg-green-100 text-green-800" },
-  { id: 5, name: "네트워크", slug: "network", projectCount: 2, articleCount: 5, color: "bg-indigo-100 text-indigo-800" },
-  { id: 6, name: "알고리즘", slug: "algorithm", projectCount: 6, articleCount: 15, color: "bg-yellow-100 text-yellow-800" },
-];
+type ApiCategory = {
+  id: number;
+  name: string;
+  description: string;
+};
+
+const badgeColors = [
+  "bg-red-100 text-red-800",
+  "bg-blue-100 text-blue-800",
+  "bg-green-100 text-green-800",
+  "bg-yellow-100 text-yellow-800",
+  "bg-purple-100 text-purple-800",
+  "bg-indigo-100 text-indigo-800",
+] as const;
 
 // Inline Category Management Component
 function InlineCategoryManagement() {
   const [isCreating, setIsCreating] = useState(false);
-  const [_editingId, setEditingId] = useState<number | null>(null);
-  const [newCategory, setNewCategory] = useState({ name: "", slug: "", color: "bg-blue-100 text-blue-800" });
+  const [newCategory, setNewCategory] = useState({ name: "", description: "" });
 
-  const colorOptions = [
-    { value: "bg-red-100 text-red-800", label: "빨강", preview: "bg-red-100" },
-    { value: "bg-blue-100 text-blue-800", label: "파랑", preview: "bg-blue-100" },
-    { value: "bg-green-100 text-green-800", label: "초록", preview: "bg-green-100" },
-    { value: "bg-yellow-100 text-yellow-800", label: "노랑", preview: "bg-yellow-100" },
-    { value: "bg-purple-100 text-purple-800", label: "보라", preview: "bg-purple-100" },
-    { value: "bg-indigo-100 text-indigo-800", label: "남색", preview: "bg-indigo-100" },
-  ];
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isMutating, setIsMutating] = useState(false);
 
-  const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9가-힣\s]/g, '')
-      .replace(/\s+/g, '-');
-  };
+  const [editTarget, setEditTarget] = useState<ApiCategory | null>(null);
+  const [editForm, setEditForm] = useState({ nextName: "", description: "" });
+  const [deleteTarget, setDeleteTarget] = useState<ApiCategory | null>(null);
 
-  const handleCreate = () => {
-    if (newCategory.name.trim()) {
-      console.log("새 카테고리 생성:", newCategory);
-      setNewCategory({ name: "", slug: "", color: "bg-blue-100 text-blue-800" });
-      setIsCreating(false);
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const data = await categoryService.getCategories();
+        if (cancelled) return;
+        setCategories(data.categories || []);
+      } catch (err) {
+        if (cancelled) return;
+        setCategories([]);
+        setError(err instanceof Error ? err.message : "카테고리를 불러오지 못했습니다.");
+      } finally {
+        if (cancelled) return;
+        setIsLoading(false);
+      }
+    };
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const reload = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await categoryService.getCategories();
+      setCategories(data.categories || []);
+    } catch (err) {
+      setCategories([]);
+      setError(err instanceof Error ? err.message : "카테고리를 불러오지 못했습니다.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleNameChange = (name: string) => {
-    setNewCategory({ 
-      ...newCategory, 
-      name, 
-      slug: generateSlug(name) 
+  const handleCreate = async () => {
+    const name = newCategory.name.trim();
+    const description = newCategory.description.trim();
+
+    if (!name) {
+      toast.error("카테고리 이름을 입력해주세요.");
+      return;
+    }
+
+    setIsMutating(true);
+
+    try {
+      await categoryService.createCategory({ name, description });
+      toast.success("카테고리가 생성되었습니다.");
+      setNewCategory({ name: "", description: "" });
+      setIsCreating(false);
+      await reload();
+    } catch (err) {
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : "카테고리 생성에 실패했습니다.");
+    } finally {
+      setIsMutating(false);
+    }
+  };
+
+  const openEdit = (category: ApiCategory) => {
+    setEditTarget(category);
+    setEditForm({
+      nextName: category.name,
+      description: category.description || "",
     });
+  };
+
+  const handleUpdate = async () => {
+    if (!editTarget) return;
+
+    const prevName = editTarget.name;
+    const nextName = editForm.nextName.trim();
+    const description = editForm.description.trim();
+
+    if (!nextName) {
+      toast.error("카테고리 이름을 입력해주세요.");
+      return;
+    }
+
+    setIsMutating(true);
+
+    try {
+      await categoryService.updateCategory({ prevName, nextName, description });
+      toast.success("카테고리가 수정되었습니다.");
+      setEditTarget(null);
+      await reload();
+    } catch (err) {
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : "카테고리 수정에 실패했습니다.");
+    } finally {
+      setIsMutating(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+
+    setIsMutating(true);
+
+    try {
+      await categoryService.deleteCategory({ name: deleteTarget.name });
+      toast.success("카테고리가 삭제되었습니다.");
+      setDeleteTarget(null);
+      await reload();
+    } catch (err) {
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : "카테고리 삭제에 실패했습니다.");
+    } finally {
+      setIsMutating(false);
+    }
   };
 
   return (
@@ -97,41 +204,23 @@ function InlineCategoryManagement() {
               <input
                 type="text"
                 value={newCategory.name}
-                onChange={(e) => handleNameChange(e.target.value)}
+                onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
                 placeholder="카테고리 이름을 입력하세요"
                 className="admin-form-input"
+                disabled={isMutating}
               />
             </div>
-            
+
             <div className="admin-form-group">
-              <label className="admin-form-label">URL Slug</label>
+              <label className="admin-form-label">설명</label>
               <input
                 type="text"
-                value={newCategory.slug}
-                onChange={(e) => setNewCategory({ ...newCategory, slug: e.target.value })}
-                placeholder="url-slug"
+                value={newCategory.description}
+                onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
+                placeholder="설명을 입력하세요"
                 className="admin-form-input"
+                disabled={isMutating}
               />
-            </div>
-          </div>
-
-          <div className="admin-form-group">
-            <label className="admin-form-label">색상 테마</label>
-            <div className="flex flex-wrap gap-2">
-              {colorOptions.map((color) => (
-                <button
-                  key={color.value}
-                  onClick={() => setNewCategory({ ...newCategory, color: color.value })}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg border-2 transition-colors ${
-                    newCategory.color === color.value 
-                      ? 'border-primary-500 bg-primary-50' 
-                      : 'border-gray-300 hover:border-gray-400'
-                  }`}
-                >
-                  <div className={`w-4 h-4 rounded-full ${color.preview}`}></div>
-                  <span className="text-sm">{color.label}</span>
-                </button>
-              ))}
             </div>
           </div>
 
@@ -139,14 +228,15 @@ function InlineCategoryManagement() {
             <button
               onClick={() => {
                 setIsCreating(false);
-                setNewCategory({ name: "", slug: "", color: "bg-blue-100 text-blue-800" });
+                setNewCategory({ name: "", description: "" });
               }}
               className="admin-btn-secondary"
+              disabled={isMutating}
             >
               취소
             </button>
-            <button onClick={handleCreate} className="admin-btn-cta">
-              생성
+            <button onClick={handleCreate} className="admin-btn-cta" disabled={isMutating}>
+              {isMutating ? "생성 중..." : "생성"}
             </button>
           </div>
         </div>
@@ -154,36 +244,56 @@ function InlineCategoryManagement() {
 
       {/* Categories Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {mockCategories.map((category) => (
-          <div key={category.id} className="admin-card hover:shadow-lg">
-            <div className="flex justify-between items-start mb-3">
-              <div className={`px-3 py-1 rounded-full text-sm font-medium ${category.color}`}>
-                {category.name}
-              </div>
-              <div className="flex space-x-1">
-                <button 
-                  onClick={() => setEditingId(category.id)}
-                  className="p-1 text-gray-400 hover:text-primary-600 transition-colors"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-                <button className="p-1 text-gray-400 hover:text-red-600 transition-colors">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-            
-            <p className="text-sm text-gray-600 mb-3">/{category.slug}</p>
-            
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="flex items-center text-gray-600">
-                <FolderOpen className="w-4 h-4 mr-1 text-primary-500" />
-                <span>{category.projectCount}개 프로젝트</span>
-              </div>
-              {/* REMOVED: Article count display */}
-            </div>
+        {isLoading ? (
+          <div className="admin-card col-span-full py-10 text-center text-sm text-gray-500">
+            불러오는 중...
           </div>
-        ))}
+        ) : error ? (
+          <div className="admin-card col-span-full py-10 text-center text-sm text-red-600">
+            {error}
+          </div>
+        ) : categories.length === 0 ? (
+          <div className="admin-card col-span-full py-10 text-center text-sm text-gray-500">
+            카테고리가 없습니다.
+          </div>
+        ) : (
+          categories.map((category) => {
+            const color = badgeColors[Math.abs(category.id) % badgeColors.length];
+
+            return (
+              <div key={category.id} className="admin-card hover:shadow-lg">
+                <div className="flex justify-between items-start mb-3">
+                  <div className={`px-3 py-1 rounded-full text-sm font-medium ${color}`}>
+                    {category.name}
+                  </div>
+                  <div className="flex space-x-1">
+                    <button
+                      onClick={() => openEdit(category)}
+                      className="p-1 text-gray-400 hover:text-primary-600 transition-colors"
+                      title="편집"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                      title="삭제"
+                      onClick={() => setDeleteTarget(category)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2 text-sm">
+                  <div className="text-gray-600 line-clamp-2">
+                    {category.description || "(설명 없음)"}
+                  </div>
+                  <div className="text-xs text-gray-500">ID: {category.id}</div>
+                </div>
+              </div>
+            );
+          })
+        )}
 
         {/* Add Category Card */}
         <div 
@@ -194,6 +304,103 @@ function InlineCategoryManagement() {
           <span className="text-gray-600 font-medium">새 카테고리 추가</span>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {editTarget && (
+        <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4">
+          <div className="admin-card w-full max-w-lg">
+            <div className="admin-card-header">
+              <h4 className="admin-card-title">카테고리 수정</h4>
+              <p className="admin-card-description">이름/설명을 수정합니다</p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="admin-form-group">
+                <label className="admin-form-label">기존 이름</label>
+                <input
+                  type="text"
+                  value={editTarget.name}
+                  className="admin-form-input"
+                  disabled
+                />
+              </div>
+
+              <div className="admin-form-group">
+                <label className="admin-form-label">새 이름</label>
+                <input
+                  type="text"
+                  value={editForm.nextName}
+                  onChange={(e) => setEditForm({ ...editForm, nextName: e.target.value })}
+                  className="admin-form-input"
+                  disabled={isMutating}
+                />
+              </div>
+
+              <div className="admin-form-group">
+                <label className="admin-form-label">설명</label>
+                <textarea
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  className="admin-form-input min-h-[96px]"
+                  disabled={isMutating}
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                className="admin-btn-secondary"
+                onClick={() => setEditTarget(null)}
+                disabled={isMutating}
+              >
+                취소
+              </button>
+              <button
+                className="admin-btn-cta"
+                onClick={handleUpdate}
+                disabled={isMutating}
+              >
+                {isMutating ? "저장 중..." : "저장"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4">
+          <div className="admin-card w-full max-w-lg">
+            <div className="admin-card-header">
+              <h4 className="admin-card-title">카테고리를 삭제할까요?</h4>
+              <p className="admin-card-description">
+                삭제하면 복구가 어려울 수 있습니다.
+              </p>
+            </div>
+
+            <div className="text-sm text-gray-800">
+              대상: <span className="font-semibold">{deleteTarget.name}</span>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                className="admin-btn-secondary"
+                onClick={() => setDeleteTarget(null)}
+                disabled={isMutating}
+              >
+                취소
+              </button>
+              <button
+                className="admin-btn-danger"
+                onClick={handleDelete}
+                disabled={isMutating}
+              >
+                {isMutating ? "삭제 중..." : "삭제"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -202,20 +409,98 @@ function InlineCategoryManagement() {
 export default function AdminContent() {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
 
+  const [countsLoading, setCountsLoading] = useState(true);
+  const [countsError, setCountsError] = useState<string | null>(null);
+  const [counts, setCounts] = useState<{
+    projectCount: number;
+    newsCount: number;
+    csKnowledgeCount: number;
+    categoryCount: number;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadCounts = async () => {
+      setCountsLoading(true);
+      setCountsError(null);
+
+      try {
+        const [metaRes, categoriesRes] = await Promise.all([
+          fetchMetaCount(),
+          fetchCategories(),
+        ]);
+
+        if (cancelled) return;
+
+        setCounts({
+          projectCount: metaRes.projectCount ?? 0,
+          // User request: articleCount == 뉴스
+          newsCount: metaRes.articleCount ?? 0,
+          // User request: categoryCount == CS 지식
+          csKnowledgeCount: metaRes.categoryCount ?? 0,
+          // User request: 카테고리 갯수는 /project-service/api/category 결과 길이
+          categoryCount: categoriesRes.categories?.length ?? 0,
+        });
+      } catch (err) {
+        if (cancelled) return;
+        setCounts(null);
+        setCountsError(err instanceof Error ? err.message : "개요 카운트를 불러오지 못했습니다.");
+      } finally {
+        if (cancelled) return;
+        setCountsLoading(false);
+      }
+    };
+
+    loadCounts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // UPDATED: Removed articles tab from tabs array
   const tabs = [
     { id: "overview" as TabType, label: "개요", icon: Eye, color: "text-primary-600" },
     { id: "projects" as TabType, label: "프로젝트 관리", icon: FolderOpen, color: "text-green-600" },
     { id: "cs-knowledge" as TabType, label: "CS 지식", icon: BookOpen, color: "text-purple-600" },
+    { id: "news" as TabType, label: "뉴스", icon: Newspaper, color: "text-blue-600" },
     { id: "categories" as TabType, label: "카테고리 관리", icon: Tag, color: "text-orange-600" },
   ];
 
-  // UPDATED: Removed article-related statistics, keeping only 3 stats
-  const stats = [
-    { label: "전체 프로젝트", value: "42", change: "+5", trend: "up", icon: FolderOpen, color: "bg-green-500" },
-    { label: "CS 지식", value: "89", change: "+8", trend: "up", icon: BookOpen, color: "bg-purple-500" },
-    { label: "카테고리", value: "6", change: "+1", trend: "up", icon: Tag, color: "bg-orange-500" },
-  ];
+  const stats = useMemo(() => {
+    const valueOrLoading = (value: number | undefined): string => {
+      if (countsLoading) return "…";
+      return (value ?? 0).toLocaleString();
+    };
+
+    return [
+      {
+        label: "전체 프로젝트",
+        value: valueOrLoading(counts?.projectCount),
+        icon: FolderOpen,
+        color: "bg-green-500",
+      },
+      {
+        label: "CS 지식",
+        value: valueOrLoading(counts?.csKnowledgeCount),
+        icon: BookOpen,
+        color: "bg-purple-500",
+      },
+      {
+        label: "뉴스",
+        value: valueOrLoading(counts?.newsCount),
+        icon: Newspaper,
+        color: "bg-blue-500",
+      },
+      {
+        label: "카테고리",
+        value: valueOrLoading(counts?.categoryCount),
+        icon: Tag,
+        color: "bg-orange-500",
+      },
+    ];
+  }, [counts, countsLoading]);
 
   const renderOverview = () => (
     <div className="space-y-8">
@@ -227,9 +512,9 @@ export default function AdminContent() {
               <div>
                 <p className="admin-stat-label">{stat.label}</p>
                 <p className="admin-stat-value">{stat.value}</p>
-                <div className="admin-stat-change positive">
-                  <span>{stat.change} 지난 달 대비</span>
-                </div>
+                {countsError && (
+                  <div className="mt-1 text-xs text-red-600">{countsError}</div>
+                )}
               </div>
               <div className={`w-12 h-12 ${stat.color} rounded-lg flex items-center justify-center`}>
                 <stat.icon className="w-6 h-6 text-white" />
@@ -245,7 +530,7 @@ export default function AdminContent() {
           <h3 className="admin-card-title">빠른 작업</h3>
           <p className="admin-card-description">자주 사용하는 기능들에 빠르게 접근하세요</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <button 
             onClick={() => setActiveTab("projects")}
             className="flex flex-col items-center p-6 bg-green-50 hover:bg-green-100 rounded-lg transition-colors group"
@@ -263,6 +548,15 @@ export default function AdminContent() {
             <span className="font-medium text-purple-900">CS 지식 관리</span>
             <span className="text-sm text-purple-600 mt-1">최근 업데이트</span>
           </button>
+
+          <button 
+            onClick={() => setActiveTab("news")}
+            className="flex flex-col items-center p-6 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors group"
+          >
+            <Newspaper className="w-8 h-8 text-blue-600 mb-2 group-hover:scale-110 transition-transform" />
+            <span className="font-medium text-blue-900">뉴스 관리</span>
+            <span className="text-sm text-blue-600 mt-1">게시물 점검</span>
+          </button>
           
           <button 
             onClick={() => setActiveTab("categories")}
@@ -274,43 +568,6 @@ export default function AdminContent() {
           </button>
         </div>
       </div>
-
-      {/* Recent Activity - REMOVED article activity */}
-      <div className="admin-card">
-        <div className="admin-card-header">
-          <h3 className="admin-card-title">최근 활동</h3>
-          <p className="admin-card-description">최근 콘텐츠 변경사항을 확인하세요</p>
-        </div>
-        <div className="space-y-3">
-          {[
-            { type: "project", title: "SSG Hub 개발", author: "이영희", time: "4시간 전", status: "검토중" },
-            { type: "cs", title: "알고리즘 복잡도", author: "박민수", time: "6시간 전", status: "업데이트됨" },
-          ].map((activity, index) => (
-            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  activity.type === 'project' ? 'bg-green-100 text-green-600' :
-                  'bg-purple-100 text-purple-600'
-                }`}>
-                  {activity.type === 'project' ? <FolderOpen className="w-4 h-4" /> :
-                   <BookOpen className="w-4 h-4" />}
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">{activity.title}</p>
-                  <p className="text-sm text-gray-600">{activity.author} • {activity.time}</p>
-                </div>
-              </div>
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                activity.status === '승인됨' ? 'bg-green-100 text-green-800' :
-                activity.status === '검토중' ? 'bg-yellow-100 text-yellow-800' :
-                'bg-blue-100 text-blue-800'
-              }`}>
-                {activity.status}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 
@@ -319,7 +576,7 @@ export default function AdminContent() {
       {/* Page Header */}
       <div className="admin-page-header">
         <h1 className="admin-page-title">콘텐츠 관리</h1>
-        <p className="admin-page-subtitle">프로젝트, CS지식, 카테고리를 체계적으로 관리하세요</p>
+        <p className="admin-page-subtitle">프로젝트, CS지식, 뉴스, 카테고리를 체계적으로 관리하세요</p>
       </div>
 
       {/* Enhanced Tab Navigation */}
@@ -345,6 +602,7 @@ export default function AdminContent() {
         {activeTab === "overview" && renderOverview()}
         {activeTab === "projects" && <ProjectManagement />}
         {activeTab === "cs-knowledge" && <CSKnowledgeManagement />}
+        {activeTab === "news" && <NewsManagement />}
         {activeTab === "categories" && <InlineCategoryManagement />}
       </div>
     </div>
