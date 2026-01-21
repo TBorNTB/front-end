@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   try {
     const cookieHeader = request.headers.get('cookie');
     if (!cookieHeader?.includes('accessToken')) {
-      return NextResponse.json({ authenticated: false, user: null }, { status: 401 });
+      return NextResponse.json({ authenticated: false, user: null });
     }
 
     const profileResponse = await serverApiClient.request(
