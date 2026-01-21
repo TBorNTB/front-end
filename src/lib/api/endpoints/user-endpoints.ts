@@ -34,7 +34,10 @@ export const USER_ENDPOINTS = {
     ROLE_ALL: '/user-service/users/role/all',
     ROLE_MANAGE: '/user-service/users/role/manage/:id',
     ROLE_BATCH: '/user-service/users/role/batch',
-    SEARCH: '/user-service/users/search', 
+    SEARCH: '/user-service/users/search',
+
+    // OAuth endpoints
+    OAUTH_GITHUB: '/user-service/oauth2/authorization/github',
   },
 
   // Token management
