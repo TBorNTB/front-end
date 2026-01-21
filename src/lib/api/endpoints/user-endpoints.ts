@@ -17,6 +17,7 @@ export const USER_ENDPOINTS = {
     COMMENTED_POSTS: '/user-service/users/commented-posts',
     GET_BY_ROLES: '/user-service/users/search',
     GET_ALL_ROLES: '/user-service/users/role',
+    OAUTH_GITHUB: '/user-service/oauth2/authorization/github',
 
     //admin endpoints
     GET_ALL: '/user-service/users',
@@ -34,7 +35,7 @@ export const USER_ENDPOINTS = {
     ROLE_ALL: '/user-service/users/role/all',
     ROLE_MANAGE: '/user-service/users/role/manage/:id',
     ROLE_BATCH: '/user-service/users/role/batch',
-    SEARCH: '/user-service/users/search', 
+    SEARCH: '/user-service/users/search',
   },
 
   // Token management

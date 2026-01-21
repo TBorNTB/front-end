@@ -1,30 +1,32 @@
 "use client";
 
-import Image from 'next/image';
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Check, User, Lock, Github, X, Eye, EyeOff } from "lucide-react";
-import Link from "next/link";
-import { Suspense, useState } from "react";
-import { useAuth } from "@/context/AuthContext";
-import { useRouter, useSearchParams } from "next/navigation";
 import { AuthUser } from "@/app/(auth)/types/auth";
-import { UserRole } from "@/types/core";
 import {
   Form,
+  FormControl,
   FormField,
   FormItem,
   FormLabel,
-  FormControl,
   FormMessage,
 } from "@/components/ui/form";
+import { useAuth } from "@/context/AuthContext";
+import { UserRole } from "@/types/core";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Check, Eye, EyeOff, Github, Lock, User, X } from "lucide-react";
+import Image from 'next/image';
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 
-import { 
-  getIconInputClassName, 
-  getPasswordInputClassName, 
-  useAuthFormState, 
-  makeAuthenticatedRequest 
+import { BASE_URL } from "@/lib/api/config";
+import { USER_ENDPOINTS } from '@/lib/api/endpoints/user-endpoints';
+import {
+  getIconInputClassName,
+  getPasswordInputClassName,
+  makeAuthenticatedRequest,
+  useAuthFormState
 } from "@/lib/form-utils";
 
 const API_URL = "/api/auth/login";
@@ -190,15 +192,9 @@ function LogInPageInner() {
     }
   }
 
-  const handleGithubLogin = async () => {
-    try {
-      setIsLoading(true);
-      // await signIn("github", { callbackUrl: "/mypage" });
-    } catch (error) {
-      handleError(error, "GitHub 로그인에 실패했습니다.");
-    } finally {
-      setIsLoading(false);
-    }
+  const handleGithubLogin = () => {
+    window.location.href =
+      `${BASE_URL}${USER_ENDPOINTS.USER.OAUTH_GITHUB}`;
   };
 
   return (
