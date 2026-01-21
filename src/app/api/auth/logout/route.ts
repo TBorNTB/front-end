@@ -1,45 +1,40 @@
-// src/app/api/auth/logout/route.ts - Server-side logout
-import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
+import { BASE_URL } from '@/lib/api/config';
+import { USER_ENDPOINTS} from '@/lib/api/endpoints/user-endpoints';
 
-export async function POST(_request: NextRequest) {
-  try {        
-    // List of cookies to clear
-    const cookiesToClear = [
-      'accessToken',
-      'refreshToken', 
-      'sessionToken',
-      'userId',
-      'userRole',
-      'authState',
-      'keepSignedIn'
-    ];
+export async function POST(request: Request) {
+  try {
+    const cookieHeader = request.headers.get('cookie');
 
-    // Create response
-    const response = NextResponse.json(
-      { message: '로그아웃되었습니다', success: true },
-      { status: 200 }
-    );
-
-    // Clear all auth-related cookies
-    cookiesToClear.forEach(cookieName => {
-      response.cookies.set(cookieName, '', {
-        expires: new Date(0),
-        path: '/',
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax'
-      });
+    const backendResponse = await fetch(`${BASE_URL}${USER_ENDPOINTS.USER.LOGOUT}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(cookieHeader && { Cookie: cookieHeader }),
+      },
     });
 
-    console.log('Server logout completed');
+    const data = await backendResponse.json().catch(() => ({ message: 'Logout successful' }));
+
+    const response = NextResponse.json(data, {
+      status: backendResponse.status,
+    });
+
+    // 모든 인증 관련 쿠키 삭제
+    response.cookies.delete('accessToken');
+    response.cookies.delete('refreshToken');
+    response.cookies.delete('keepSignedIn');
+
     return response;
-    
+
   } catch (error) {
-    console.error('Server logout error:', error);
-    return NextResponse.json(
-      { message: '로그아웃 처리 중 오류가 발생했습니다', success: false },
-      { status: 500 }
-    );
+    console.error('Logout error:', error);
+
+    // 백엔드 실패해도 쿠키 삭제하고 성공 반환
+    const response = NextResponse.json({ message: 'Logout completed' }, { status: 200 });
+    response.cookies.delete('accessToken');
+    response.cookies.delete('refreshToken');
+    response.cookies.delete('keepSignedIn');
+    return response;
   }
 }

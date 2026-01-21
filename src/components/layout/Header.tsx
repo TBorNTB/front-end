@@ -1,38 +1,45 @@
 "use client";
-
+import Image from 'next/image';
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { ChevronDownIcon, BellIcon, Search, X, Menu, Shield } from "lucide-react";
-import { UserRoleDisplay, UserRole } from "@/types/core";
+import toast from "react-hot-toast";
+import AlarmPopup from "./AlarmPopup";
+import SearchModal from "./SearchModal";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
+import { getRoleDisplayLabel, hasAdminAccess } from "@/lib/role-utils";
 
 const navList = [
-  { 
-    name: "About", 
+  { name: "About", 
     slug: "about",
     hasDropdown: true,
     dropdownItems: [
       { name: "About SSG", slug: "aboutSSG", href: "/aboutSSG" },
       { name: "Members", slug: "members", href: "/members" },
       { name: "Activities", slug: "activities", href: "/activities" },
-      { name: "SSG News", slug: "ssg-news", href: "/news" },
       { name: "FAQs", slug: "faqs", href: "/faqs" },
     ]
   },
   { name: "Topics", slug: "topics", href: "/topics" },
   { name: "Projects", slug: "projects", href: "/projects" },
   { name: "Articles", slug: "articles", href: "/articles" },
+  { name: "Community", slug: "community", href: "/community" },
   { name: "Newsletter", slug: "newsletter", href: "/newsletter" },
 ];
 
 const Header = () => {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, loading } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const [dropdowns, setDropdowns] = useState<Record<string, boolean>>({});
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAlarmPopupOpen, setIsAlarmPopupOpen] = useState(false);
+  const { user:profileData } = useCurrentUser();
   
   const dropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -50,18 +57,12 @@ const Header = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  // Focus search input when opened
-  useEffect(() => {
-    if (isSearchOpen && searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
-  }, [isSearchOpen]);
-
   // Close mobile menu when route changes
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
+
+  // 프로필 정보는 hooks에서 로드 (useProfileData)
 
   const toggleDropdown = (slug: string) => {
     setDropdowns(prev => ({
@@ -92,35 +93,53 @@ const Header = () => {
     setIsMobileMenuOpen(false);
   };
 
-  const handleSearchToggle = () => {
-    setIsSearchOpen(!isSearchOpen);
-    if (isSearchOpen) {
-      setSearchQuery("");
+  const handleSearchClick = () => {
+    setIsSearchModalOpen(true);
+    setSearchQuery("");
+  };
+
+  const handleSearchQueryChange = (query: string) => {
+    setSearchQuery(query);
+  };
+
+
+  // URL 유효성 검사 함수
+  const isValidImageUrl = (url: string | null | undefined): string | null => {
+    if (!url || typeof url !== 'string') return null;
+    if (url.trim() === '' || url === 'string' || url === 'null' || url === 'undefined') return null;
+    // 상대 경로는 유효함
+    if (url.startsWith('/')) return url;
+    // 절대 URL 검사
+    try {
+      new URL(url);
+      return url;
+    } catch {
+      return null;
     }
   };
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      console.log("Searching for:", searchQuery);
-    }
-  };
+  // API에서 가져온 프로필 데이터 우선 사용, 없으면 AuthContext의 user 데이터 사용
+  const displayName = profileData?.realName || profileData?.nickname || user?.nickname || user?.full_name || '사용자';
+  const displayEmail = profileData?.email || user?.email || '';
+  const profileImageUrl = isValidImageUrl(profileData?.profileImageUrl) || isValidImageUrl(user?.profile_image) || null;
 
-  // ✅ FIX: Better user data handling with debugging
-  const displayName = user?.nickname || user?.full_name || '김민준';
-  const displayEmail = user?.email || 'kdr123@naver.com';
-  const displayRole = user?.role ? UserRoleDisplay[user.role as UserRole] : '외부인';  
-  const userInitial = displayName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || '?';
+  // Role handling
+  const combinedRole = profileData?.role ?? user?.role;
+  const displayRole = getRoleDisplayLabel(combinedRole);
+  const isAdmin = hasAdminAccess(combinedRole);
+
+  const userInitial = displayName?.charAt(0)?.toUpperCase() || displayEmail?.charAt(0)?.toUpperCase() || '?';
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+    <>
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
       <div className="container mx-auto px-4">
         <nav className="flex items-center h-16">
           {/* Left Side: Logo + Navigation Links */}
           <div className="flex items-center space-x-8">
             {/* Logo */}
             <Link href={"/"} className="flex items-center gap-1.5 p-2 font-bold hover:cursor-pointer">
-              <img src={"/logo.svg"} alt="SSG Logo" className="filter" />
+              <Image src="/logo.svg" alt="Logo" width={50} height={50} />
             </Link>
 
             {/* Desktop Navigation */}
@@ -131,17 +150,19 @@ const Header = () => {
                     <div ref={el => { dropdownRefs.current[navItem.slug] = el; }}>
                       <button
                         onClick={() => toggleDropdown(navItem.slug)}
-                        className={`flex items-center space-x-1 py-2 px-1 transition-all duration-200 relative group ${
+                        className={`flex items-center space-x-1 py-2 px-1 transition-all duration-200 cursor-pointer ${
                           isDropdownActive(navItem.dropdownItems) 
                             ? "text-primary-600 font-bold" 
                             : "text-gray-900 hover:text-primary-600"
                         }`}
                       >
-                        <span>{navItem.name}</span>
+                        <span className="relative group pb-1">
+                          {navItem.name}
+                          <div className={`absolute bottom-0 left-0 h-0.5 bg-primary-600 rounded-full transition-all duration-300 ${
+                            isDropdownActive(navItem.dropdownItems) ? "w-full" : "w-0 group-hover:w-full"
+                          }`}></div>
+                        </span>
                         <ChevronDownIcon className={`w-4 h-4 transition-transform ${dropdowns[navItem.slug] ? 'rotate-180' : ''}`} />
-                        {isDropdownActive(navItem.dropdownItems) && (
-                          <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary-600 rounded-full"></div>
-                        )}
                       </button>
                       
                       {dropdowns[navItem.slug] && (
@@ -150,7 +171,7 @@ const Header = () => {
                             <Link 
                               key={item.slug} 
                               href={item.href}
-                              className="block px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-primary-600 transition-colors text-sm"
+                              className="block px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-primary-600 transition-colors text-sm cursor-pointer"
                               onClick={() => setDropdowns({})}
                             >
                               {item.name}
@@ -162,16 +183,18 @@ const Header = () => {
                   ) : (
                     <Link 
                       href={navItem.href!}
-                      className={`py-2 px-1 transition-all duration-200 relative group ${
+                      className={`py-2 px-1 transition-all duration-200 relative cursor-pointer inline-block ${
                         isActive(navItem.href!) 
                           ? "text-primary-600 font-bold" 
                           : "text-gray-900 hover:text-primary-600"
                       }`}
                     >
-                      {navItem.name}
-                      <div className={`absolute bottom-0 left-0 h-0.5 bg-primary-600 rounded-full transition-all duration-300 ${
-                        isActive(navItem.href!) ? "w-full" : "w-0 group-hover:w-full"
-                      }`}></div>
+                      <span className="relative group pb-1 inline-block">
+                        {navItem.name}
+                        <div className={`absolute bottom-0 left-0 h-0.5 bg-primary-600 rounded-full transition-all duration-300 ${
+                          isActive(navItem.href!) ? "w-full" : "w-0 group-hover:w-full"
+                        }`}></div>
+                      </span>
                     </Link>
                   )}
                 </div>
@@ -182,51 +205,41 @@ const Header = () => {
           {/* Right Side - Search, Notifications, Auth */}
           <div className="flex items-center space-x-2 ml-auto">
             {/* Search - Hidden on small screens */}
-            <div className="hidden sm:block relative">
-              {!isSearchOpen ? (
-                <button 
-                  onClick={handleSearchToggle}
-                  className="p-2 text-gray-700 hover:text-gray-900 transition-colors"
-                >
-                  <Search className="w-5 h-5" />
-                </button>
-              ) : (
-                <form onSubmit={handleSearchSubmit} className="flex items-center">
-                  <div className="relative">
-                    <input
-                      ref={searchInputRef}
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search..."
-                      className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    />
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleSearchToggle}
-                    className="ml-2 p-2 text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </form>
-              )}
+            <div className="hidden sm:block">
+              <button 
+                onClick={handleSearchClick}
+                className="p-2 text-gray-700 hover:text-gray-900 transition-colors cursor-pointer"
+              >
+                <Search className="w-5 h-5" />
+              </button>
             </div>
 
             {/* Notifications */}
             {isAuthenticated && (
-              <button className="p-2 text-gray-400 hover:text-gray-600 relative transition-colors">
-                <BellIcon className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-              </button>
+              <>
+                <button 
+                  onClick={() => setIsAlarmPopupOpen(true)}
+                  className="relative p-2.5 rounded-lg bg-primary-50 hover:bg-primary-100 transition-all duration-200 group cursor-pointer"
+                >
+                  <BellIcon className="w-5 h-5 text-primary-600 group-hover:text-primary-700 transition-colors" />
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center animate-pulse">
+                    <span className="w-1.5 h-1.5 bg-white rounded-full"></span>
+                  </span>
+                </button>
+                <AlarmPopup 
+                  isOpen={isAlarmPopupOpen} 
+                  onClose={() => setIsAlarmPopupOpen(false)} 
+                />
+              </>
             )}
 
             {/* Authentication - Desktop */}
             <div className="hidden sm:block">
-              {!isAuthenticated ? (
+              {loading ? (
+                <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />
+              ) : !isAuthenticated ? (
                  <Link href="/login">
-                    <button className="btn btn-primary">
+                    <button className="btn btn-primary cursor-pointer">
                       로그인
                     </button>
                   </Link>
@@ -234,11 +247,24 @@ const Header = () => {
                 <div className="relative" ref={el => { dropdownRefs.current.userProfile = el; }}>
                   <button
                     onClick={() => toggleDropdown('userProfile')}
-                    className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
                   >
-                    <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                      {userInitial}
-                    </div>
+                    {profileImageUrl ? (
+                      <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-primary-200">
+                        <ImageWithFallback
+                          src={profileImageUrl}
+                          alt={displayName}
+                          width={32}
+                          height={32}
+                          className="w-full h-full object-cover"
+                          showPlaceholder={false}
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                        {userInitial}
+                      </div>
+                    )}
                     <ChevronDownIcon className={`w-4 h-4 text-gray-400 transition-transform ${dropdowns.userProfile ? 'rotate-180' : ''}`} />
                   </button>
 
@@ -246,12 +272,25 @@ const Header = () => {
                     <div className="absolute top-full right-0 mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                       <div className="px-4 py-3 border-b border-gray-100">
                         <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-medium">
-                            {userInitial}
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900">{displayName}</p>
-                            <p className="text-sm text-gray-600">{displayEmail}</p>
+                          {profileImageUrl ? (
+                            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-200 flex-shrink-0">
+                              <ImageWithFallback
+                                src={profileImageUrl}
+                                alt={displayName}
+                                width={40}
+                                height={40}
+                                className="w-full h-full object-cover"
+                                showPlaceholder={false}
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-medium flex-shrink-0">
+                              {userInitial}
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-gray-900 truncate">{displayName}</p>
+                            <p className="text-sm text-gray-600 truncate">{displayEmail}</p>
                           </div>
                         </div>
                         <div className="mt-2 text-xs text-gray-600">
@@ -261,34 +300,26 @@ const Header = () => {
                       
                       <div className="py-1">
                         <Link 
-                          href="/profile/settings" 
-                          className="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                          href="/mypage" 
+                          className="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
                           onClick={() => setDropdowns({})}
                         >
-                          설정
-                        </Link>
-                        <Link 
-                          href="/profile/activity" 
-                          className="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
-                          onClick={() => setDropdowns({})}
-                        >
-                          활동
+                          마이페이지
                         </Link>
                         
-                        {/* ✅ FIX: Admin Dashboard Button - Fixed flex layout */}
-                        {user?.role === UserRole.ADMIN && (
+                        {isAdmin && (
                           <Link
                             href="/admin/dashboard"
-                            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                            className="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
                             onClick={() => setDropdowns({})}
                           >
-                            어드민 
+                            어드민 대시보드 
                           </Link>
                         )}
 
                         <button
                           onClick={handleLogout}
-                          className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
+                          className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                         >
                           로그아웃
                         </button>
@@ -302,7 +333,7 @@ const Header = () => {
             {/* Mobile Menu Toggle Button */}
             <button
               onClick={toggleMobileMenu}
-              className="lg:hidden p-2 text-gray-700 hover:text-gray-900 transition-colors"
+              className="lg:hidden p-2 text-gray-700 hover:text-gray-900 transition-colors cursor-pointer"
             >
               <Menu className="w-6 h-6" />
             </button>
@@ -313,14 +344,13 @@ const Header = () => {
         {isMobileMenuOpen && (
           <div className="lg:hidden border-t border-gray-200 py-4">
             <div className="space-y-4">
-              {/* Mobile Navigation Links */}
               {navList.map((navItem) => (
                 <div key={navItem.slug} className="px-4">
                   {navItem.hasDropdown ? (
                     <div>
                       <button
                         onClick={() => toggleDropdown(`mobile-${navItem.slug}`)}
-                        className="flex items-center justify-between w-full py-2 text-gray-900 hover:text-primary-600"
+                        className="flex items-center justify-between w-full py-2 text-gray-900 hover:text-primary-600 cursor-pointer"
                       >
                         <span>{navItem.name}</span>
                         <ChevronDownIcon className={`w-4 h-4 transition-transform ${dropdowns[`mobile-${navItem.slug}`] ? 'rotate-180' : ''}`} />
@@ -331,7 +361,7 @@ const Header = () => {
                             <Link
                               key={item.slug}
                               href={item.href}
-                              className="block py-2 text-gray-600 hover:text-primary-600"
+                              className="block py-2 text-gray-600 hover:text-primary-600 cursor-pointer"
                               onClick={() => setIsMobileMenuOpen(false)}
                             >
                               {item.name}
@@ -343,8 +373,8 @@ const Header = () => {
                   ) : (
                     <Link
                       href={navItem.href!}
-                      className="block py-2 text-gray-900 hover:text-primary-600"
                       onClick={() => setIsMobileMenuOpen(false)}
+                      className="block py-2 text-gray-900 hover:text-primary-600 cursor-pointer"
                     >
                       {navItem.name}
                     </Link>
@@ -354,43 +384,51 @@ const Header = () => {
 
               {/* Mobile Auth */}
               <div className="px-4 pt-4 border-t border-gray-200">
-                {!isAuthenticated ? (
+                {loading ? (
+                  <div className="w-full h-10 bg-gray-200 rounded-lg animate-pulse" />
+                ) : !isAuthenticated ? (
                   <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                    <button className="btn btn-primary w-full">
+                    <button className="btn btn-primary w-full cursor-pointer">
                       로그인
                     </button>
                   </Link>
                 ) : (
                   <div className="space-y-2">
                     <div className="flex items-center space-x-3 pb-3">
-                      <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-medium">
-                        {userInitial}
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{displayName}</p>
+                      {profileImageUrl ? (
+                        <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-200 flex-shrink-0">
+                          <ImageWithFallback
+                            src={profileImageUrl}
+                            alt={displayName}
+                            width={40}
+                            height={40}
+                            className="w-full h-full object-cover"
+                            showPlaceholder={false}
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-medium flex-shrink-0">
+                          {userInitial}
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-gray-900 truncate">{displayName}</p>
                         <p className="text-sm text-gray-500">권한: {displayRole}</p>
                       </div>
                     </div>
+                    
                     <Link
-                      href="/profile/settings"
-                      className="block py-2 text-gray-700 hover:text-primary-600"
+                      href="/mypage"
+                      className="block py-2 text-gray-700 hover:text-primary-600 cursor-pointer"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      설정
-                    </Link>
-                    <Link
-                      href="/profile/activity"
-                      className="block py-2 text-gray-700 hover:text-primary-600"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      활동
+                      마이페이지
                     </Link>
 
-                    {/* ✅ FIX: Mobile Admin Dashboard Button - Fixed flex layout */}
-                    {user?.role === UserRole.ADMIN && (
+                    {isAdmin && (
                       <Link
                         href="/admin/dashboard"
-                        className="flex items-center gap-2 py-2 text-gray-700 hover:text-primary-600 transition-colors"
+                        className="flex items-center gap-2 py-2 text-gray-700 hover:text-primary-600 transition-colors cursor-pointer"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <Shield size={16} />
@@ -400,7 +438,7 @@ const Header = () => {
 
                     <button
                       onClick={handleLogout}
-                      className="block w-full text-left py-2 text-red-600 hover:text-red-700"
+                      className="block w-full text-left py-2 text-red-600 hover:text-red-700 cursor-pointer"
                     >
                       로그아웃
                     </button>
@@ -412,6 +450,14 @@ const Header = () => {
         )}
       </div>
     </header>
+
+    <SearchModal
+      isOpen={isSearchModalOpen}
+      onClose={() => setIsSearchModalOpen(false)}
+      searchQuery={searchQuery}
+      onSearchChange={handleSearchQueryChange}
+    />
+    </>
   );
 };
 

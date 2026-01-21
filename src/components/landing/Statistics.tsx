@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { getApiUrl } from '@/lib/api/config';
+import { META_ENDPOINTS } from '@/lib/api/endpoints/meta-endpoints';
+import { USE_MOCK_DATA } from '@/lib/api/env';
+import { MOCK_PROJECTS, MOCK_ARTICLES, MOCK_CATEGORIES } from '@/lib/mock-data';
 
 interface StatisticItemProps {
   number: string;
@@ -8,6 +12,26 @@ interface StatisticItemProps {
   description: string;
   delay?: number;
 }
+
+interface ApiCountResponse {
+  userCount: number;
+  projectCount: number;
+  articleCount: number;
+  categoryCount: number;
+}
+
+// 숫자 포맷팅 함수
+const formatNumber = (num: number): string => {
+  if (num >= 1000) {
+    const k = Math.floor(num / 1000);
+    const remainder = num % 1000;
+    if (remainder >= 100) {
+      return `${k}.${Math.floor(remainder / 100)}k+`;
+    }
+    return `${k}k+`;
+  }
+  return `${num}+`;
+};
 
 const StatisticItem = ({ number, label, description, delay = 0 }: StatisticItemProps) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -54,28 +78,132 @@ interface StatisticsSectionProps {
 }
 
 export default function StatisticsSection({ className = "" }: StatisticsSectionProps) {
-  const statistics = [
+  const [statistics, setStatistics] = useState([
     {
-      number: '250+',
+      number: '0+',
       label: 'Active Projects',
       description: '활성 프로젝트'
     },
     {
-      number: '1.2k+',
+      number: '0+',
       label: 'Articles Published',
       description: '게시된 아티클'
     },
     {
-      number: '5k+',
+      number: '0+',
       label: '함께 멤버',
       description: '활발한 커뮤니티'
     },
     {
-      number: '15+',
+      number: '0+',
       label: 'Learning Topics',
       description: '학습 주제'
     }
-  ];
+  ]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStatistics = async () => {
+      // Mock path: short-circuit API and use local counts to avoid fetch errors in dev
+      if (USE_MOCK_DATA) {
+        setStatistics([
+          {
+            number: formatNumber(MOCK_PROJECTS.length),
+            label: 'Active Projects',
+            description: '활성 프로젝트'
+          },
+          {
+            number: formatNumber(MOCK_ARTICLES.length),
+            label: 'Articles Published',
+            description: '게시된 아티클'
+          },
+          {
+            number: formatNumber(120), // mock members
+            label: '함께 멤버',
+            description: '활발한 커뮤니티'
+          },
+          {
+            number: formatNumber(MOCK_CATEGORIES.length),
+            label: 'Learning Topics',
+            description: '학습 주제'
+          }
+        ]);
+        setLoading(false);
+        return;
+      }
+      try {
+        const url = getApiUrl(META_ENDPOINTS.META.COUNT);
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'accept': 'application/json',
+          },
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch statistics: ${response.status}`);
+        }
+
+        const data: ApiCountResponse = await response.json();
+
+        setStatistics([
+          {
+            number: formatNumber(data.projectCount),
+            label: 'Active Projects',
+            description: '활성 프로젝트'
+          },
+          {
+            number: formatNumber(data.articleCount),
+            label: 'Articles Published',
+            description: '게시된 아티클'
+          },
+          {
+            number: formatNumber(data.userCount),
+            label: '함께 멤버',
+            description: '활발한 커뮤니티'
+          },
+          {
+            number: formatNumber(data.categoryCount),
+            label: 'Learning Topics',
+            description: '학습 주제'
+          }
+        ]);
+      } catch (error) {
+        // 에러 발생 시 조용히 fallback 데이터 사용 (콘솔 에러는 개발 환경에서만)
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Failed to fetch statistics, using fallback data:', error);
+        }
+        // Fall back to mock data on error
+        setStatistics([
+          {
+            number: formatNumber(MOCK_PROJECTS.length),
+            label: 'Active Projects',
+            description: '활성 프로젝트'
+          },
+          {
+            number: formatNumber(MOCK_ARTICLES.length),
+            label: 'Articles Published',
+            description: '게시된 아티클'
+          },
+          {
+            number: formatNumber(120), // mock members
+            label: '함께 멤버',
+            description: '활발한 커뮤니티'
+          },
+          {
+            number: formatNumber(MOCK_CATEGORIES.length),
+            label: 'Learning Topics',
+            description: '학습 주제'
+          }
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStatistics();
+  }, []);
 
   return (
     <section className={`py-8 md:py-12 bg-white ${className}`}>

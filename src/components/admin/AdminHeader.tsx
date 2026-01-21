@@ -2,11 +2,38 @@
 "use client";
 
 import { useAuth } from "@/context/AuthContext";
-import { ArrowLeft, Bell, User, ChevronDown } from "lucide-react";
+import { Bell,ChevronDown, LogOut } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+// Page title mapping
+const getPageTitle = (pathname: string) => {
+  const titles: Record<string, string> = {
+    '/admin/dashboard': '관리자 대시보드',
+    '/admin/members': '회원 관리',
+    '/admin/content': '콘텐츠 관리',
+    '/admin/community': '커뮤니티 관리',
+    '/admin/settings': '설정',
+  };
+  
+  return titles[pathname] || '관리자';
+};
+
+const getPageDescription = (pathname: string) => {
+  const descriptions: Record<string, string> = {
+    '/admin/dashboard': 'SSG Hub 관리자 대시보드의 모든 활동 한눈에보기',
+    '/admin/members': '회원 정보, 권한, 등급 및 활동 내역 관리',
+    '/admin/content': '아티클, 프로젝트, 카테고리 등 콘텐츠 관리',
+    '/admin/community': '커뮤니티 활동, 뱃지 시스템, 상호작용 관리',
+    '/admin/settings': '시스템 설정과 구성을 관리',
+  };
+  
+  return descriptions[pathname] || '';
+};
 
 export default function AdminHeader() {
+  const pathname = usePathname();
+  const pageTitle = getPageTitle(pathname);
   const { user, logout } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -37,13 +64,15 @@ export default function AdminHeader() {
       <div className="flex items-center justify-between h-18 px-7">
         {/* Left: Site Navigation */}
         <div className="flex items-center space-x-5">
-          <Link
-            href="/"
-            className="flex items-center px-3.5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-          >
-            <ArrowLeft className="h-4.5 w-4.5 mr-2.5" />
-            메인 사이트
-          </Link>
+         {/* Page Title */}
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {pageTitle}
+          </h1>
+          <p className="text-gray-600 text-sm mt-1">
+            {getPageDescription(pathname)}
+          </p>
+        </div>
         </div>
 
         {/* Right: Notifications & User Menu */}
@@ -81,24 +110,16 @@ export default function AdminHeader() {
                     </div>
                   </div>
                   <div className="mt-2 text-xs text-gray-600">
-                    권한: 운영진 (관리자)
+                    권한: 운영진 (회장님)
                   </div>
                 </div>
                 
-                <div className="py-1">
-                  <Link 
-                    href="/admin/profile" 
-                    className="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
-                    onClick={() => setIsUserMenuOpen(false)}
-                  >
-                    프로필 설정
-                  </Link>
-                  
+                <div className="py-1">        
                   <button
                   onClick={handleLogout}
                   className="flex items-center w-full text-left px-5 py-3 text-red-600 hover:bg-red-50 transition-colors text-sm font-medium"
                 >
-                  <ArrowLeft className="h-4.5 w-4.5 mr-3 text-red-400 rotate-180" />
+                  <LogOut className="h-4.5 w-4.5 mr-3 text-red-400 rotate-180" />
                   로그아웃
                 </button>
                 </div>
@@ -110,3 +131,5 @@ export default function AdminHeader() {
     </header>
   );
 }
+
+

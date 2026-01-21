@@ -1,34 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/features/auth/context/AuthContext";
+import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from 'react-hot-toast';
-
-<Toaster
-  position="top-right"
-  toastOptions={{
-    // Default styles
-    style: {
-      background: '#333',
-      color: '#fff',
-      fontSize: '14px',
-      borderRadius: '8px',
-      padding: '12px 16px',
-    },
-    // Success toast
-    success: {
-      style: {
-        background: '#22c55e', // Tailwind green-500
-      },
-    },
-    // Error toast
-    error: {
-      style: {
-        background: '#ef4444', // Tailwind red-500
-      },
-    },
-  }}
-/>
+import RootLayoutClient from "./layout-client";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -50,7 +25,32 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.variable} font-sans antialiased`}>
         <AuthProvider>
-          <main className="flex-grow w-full">{children}</main>
+          <RootLayoutClient>{children}</RootLayoutClient>
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              // Default styles
+              style: {
+                background: '#333',
+                color: '#fff',
+                fontSize: '14px',
+                borderRadius: '8px',
+                padding: '12px 16px',
+              },
+              // Success toast
+              success: {
+                style: {
+                  background: '#22c55e', // Tailwind green-500
+                },
+              },
+              // Error toast
+              error: {
+                style: {
+                  background: '#ef4444', // Tailwind red-500
+                },
+              },
+            }}
+          />
         </AuthProvider>
       </body>
     </html>

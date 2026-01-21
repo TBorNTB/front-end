@@ -1,100 +1,53 @@
-// src/app/api/auth/user/route.ts - FIXED VERSION (Handle 400 errors)
+// src/app/api/auth/user/route.ts
+// 인증 실패 시 401 반환 → fetchWithRefresh가 reissue 시도
+import { serverApiClient } from '@/lib/api/client-server';
+import { USER_ENDPOINTS } from '@/lib/api/endpoints/user-endpoints';
 import { NextResponse } from 'next/server';
-import { BASE_URL, API_ENDPOINTS } from '@/lib/endpoints';
 
 export async function GET(request: Request) {
   try {
-    // Forward cookies to backend for auth verification
     const cookieHeader = request.headers.get('cookie');
-    
-    if (!cookieHeader) {
-      // ✅ SILENT: Don't log when no cookies (user not logged in)
-      return NextResponse.json({
-        authenticated: false,
-        user: null
-      }, { status: 200 });
+    if (!cookieHeader?.includes('accessToken')) {
+      return NextResponse.json({ authenticated: false, user: null }, { status: 401 });
     }
 
-    // Check if there are any auth-related cookies
-    const hasAuthCookies = cookieHeader.includes('accessToken') || 
-                          cookieHeader.includes('refreshToken') || 
-                          cookieHeader.includes('sessionToken');
-    
-    if (!hasAuthCookies) {
-      // ✅ SILENT: User not logged in, no need to call backend
-      return NextResponse.json({
-        authenticated: false,
-        user: null
-      }, { status: 200 });
+    const profileResponse = await serverApiClient.request(
+      USER_ENDPOINTS.USER.PROFILE,
+      { request }
+    );
+
+    if (!profileResponse.success) {
+      // 백엔드 401/403이면 그대로 전달 → fetchWithRefresh가 reissue 시도
+      const status = profileResponse.status === 401 || profileResponse.status === 403
+        ? profileResponse.status
+        : 401;
+      return NextResponse.json({ authenticated: false, user: null }, { status });
     }
 
-    const profileResponse = await fetch(`${BASE_URL}${API_ENDPOINTS.USERS.PROFILE}`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Cookie': cookieHeader
-      },
+    const profile = profileResponse.data as {
+      nickname?: string;
+      username?: string;
+      email?: string;
+      realName?: string;
+      fullName?: string;
+      profileImageUrl?: string;
+      profileImage?: string;
+      role?: string;
+    };
+
+    return NextResponse.json({
+      authenticated: true,
+      user: {
+        nickname: profile.nickname || profile.username,
+        email: profile.email,
+        realName: profile.realName || profile.fullName || profile.nickname,
+        profileImageUrl: profile.profileImageUrl || profile.profileImage,
+        role: profile.role,
+      }
     });
 
-    if (profileResponse.ok) {
-      const profileData = await profileResponse.json();
-      console.log('✅ Profile data retrieved successfully');
-      
-      const roleResponse = await fetch(`${BASE_URL}${API_ENDPOINTS.USERS.ROLE}`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Cookie': cookieHeader
-        },
-      });
-
-      let roleData = null;
-      if (roleResponse.ok) {
-        roleData = await roleResponse.json();
-        console.log('✅ Role data retrieved successfully');
-      } else {
-        console.warn('⚠️ Role endpoint failed but profile worked');
-      }
-
-      // Combine the data
-      let userData;
-      if (roleData) {
-        userData = {
-          ...profileData,
-          role: roleData.role || roleData
-        };
-      } else {
-        userData = profileData;
-      }
-
-      return NextResponse.json({
-        authenticated: true,
-        user: userData
-      });
-    } else {
-      // ✅ HANDLE BOTH 401 AND 400: Both mean "not authenticated"
-      if (profileResponse.status === 401 || profileResponse.status === 400) {
-        return NextResponse.json({
-          authenticated: false,
-          user: null
-        }, { status: 200 });
-      }
-      
-      // ✅ Only log actual server errors (500, 503, etc.)
-      console.error('❌ Profile endpoint server error:', profileResponse.status);
-      return NextResponse.json({
-        authenticated: false,
-        user: null,
-        error: 'Server error'
-      }, { status: 500 });
-    }
-
   } catch (error) {
-    console.error("❌ Auth check error:", error);
-    return NextResponse.json({
-      authenticated: false,
-      user: null,
-      error: 'Network error'
-    }, { status: 500 });
+    console.error('Auth check failed:', error);
+    return NextResponse.json({ authenticated: false, user: null }, { status: 500 });
   }
 }

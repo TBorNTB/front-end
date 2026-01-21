@@ -7,6 +7,8 @@
   --color-text: #1f2937;
   --color-background: #e2eefc;
   --color-foreground: #060810;
+    /* Gradient Backgrounds */
+  --color-gradient-background: linear-gradient(to bottom, #000000, #3a4da1);
   
   /* Primary Scale */
   --color-primary-50: #ebedf6;
@@ -76,6 +78,13 @@
 }
 
 @layer components {
+  .bg-gradient-background {
+    background: var(--color-gradient-background);
+    border: 1px solid rgba(108, 170, 239, 0.3);
+    position: relative;
+    overflow: hidden;
+  }
+
   .btn {
     @apply inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer border-0 outline-none px-4 py-2;
   }
@@ -115,6 +124,66 @@
   .section {
     @apply py-12;
   }
+}
+
+/* Chatbot Animations */
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 2s ease-in-out infinite;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+/* Custom Scrollbar for Chatbot */
+.chat-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb {
+  background: #c2c5cf;
+  border-radius: 3px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #9799a2;
 }
 
 /* Remove browser native password reveal icons */

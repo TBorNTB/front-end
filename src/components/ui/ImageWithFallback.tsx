@@ -1,38 +1,84 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import Image, { ImageProps } from 'next/image';
 import { cn } from '@/lib/utils';
+import Image, { ImageProps } from 'next/image';
+import React, { useEffect, useState } from 'react';
 
-interface ImageWithFallbackProps extends Omit<ImageProps, 'src'> {
+interface ImageWithFallbackProps extends Omit<ImageProps, 'src' | 'alt'> {
   src: string;
+  alt?: string;
   fallbackSrc?: string;
   showPlaceholder?: boolean;
+  type?: 'avatar' | 'article' | 'project';
 }
+
+// URL 유효성 검사 함수
+const isValidUrl = (url: string | null | undefined): boolean => {
+  if (!url || typeof url !== 'string') return false;
+  if (url.trim() === '' || url === 'string' || url === 'null' || url === 'undefined') return false;
+  
+  // 상대 경로는 유효함 (/, /images/...)
+  if (url.startsWith('/')) return true;
+  
+  // 절대 URL 검사
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   src,
-  fallbackSrc = '/images/placeholder.jpg', // Default fallback image
+  fallbackSrc,
   alt,
   className,
   showPlaceholder = true,
+  type = 'avatar',
   onError,
   ...props
 }) => {
-  const [imgSrc, setImgSrc] = useState<string>(src);
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
+  // Smart default fallback based on type
+  const getDefaultFallback = () => {
+    if (fallbackSrc) return fallbackSrc;
+    
+    switch (type) {
+      case 'article':
+        return '/images/placeholder/article.png';
+      case 'project':
+        return '/images/placeholder/project.png';
+      case 'avatar':
+      default:
+        return '/images/placeholder/default-avatar.svg';
+    }
+  };
+  
+  const defaultFallback = getDefaultFallback();
+  // 유효한 URL인지 확인
+  const validSrc = isValidUrl(src) ? src : null;
+  const initialSrc = validSrc || defaultFallback;
+  // 로컬 파일은 로딩 상태 건너뛰기
+  const isLocalFile = initialSrc.startsWith('/');
+
+  const [imgSrc, setImgSrc] = useState<string>(initialSrc);
+  const [isLoading, setIsLoading] = useState(!isLocalFile);
+  const [hasError, setHasError] = useState(!validSrc);
 
   // Reset states when src changes
   useEffect(() => {
-    setImgSrc(src);
-    setIsLoading(true);
-    setHasError(false);
-  }, [src]);
+    const newValidSrc = isValidUrl(src) ? src : null;
+    const newSrc = newValidSrc || defaultFallback;
+    const newIsLocalFile = newSrc.startsWith('/');
+
+    setImgSrc(newSrc);
+    setIsLoading(!newIsLocalFile);
+    setHasError(!newValidSrc);
+  }, [src, defaultFallback]);
 
   const handleError = (error: React.SyntheticEvent<HTMLImageElement, Event>) => {
     if (!hasError) {
-      setImgSrc(fallbackSrc);
+      setImgSrc(defaultFallback);
       setHasError(true);
     }
     onError?.(error);
@@ -42,44 +88,21 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     setIsLoading(false);
   };
 
-  // If no src provided and showPlaceholder is false, don't render anything
-  if (!src && !showPlaceholder) {
+  // If no valid src provided and showPlaceholder is false, don't render anything
+  if (!validSrc && !showPlaceholder) {
     return null;
   }
 
-  // If both src and fallbackSrc fail, show a placeholder div
-  if (hasError && imgSrc === fallbackSrc) {
-    return (
-      <div
-        className={cn(
-          'flex items-center justify-center bg-gradient-to-br from-primary-100 to-secondary-100 text-primary-600',
-          className
-        )}
-        // Fix: Replace 'any' with proper type
-        style={props.style}
-        {...(props.width && { style: { width: props.width } })}
-        {...(props.height && { style: { height: props.height } })}
-      >
-        <div className="text-center">
-          <svg
-            className="mx-auto h-12 w-12 text-primary-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            aria-hidden="true"
-          >
-            <path
-              vectorEffect="non-scaling-stroke"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2z"
-            />
-          </svg>
-          <p className="mt-2 text-sm font-medium">이미지를 불러올 수 없습니다</p>
-        </div>
-      </div>
-    );
+  // Ensure we have either fill or width/height
+  const hasSize = props.fill || (props.width && props.height);
+  const shouldUseFill = !hasSize ? true : props.fill;
+  
+  // Remove width/height if using fill
+  const imageProps = { ...props };
+  if (shouldUseFill) {
+    delete imageProps.width;
+    delete imageProps.height;
+    delete imageProps.fill;
   }
 
   return (
@@ -106,14 +129,16 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
       
       <Image
         src={imgSrc}
-        alt={alt}
+        alt={alt || 'Image'}
         className={cn(
           'transition-opacity duration-300',
           isLoading ? 'opacity-0' : 'opacity-100'
         )}
         onError={handleError}
         onLoad={handleLoad}
-        {...props}
+        unoptimized={imgSrc.endsWith('.svg')}
+        fill={shouldUseFill}
+        {...imageProps}
       />
     </div>
   );

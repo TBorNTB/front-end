@@ -9,11 +9,6 @@ export default function AdminCommunity() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">커뮤니티 관리</h1>
-        <p className="mt-1 text-sm text-gray-600">뱃지 시스템으로 커뮤니티 활동을 관리하고 격려하세요</p>
-      </div>
 
       {/* Tab Navigation */}
       <div>
