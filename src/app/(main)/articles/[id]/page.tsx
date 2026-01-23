@@ -261,8 +261,13 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
     } catch (error) {
       console.error('Error toggling like:', error);
       // 에러 발생 시 사용자에게 알림
-      if (error instanceof Error && error.message.includes('로그인이 필요')) {
-        alert('로그인이 필요합니다.');
+      if (
+        error instanceof Error &&
+        (error.message.includes('로그인이 필요') || error.message.includes('Authorization Bearer 토큰'))
+      ) {
+        alert('로그인이 필요합니다. 로그인 후 다시 시도해주세요.');
+      } else {
+        alert('좋아요 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
       }
     } finally {
       setIsTogglingLike(false);
@@ -1035,7 +1040,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                   <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
                     <span className="relative inline-flex items-center justify-center mr-2">
                       <MessageCircle className="w-6 h-6 text-primary-700" />
-                      <span className="absolute top-0 right-0 translate-x-1/3 -translate-y-1/3 min-w-[22px] px-1 text-[10px] leading-5 text-white bg-primary-600 rounded-full border border-white shadow-sm text-center">
+                      <span className="absolute -top-1 -right-2 min-w-[22px] px-1 text-[10px] leading-5 text-white bg-primary-600 rounded-full border border-white shadow-sm text-center">
                         {displayedCommentCount}
                         {hasNextComments ? '+' : ''}
                       </span>

@@ -8,7 +8,8 @@ interface ArticleCardHomeProps {
   article: {
     id: string;
     title: string;
-    description: string;
+    description?: string;
+    excerpt?: string;
     author: {
       name: string;
       profileImage: string;
@@ -66,7 +67,7 @@ export function ArticleCardHome({ article }: ArticleCardHomeProps) {
             </h3>
             
             <p className="text-sm text-gray-600 line-clamp-3">
-              {article.description}
+              {article.excerpt || article.description || ''}
             </p>
           </div>
 
