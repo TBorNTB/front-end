@@ -909,7 +909,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                     {displayPost.tags.map((tag, index) => (
                       <span
                         key={index}
-                        className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700 border border-gray-200"
+                        className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200"
                       >
                         #{tag}
                       </span>
@@ -946,25 +946,55 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                 dangerouslySetInnerHTML={{ __html: addHeadingIds(displayPost.content) }}
               />
 
-              {/* Stats Bar */}
-              <div className="flex items-center gap-8 py-5 border-y border-gray-200 mb-8 bg-gray-50 rounded-lg px-4">
-                <div className="flex items-center gap-2 text-gray-600">
-                  <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-                  <span className="text-sm font-semibold">
-                    {displayPost.stats.likes}
-                  </span>
+              {/* Stats Bar with Action Buttons */}
+              <div className="flex items-center justify-between py-5 border-y border-gray-200 mb-8">
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Eye className="w-5 h-5" />
+                    <span className="text-base font-medium">
+                      {displayPost.stats.views.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <svg 
+                      className={`w-5 h-5 ${isLiked ? 'fill-secondary-500 text-secondary-500' : ''}`} 
+                      fill={isLiked ? 'currentColor' : 'none'} 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                    </svg>
+                    <span className="text-base font-medium">
+                      {displayPost.stats.likes}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <MessageCircle className="w-5 h-5" />
+                    <span className="text-base font-medium">
+                      {displayPost.stats.comments}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-gray-600">
-                  <Eye className="w-5 h-5" />
-                  <span className="text-sm font-semibold">
-                    {displayPost.stats.views.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-gray-600">
-                  <MessageCircle className="w-5 h-5" />
-                  <span className="text-sm font-semibold">
-                    {displayPost.stats.comments}
-                  </span>
+                
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={handleEditArticle}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-white text-primary-600 rounded-lg hover:bg-primary-50 transition-colors font-medium text-sm border border-primary-500 cursor-pointer"
+                  >
+                    <Edit className="w-4 h-4" />
+                    수정
+                  </button>
+                  <button 
+                    onClick={handleDeleteArticle}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-white text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium text-sm border border-red-300 cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    삭제
+                  </button>
+                  <button className="inline-flex items-center gap-2 px-4 py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm border border-gray-300 cursor-pointer">
+                    <Share2 className="w-4 h-4" />
+                    공유
+                  </button>
                 </div>
               </div>
 
@@ -975,14 +1005,14 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                   disabled={isTogglingLike}
                   className={`flex flex-col items-center gap-2 px-8 py-4 rounded-full border-2 transition-colors group ${
                     isLiked 
-                      ? 'border-red-500 bg-red-50 hover:bg-red-100' 
+                      ? 'border-secondary-500 bg-secondary-50 hover:bg-secondary-100' 
                       : 'border-gray-300 hover:border-primary-500 hover:bg-primary-50'
                   } ${isTogglingLike ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                 >
                   <svg 
                     className={`w-8 h-8 transition-colors ${
                       isLiked 
-                        ? 'text-red-500 fill-red-500' 
+                        ? 'text-secondary-500 fill-secondary-500' 
                         : 'text-gray-400 group-hover:text-primary-600'
                     }`} 
                     fill={isLiked ? 'currentColor' : 'none'} 
@@ -993,7 +1023,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                   </svg>
                   <span className={`text-2xl font-bold transition-colors ${
                     isLiked 
-                      ? 'text-red-600' 
+                      ? 'text-secondary-600' 
                       : 'text-gray-900 group-hover:text-primary-600'
                   }`}>
                     {displayPost.stats.likes}
@@ -1003,28 +1033,6 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                   )}
                 </button>
               </section>
-
-              {/* Action Buttons */}
-              <div className="flex items-center gap-3 mb-8 pb-8 border-b border-gray-200">
-                <button 
-                  onClick={handleEditArticle}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
-                >
-                  <Edit className="w-4 h-4" />
-                  수정
-                </button>
-                <button 
-                  onClick={handleDeleteArticle}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium text-sm"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  삭제
-                </button>
-                <button className="inline-flex items-center gap-2 px-4 py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm border border-gray-300">
-                  <Share2 className="w-4 h-4" />
-                  공유
-                </button>
-              </div>
 
               {/* 수정 모달 */}
               {isEditing && (
@@ -1406,7 +1414,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
               {/* More from Author */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <Code className="w-5 h-5 text-purple-600" />
+                  <Code className="w-5 h-5 text-secondary-500" />
                   저자의 다른 글
                 </h3>
                 <div className="space-y-3">
@@ -1425,12 +1433,12 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                         <Link
                           key={article.id}
                           href={`/articles/${article.slug}`}
-                          className="block group p-4 rounded-xl border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all duration-200 cursor-pointer bg-white hover:bg-purple-50/30"
+                          className="block group p-4 rounded-xl border border-gray-200 hover:border-secondary-300 hover:shadow-md transition-all duration-200 cursor-pointer bg-white hover:bg-secondary-50/30"
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-purple-100 text-purple-700 whitespace-nowrap">
+                                <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-secondary-100 text-secondary-700 whitespace-nowrap">
                                   {article.category}
                                 </span>
                                 {article.viewCount !== undefined && (
@@ -1446,7 +1454,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                                   </div>
                                 )}
                               </div>
-                              <h4 className="text-sm font-bold text-gray-900 group-hover:text-purple-600 transition-colors mb-1.5 line-clamp-2 leading-snug">
+                              <h4 className="text-sm font-bold text-gray-900 group-hover:text-secondary-600 transition-colors mb-1.5 line-clamp-2 leading-snug">
                                 {article.title}
                               </h4>
                               <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -1460,7 +1468,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                               </div>
                             </div>
                             <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-5 h-5 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                               </svg>
                             </div>
