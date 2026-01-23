@@ -33,6 +33,26 @@ export default function TipTapEditor({
         heading: {
           levels: [1, 2, 3],
         },
+        bulletList: {
+          HTMLAttributes: {
+            class: 'list-disc list-inside',
+          },
+        },
+        orderedList: {
+          HTMLAttributes: {
+            class: 'list-decimal list-inside',
+          },
+        },
+        blockquote: {
+          HTMLAttributes: {
+            class: 'border-l-4 border-gray-300 pl-4 italic',
+          },
+        },
+        codeBlock: {
+          HTMLAttributes: {
+            class: 'bg-gray-100 rounded p-4 font-mono text-sm',
+          },
+        },
       }),
       Image.configure({
         HTMLAttributes: {
@@ -53,7 +73,7 @@ export default function TipTapEditor({
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl max-w-none focus:outline-none min-h-[500px] p-4',
+        class: 'tiptap prose prose-sm sm:prose lg:prose-lg xl:prose-2xl max-w-none focus:outline-none min-h-[500px] p-4',
       },
     },
   });
@@ -144,7 +164,10 @@ export default function TipTapEditor({
           {/* Lists */}
           <div className="flex gap-1 border-r border-gray-300 pr-2 mr-2">
             <ToolbarButton
-              onClick={() => editor.chain().focus().toggleBulletList().run()}
+              onClick={() => {
+                editor.chain().focus().toggleBulletList().run();
+                editor.commands.focus();
+              }}
               isActive={editor.isActive('bulletList')}
               title="Bullet List"
             >
@@ -153,7 +176,10 @@ export default function TipTapEditor({
               </svg>
             </ToolbarButton>
             <ToolbarButton
-              onClick={() => editor.chain().focus().toggleOrderedList().run()}
+              onClick={() => {
+                editor.chain().focus().toggleOrderedList().run();
+                editor.commands.focus();
+              }}
               isActive={editor.isActive('orderedList')}
               title="Numbered List"
             >

@@ -207,3 +207,61 @@ input::-webkit-credentials-auto-fill-button {
   position: absolute;
   right: 0;
 }
+
+/* Keep TipTap list text aligned with bullets */
+.tiptap ul li p,
+.tiptap ol li p {
+  margin: 0;
+  display: inline;
+}
+
+.tiptap ul,
+.tiptap ol {
+  margin: 0 0 0.75rem 0;
+  padding-left: 1.25rem;
+}
+
+/* Visible heading hierarchy inside TipTap */
+.tiptap h1 {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  font-weight: 500;
+  margin: 1.25rem 0 0.75rem;
+  color: #111827;
+}
+
+.tiptap h2 {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 500;
+  margin: 1rem 0 0.5rem;
+}
+
+.tiptap h3 {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-weight: 500;
+  margin: 0.75rem 0 0.5rem;
+}
+
+.tiptap p {
+  margin: 0.5rem 0;
+}
+
+.tiptap pre,
+.tiptap code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.tiptap pre {
+  background: #f3f4f6;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+.tiptap code {
+  background: #f3f4f6;
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.3rem;
+}
