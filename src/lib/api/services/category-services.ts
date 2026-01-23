@@ -1,10 +1,13 @@
 // src/lib/api/services/category-service.ts
 // 보안 학습 주제 조회 관련 API 서비스
 
+
 import { PROJECT_ENDPOINTS, getProjectApiUrl } from '@/lib/api/endpoints';
 import { USE_MOCK_DATA } from '@/lib/api/env';
 import { getCategories as getMockCategories } from '@/lib/mock-data';
 import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
+import { BASE_URL } from '@/lib/api/config';
+import { PROJECT_ENDPOINTS} from '@/lib/api/endpoints';
 
 // API 응답 타입 정의
 export interface CategoryItem {
@@ -49,11 +52,6 @@ export const categoryService = {
    * @returns 카테고리 목록 응답
    */
   getCategories: async (): Promise<CategoryResponse> => {
-    if (USE_MOCK_DATA) {
-      const categories = await getMockCategories();
-      return { categories };
-    }
-
     try {
       const url = getProjectApiUrl(PROJECT_ENDPOINTS.PROJECT.GET_CATEGORIES);
 

@@ -1,4 +1,4 @@
-import { API_URL, ENABLE_MOCKS, ENABLE_API_LOGGING } from "@/lib/api/env";
+import { API_URL, ENABLE_API_LOGGING } from "@/lib/api/env";
 
 export const BASE_URL = API_URL;
 
@@ -9,7 +9,7 @@ export const getApiUrl = (endpoint: string): string => {
     : `/api/gateway${normalizedEndpoint}`;
   
   if (ENABLE_API_LOGGING) {
-    console.log(`🔗 API Request: ${url}${ENABLE_MOCKS ? ' [MOCK]' : ''}`);
+    console.log(`🔗 API Request: ${url}`);
   }
   
   return url;

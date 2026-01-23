@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Bell,ChevronDown, LogOut } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
+import toast from "react-hot-toast";
 
 // Page title mapping
 const getPageTitle = (pathname: string) => {
@@ -39,10 +40,11 @@ export default function AdminHeader() {
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = async () => {
-  console.log(" logout clicked");
-  setIsUserMenuOpen(false);
-  await logout(); // This redirects to /admin
-};
+    console.log(" logout clicked");
+    setIsUserMenuOpen(false);
+    toast.success('로그아웃되었습니다.');
+    await logout();
+  };
   // Close user menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

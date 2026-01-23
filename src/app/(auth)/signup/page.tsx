@@ -8,6 +8,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { User, Lock, Mail, Eye, EyeOff, Upload, X, BookUser } from "lucide-react";
 import Link from "next/link";
+import toast from 'react-hot-toast';
 import {
   Form,
   FormControl,
@@ -177,7 +178,7 @@ export default function SignupPage() {
       }
 
       console.log('✅ Signup success!');
-      alert("회원가입 성공! 로그인 페이지로 이동합니다.");
+      toast.success("회원가입 성공! 로그인 페이지로 이동합니다.");
       router.push("/login");
     } catch (err) {
       console.error('💥 Frontend error:', err);

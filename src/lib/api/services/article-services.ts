@@ -5,6 +5,7 @@ import { parseApiError, safeJsonParse } from '@/lib/api/helpers';
 import { INTERNAL_ENDPOINTS, getInternalApiUrl } from '@/lib/api/endpoints';
 
 export interface ArticleResponse {
+  thumbnail: null;
   id: number;
   title: string;
   content: string;
