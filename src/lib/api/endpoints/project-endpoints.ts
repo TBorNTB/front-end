@@ -10,7 +10,7 @@ export const PROJECT_ENDPOINTS = {
     GET_BY_CATEGORY: '/project-service/projects/category/:category',
     CREATE: '/project-service/api/project',
     UPDATE: '/project-service/projects/:id',
-    DELETE: '/project-service/projects/:id',
+    DELETE: '/project-service/api/project/:id',
     GET_COLLABORATORS: '/project-service/projects/:id/collaborators',
     GET_CATEGORIES: '/project-service/api/category',
     COUNTS: '/project-service/api/project/counts',

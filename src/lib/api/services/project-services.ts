@@ -212,3 +212,22 @@ export const createProject = async (data: CreateProjectRequest): Promise<CreateP
 
   return response.json();
 };
+
+// Delete a project
+export const deleteProject = async (projectId: string | number): Promise<void> => {
+  const endpoint = PROJECT_ENDPOINTS.PROJECT.DELETE.replace(':id', String(projectId));
+  const url = getProjectApiUrl(endpoint);
+
+  const response = await fetchWithRefresh(url, {
+    method: 'DELETE',
+    headers: {
+      'accept': 'application/json',
+    },
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to delete project: ${response.status} - ${errorText}`);
+  }
+};

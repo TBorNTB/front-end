@@ -365,7 +365,7 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
   return (
     <div className="fixed bottom-6 right-6 z-50 w-[calc(100vw-3rem)] h-[calc(100vh-8rem)] max-h-[calc(100vh-3rem)] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-gray-100 animate-slide-up md:w-96 md:h-[650px] md:max-h-[650px] backdrop-blur-sm">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 via-purple-600 to-purple-700 text-white px-5 py-4 flex items-center justify-between shadow-md">
+      <div className="bg-gradient-to-r from-secondary-600 via-secondary-600 to-secondary-700 text-white px-5 py-4 flex items-center justify-between shadow-md">
         <div className="flex items-center gap-3">
           <div className="relative">
             <MessageSquare className="w-8 h-8 text-white" />
@@ -402,7 +402,7 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
           onClick={() => setActiveTab("users")}
           className={`flex-1 px-4 py-3 text-sm font-medium transition-all duration-200 ${
             activeTab === "users"
-              ? "text-purple-600 border-b-2 border-purple-600 bg-white"
+              ? "text-secondary-600 border-b-2 border-secondary-600 bg-white"
               : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
           }`}
         >
@@ -418,7 +418,7 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
           }}
           className={`flex-1 px-4 py-3 text-sm font-medium transition-all duration-200 ${
             activeTab === "rooms"
-              ? "text-purple-600 border-b-2 border-purple-600 bg-white"
+              ? "text-secondary-600 border-b-2 border-secondary-600 bg-white"
               : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
           }`}
         >
@@ -438,7 +438,7 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
             placeholder={activeTab === "users" ? "사용자 검색..." : "채팅방 검색..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent text-sm"
           />
         </div>
         {activeTab === "users" && (
@@ -449,7 +449,7 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
               setGroupRoomName(""); // 제목은 항상 빈칸에서 시작
               setSelectedUsers(selfUser ? [selfUser] : []); // 나(self) 강제 선택
             }}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-secondary-600 text-white rounded-lg hover:bg-secondary-700 transition-colors text-sm font-medium"
           >
             <Plus className="w-4 h-4" />
             그룹 채팅방 만들기
@@ -463,7 +463,7 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
           <div className="p-4 space-y-2">
             {isLoadingUsers && users.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mb-3"></div>
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-secondary-600 mb-3"></div>
                 <p className="text-sm">사용자 목록을 불러오는 중...</p>
               </div>
             ) : filteredUsers.length === 0 ? (
@@ -484,16 +484,16 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                         <img
                           src={user.profileImageUrl || user.avatar}
                           alt={user.name}
-                          className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 group-hover:border-purple-300 transition-colors"
+                          className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 group-hover:border-secondary-300 transition-colors"
                         />
                       ) : (
-                        <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center border-2 border-gray-200 group-hover:border-purple-300 transition-colors">
-                          <User className="w-6 h-6 text-purple-600" />
+                        <div className="w-12 h-12 rounded-full bg-secondary-100 flex items-center justify-center border-2 border-gray-200 group-hover:border-secondary-300 transition-colors">
+                          <User className="w-6 h-6 text-secondary-600" />
                         </div>
                       )}
                     </div>
                     <div className="flex-1 text-left">
-                      <h4 className="font-semibold text-gray-900 group-hover:text-purple-600 transition-colors">
+                      <h4 className="font-semibold text-gray-900 group-hover:text-secondary-600 transition-colors">
                         {user.nickname || user.name || "이름 없음"}
                       </h4>
                       <p className="text-xs text-gray-500 mt-0.5">{user.realName || user.name || ""}</p>
@@ -506,11 +506,11 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                   <button
                     onClick={loadMoreUsers}
                     disabled={isLoadingUsers}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-purple-600 hover:bg-purple-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-secondary-600 hover:bg-secondary-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isLoadingUsers ? (
                       <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-secondary-600"></div>
                         <span>불러오는 중...</span>
                       </>
                     ) : (
@@ -528,7 +528,7 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
           <div className="p-4 space-y-2">
             {isLoadingRooms ? (
               <div className="text-center py-12 text-gray-500">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mb-3"></div>
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-secondary-600 mb-3"></div>
                 <p className="text-sm">채팅방 목록을 불러오는 중...</p>
               </div>
             ) : filteredChatRooms.length === 0 ? (
@@ -552,26 +552,26 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                         <img
                           src={room.avatar}
                           alt={room.name}
-                          className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 group-hover:border-purple-300 transition-colors"
+                          className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 group-hover:border-secondary-300 transition-colors"
                         />
                       ) : room.type === "group" ? (
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center border-2 border-gray-200 group-hover:border-purple-300 transition-colors">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-secondary-400 to-secondary-600 flex items-center justify-center border-2 border-gray-200 group-hover:border-secondary-300 transition-colors">
                           <Users className="w-6 h-6 text-white" />
                         </div>
                       ) : (
-                        <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center border-2 border-gray-200 group-hover:border-purple-300 transition-colors">
-                          <User className="w-6 h-6 text-purple-600" />
+                        <div className="w-12 h-12 rounded-full bg-secondary-100 flex items-center justify-center border-2 border-gray-200 group-hover:border-secondary-300 transition-colors">
+                          <User className="w-6 h-6 text-secondary-600" />
                         </div>
                       )}
                       {room.type === "group" && (
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center border-2 border-white">
+                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-secondary-500 rounded-full flex items-center justify-center border-2 border-white">
                           <Users className="w-2 h-2 text-white" />
                         </div>
                       )}
                     </div>
                     <div className="flex-1 text-left min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <h4 className="font-semibold text-gray-900 group-hover:text-purple-600 transition-colors truncate">
+                        <h4 className="font-semibold text-gray-900 group-hover:text-secondary-600 transition-colors truncate">
                           {room.name}
                         </h4>
                         {room.lastMessageTime && (
@@ -590,7 +590,7 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                           <p className="text-xs text-gray-400">메시지 없음</p>
                         )}
                         {room.unreadCount && room.unreadCount > 0 && (
-                          <span className="flex-shrink-0 bg-purple-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                          <span className="flex-shrink-0 bg-secondary-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                             {room.unreadCount > 99 ? "99+" : room.unreadCount}
                           </span>
                         )}
@@ -641,11 +641,11 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                   <button
                     onClick={loadMoreRooms}
                     disabled={isLoadingRooms}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-purple-600 hover:bg-purple-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-secondary-600 hover:bg-secondary-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isLoadingRooms ? (
                       <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-secondary-600"></div>
                         <span>불러오는 중...</span>
                       </>
                     ) : (
@@ -693,7 +693,7 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                   value={groupRoomName}
                   onChange={(e) => setGroupRoomName(e.target.value)}
                   placeholder="채팅방 이름을 입력하세요"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent"
                 />
               </div>
 
@@ -707,13 +707,13 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                     {selectedUsers.map((user) => (
                       <div
                         key={user.id}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-purple-100 text-purple-700 rounded-full text-sm"
+                        className="flex items-center gap-2 px-3 py-1.5 bg-secondary-100 text-secondary-700 rounded-full text-sm"
                       >
                         <span>{user.nickname || user.realName || user.name}</span>
                         {!(selfUsername && user.username === selfUsername) && (
                           <button
                             onClick={() => handleToggleUserSelection(user)}
-                            className="hover:bg-purple-200 rounded-full p-0.5"
+                            className="hover:bg-secondary-200 rounded-full p-0.5"
                           >
                             <X className="w-3 h-3" />
                           </button>
@@ -739,7 +739,7 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                         onClick={() => handleToggleUserSelection(user)}
                         disabled={isSelf}
                         className={`w-full flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors ${
-                          isSelected ? "bg-purple-50" : ""
+                          isSelected ? "bg-secondary-50" : ""
                         } ${isSelf ? "opacity-75 cursor-not-allowed" : ""}`}
                       >
                         <div className="relative">
@@ -750,8 +750,8 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                               className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
                             />
                           ) : (
-                            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center border-2 border-gray-200">
-                              <User className="w-5 h-5 text-purple-600" />
+                            <div className="w-10 h-10 rounded-full bg-secondary-100 flex items-center justify-center border-2 border-gray-200">
+                              <User className="w-5 h-5 text-secondary-600" />
                             </div>
                           )}
                         </div>
@@ -760,7 +760,7 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                           <p className="text-xs text-gray-500">{user.realName || user.name || ""}</p>
                         </div>
                         {isSelected && (
-                          <div className="w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center">
+                          <div className="w-5 h-5 bg-secondary-600 rounded-full flex items-center justify-center">
                             <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>
@@ -790,7 +790,7 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                 <button
                   onClick={handleCreateGroupChat}
                   disabled={isCreating || !!createDisabledReason}
-                  className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2 bg-secondary-600 text-white rounded-lg hover:bg-secondary-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isCreating ? "생성 중..." : "생성하기"}
                 </button>

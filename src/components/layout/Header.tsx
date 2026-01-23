@@ -4,13 +4,14 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { ChevronDownIcon, BellIcon, Search, X, Menu, Shield } from "lucide-react";
+import { ChevronDownIcon, BellIcon, Search, X, Menu, Shield, MessageSquare } from "lucide-react";
 import toast from "react-hot-toast";
 import AlarmPopup from "./AlarmPopup";
 import SearchModal from "./SearchModal";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 import { getRoleDisplayLabel, hasAdminAccess } from "@/lib/role-utils";
+import { useChatRoom } from "@/context/ChatContext";
 
 const navList = [
   { name: "About", 
@@ -40,6 +41,7 @@ const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAlarmPopupOpen, setIsAlarmPopupOpen] = useState(false);
   const { user:profileData } = useCurrentUser();
+  const { toggleChatRoom } = useChatRoom();
   
   const dropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -88,6 +90,7 @@ const Header = () => {
   };
 
   const handleLogout = async () => {
+    toast.success('로그아웃되었습니다.');
     await logout();
     setDropdowns({});
     setIsMobileMenuOpen(false);
@@ -213,6 +216,17 @@ const Header = () => {
                 <Search className="w-5 h-5" />
               </button>
             </div>
+
+            {/* Messages */}
+            {isAuthenticated && (
+              <button 
+                onClick={toggleChatRoom}
+                className="p-2 text-gray-700 hover:text-gray-900 transition-colors cursor-pointer"
+                aria-label="Open chat room"
+              >
+                <MessageSquare className="w-5 h-5" />
+              </button>
+            )}
 
             {/* Notifications */}
             {isAuthenticated && (

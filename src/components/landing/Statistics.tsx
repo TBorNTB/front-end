@@ -3,8 +3,6 @@
 import { useEffect, useState } from 'react';
 import { getApiUrl } from '@/lib/api/config';
 import { META_ENDPOINTS } from '@/lib/api/endpoints/meta-endpoints';
-import { USE_MOCK_DATA } from '@/lib/api/env';
-import { MOCK_PROJECTS, MOCK_ARTICLES, MOCK_CATEGORIES } from '@/lib/mock-data';
 
 interface StatisticItemProps {
   number: string;
@@ -91,7 +89,7 @@ export default function StatisticsSection({ className = "" }: StatisticsSectionP
     },
     {
       number: '0+',
-      label: '함께 멤버',
+      label: 'Active Members',
       description: '활발한 커뮤니티'
     },
     {
@@ -104,33 +102,6 @@ export default function StatisticsSection({ className = "" }: StatisticsSectionP
 
   useEffect(() => {
     const fetchStatistics = async () => {
-      // Mock path: short-circuit API and use local counts to avoid fetch errors in dev
-      if (USE_MOCK_DATA) {
-        setStatistics([
-          {
-            number: formatNumber(MOCK_PROJECTS.length),
-            label: 'Active Projects',
-            description: '활성 프로젝트'
-          },
-          {
-            number: formatNumber(MOCK_ARTICLES.length),
-            label: 'Articles Published',
-            description: '게시된 아티클'
-          },
-          {
-            number: formatNumber(120), // mock members
-            label: '함께 멤버',
-            description: '활발한 커뮤니티'
-          },
-          {
-            number: formatNumber(MOCK_CATEGORIES.length),
-            label: 'Learning Topics',
-            description: '학습 주제'
-          }
-        ]);
-        setLoading(false);
-        return;
-      }
       try {
         const url = getApiUrl(META_ENDPOINTS.META.COUNT);
         const response = await fetch(url, {
@@ -160,7 +131,7 @@ export default function StatisticsSection({ className = "" }: StatisticsSectionP
           },
           {
             number: formatNumber(data.userCount),
-            label: '함께 멤버',
+            label: 'Active Members',
             description: '활발한 커뮤니티'
           },
           {
@@ -170,33 +141,10 @@ export default function StatisticsSection({ className = "" }: StatisticsSectionP
           }
         ]);
       } catch (error) {
-        // 에러 발생 시 조용히 fallback 데이터 사용 (콘솔 에러는 개발 환경에서만)
+        // On error, keep default zero values
         if (process.env.NODE_ENV === 'development') {
-          console.warn('Failed to fetch statistics, using fallback data:', error);
+          console.warn('Failed to fetch statistics:', error);
         }
-        // Fall back to mock data on error
-        setStatistics([
-          {
-            number: formatNumber(MOCK_PROJECTS.length),
-            label: 'Active Projects',
-            description: '활성 프로젝트'
-          },
-          {
-            number: formatNumber(MOCK_ARTICLES.length),
-            label: 'Articles Published',
-            description: '게시된 아티클'
-          },
-          {
-            number: formatNumber(120), // mock members
-            label: '함께 멤버',
-            description: '활발한 커뮤니티'
-          },
-          {
-            number: formatNumber(MOCK_CATEGORIES.length),
-            label: 'Learning Topics',
-            description: '학습 주제'
-          }
-        ]);
       } finally {
         setLoading(false);
       }

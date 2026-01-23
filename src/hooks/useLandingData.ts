@@ -1,7 +1,41 @@
 import { useEffect, useState } from 'react';
-import { categoryService } from '@/lib/api/services/category-services';
+import { categoryService, type CategoryItem } from '@/lib/api/services/category-services';
 import { CategoryType, CategorySlugs, CategoryDescriptions, CategoryHelpers } from '@/types/services/category';
-import { getCategories, type Project, type Article, type CategoryItem } from '@/lib/mock-data';
+
+type Project = {
+  id: string;
+  title: string;
+  description: string;
+  thumbnailUrl: string;
+  projectStatus: 'IN_PROGRESS' | 'COMPLETED' | 'PLANNING' | 'ARCHIVED';
+  projectCategories: string[];
+  projectTechStacks: string[];
+  createdAt: string;
+  updatedAt: string;
+  likeCount: number;
+  viewCount: number;
+  owner?: { username?: string; nickname?: string; realname?: string; avatarUrl?: string } | null;
+  collaborators?: Array<{ username?: string; nickname?: string; realname?: string; avatarUrl?: string }>;
+};
+
+type Article = {
+  topicSlug: string;
+  id: string;
+  content: {
+    title: string;
+    summary: string;
+    content: string;
+    category: string;
+  };
+  thumbnailPath: string;
+  writerId: string;
+  participantIds: string[];
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+  likeCount: number;
+  viewCount: number;
+};
 
 export interface LandingTopic {
   id: string;
@@ -16,7 +50,7 @@ export interface LandingTopic {
 interface LandingDataState {
   projects: Project[];
   articles: Article[];
-  topics: LandingTopic[]; // Same structure as Topic from mock-data
+  topics: LandingTopic[];
   loading: boolean;
   error: string | null;
 }

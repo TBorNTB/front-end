@@ -1,10 +1,10 @@
 // src/lib/api/services/category-service.ts
 // 보안 학습 주제 조회 관련 API 서비스
 
-import { BASE_URL } from '@/lib/api/config';
-import { PROJECT_ENDPOINTS} from '@/lib/api/endpoints';
-import { USE_MOCK_DATA } from '@/lib/api/env';
-import { getCategories as getMockCategories } from '@/lib/mock-data';
+
+import { PROJECT_ENDPOINTS, getProjectApiUrl } from '@/lib/api/endpoints/project-endpoints';
+import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
+
 
 // API 응답 타입 정의
 export interface CategoryItem {
@@ -15,6 +15,27 @@ export interface CategoryItem {
 
 export interface CategoryResponse {
   categories: CategoryItem[];
+}
+
+export interface CreateCategoryRequest {
+  name: string;
+  description: string;
+}
+
+export interface UpdateCategoryRequest {
+  prevName: string;
+  nextName: string;
+  description: string;
+}
+
+export interface DeleteCategoryRequest {
+  name: string;
+}
+
+export interface CategoryMutationResponse {
+  id: number;
+  name: string;
+  message: string;
 }
 
 /**
@@ -28,20 +49,14 @@ export const categoryService = {
    * @returns 카테고리 목록 응답
    */
   getCategories: async (): Promise<CategoryResponse> => {
-    if (USE_MOCK_DATA) {
-      const categories = await getMockCategories();
-      return { categories };
-    }
-
     try {
-      const url = `${BASE_URL}${PROJECT_ENDPOINTS.PROJECT.GET_CATEGORIES}`;
+      const url = getProjectApiUrl(PROJECT_ENDPOINTS.PROJECT.GET_CATEGORIES);
 
-      const response = await fetch(url, {
+      const response = await fetchWithRefresh(url, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
         },
-        credentials: 'include',
         cache: 'no-store',
       });
 
@@ -55,6 +70,90 @@ export const categoryService = {
       console.error('Error fetching categories:', error);
       throw error;
     }
+  },
+
+  /**
+   * 카테고리 생성
+   * POST /project-service/api/category
+   */
+  createCategory: async (
+    payload: CreateCategoryRequest,
+  ): Promise<CategoryMutationResponse> => {
+    const url = getProjectApiUrl(PROJECT_ENDPOINTS.PROJECT.GET_CATEGORIES);
+
+    const response = await fetchWithRefresh(url, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      throw new Error(
+        `Failed to create category: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`,
+      );
+    }
+
+    return response.json();
+  },
+
+  /**
+   * 카테고리 수정
+   * PUT /project-service/api/category
+   */
+  updateCategory: async (
+    payload: UpdateCategoryRequest,
+  ): Promise<CategoryMutationResponse> => {
+    const url = getProjectApiUrl(PROJECT_ENDPOINTS.PROJECT.GET_CATEGORIES);
+
+    const response = await fetchWithRefresh(url, {
+      method: 'PUT',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      throw new Error(
+        `Failed to update category: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`,
+      );
+    }
+
+    return response.json();
+  },
+
+  /**
+   * 카테고리 삭제
+   * DELETE /project-service/api/category
+   */
+  deleteCategory: async (
+    payload: DeleteCategoryRequest,
+  ): Promise<CategoryMutationResponse> => {
+    const url = getProjectApiUrl(PROJECT_ENDPOINTS.PROJECT.GET_CATEGORIES);
+
+    const response = await fetchWithRefresh(url, {
+      method: 'DELETE',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      throw new Error(
+        `Failed to delete category: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`,
+      );
+    }
+
+    return response.json();
   },
 };
 

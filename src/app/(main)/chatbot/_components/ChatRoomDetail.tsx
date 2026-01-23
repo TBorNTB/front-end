@@ -571,7 +571,7 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
             <div
               className={`px-4 py-3 rounded-2xl ${
                 isOwn
-                  ? "bg-purple-600 text-white rounded-br-sm"
+                  ? "bg-secondary-700 text-white rounded-br-sm"
                   : "bg-white text-gray-900 rounded-bl-sm border border-gray-200"
               } shadow-sm`}
             >
@@ -600,7 +600,7 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
       <div
         ref={headerRef}
         onMouseDown={handleMouseDown}
-        className={`bg-gradient-to-r from-purple-600 via-purple-600 to-purple-700 text-white px-5 py-4 flex items-center justify-between shadow-md ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+        className={`bg-gradient-to-r from-secondary-700 via-secondary-700 to-secondary-800 text-white px-5 py-4 flex items-center justify-between shadow-md ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
       >
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <button
@@ -728,7 +728,7 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
       <div
         ref={chatContainerRef}
         onScroll={handleChatScroll}
-        className="flex-1 overflow-y-auto px-4 py-5 space-y-4 bg-gradient-to-b from-gray-50 to-white chat-scrollbar"
+        className="flex-1 overflow-y-auto px-4 py-5 space-y-4 bg-gradient-to-b from-secondary-700 to-white chat-scrollbar"
         style={{ scrollbarWidth: "thin" }}
       >
         {hasMoreHistory && (
@@ -792,7 +792,7 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
               }}
               placeholder="메시지 입력"
               rows={1}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-sm bg-white transition-all"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary-600 focus:border-transparent resize-none text-sm bg-white transition-all"
               style={{
                 minHeight: "40px",
                 maxHeight: "100px",
@@ -807,7 +807,7 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
           <button
             onClick={() => handleSendMessage(inputValue)}
             disabled={!inputValue.trim()}
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium text-sm flex items-center gap-2"
+            className="px-4 py-2 bg-secondary-700 hover:bg-secondary-800 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium text-sm flex items-center gap-2"
             aria-label="Send message"
           >
             <span>전송</span>
