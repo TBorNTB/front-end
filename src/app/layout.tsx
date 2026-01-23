@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
-import { Toaster } from 'react-hot-toast';
+import { ChatProvider } from "@/context/ChatContext";
+import ToastProvider from "@/components/ui/ToastProvider";
 import RootLayoutClient from "./layout-client";
 
 const inter = Inter({
@@ -25,32 +26,10 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.variable} font-sans antialiased`}>
         <AuthProvider>
-          <RootLayoutClient>{children}</RootLayoutClient>
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              // Default styles
-              style: {
-                background: '#333',
-                color: '#fff',
-                fontSize: '14px',
-                borderRadius: '8px',
-                padding: '12px 16px',
-              },
-              // Success toast
-              success: {
-                style: {
-                  background: '#22c55e', // Tailwind green-500
-                },
-              },
-              // Error toast
-              error: {
-                style: {
-                  background: '#ef4444', // Tailwind red-500
-                },
-              },
-            }}
-          />
+          <ChatProvider>
+            <RootLayoutClient>{children}</RootLayoutClient>
+            <ToastProvider />
+          </ChatProvider>
         </AuthProvider>
       </body>
     </html>

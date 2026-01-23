@@ -1,26 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { MessageSquare } from "lucide-react";
-import toast from "react-hot-toast";
 import ChatWindow from "./_components/ChatWindow";
 import ChatRoomWindow from "./_components/ChatRoomWindow";
 import ChatRoomDetail from "./_components/ChatRoomDetail";
 import ChatBotIcon from "./_components/ChatBotIcon";
-import { useAuth } from "@/context/AuthContext";
-import { UserRole } from "@/types/core";
+import { useChatRoom } from "@/context/ChatContext";
 
 const ChatBot = () => {
-  const router = useRouter();
-  const pathname = usePathname();
-  const { isAuthenticated, user, loading: authLoading } = useAuth();
+  const { isChatRoomOpen, closeChatRoom } = useChatRoom();
 
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const [isChatRoomHovered, setIsChatRoomHovered] = useState(false);
-  const [isChatRoomOpen, setIsChatRoomOpen] = useState(false);
   const [isChatRoomMinimized, setIsChatRoomMinimized] = useState(false);
   const [openChatRooms, setOpenChatRooms] = useState<Array<{
     id: string;
@@ -40,39 +32,9 @@ const ChatBot = () => {
     setIsOpen(false);
   };
 
-  const ensureChatRoomAccess = () => {
-    const isGuestRole = (role: unknown) => role === UserRole.GUEST || role === 'GUEST';
-
-    if (authLoading) {
-      toast("로그인 정보를 확인 중입니다. 잠시만 기다려주세요.");
-      return false;
-    }
-
-    if (!isAuthenticated) {
-      toast.error("로그인이 필요합니다. 먼저 로그인 해주세요.");
-      const next = encodeURIComponent(pathname || "/");
-      router.push(`/login?next=${next}`);
-      return false;
-    }
-
-    const role: unknown = user?.role;
-    if (isGuestRole(role)) {
-      toast.error("해당 서비스는 GUEST가 이용 불가합니다.");
-      return false;
-    }
-
-    return true;
-  };
-
-  const toggleChatRoom = () => {
-    if (!ensureChatRoomAccess()) return;
-    setIsChatRoomOpen(!isChatRoomOpen);
-    setIsChatRoomMinimized(false);
-  };
-
   const handleChatRoomMinimize = () => {
     setIsChatRoomMinimized(true);
-    setIsChatRoomOpen(false);
+    closeChatRoom();
   };
 
   const handleSelectRoom = (room: {
@@ -119,35 +81,9 @@ const ChatBot = () => {
 
   return (
     <>
-      {/* Floating Chat Buttons - Enhanced */}
+      {/* Floating Chat Bot Button Only */}
       {!isOpen && !isChatRoomOpen && openChatRooms.length === 0 && (
         <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
-          {/* Chat Room Button */}
-          <div className="flex flex-col items-end gap-2">
-            {/* Tooltip */}
-            {isChatRoomHovered && (
-              <div className="animate-fade-in bg-gray-900 text-white text-sm px-3 py-2 rounded-lg whitespace-nowrap shadow-lg">
-                채팅방
-              </div>
-            )}
-            
-            {/* Chat Room Button */}
-            <button
-              onClick={toggleChatRoom}
-              onMouseEnter={() => setIsChatRoomHovered(true)}
-              onMouseLeave={() => setIsChatRoomHovered(false)}
-              className="relative w-16 h-16 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white shadow-lg hover:shadow-2xl transition-all duration-300 ease-out hover:scale-110 active:scale-95 flex items-center justify-center group"
-              aria-label="Open chat room"
-            >
-              {/* Animated background glow */}
-              <div className="absolute inset-0 rounded-full bg-purple-400 opacity-0 group-hover:opacity-20 blur-lg transition-opacity duration-300"></div>
-              
-              <div className="relative z-10 flex items-center justify-center">
-                <MessageSquare className="w-7 h-7 md:w-6 md:h-6 text-white group-hover:scale-110 transition-transform duration-300" />
-              </div>
-            </button>
-          </div>
-
           {/* Chat Bot Button */}
           <div className="flex flex-col items-end gap-2">
             {/* Tooltip */}

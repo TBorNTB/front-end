@@ -3,8 +3,6 @@
 
 import { BASE_URL } from '@/lib/api/config';
 import { PROJECT_ENDPOINTS} from '@/lib/api/endpoints';
-import { USE_MOCK_DATA } from '@/lib/api/env';
-import { getCategories as getMockCategories } from '@/lib/mock-data';
 
 // API 응답 타입 정의
 export interface CategoryItem {
@@ -28,11 +26,6 @@ export const categoryService = {
    * @returns 카테고리 목록 응답
    */
   getCategories: async (): Promise<CategoryResponse> => {
-    if (USE_MOCK_DATA) {
-      const categories = await getMockCategories();
-      return { categories };
-    }
-
     try {
       const url = `${BASE_URL}${PROJECT_ENDPOINTS.PROJECT.GET_CATEGORIES}`;
 

@@ -90,10 +90,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // 로그아웃
   const logout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
-    } catch {}
-    clearAuthState();
-    window.location.href = '/';
+      const response = await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+      if (response.ok) {
+        clearAuthState();
+        window.location.href = '/';
+      } else {
+        throw new Error('Logout failed');
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      clearAuthState();
+      window.location.href = '/';
+    }
   };
 
   // 온디맨드 유저 로드

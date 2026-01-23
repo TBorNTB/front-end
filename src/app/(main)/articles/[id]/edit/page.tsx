@@ -12,7 +12,7 @@ import TableOfContents from '@/components/editor/TableOfContents';
 import Image from 'next/image';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { fetchCategories } from '@/lib/api/services/project-services';
-import { createArticle } from '@/lib/api/services/article-services';
+import { fetchArticleById, updateArticle } from '@/lib/api/services/article-services';
 
 interface FormData {
   title: string;
@@ -27,15 +27,20 @@ interface FormErrors {
   [key: string]: string;
 }
 
-export default function NewArticleForm() {
+interface EditPageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default function EditArticlePage({ params }: EditPageProps) {
   const router = useRouter();
   const { user: currentUser, isLoading: userLoading } = useCurrentUser();
+  const [articleId, setArticleId] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [isLoadingArticle, setIsLoadingArticle] = useState(true);
   const [tagInput, setTagInput] = useState('');
   const [categorySearch, setCategorySearch] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
   const [thumbnailPreview, setThumbnailPreview] = useState<string>('');
-  
   
   // API data states
   const [categories, setCategories] = useState<Array<{ id: number; name: string; description: string }>>([]);
@@ -49,6 +54,20 @@ export default function NewArticleForm() {
     tags: [],
     thumbnailUrl: '',
   });
+
+  // ✅ Next.js 15: params는 Promise라 언랩 필요
+  useEffect(() => {
+    let mounted = true;
+
+    params.then((resolvedParams) => {
+      if (!mounted) return;
+      setArticleId(resolvedParams.id);
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, [params]);
 
   // Load categories on mount
   useEffect(() => {
@@ -66,6 +85,41 @@ export default function NewArticleForm() {
     };
     loadCategories();
   }, []);
+
+  // Load article data on mount
+  useEffect(() => {
+    if (!articleId) return;
+
+    const loadArticle = async () => {
+      try {
+        setIsLoadingArticle(true);
+        const articleData = await fetchArticleById(articleId);
+        
+        if (articleData) {
+          setFormData({
+            title: articleData.title || '',
+            category: articleData.category || '',
+            excerpt: '', // excerpt is not returned from API, keep it empty for edit
+            content: articleData.content || '',
+            tags: [], // tags is not returned from API, keep it empty for edit
+            thumbnailUrl: articleData.thumbnail || '',
+          });
+
+          if (articleData.thumbnail) {
+            setThumbnailPreview(articleData.thumbnail);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load article:', error);
+        alert('아티클을 불러오는데 실패했습니다.');
+        router.push('/articles');
+      } finally {
+        setIsLoadingArticle(false);
+      }
+    };
+
+    loadArticle();
+  }, [articleId, router]);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -179,13 +233,13 @@ export default function NewArticleForm() {
         category: formData.category,
       };
 
-      const response = await createArticle(articleData);
+      await updateArticle(articleId, articleData);
       
-      // 생성 성공 시 반환된 id로 상세 페이지로 이동
-      alert('글이 성공적으로 작성되었습니다!');
-      router.push(`/articles/${response.id}`);
+      // 수정 성공 시 상세 페이지로 이동
+      alert('글이 성공적으로 수정되었습니다!');
+      router.push(`/articles/${articleId}`);
     } catch (error) {
-      alert(error instanceof Error ? error.message : '글 작성에 실패했습니다.');
+      alert(error instanceof Error ? error.message : '글 수정에 실패했습니다.');
     } finally {
       setLoading(false);
     }
@@ -193,13 +247,13 @@ export default function NewArticleForm() {
 
   return (
     <div className="min-h-screen py-12 px-4">
-      <div className="w-full mx-auto">
-      {/* Loading state for user authentication */}
-      {userLoading && (
+      <div className="w-full px-3 sm:px-4 lg:px-10">
+      {/* Loading state for user authentication or article data */}
+      {(userLoading || isLoadingArticle) && (
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-            <p className="text-gray-600">로딩 중...</p>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
+            <p className="text-gray-600">데이터 불러오는 중...</p>
           </div>
         </div>
       )}
@@ -208,7 +262,7 @@ export default function NewArticleForm() {
       {!userLoading && !currentUser && (
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <p className="text-gray-600 mb-4">글을 작성하려면 먼저 로그인해주세요.</p>
+            <p className="text-gray-600 mb-4">글을 수정하려면 먼저 로그인해주세요.</p>
             <Link href="/login">
               <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                 로그인
@@ -218,18 +272,18 @@ export default function NewArticleForm() {
         </div>
       )}
 
-      {/* Main form - only show when user is loaded and authenticated */}
-      {!userLoading && currentUser && (
+      {/* Main form - only show when user is loaded and authenticated and article is loaded */}
+      {!userLoading && !isLoadingArticle && currentUser && (
         <div className="bg-white rounded-2xl shadow-lg p-8">
           {/* Header */}
           <div className="mb-8 pb-6 border-b border-gray-200">
             <div className="flex items-center gap-4 mb-2">
-              <Link href="/articles" className="inline-flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-gray-900 transition-colors">
+              <Link href={`/articles/${articleId}`} className="inline-flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-gray-900 transition-colors">
                 <ArrowLeft className="w-5 h-5" />
               </Link>
-              <h1 className="text-4xl font-bold text-gray-900">새 글 작성하기</h1>
+              <h1 className="text-4xl font-bold text-gray-900">글 수정하기</h1>
             </div>
-            <p className="text-lg text-gray-600 ml-14">동아리의 지식과 경험을 공유해주세요</p>
+            <p className="text-lg text-gray-600 ml-14">내용을 수정하고 업데이트해주세요</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
@@ -523,7 +577,7 @@ export default function NewArticleForm() {
 
             {/* Form Actions */}
             <div className="flex gap-3 justify-end pt-6 border-t border-gray-200">
-              <Link href="/articles">
+              <Link href={`/articles/${articleId}`}>
                 <Button 
                   type="button" 
                   variant="outline" 
@@ -540,10 +594,10 @@ export default function NewArticleForm() {
                 {loading ? (
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    작성 중...
+                    수정 중...
                   </div>
                 ) : (
-                  '글 작성하기'
+                  '글 수정하기'
                 )}
               </Button>
             </div>
