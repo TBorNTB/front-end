@@ -2,10 +2,12 @@
 "use client";
 
 import { useAuth } from "@/context/AuthContext";
-import { Bell,ChevronDown, LogOut } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { Bell, ChevronDown, LogOut } from "lucide-react";
 import { usePathname } from "next/navigation";
+
 import toast from "react-hot-toast";
+import { useEffect, useRef, useState } from "react";
+
 
 // Page title mapping
 const getPageTitle = (pathname: string) => {
@@ -112,7 +114,7 @@ export default function AdminHeader() {
                     </div>
                   </div>
                   <div className="mt-2 text-xs text-gray-600">
-                    권한: 운영진 (회장님)
+                    권한: 운영진
                   </div>
                 </div>
                 
