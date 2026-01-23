@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { ChatProvider } from "@/context/ChatContext";
 import ToastProvider from "@/components/ui/ToastProvider";
 import RootLayoutClient from "./layout-client";
 
@@ -25,8 +26,10 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.variable} font-sans antialiased`}>
         <AuthProvider>
-          <RootLayoutClient>{children}</RootLayoutClient>
-          <ToastProvider />
+          <ChatProvider>
+            <RootLayoutClient>{children}</RootLayoutClient>
+            <ToastProvider />
+          </ChatProvider>
         </AuthProvider>
       </body>
     </html>

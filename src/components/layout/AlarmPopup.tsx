@@ -215,12 +215,17 @@ export default function AlarmPopup({ isOpen, onClose }: AlarmPopupProps) {
 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      
+      // Prevent layout shift by adding padding when scrollbar disappears
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
       document.body.style.overflow = 'hidden';
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.body.style.overflow = 'unset';
+      document.body.style.paddingRight = '0px';
     };
   }, [isOpen, onClose]);
 
@@ -229,11 +234,15 @@ export default function AlarmPopup({ isOpen, onClose }: AlarmPopupProps) {
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/20 z-40" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
       
-      {/* Popup */}
-      <div className="fixed top-16 right-4 z-50 w-[480px] max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-2xl border border-gray-200 max-h-[calc(100vh-5rem)] flex flex-col md:top-20 md:right-4">
-        <div ref={popupRef} className="flex flex-col h-full">
+      {/* Modal */}
+      <div 
+        ref={popupRef}
+        className="fixed top-16 right-4 z-50 w-[480px] max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-2xl border border-gray-200 max-h-[calc(100vh-5rem)] flex flex-col md:top-20 md:right-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-primary-50 to-secondary-50">
             <div className="flex items-center space-x-2">
@@ -429,8 +438,8 @@ export default function AlarmPopup({ isOpen, onClose }: AlarmPopupProps) {
               전체 알림 보기
             </Link>
           </div>
+          </div>
         </div>
-      </div>
     </>
   );
 }
