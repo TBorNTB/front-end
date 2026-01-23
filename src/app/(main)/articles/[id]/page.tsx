@@ -7,6 +7,7 @@ import { Heart, Eye, MessageCircle, Share2, Edit, Clock, ArrowLeft, Code, FileTe
 import { fetchArticleById, updateArticle, deleteArticle, type ArticleResponse } from '@/lib/api/services/article-services';
 import { useRouter } from 'next/navigation';
 import TipTapEditor from '@/components/editor/TipTapEditor';
+import TableOfContents from '@/components/editor/TableOfContents';
 import { fetchCategories } from '@/lib/api/services/project-services';
 import { searchCSKnowledge, searchCSKnowledgeByMember } from '@/lib/api/services/elastic-services';
 import { 
@@ -29,22 +30,34 @@ interface BlogPostPageProps {
   params: Promise<{ id: string }>;
 }
 
-// Helper to extract headings from content
+// Helper to extract headings from HTML content
 const extractHeadings = (content: string) => {
   const headings: { id: string; text: string; level: number }[] = [];
-  const lines = content.split('\n');
-
-  lines.forEach((line, index) => {
-    const match = line.match(/^(#{1,6})\s+(.+)$/);
-    if (match) {
-      const level = match[1].length;
-      const text = match[2].trim();
-      const id = `heading-${index}`;
-      headings.push({ id, text, level });
-    }
-  });
+  
+  // Use regex to extract heading tags from HTML
+  const headingRegex = /<h([1-6])[^>]*>(.*?)<\/h[1-6]>/gi;
+  let match;
+  let index = 0;
+  
+  while ((match = headingRegex.exec(content)) !== null) {
+    const level = parseInt(match[1]);
+    const text = match[2].replace(/<[^>]*>/g, '').trim(); // Remove any inner HTML tags
+    const id = `heading-${index}`;
+    headings.push({ id, text, level });
+    index++;
+  }
 
   return headings;
+};
+
+// Helper to add IDs to headings in HTML content
+const addHeadingIds = (content: string) => {
+  let index = 0;
+  return content.replace(/<h([1-6])([^>]*)>/gi, (match, level, attrs) => {
+    const id = `heading-${index}`;
+    index++;
+    return `<h${level}${attrs} id="${id}">`;
+  });
 };
 
 interface PostData {
@@ -53,6 +66,7 @@ interface PostData {
   category: string;
   subcategory?: string;
   content: string;
+  thumbnail?: string | null;
   author: {
     username: string;
     name: string;
@@ -130,6 +144,28 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
       mounted = false;
     };
   }, [params]);
+
+  // Track active section on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      const headings = document.querySelectorAll('.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6');
+      let currentSection = '';
+
+      headings.forEach((heading) => {
+        const rect = heading.getBoundingClientRect();
+        if (rect.top <= 150 && rect.top >= -rect.height) {
+          currentSection = heading.id;
+        }
+      });
+
+      if (currentSection) {
+        setActiveSection(currentSection);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // 댓글 로드 함수 (커서 기반 페이지네이션)
   // reset: true → 초기 로드 (5개만)
@@ -471,6 +507,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
             title: articleData.title,
             category: articleData.category,
             content: articleData.content,
+            thumbnail: articleData.thumbnail || null,
             author: {
               username: articleData.writerId,
               name: articleData.nickname,
@@ -483,7 +520,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
               likes: likeStatusData.likeCount || likeCountData.likedCount,
               comments: 0, // 댓글 수는 댓글 로드 후 업데이트
             },
-            tags: [], // API에 없으면 빈 배열
+            tags: ['React', 'Next.js', 'TypeScript', '웹 개발', 'Frontend'],
             relatedArticles: authorArticles,
             popularArticles: popularArticles,
           };
@@ -586,10 +623,10 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex items-center justify-center min-h-[40vh] bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">아티클을 불러오는 중...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
+          <p className="text-gray-600 text-sm">로딩 중...</p>
         </div>
       </div>
     );
@@ -799,92 +836,115 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const yOffset = -100; // Offset for fixed header
+      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      
+      window.scrollTo({ top: y, behavior: 'smooth' });
       setActiveSection(id);
+    } else {
+      console.warn(`Element with id "${id}" not found`);
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Back Navigation */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="container py-4">
-          <Link
-            href="/articles"
-            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors group"
-          >
-            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-            <span className="text-sm font-medium">목록으로 돌아가기</span>
-          </Link>
-        </div>
-      </div>
-
       {/* Main Content with Sidebar */}
       <div className="container py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Main Content */}
           <article className="lg:col-span-8">
             <div className="card">
+              {/* Back Navigation */}
+              <Link
+                href="/articles"
+                className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors group mb-6"
+              >
+                <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                <span className="text-sm font-medium">목록으로 돌아가기</span>
+              </Link>
+
               {/* Post Header */}
               <header className="mb-8">
                 <h1 className="text-4xl font-bold text-foreground mb-4">
                   {displayPost.title}
                 </h1>
 
-                {/* Author & Metadata */}
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                    {displayPost.author.avatar ? (
-                      <Image
-                        src={displayPost.author.avatar}
-                        alt={displayPost.author.name}
-                        fill
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-lg font-bold text-gray-500">
-                        {displayPost.author.name.charAt(0)}
-                      </div>
-                    )}
+                {/* Author, Date, Time, Category in one line */}
+                <div className="flex flex-wrap items-center gap-3 mb-4 text-sm text-gray-600">
+                  <div className="flex items-center gap-1.5">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <span className="font-medium text-gray-900">{displayPost.author.name}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-1.5 text-gray-600">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span>
+                      {new Date(displayPost.publishedAt).toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                      })}
+                    </span>
                   </div>
 
-                  <div className="flex-1">
-                    <p className="font-semibold text-gray-900">
-                      {displayPost.author.name}
-                    </p>
-                    <div className="flex items-center gap-3 mt-1">
-                      <p className="text-sm text-gray-500">
-                        {new Date(displayPost.publishedAt).toLocaleDateString('ko-KR', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
-                      </p>
-                      {displayPost.readTime && (
-                        <>
-                          <span className="text-gray-300">·</span>
-                          <div className="flex items-center gap-1 text-sm text-gray-500">
-                            <Clock className="w-3.5 h-3.5" />
-                            <span>{displayPost.readTime}</span>
-                          </div>
-                        </>
-                      )}
+                  {displayPost.readTime && (
+                    <div className="flex items-center gap-1.5 text-gray-600">
+                      <Clock className="w-4 h-4 text-gray-400" />
+                      <span>{displayPost.readTime}</span>
                     </div>
-                  </div>
-                </div>
+                  )}
 
-                {/* Categories & Tags */}
-                <div className="flex flex-wrap items-center gap-2 mb-6">
-                  <span className="px-3 py-1.5 rounded-full text-sm font-semibold bg-blue-100 text-blue-700">
+                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
                     {displayPost.category}
                   </span>
-                  {displayPost.subcategory && (
-                    <span className="px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
-                      {displayPost.subcategory}
-                    </span>
-                  )}
                 </div>
+
+                {/* Tags below metadata */}
+                {displayPost.tags && displayPost.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {displayPost.tags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700 border border-gray-200"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </header>
+
+              {/* Thumbnail Image */}
+              <div className="relative w-full h-80 mb-8 rounded-xl overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center border border-gray-200 shadow-sm">
+                {displayPost.thumbnail ? (
+                  <Image
+                    src={displayPost.thumbnail}
+                    alt={displayPost.title}
+                    fill
+                    className="object-cover"
+                    priority
+                  />
+                ) : (
+                  <Image
+                    src="/images/placeholder/article.png"
+                    alt={displayPost.title}
+                    fill
+                    className="object-cover"
+                    priority
+                  />
+                )}
+              </div>
+
+              {/* Post Content */}
+              <div
+                ref={contentRef}
+                className="prose prose-slate prose-lg max-w-none mb-12"
+                dangerouslySetInnerHTML={{ __html: addHeadingIds(displayPost.content) }}
+              />
 
               {/* Stats Bar */}
               <div className="flex items-center gap-8 py-5 border-y border-gray-200 mb-8 bg-gray-50 rounded-lg px-4">
@@ -943,43 +1003,6 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                   )}
                 </button>
               </section>
-
-              {/* Featured Image */}
-              <div className="relative w-full h-80 mb-8 rounded-xl overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center border border-gray-200 shadow-sm">
-                <div className="text-center">
-                  <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white shadow-md flex items-center justify-center">
-                    <FileText className="w-10 h-10 text-blue-500" />
-                  </div>
-                  <p className="text-gray-600 font-medium">CS 지식 아티클</p>
-                </div>
-              </div>
-
-              {/* Post Content */}
-              <div
-                ref={contentRef}
-                className="prose prose-lg max-w-none mb-12"
-              >
-                <div className="text-gray-700 leading-relaxed space-y-4 text-base">
-                  {renderContent(displayPost.content)}
-                </div>
-              </div>
-
-              {/* Tags */}
-              {displayPost.tags && displayPost.tags.length > 0 && (
-                <div className="mb-8">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-3">태그</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {displayPost.tags.map((tag, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1.5 rounded-full text-sm font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors cursor-pointer border border-blue-200"
-                      >
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Action Buttons */}
               <div className="flex items-center gap-3 mb-8 pb-8 border-b border-gray-200">
@@ -1349,7 +1372,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
               {tableOfContents.length > 0 && (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                   <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-blue-600" />
+                    <FileText className="w-5 h-5 text-primary-500" />
                     목차
                   </h3>
                   <nav>
@@ -1367,11 +1390,11 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                             }
                             className={`text-sm block py-2 px-3 rounded-lg transition-all text-left w-full ${
                               activeSection === `heading-${index}`
-                                ? 'text-blue-700 bg-blue-50 font-semibold shadow-sm'
-                                : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
+                                ? 'text-primary-700 bg-primary-50 font-semibold shadow-sm border-l-2 border-primary-500'
+                                : 'text-gray-600 hover:text-primary-600 hover:bg-primary-50/50 active:bg-primary-100'
                             }`}
                           >
-                            {index + 1}. {heading.text}
+                            {heading.level === 1 ? `${index + 1}. ` : ''}{heading.text}
                           </button>
                         </li>
                       ))}
@@ -1379,77 +1402,6 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                   </nav>
                 </div>
               )}
-
-              {/* Popular Articles */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <Eye className="w-5 h-5 text-green-600" />
-                  인기 아티클
-                </h3>
-                <div className="space-y-3">
-                  {displayPost.popularArticles && displayPost.popularArticles.length > 0 ? (
-                    displayPost.popularArticles.map((article) => {
-                      const formatDate = (dateString?: string) => {
-                        if (!dateString) return '';
-                        try {
-                          const date = new Date(dateString);
-                          return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
-                        } catch {
-                          return '';
-                        }
-                      };
-                      return (
-                        <Link
-                          key={article.id}
-                          href={`/articles/${article.slug}`}
-                          className="block group p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 cursor-pointer bg-white hover:bg-blue-50/30"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-green-100 text-green-700 whitespace-nowrap">
-                                  {article.category}
-                                </span>
-                                {article.viewCount !== undefined && (
-                                  <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
-                                    <Eye className="w-3.5 h-3.5 text-gray-600" />
-                                    <span className="text-gray-700">{article.viewCount}</span>
-                                  </div>
-                                )}
-                                {article.likeCount !== undefined && (
-                                  <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
-                                    <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" />
-                                    <span className="text-gray-700">{article.likeCount}</span>
-                                  </div>
-                                )}
-                              </div>
-                              <h4 className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors mb-1.5 line-clamp-2 leading-snug">
-                                {article.title}
-                              </h4>
-                              <div className="flex items-center gap-2 text-xs text-gray-500">
-                                <span className="font-medium">{article.author}</span>
-                                {article.createdAt && (
-                                  <>
-                                    <span>·</span>
-                                    <span>{formatDate(article.createdAt)}</span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                              </svg>
-                            </div>
-                          </div>
-                        </Link>
-                      );
-                    })
-                  ) : (
-                    <p className="text-sm text-gray-500 text-center py-4">인기 아티클이 없습니다.</p>
-                  )}
-                </div>
-              </div>
 
               {/* More from Author */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">

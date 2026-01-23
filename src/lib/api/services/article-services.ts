@@ -3,6 +3,7 @@ import { ARTICLE_ENDPOINTS, getArticleApiUrl } from '@/lib/api/endpoints/article
 import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
 
 export interface ArticleResponse {
+  thumbnail: null;
   id: number;
   title: string;
   content: string;

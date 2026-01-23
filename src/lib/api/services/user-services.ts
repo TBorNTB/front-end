@@ -558,16 +558,15 @@ export const fetchComments = async (
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[fetchComments] Error fetching comments:`, {
+      const errorText = await response.text().catch(() => '');
+      console.warn(`[fetchComments] Non-OK response (${response.status})`, {
         postId,
         postType,
         cursorId,
         size,
         direction,
-        status: response.status,
-        error: errorText,
-        url
+        url,
+        error: errorText || 'No response body'
       });
       
       // Return empty response instead of throwing to prevent UI crashes
@@ -580,7 +579,7 @@ export const fetchComments = async (
 
     return response.json();
   } catch (error) {
-    console.error(`[fetchComments] Network or parsing error:`, {
+    console.warn(`[fetchComments] Network or parsing error`, {
       postId,
       postType,
       error: error instanceof Error ? error.message : String(error)
