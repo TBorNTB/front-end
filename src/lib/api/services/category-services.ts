@@ -2,12 +2,9 @@
 // 보안 학습 주제 조회 관련 API 서비스
 
 
-import { PROJECT_ENDPOINTS, getProjectApiUrl } from '@/lib/api/endpoints';
-import { USE_MOCK_DATA } from '@/lib/api/env';
-import { getCategories as getMockCategories } from '@/lib/mock-data';
+import { PROJECT_ENDPOINTS, getProjectApiUrl } from '@/lib/api/endpoints/project-endpoints';
 import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
-import { BASE_URL } from '@/lib/api/config';
-import { PROJECT_ENDPOINTS} from '@/lib/api/endpoints';
+
 
 // API 응답 타입 정의
 export interface CategoryItem {
