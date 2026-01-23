@@ -79,22 +79,8 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
             {article.excerpt}
           </p>
 
-          {/* 통계 + 작성자 한 줄 (좌측 통계, 우측 작성자) */}
+          {/* 통계 + 작성자 한 줄 (좌측 작성자, 우측 통계) */}
           <div className="flex items-center justify-between gap-3 text-sm text-gray-600 mb-3 pt-3 border-t border-gray-200">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Eye className="w-4 h-4 text-gray-500" />
-                <span className="font-medium text-gray-500">{article.views || 0}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <ThumbsUp className="w-4 h-4 text-gray-500" />
-                <span className="font-medium text-gray-500">{article.likes || 0}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MessageCircle className="w-4 h-4 text-gray-500" />
-                <span className="font-medium text-gray-500">{article.comments || 0}</span>
-              </div>
-            </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
                 {article.author.avatarUrl ? (
@@ -112,6 +98,20 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
               <span className="text-xs text-gray-700 font-medium">
                 {article.author.nickname || article.author.realname || '작성자'}
               </span>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Eye className="w-4 h-4 text-gray-500" />
+                <span className="font-medium text-gray-500">{article.views || 0}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <ThumbsUp className="w-4 h-4 text-gray-500" />
+                <span className="font-medium text-gray-500">{article.likes || 0}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 text-gray-500" />
+                <span className="font-medium text-gray-500">{article.comments || 0}</span>
+              </div>
             </div>
           </div>
 
