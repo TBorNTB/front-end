@@ -3,12 +3,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, createElement, useRef, JSX } from 'react';
-import { Heart, Eye, MessageCircle, Share2, Edit, Clock, ArrowLeft, Code, FileText, Trash2, X } from 'lucide-react';
-import { fetchArticleById, updateArticle, deleteArticle, type ArticleResponse } from '@/lib/api/services/article-services';
+import { Heart, Eye, MessageCircle, Share2, Edit, Clock, ArrowLeft, Code, FileText, Trash2 } from 'lucide-react';
+import { fetchArticleById, deleteArticle, type ArticleResponse } from '@/lib/api/services/article-services';
 import { useRouter } from 'next/navigation';
-import TipTapEditor from '@/components/editor/TipTapEditor';
 import TableOfContents from '@/components/editor/TableOfContents';
-import { fetchCategories } from '@/lib/api/services/project-services';
 import { searchCSKnowledge, searchCSKnowledgeByMember } from '@/lib/api/services/elastic-services';
 import { 
   fetchViewCount,
@@ -289,71 +287,6 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
     }
   };
 
-  // 아티클 수정
-  const [isEditing, setIsEditing] = useState(false);
-  const [articleEditTitle, setArticleEditTitle] = useState('');
-  const [articleEditContent, setArticleEditContent] = useState('');
-  const [articleEditCategory, setArticleEditCategory] = useState('');
-  
-  // 카테고리 API 데이터
-  const [categories, setCategories] = useState<Array<{ id: number; name: string; description: string }>>([]);
-  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
-
-  const handleEditArticle = () => {
-    if (!post) return;
-    setArticleEditTitle(post.title);
-    setArticleEditContent(post.content);
-    setArticleEditCategory(post.category);
-    setIsEditing(true);
-  };
-
-  const handleSaveEdit = async () => {
-    if (!articleId || !articleEditTitle.trim() || !articleEditContent.trim() || !articleEditCategory.trim()) {
-      alert('모든 필드를 입력해주세요.');
-      return;
-    }
-
-    try {
-      await updateArticle(articleId, {
-        title: articleEditTitle,
-        content: articleEditContent,
-        category: articleEditCategory,
-      });
-      
-      alert('아티클이 성공적으로 수정되었습니다.');
-      setIsEditing(false);
-      // 페이지 새로고침하여 업데이트된 내용 반영
-      window.location.reload();
-    } catch (error) {
-      console.error('Error updating article:', error);
-      alert(error instanceof Error ? error.message : '아티클 수정에 실패했습니다.');
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setIsEditing(false);
-    setArticleEditTitle('');
-    setArticleEditContent('');
-    setArticleEditCategory('');
-  };
-
-  // 카테고리 로드
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        setIsLoadingCategories(true);
-        const response = await fetchCategories();
-        setCategories(response.categories);
-      } catch (error) {
-        console.error('Failed to load categories:', error);
-        setCategories([]);
-      } finally {
-        setIsLoadingCategories(false);
-      }
-    };
-    loadCategories();
-  }, []);
-
   // 댓글 작성
   const handleCreateComment = async () => {
     if (!commentContent.trim() || !articleId) return;
@@ -621,9 +554,52 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
   const tableOfContents = extractHeadings(displayPost.content);
 
+  // Mock comments data for default display
+  const mockComments: Comment[] = [
+    {
+      id: 1,
+      username: 'SecurityGenius',
+      content: '정말 잘 정리된 자료네요. 버퍼 오버플로우 부분이 특히 도움이 됐습니다!',
+      createdAt: new Date(Date.now() - 86400000).toISOString(), // 1일 전
+      updatedAt: new Date(Date.now() - 86400000).toISOString(),
+      replyCount: 2,
+      postType: 'ARTICLE',
+      postId: Number(articleId),
+      parentId: 0,
+      depth: 0,
+    },
+    {
+      id: 2,
+      username: 'CodeMaster',
+      content: '스택 오버플로우의 실제 사례를 더 보고 싶은데 다음 글에서 다룰 예정이신가요?',
+      createdAt: new Date(Date.now() - 172800000).toISOString(), // 2일 전
+      updatedAt: new Date(Date.now() - 172800000).toISOString(),
+      replyCount: 1,
+      postType: 'ARTICLE',
+      postId: Number(articleId),
+      parentId: 0,
+      depth: 0,
+    },
+    {
+      id: 3,
+      username: 'HackingEnthusiast',
+      content: '메모리 구조 부분이 복잡하지만 이해하기 쉽게 설명해주셨습니다. 감사합니다! 🎯',
+      createdAt: new Date(Date.now() - 259200000).toISOString(), // 3일 전
+      updatedAt: new Date(Date.now() - 259200000).toISOString(),
+      replyCount: 0,
+      postType: 'ARTICLE',
+      postId: Number(articleId),
+      parentId: 0,
+      depth: 0,
+    },
+  ];
+
+  const displayedComments = comments.length === 0 ? mockComments : comments;
+  const displayedCommentCount = displayedComments.length;
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[40vh] bg-gray-50">
+      <div className="flex items-center justify-center min-h-[40vh]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
           <p className="text-gray-600 text-sm">로딩 중...</p>
@@ -847,7 +823,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       {/* Main Content with Sidebar */}
       <div className="container py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -978,7 +954,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                 
                 <div className="flex items-center gap-3">
                   <button 
-                    onClick={handleEditArticle}
+                    onClick={() => router.push(`/articles/${articleId}/edit`)}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-white text-primary-600 rounded-lg hover:bg-primary-50 transition-colors font-medium text-sm border border-primary-500 cursor-pointer"
                   >
                     <Edit className="w-4 h-4" />
@@ -1034,190 +1010,74 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                 </button>
               </section>
 
-              {/* 수정 모달 */}
-              {isEditing && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                  <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-                    <h2 className="text-2xl font-bold mb-4">아티클 수정</h2>
-                    
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          제목 <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={articleEditTitle}
-                          onChange={(e) => setArticleEditTitle(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="제목을 입력하세요"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          카테고리 <span className="text-red-500">*</span>
-                        </label>
-                        {isLoadingCategories ? (
-                          <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50">
-                            <span className="text-gray-500">카테고리 로딩 중...</span>
-                          </div>
-                        ) : (
-                          <>
-                            <div className={`border rounded-lg p-3 min-h-[120px] max-h-[200px] overflow-y-auto ${
-                              !articleEditCategory ? 'border-red-300' : 'border-gray-300'
-                            }`}>
-                              {categories.length === 0 ? (
-                                <p className="text-gray-500 text-sm">카테고리가 없습니다</p>
-                              ) : (
-                                <div className="space-y-2">
-                                  {categories.map((cat) => {
-                                    const isSelected = articleEditCategory === cat.name;
-                                    return (
-                                      <label
-                                        key={cat.id}
-                                        className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
-                                      >
-                                        <input
-                                          type="radio"
-                                          name="editCategory"
-                                          checked={isSelected}
-                                          onChange={() => {
-                                            setArticleEditCategory(cat.name);
-                                          }}
-                                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                        />
-                                        <div className="flex-1">
-                                          <span className="text-sm font-medium text-gray-900">{cat.name}</span>
-                                          {cat.description && (
-                                            <p className="text-xs text-gray-500 mt-0.5">{cat.description}</p>
-                                          )}
-                                        </div>
-                                      </label>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                            </div>
-                            {/* Selected Category Display */}
-                            {articleEditCategory && (
-                              <div className="mt-3">
-                                <p className="text-xs text-gray-600 mb-2">선택된 카테고리:</p>
-                                <div className="flex flex-wrap gap-2">
-                                  <span className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
-                                    {articleEditCategory}
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setArticleEditCategory('');
-                                      }}
-                                      className="hover:text-blue-900"
-                                    >
-                                      <X className="w-4 h-4" />
-                                    </button>
-                                  </span>
-                                </div>
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          내용 <span className="text-red-500">*</span>
-                        </label>
-                        <div className="border border-gray-300 rounded-lg overflow-hidden">
-                          <TipTapEditor
-                            content={articleEditContent}
-                            onChange={(html) => setArticleEditContent(html)}
-                            placeholder="내용을 입력하세요"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end gap-3 mt-6">
-                      <button
-                        onClick={handleCancelEdit}
-                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
-                      >
-                        취소
-                      </button>
-                      <button
-                        onClick={handleSaveEdit}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                      >
-                        저장
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* Comments Section */}
               <div className="mb-8">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
-                    <MessageCircle className="w-6 h-6" />
-                    댓글 {comments.length > 0 ? `(${comments.length}${hasNextComments ? '+' : ''})` : ''}
-                  </h3>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setCommentSortDirection('DESC')}
-                      className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                        commentSortDirection === 'DESC'
-                          ? 'bg-blue-100 text-blue-700 font-medium'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      최신순
-                    </button>
-                    <button
-                      onClick={() => setCommentSortDirection('ASC')}
-                      className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                        commentSortDirection === 'ASC'
-                          ? 'bg-blue-100 text-blue-700 font-medium'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      오래된순
-                    </button>
-                  </div>
-                </div>
-
-                {/* 댓글 입력 */}
+              {/* 댓글 입력 */}
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 mb-6">
                   <textarea
                     value={commentContent}
                     onChange={(e) => setCommentContent(e.target.value)}
                     placeholder="댓글을 입력하세요..."
-                    className="w-full min-h-[100px] p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    className="w-full min-h-[100px] p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-300 resize-none"
                   />
                   <div className="flex justify-end mt-3">
                     <button
                       onClick={handleCreateComment}
                       disabled={!commentContent.trim() || isLoadingComments}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       댓글 작성
                     </button>
                   </div>
                 </div>
 
+                <div className="flex items-center justify-between mb-6"> 
+                  <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                    <span className="relative inline-flex items-center justify-center mr-2">
+                      <MessageCircle className="w-6 h-6 text-primary-700" />
+                      <span className="absolute top-0 right-0 translate-x-1/3 -translate-y-1/3 min-w-[22px] px-1 text-[10px] leading-5 text-white bg-primary-600 rounded-full border border-white shadow-sm text-center">
+                        {displayedCommentCount}
+                        {hasNextComments ? '+' : ''}
+                      </span>
+                    </span>
+                    <span>댓글</span>
+                  </h3>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setCommentSortDirection('DESC')}
+                      className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                        commentSortDirection === 'DESC'
+                          ? 'bg-primary-50 text-primary-700 font-semibold border-primary-200 shadow-sm'
+                          : 'bg-white text-gray-700 border-gray-200 hover:border-primary-200 hover:text-primary-700'
+                      }`}
+                    >
+                      최신순
+                    </button>
+                    <button
+                      onClick={() => setCommentSortDirection('ASC')}
+                      className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                        commentSortDirection === 'ASC'
+                          ? 'bg-primary-50 text-primary-700 font-semibold border-primary-200 shadow-sm'
+                          : 'bg-white text-gray-700 border-gray-200 hover:border-primary-200 hover:text-primary-700'
+                      }`}
+                    >
+                      오래된순
+                    </button>
+                  </div>
+                </div>
                 {/* 댓글 목록 */}
                 {isLoadingComments ? (
                   <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                     <p className="text-gray-500 mt-2 text-sm">댓글을 불러오는 중...</p>
                   </div>
-                ) : comments.length === 0 ? (
+                ) : displayedComments.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     아직 댓글이 없습니다. 첫 댓글을 작성해보세요!
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {comments.map((comment) => (
+                    {displayedComments.map((comment) => (
                       <div key={comment.id} className="bg-white rounded-lg p-4 border border-gray-200">
                         <div className="flex items-start gap-3">
                           <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
@@ -1291,7 +1151,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                             {comment.replyCount > 0 && (
                               <button
                                 onClick={() => loadReplies(comment.id)}
-                                className="mt-2 text-xs text-blue-600 hover:text-blue-700"
+                                className="mt-2 text-xs text-primary-600 hover:text-primary-700"
                               >
                                 {expandedReplies.has(comment.id) ? '답글 숨기기' : `답글 ${comment.replyCount}개 보기`}
                               </button>
@@ -1307,7 +1167,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                                 <div className="flex gap-2">
                                   <button
                                     onClick={() => handleCreateReply(comment.id)}
-                                    className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
+                                    className="px-3 py-1 bg-primary-600 text-white rounded text-xs hover:bg-primary-700"
                                   >
                                     작성
                                   </button>
@@ -1325,7 +1185,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                             ) : (
                               <button
                                 onClick={() => setReplyingToId(comment.id)}
-                                className="mt-2 text-xs text-gray-500 hover:text-gray-700"
+                                className="mt-2 text-xs text-primary-600 hover:text-primary-700"
                               >
                                 답글 달기
                               </button>
@@ -1361,7 +1221,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                         <button
                           onClick={loadMoreComments}
                           disabled={isLoadingMoreComments}
-                          className="px-4 py-2 text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                          className="px-4 py-2 text-sm text-primary-600 hover:text-primary-700 disabled:opacity-50"
                         >
                           {isLoadingMoreComments ? '로딩 중...' : '더 보기'}
                         </button>
@@ -1414,7 +1274,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
               {/* More from Author */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <Code className="w-5 h-5 text-secondary-500" />
+                  <Code className="w-5 h-5 text-purple-600" />
                   저자의 다른 글
                 </h3>
                 <div className="space-y-3">
@@ -1433,12 +1293,12 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                         <Link
                           key={article.id}
                           href={`/articles/${article.slug}`}
-                          className="block group p-4 rounded-xl border border-gray-200 hover:border-secondary-300 hover:shadow-md transition-all duration-200 cursor-pointer bg-white hover:bg-secondary-50/30"
+                          className="block group p-4 rounded-xl border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all duration-200 cursor-pointer bg-white hover:bg-purple-50/30"
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-secondary-100 text-secondary-700 whitespace-nowrap">
+                                <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-purple-100 text-purple-700 whitespace-nowrap">
                                   {article.category}
                                 </span>
                                 {article.viewCount !== undefined && (
@@ -1454,7 +1314,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                                   </div>
                                 )}
                               </div>
-                              <h4 className="text-sm font-bold text-gray-900 group-hover:text-secondary-600 transition-colors mb-1.5 line-clamp-2 leading-snug">
+                              <h4 className="text-sm font-bold text-gray-900 group-hover:text-purple-600 transition-colors mb-1.5 line-clamp-2 leading-snug">
                                 {article.title}
                               </h4>
                               <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -1468,7 +1328,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                               </div>
                             </div>
                             <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <svg className="w-5 h-5 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                               </svg>
                             </div>
