@@ -34,6 +34,7 @@ export interface CSKnowledgeItem {
   likeCount: number;
   viewCount: number;
   writer: CSKnowledgeWriter;
+  thumbnailPath?: string;
 }
 
 export interface CSKnowledgeSearchResponse {

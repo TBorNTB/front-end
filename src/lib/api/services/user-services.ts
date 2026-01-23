@@ -549,22 +549,50 @@ export const fetchComments = async (
   const endpoint = USER_ENDPOINTS.COMMENT.GET_LIST.replace(':postId', String(postId));
   const url = getUserApiUrl(`${endpoint}?postType=${postType}&cursorId=${cursorId}&size=${size}&direction=${direction}`);
 
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'accept': 'application/json',
+      },
+    });
 
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'accept': 'application/json',
-    },
-  });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[fetchComments] Error fetching comments:`, {
+        postId,
+        postType,
+        cursorId,
+        size,
+        direction,
+        status: response.status,
+        error: errorText,
+        url
+      });
+      
+      // Return empty response instead of throwing to prevent UI crashes
+      return {
+        content: [],
+        nextCursorId: 0,
+        hasNext: false
+      };
+    }
 
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to fetch comments: ${response.status} - ${errorText}`);
+    return response.json();
+  } catch (error) {
+    console.error(`[fetchComments] Network or parsing error:`, {
+      postId,
+      postType,
+      error: error instanceof Error ? error.message : String(error)
+    });
+    
+    // Return empty response on any error
+    return {
+      content: [],
+      nextCursorId: 0,
+      hasNext: false
+    };
   }
-
-
-  return response.json();
 };
 
 

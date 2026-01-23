@@ -416,30 +416,22 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
         setIsLoading(true);
         setError(null);
         
-        // 아티클 상세 정보와 통계 정보를 병렬로 가져오기
-        // 조회수 증가 API 호출 (페이지 진입 시 자동으로 조회수 증가)
-        const [articleData, viewCountData, likeCountData, likeStatusData] = await Promise.all([
+        // 모든 초기 데이터를 병렬로 가져오기 (최적화)
+        const [articleData, viewCountData, likeCountData, likeStatusData, popularArticlesResponse] = await Promise.all([
           fetchArticleById(articleId),
-          incrementViewCount(articleId, 'ARTICLE').catch(() => ({ viewCount: 0 })), // 조회수 증가 및 반환
+          incrementViewCount(articleId, 'ARTICLE').catch(() => ({ viewCount: 0 })),
           fetchLikeCount(articleId, 'ARTICLE').catch(() => ({ likedCount: 0 })),
           fetchLikeStatus(articleId, 'ARTICLE').catch(() => ({ likeCount: 0, status: 'NOT_LIKED' as const })),
+          searchCSKnowledge({ sortType: 'POPULAR', page: 0, size: 3 }).catch(() => ({ content: [], page: 0, size: 3, totalElements: 0, totalPages: 0 })),
         ]);
         
         if (articleData) {
-          // 현재 아티클의 writer 정보를 가져오기 위해 검색 API 사용 (realname 확인용)
-          // 인기 아티클과 현재 아티클 정보를 병렬로 가져오기
-          const [popularArticlesResponse, currentArticleSearchResponse] = await Promise.all([
-            searchCSKnowledge({ sortType: 'POPULAR', page: 0, size: 3 }).catch(() => ({ content: [], page: 0, size: 3, totalElements: 0, totalPages: 0 })),
-            // 현재 아티클 ID로 검색하여 writer 정보 가져오기 (realname 확인용)
-            searchCSKnowledge({ page: 0, size: 100 }).catch(() => ({ content: [], page: 0, size: 100, totalElements: 0, totalPages: 0 })),
-          ]);
-
-          // 현재 아티클의 writer 정보 찾기
-          const currentArticleItem = currentArticleSearchResponse.content.find((item) => item.id === articleData.id);
-          const authorName = currentArticleItem?.writer?.realname || currentArticleItem?.writer?.nickname || articleData.nickname;
-
-          // 저자의 다른 글 조회 (realname 우선, 없으면 nickname 사용)
-          const authorArticlesResponse = await searchCSKnowledgeByMember({ name: authorName, page: 0, size: 3 }).catch(() => ({ content: [], page: 0, size: 3, totalElements: 0, totalPages: 0 }));
+          // 저자의 다른 글 조회 (nickname 기반으로 직접 조회 - 추가 API 호출 제거)
+          const authorArticlesResponse = await searchCSKnowledgeByMember({ 
+            name: articleData.nickname, 
+            page: 0, 
+            size: 4 // 현재 글 제외하고 3개 필요하므로 4개 가져옴
+          }).catch(() => ({ content: [], page: 0, size: 4, totalElements: 0, totalPages: 0 }));
 
           // 인기 아티클 매핑 (현재 아티클 제외)
           const popularArticles = popularArticlesResponse.content
@@ -498,12 +490,12 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
           setPost(mappedPost);
           setIsLiked(likeStatusData.status === 'LIKED');
-          // 댓글 로드
-          await loadComments(articleId, 'DESC', true);
+          
+          // 댓글은 백그라운드에서 로드 (UI 블로킹하지 않음)
+          loadComments(articleId, 'DESC', true);
         } else {
-          // API에서 데이터를 찾지 못한 경우 기본값 사용
           console.log('Article not found, using default data');
-          setPost(null); // 기본값은 displayPost에서 처리
+          setPost(null);
         }
       } catch (err) {
         console.error('Error fetching article:', err);

@@ -218,7 +218,7 @@ const AvatarStack = ({
           >
             <ImageWithFallback
               src={creator.avatar}
-              fallbackSrc="/images/placeholder/default-avatar.svg"
+              type="avatar"
               alt={creator.nickname}
               width={28}
               height={28}
@@ -252,7 +252,7 @@ const AvatarStack = ({
                   >
                     <ImageWithFallback
                       src={contributor.avatar}
-                      fallbackSrc="/images/placeholder/default-avatar.svg"
+                      type="avatar"
                       alt={contributor.nickname}
                       width={24}
                       height={24}
@@ -654,7 +654,7 @@ export default function ProjectsContent() {
                       <div className={`relative ${viewMode === 'list' ? 'w-56 flex-shrink-0 overflow-hidden' : 'overflow-hidden'}`}>
                         <ImageWithFallback
                           src={project.image}
-                          fallbackSrc="/images/placeholder/project.png"
+                          type="project"
                           alt={project.title}
                           width={viewMode === 'list' ? 224 : 400}
                           height={viewMode === 'list' ? 224 : 240}

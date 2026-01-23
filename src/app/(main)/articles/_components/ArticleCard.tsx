@@ -50,15 +50,15 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
         }`}
       >
         {/* 썸네일 */}
-        <div className={viewMode === 'list' ? 'w-64 flex-shrink-0 relative' : 'relative w-full h-48'}>
+        <div className={viewMode === 'list' ? 'w-64 h-40 flex-shrink-0' : 'w-full h-48'}>
           <ImageWithFallback
             src={article.image}
-            fallbackSrc="/images/placeholder/article.png"
+            type="article"
             alt={article.title}
             fill={viewMode !== 'list'}
             width={viewMode === 'list' ? 256 : undefined}
             height={viewMode === 'list' ? 160 : undefined}
-            className={`object-cover ${viewMode === 'list' ? 'h-full w-full' : ''}`}
+            className={viewMode === 'list' ? 'w-full h-full' : ''}
           />
         </div>
 
@@ -122,7 +122,9 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
                   {article.author.avatarUrl ? (
                     <ImageWithFallback
                       src={article.author.avatarUrl}
-                      fallbackSrc="/images/placeholder/default-avatar.svg"
+                      type="avatar"
+                      width={24}
+                      height={24}
                       className="w-full h-full rounded-full object-cover"
                     />
                   ) : (

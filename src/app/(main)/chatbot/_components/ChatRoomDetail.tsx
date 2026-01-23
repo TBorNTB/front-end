@@ -728,7 +728,7 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
       <div
         ref={chatContainerRef}
         onScroll={handleChatScroll}
-        className="flex-1 overflow-y-auto px-4 py-5 space-y-4 bg-gradient-to-b from-gray-50 to-white chat-scrollbar"
+        className="flex-1 overflow-y-auto px-4 py-5 space-y-4 bg-gradient-to-b from-secondary-700 to-white chat-scrollbar"
         style={{ scrollbarWidth: "thin" }}
       >
         {hasMoreHistory && (

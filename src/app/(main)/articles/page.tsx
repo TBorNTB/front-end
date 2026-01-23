@@ -356,7 +356,7 @@ function ArticlesContent() {
     likes: item.likeCount || 0,
     comments: 0,
     tags: [],
-    image: '/images/placeholder/article.png',
+    image: item.thumbnailPath || '', // Use thumbnailPath if available, otherwise empty string triggers placeholder
   })) || [];
 
   // 페이지네이션 계산
