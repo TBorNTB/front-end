@@ -25,15 +25,20 @@ export async function POST(request: Request) {
     const data = await backendResponse.json().catch(() => null);
     const response = NextResponse.json(data ?? { message: 'OK' }, { status: backendResponse.status });
 
-    // If the backend sets auth cookies, forward them to the browser.
-    // (Common pattern: accessToken/refreshToken are httpOnly Set-Cookie, not JSON body.)
-    const setCookieHeaders = backendResponse.headers.getSetCookie?.() ?? [];
-    setCookieHeaders.forEach((cookie) => {
-      response.headers.append('Set-Cookie', cookie);
-    });
+    // If we set our own auth cookies from the JSON body, do NOT also forward backend Set-Cookie.
+    // Forwarding Set-Cookie without a normalized Path can create duplicate cookies (e.g. Path=/api/auth)
+    // that survive logout.
+    const willSetAuthCookiesFromBody = Boolean(backendResponse.ok && (data as any)?.accessToken);
+    if (!willSetAuthCookiesFromBody) {
+      // Common pattern: accessToken/refreshToken are httpOnly Set-Cookie, not JSON body.
+      const setCookieHeaders = backendResponse.headers.getSetCookie?.() ?? [];
+      setCookieHeaders.forEach((cookie) => {
+        response.headers.append('Set-Cookie', cookie);
+      });
+    }
 
     // 백엔드가 토큰을 body로 보내줌 → 쿠키로 설정
-    if (backendResponse.ok && (data as any)?.accessToken) {
+    if (willSetAuthCookiesFromBody) {
       const cookieOptions = {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
