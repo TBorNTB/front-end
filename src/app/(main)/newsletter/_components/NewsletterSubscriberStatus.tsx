@@ -30,6 +30,7 @@ export default function NewsletterSubscriberStatus({ className = '' }: Newslette
   const [mode, setMode] = useState<'view' | 'edit' | 'verify'>('view');
   const [editEmailFrequency, setEditEmailFrequency] = useState<EmailFrequency>('DAILY');
   const [editSelectedCategories, setEditSelectedCategories] = useState<string[]>([]);
+  const [editChasingPopularity, setEditChasingPopularity] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
 
   const [actionLoading, setActionLoading] = useState(false);
@@ -75,6 +76,7 @@ export default function NewsletterSubscriberStatus({ className = '' }: Newslette
       setData(response);
       setEditEmailFrequency((response.emailFrequency ?? 'DAILY') as EmailFrequency);
       setEditSelectedCategories(Array.from(new Set(response.selectedCategories ?? [])));
+      setEditChasingPopularity(Boolean(response.chasingPopularity));
       setVerificationCode('');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '구독 상태 조회 중 오류가 발생했습니다.';
@@ -125,7 +127,12 @@ export default function NewsletterSubscriberStatus({ className = '' }: Newslette
     setActionSuccess(null);
 
     try {
-      const res = await newsletterService.preferencesSendCode({ email: data.email });
+      const res = await newsletterService.preferencesSendCode({
+        email: data.email,
+        emailFrequency: editEmailFrequency,
+        selectedCategories: editSelectedCategories,
+        chasingPopularity: editChasingPopularity,
+      });
       setActionSuccess(res.message || '선호도 수정용 인증 코드가 이메일로 전송되었습니다.');
       setMode('verify');
     } catch (err: unknown) {
@@ -161,8 +168,6 @@ export default function NewsletterSubscriberStatus({ className = '' }: Newslette
       const res = await newsletterService.preferencesVerify({
         email: data.email,
         code: verificationCode,
-        emailFrequency: editEmailFrequency,
-        selectedCategories: editSelectedCategories,
       });
 
       setActionSuccess(res.message || '선호도 수정이 완료되었습니다.');
@@ -172,6 +177,7 @@ export default function NewsletterSubscriberStatus({ className = '' }: Newslette
       setData(updated);
       setEditEmailFrequency((updated.emailFrequency ?? 'DAILY') as EmailFrequency);
       setEditSelectedCategories(Array.from(new Set(updated.selectedCategories ?? [])));
+      setEditChasingPopularity(Boolean(updated.chasingPopularity));
       setMode('view');
       setVerificationCode('');
     } catch (err: unknown) {
@@ -313,6 +319,13 @@ export default function NewsletterSubscriberStatus({ className = '' }: Newslette
                   </p>
                 </div>
 
+                <div className="rounded-md bg-white border border-gray-200 p-3">
+                  <p className="text-xs font-semibold text-gray-500">인기 콘텐츠 추적</p>
+                  <p className="text-sm font-medium text-gray-900 mt-1">
+                    {data.registered ? (data.chasingPopularity ? 'ON' : 'OFF') : '-'}
+                  </p>
+                </div>
+
                 <div className="rounded-md bg-white border border-gray-200 p-3 md:col-span-2">
                   <p className="text-xs font-semibold text-gray-500">선택 카테고리</p>
                   {categories.length === 0 ? (
@@ -363,6 +376,7 @@ export default function NewsletterSubscriberStatus({ className = '' }: Newslette
                         setVerificationCode('');
                         setEditEmailFrequency((data.emailFrequency ?? 'DAILY') as EmailFrequency);
                         setEditSelectedCategories(Array.from(new Set(data.selectedCategories ?? [])));
+                        setEditChasingPopularity(Boolean(data.chasingPopularity));
                       }}
                     >
                       <ArrowLeft className="w-4 h-4" />
@@ -433,6 +447,22 @@ export default function NewsletterSubscriberStatus({ className = '' }: Newslette
                     {editSelectedCategories.length === 0 && (
                       <p className="text-xs text-red-500 mt-2">최소 하나 이상의 카테고리를 선택해주세요.</p>
                     )}
+                  </div>
+
+                  {/* Chasing Popularity */}
+                  <div className="mb-4">
+                    <p className="text-sm font-medium text-gray-700 mb-2">인기 콘텐츠 추적</p>
+                    <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:border-primary-300 hover:bg-primary-50/50 transition-all">
+                      <Checkbox
+                        checked={editChasingPopularity}
+                        onCheckedChange={(checked) => setEditChasingPopularity(checked === true)}
+                        disabled={actionLoading}
+                      />
+                      <div>
+                        <p className="text-sm text-gray-800 font-medium">인기 콘텐츠를 우선 추천받기</p>
+                        <p className="text-xs text-gray-500">트렌딩/인기 주제를 우선적으로 받아볼 수 있어요</p>
+                      </div>
+                    </label>
                   </div>
 
                   {mode === 'edit' && (

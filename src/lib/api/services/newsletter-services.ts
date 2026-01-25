@@ -26,13 +26,14 @@ export interface CancelConfirmRequest {
 
 export interface PreferencesSendCodeRequest {
   email: string;
+  emailFrequency: EmailFrequency;
+  selectedCategories: string[];
+  chasingPopularity: boolean;
 }
 
 export interface PreferencesVerifyRequest {
   email: string;
   code: string;
-  emailFrequency: EmailFrequency;
-  selectedCategories: string[];
 }
 
 // API 응답 타입 정의
@@ -47,6 +48,7 @@ export interface NewsletterSubscriberStatusResponse {
   active: boolean;
   emailFrequency: EmailFrequency | null;
   selectedCategories: string[];
+  chasingPopularity: boolean;
   message: string;
 }
 
@@ -379,6 +381,7 @@ export const newsletterService = {
         selectedCategories: Array.isArray(responseData.selectedCategories)
           ? responseData.selectedCategories
           : [],
+        chasingPopularity: Boolean(responseData.chasingPopularity),
         message: responseData.message ?? '',
       };
     } catch (error: any) {
