@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import TitleBanner from '@/components/layout/TitleBanner';
 import { Tag, X, AlertCircle } from 'lucide-react';
+import { categoryService, type CategoryItem } from '@/lib/api/services/category-services';
+import { questionService } from '@/lib/api/services/question-services';
 
 interface TechTag {
   id: string;
@@ -11,29 +13,63 @@ interface TechTag {
   color: string;
 }
 
-const availableTechTags: TechTag[] = [
-  { id: '1', name: 'Web Hacking', color: 'bg-red-100 text-red-700' },
-  { id: '2', name: 'Reversing', color: 'bg-blue-100 text-blue-700' },
-  { id: '3', name: 'System Hacking', color: 'bg-green-100 text-green-700' },
-  { id: '4', name: 'Forensics', color: 'bg-purple-100 text-purple-700' },
-  { id: '5', name: 'Network Security', color: 'bg-yellow-100 text-yellow-700' },
-  { id: '6', name: 'Cryptography', color: 'bg-pink-100 text-pink-700' },
-  { id: '7', name: 'IoT Security', color: 'bg-indigo-100 text-indigo-700' },
-  { id: '8', name: 'CTF', color: 'bg-orange-100 text-orange-700' },
-  { id: '9', name: 'Malware Analysis', color: 'bg-red-100 text-red-800' },
-  { id: '10', name: 'Cloud Security', color: 'bg-cyan-100 text-cyan-700' },
-];
+const TAG_COLOR_PALETTE = [
+  'bg-red-100 text-red-700',
+  'bg-blue-100 text-blue-700',
+  'bg-green-100 text-green-700',
+  'bg-purple-100 text-purple-700',
+  'bg-yellow-100 text-yellow-700',
+  'bg-pink-100 text-pink-700',
+  'bg-indigo-100 text-indigo-700',
+  'bg-orange-100 text-orange-700',
+] as const;
+
+const colorForCategory = (name: string): string => {
+  const hash = Array.from(name).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  return TAG_COLOR_PALETTE[hash % TAG_COLOR_PALETTE.length];
+};
 
 export default function CreateQuestionPage() {
   const router = useRouter();
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [content, setContent] = useState('');
   const [selectedTags, setSelectedTags] = useState<TechTag[]>([]);
   const [showTagSelector, setShowTagSelector] = useState(false);
   const [errors, setErrors] = useState<{ title?: string; content?: string; tags?: string }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+
+  const availableTechTags: TechTag[] = useMemo(() => {
+    return (categories ?? []).map((c) => ({
+      id: c.name,
+      name: c.name,
+      color: colorForCategory(c.name),
+    }));
+  }, [categories]);
 
   // Current user role (should come from auth context)
   const currentUserRole: 'guest' | 'member' | 'admin' = 'member' as 'guest' | 'member' | 'admin';
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await categoryService.getCategories();
+        if (cancelled) return;
+        setCategories(res.categories ?? []);
+      } catch (e) {
+        console.error('Failed to load categories:', e);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Only members can create questions
   if (currentUserRole === 'guest') {
@@ -101,17 +137,26 @@ export default function CreateQuestionPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
-    if (!validate()) {
-      return;
+  const handleSubmit = async () => {
+    if (!validate() || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const created = await questionService.createQuestion({
+        title: title.trim(),
+        categories: selectedTags.map((t) => t.name),
+        description: (description.trim() || title.trim()).slice(0, 200),
+        content: content.trim(),
+      });
+
+      router.push(`/community/qna/${created.id}`);
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : '질문 등록에 실패했습니다.');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // Here you would submit to your API
-    console.log('Submitting question:', { title, content, selectedTags });
-
-    // Redirect to Q&A page
-    alert('질문이 등록되었습니다!');
-    router.push('/community?tab=qna');
   };
 
   return (
@@ -138,6 +183,19 @@ export default function CreateQuestionPage() {
                 </ul>
               </div>
             </div>
+          </div>
+
+          {/* Description */}
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-900 mb-2">설명</label>
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="질문 요약(선택)"
+              className="w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 border-gray-300 focus:ring-primary-500"
+            />
+            <p className="mt-1 text-xs text-gray-500">비워두면 제목을 기반으로 자동 생성됩니다.</p>
           </div>
 
           {/* Title */}
@@ -226,6 +284,9 @@ export default function CreateQuestionPage() {
                     );
                   })}
                 </div>
+                {availableTechTags.length === 0 && (
+                  <p className="mt-2 text-sm text-gray-500">카테고리를 불러오는 중이거나, 카테고리가 없습니다.</p>
+                )}
               </div>
             )}
 
@@ -270,11 +331,14 @@ export default function CreateQuestionPage() {
             </button>
             <button
               onClick={handleSubmit}
-              className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
+              disabled={isSubmitting}
+              className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium disabled:opacity-50"
             >
-              질문 등록
+              {isSubmitting ? '등록 중...' : '질문 등록'}
             </button>
           </div>
+
+          {submitError && <p className="mt-4 text-sm text-red-600">{submitError}</p>}
         </div>
       </main>
     </div>
