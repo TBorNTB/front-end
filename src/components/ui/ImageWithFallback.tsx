@@ -137,7 +137,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
         )}
         onError={handleError}
         onLoad={handleLoad}
-        unoptimized={imgSrc.endsWith('.svg')}
+        unoptimized
         fill={shouldUseFill}
         {...imageProps}
       />
