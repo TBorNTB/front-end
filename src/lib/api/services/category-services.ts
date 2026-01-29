@@ -11,6 +11,7 @@ export interface CategoryItem {
   id: number;
   name: string;
   description: string;
+  content?: string;
 }
 
 export interface CategoryResponse {
@@ -20,12 +21,14 @@ export interface CategoryResponse {
 export interface CreateCategoryRequest {
   name: string;
   description: string;
+  content: string;
 }
 
 export interface UpdateCategoryRequest {
   prevName: string;
   nextName: string;
   description: string;
+  content: string;
 }
 
 export interface DeleteCategoryRequest {
@@ -36,6 +39,8 @@ export interface CategoryMutationResponse {
   id: number;
   name: string;
   message: string;
+  description?: string;
+  content?: string;
 }
 
 /**

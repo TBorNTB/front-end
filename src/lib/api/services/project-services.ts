@@ -143,6 +143,7 @@ export interface Category {
   id: number;
   name: string;
   description: string;
+  content?: string;
 }
 
 export interface CategoryListResponse {
