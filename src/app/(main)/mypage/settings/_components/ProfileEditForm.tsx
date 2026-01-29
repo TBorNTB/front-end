@@ -17,7 +17,7 @@ import {
   AlertCircle,
   CheckCircle
 } from 'lucide-react';
-import { profileService, s3Service, UserResponse } from '@/lib/api/services/user-services';
+import { profileService, UserResponse } from '@/lib/api/services/user-services';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { validateImageFile } from '@/lib/form-utils';
 import { Upload, X as XIcon } from 'lucide-react';
@@ -144,14 +144,17 @@ export default function ProfileEditForm() {
     setError(null);
 
     try {
-      const uploadedUrl = await s3Service.uploadFile(selectedFile);
+      // 프로필 이미지 직접 업로드 (백엔드가 프로필도 함께 업데이트)
+      const updatedProfile = await profileService.uploadProfileImage(selectedFile);
+      setProfile(updatedProfile);
       setFormData(prev => ({
         ...prev,
-        profileImageUrl: uploadedUrl,
+        profileImageUrl: updatedProfile.profileImageUrl || '',
       }));
       setSelectedFile(null);
       // 이미지 미리보기는 업로드된 URL로 업데이트
-      setImagePreview(uploadedUrl);
+      setImagePreview(updatedProfile.profileImageUrl || '');
+      toast.success('프로필 이미지가 업로드되었습니다!', { duration: 2000 });
     } catch (err: any) {
       console.error('Failed to upload image:', err);
       setError(err.message || '이미지 업로드에 실패했습니다.');
@@ -169,11 +172,12 @@ export default function ProfileEditForm() {
     try {
       // 파일이 선택되어 있고 아직 업로드되지 않은 경우 먼저 업로드
       let finalProfileImageUrl = formData.profileImageUrl;
-      
+
       if (selectedFile && !isUploading) {
         try {
           setIsUploading(true);
-          finalProfileImageUrl = await s3Service.uploadFile(selectedFile);
+          const updatedProfile = await profileService.uploadProfileImage(selectedFile);
+          finalProfileImageUrl = updatedProfile.profileImageUrl || '';
           setFormData(prev => ({
             ...prev,
             profileImageUrl: finalProfileImageUrl,
@@ -190,7 +194,7 @@ export default function ProfileEditForm() {
         }
       }
 
-      // 빈 값 정리 및 필터링
+      // 빈 값 정리 및 필터링 (profileImageUrl은 이미 업로드로 처리됨)
       const cleanedData: Partial<ProfileEditFormData> = {
         email: formData.email.trim() || undefined,
         realName: formData.realName.trim() || undefined,
@@ -198,7 +202,6 @@ export default function ProfileEditForm() {
         githubUrl: formData.githubUrl.trim() || undefined,
         linkedinUrl: formData.linkedinUrl.trim() || undefined,
         blogUrl: formData.blogUrl.trim() || undefined,
-        profileImageUrl: finalProfileImageUrl.trim() || undefined,
       };
 
       // 빈 값 제거 (undefined 필드는 제외)
@@ -210,13 +213,13 @@ export default function ProfileEditForm() {
       const updatedProfile = await profileService.updateProfile(filteredData);
       setProfile(updatedProfile);
       setSuccess(true);
-      
+
       // 성공 토스트 메시지 표시
       toast.success('프로필이 성공적으로 저장되었습니다!', {
         duration: 2000,
         icon: '✅',
       });
-      
+
       // 잠시 후 마이페이지로 리디렉션
       setTimeout(() => {
         router.push('/mypage');

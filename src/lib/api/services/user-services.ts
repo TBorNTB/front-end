@@ -238,6 +238,36 @@ export const profileService = {
     return cleanUserResponse(responseData); // ✅ Shared cleaner
   },
 
+  /**
+   * 프로필 이미지 직접 업로드
+   * POST /user-service/profile/upload (multipart/form-data)
+   * @param file 업로드할 이미지 파일
+   * @returns 업데이트된 사용자 정보 (profileImageUrl 포함)
+   */
+  uploadProfileImage: async (file: File): Promise<UserResponse> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetchWithRefresh('/api/gateway/user-service/profile/upload', {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+      },
+      body: formData,
+    });
+
+    const responseData = await response.json().catch(() => null as never);
+
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('로그인이 필요합니다. 다시 로그인해주세요.');
+      }
+      throw new Error(responseData?.message || `프로필 이미지 업로드 실패 (${response.status})`);
+    }
+
+    return cleanUserResponse(responseData);
+  },
+
   getActivityStats: async (): Promise<{
     totalPostCount: number;
     totalViewCount: number;
