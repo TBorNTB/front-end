@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MessageSquare, CheckCircle, Bookmark, BookmarkCheck, Eye, Calendar } from 'lucide-react';
+import { CheckCircle, Bookmark, BookmarkCheck, Calendar } from 'lucide-react';
 
 interface TechTag {
   id: string;
@@ -26,10 +26,13 @@ interface Question {
   techTags: TechTag[];
   createdAt: string;
   views: number;
-  answers: Answer[];
-  comments: any[];
+  answers?: Answer[];
+  comments?: any[];
+  answerCount?: number;
+  commentCount?: number;
+  status?: string;
   isBookmarked: boolean;
-  hasAcceptedAnswer: boolean;
+  hasAcceptedAnswer?: boolean;
 }
 
 interface QuestionCardProps {
@@ -63,38 +66,41 @@ export default function QuestionCard({ question, onBookmark, viewMode }: Questio
     return null;
   };
 
+  const answersCount = question.answerCount ?? question.answers?.length ?? 0;
+  const hasAccepted = question.hasAcceptedAnswer ?? question.status === 'ACCEPTED';
+
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between gap-4">
         {/* Left: Status Indicators */}
         <div className="flex flex-col items-center gap-2 flex-shrink-0">
           <div className={`flex flex-col items-center justify-center w-16 h-16 rounded-lg ${
-            question.hasAcceptedAnswer 
+            hasAccepted 
               ? 'bg-green-50 border-2 border-green-500' 
-              : question.answers.length > 0 
+              : answersCount > 0 
               ? 'bg-blue-50 border border-blue-300' 
               : 'bg-gray-50 border border-gray-300'
           }`}>
             <span className={`text-lg font-bold ${
-              question.hasAcceptedAnswer 
+              hasAccepted 
                 ? 'text-green-700' 
-                : question.answers.length > 0 
+                : answersCount > 0 
                 ? 'text-blue-700' 
                 : 'text-gray-600'
             }`}>
-              {question.answers.length}
+              {answersCount}
             </span>
             <span className={`text-xs ${
-              question.hasAcceptedAnswer 
+              hasAccepted 
                 ? 'text-green-600' 
-                : question.answers.length > 0 
+                : answersCount > 0 
                 ? 'text-blue-600' 
                 : 'text-gray-500'
             }`}>
               답변
             </span>
           </div>
-          {question.hasAcceptedAnswer && (
+          {hasAccepted && (
             <CheckCircle className="w-5 h-5 text-green-600 fill-green-100" />
           )}
         </div>
@@ -132,14 +138,6 @@ export default function QuestionCard({ question, onBookmark, viewMode }: Questio
             <div className="flex items-center gap-1">
               <Calendar className="w-4 h-4" />
               <span>{formatDate(question.createdAt)}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Eye className="w-4 h-4" />
-              <span>{question.views}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <MessageSquare className="w-4 h-4" />
-              <span>{question.comments.length}</span>
             </div>
           </div>
         </div>

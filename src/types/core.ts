@@ -82,5 +82,9 @@ export enum ProjectStatus {
 export enum PostType {
   PROJECT = 'PROJECT',
   ARTICLES = 'ARTICLES',
+  ARTICLE = 'ARTICLE',
   NEWS = 'NEWS',
+  QNA_QUESTION = 'QNA_QUESTION',
+  QNA_ANSWER = 'QNA_ANSWER',
+  DOCUMENT = 'DOCUMENT',
 }
