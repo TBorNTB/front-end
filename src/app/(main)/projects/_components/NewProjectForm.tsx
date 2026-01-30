@@ -479,7 +479,17 @@ export default function NewProjectForm() {
       };
 
       const response = await createProject(projectData);
-      alert(response.message || '프로젝트가 성공적으로 생성되었습니다!');
+      
+      // Show success message with indexing info
+      alert(
+        '✅ 프로젝트가 성공적으로 생성되었습니다!\n\n' +
+        '💡 프로젝트 목록에 표시되기까지 5-10초 정도 소요될 수 있습니다.\n' +
+        '(Elasticsearch 인덱싱 중...)'
+      );
+      
+      // Wait a moment for Elasticsearch to index the new project
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
       router.push(`/projects/${response.id}`);
     } catch (error: any) {
       alert(error.message || '프로젝트 생성에 실패했습니다.');

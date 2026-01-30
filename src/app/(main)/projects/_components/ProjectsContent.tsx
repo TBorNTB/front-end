@@ -344,7 +344,7 @@ export default function ProjectsContent() {
   const loadProjects = async (page: number = 0) => {
     setIsLoading(true);
     try {
-      // API에서 받은 카테고리 이름을 그대로 사용
+      // Always use Elasticsearch for consistency
       const categoriesParam = selectedCategories.length > 0
         ? selectedCategories.join(',')
         : undefined;
@@ -376,6 +376,7 @@ export default function ProjectsContent() {
           '',
         status: item.projectStatus === 'IN_PROGRESS' ? '진행중' :
                 item.projectStatus === 'COMPLETED' ? '완료' :
+                item.projectStatus === 'PLANNING' ? '계획중' :
                 item.projectStatus === 'ARCHIVED' ? '계획중' : '진행중',
         stars: item.likeCount || 0,
         likeCount: item.likeCount || 0,
@@ -645,6 +646,16 @@ export default function ProjectsContent() {
                 {searchTerm && ` (검색어: "${searchTerm}")`}
                 {currentTopicName && ` (주제: ${currentTopicName})`}
               </p>
+              <button
+                onClick={() => loadProjects(0)}
+                disabled={isLoading}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                새로고침
+              </button>
             </div>
 
             {/* Loading State */}

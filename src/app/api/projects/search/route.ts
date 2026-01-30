@@ -44,6 +44,7 @@ export async function GET(request: NextRequest) {
     const elasticUrl = `${getElasticApiUrl(ELASTIC_ENDPOINTS.ELASTIC.PROJECT_SEARCH)}?${queryParams.toString()}`;
     
     console.log('[/api/projects/search] Elastic URL:', elasticUrl);
+    console.log('[/api/projects/search] Params:', { projectSortType, size, page, projectStatuses: projectStatuses.length, categories: categories.length });
     
     // Forward request to elastic service
     const response = await fetch(elasticUrl, {
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest) {
         'accept': 'application/json',
       },
       credentials: 'include',
-      cache: 'no-store',
+      cache: 'no-store', // Ensure no caching for fresh results
     });
     
     if (!response.ok) {
