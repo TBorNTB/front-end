@@ -32,16 +32,18 @@ export async function GET(request: NextRequest) {
     
     // Sort type: use projectSortType from request, default to LATEST
     const projectSortType = searchParams.get('projectSortType') || 'LATEST';
-    queryParams.append('postSortType', projectSortType);
+    queryParams.append('projectSortType', projectSortType);
     
-    // Size and page: always include
-    const size = searchParams.get('size') || '12';
+    // Size and page: always include (increase default size to show more projects)
+    const size = searchParams.get('size') || '100';
     const page = searchParams.get('page') || '0';
     queryParams.append('size', size);
     queryParams.append('page', page);
     
     // Build URL for elastic service
     const elasticUrl = `${getElasticApiUrl(ELASTIC_ENDPOINTS.ELASTIC.PROJECT_SEARCH)}?${queryParams.toString()}`;
+    
+    console.log('[/api/projects/search] Elastic URL:', elasticUrl);
     
     // Forward request to elastic service
     const response = await fetch(elasticUrl, {
@@ -71,6 +73,13 @@ export async function GET(request: NextRequest) {
     }
     
     const data = await response.json();
+    console.log('[/api/projects/search] Response:', {
+      totalElements: data.totalElements,
+      totalPages: data.totalPages,
+      contentLength: data.content?.length || 0,
+      page: data.page,
+      size: data.size,
+    });
     return NextResponse.json(data, { status: 200 });
   } catch (error) {
     console.error('Error in projects search API route:', error);

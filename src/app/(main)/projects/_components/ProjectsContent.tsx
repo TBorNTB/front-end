@@ -89,7 +89,7 @@ const fetchProjects = async (params: ProjectSearchParams): Promise<ProjectSearch
     
     // Always include sort, size, page
     queryParams.append('projectSortType', params.projectSortType || 'LATEST');
-    queryParams.append('size', (params.size || 12).toString());
+    queryParams.append('size', (params.size || 100).toString());
     queryParams.append('page', (params.page || 0).toString());
 
     const url = `/api/projects/search?${queryParams.toString()}`; // ✅ Use API route
@@ -155,7 +155,7 @@ const fetchSearchSuggestions = async (query: string): Promise<string[]> => {
 // 🎨 UI Helpers
 // ============================================================================
 
-const PAGE_SIZE = 6;
+const PAGE_SIZE = 12;
 
 const statusMap: Record<string, string> = {
   '진행중': 'IN_PROGRESS',
@@ -448,6 +448,22 @@ export default function ProjectsContent() {
     loadProjects(currentPage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategories, selectedStatuses, sortBy, currentPage]);
+
+  // Refetch projects when page regains focus (after creating new project)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && currentPage === 0) {
+        // Page became visible and we're on first page - refetch
+        loadProjects(0);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Handlers
   const handleStatusToggle = (status: string) => {

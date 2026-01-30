@@ -839,7 +839,7 @@ export default function NewProjectForm() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* 닉네임 검색 */}
                   <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <label className="block text-sm font-semibold text-gray-700 items-center gap-2">
                       <AtSign className="w-4 h-4 text-blue-500" />
                       닉네임 검색
                     </label>
@@ -862,7 +862,7 @@ export default function NewProjectForm() {
                   
                   {/* 실명 검색 */}
                   <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <label className="block text-sm font-semibold text-gray-700 items-center gap-2">
                       <UserCircle className="w-4 h-4 text-green-500" />
                       실명 검색
                     </label>

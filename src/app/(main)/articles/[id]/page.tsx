@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, createElement, useRef, JSX } from 'react';
-import { Heart, Eye, MessageCircle, Share2, Edit, Clock, ArrowLeft, Code, FileText, Trash2 } from 'lucide-react';
+import { Heart, Eye, MessageCircle, Share2, Edit, Clock, ArrowLeft, ThumbsUp, FileText, Trash2, FileEdit } from 'lucide-react';
 import { fetchArticleById, deleteArticle, type ArticleResponse } from '@/lib/api/services/article-services';
 import { useRouter } from 'next/navigation';
 import TableOfContents from '@/components/editor/TableOfContents';
@@ -1242,12 +1242,12 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
           <aside className="lg:col-span-4">
             <div className="lg:sticky lg:top-8 space-y-6">
               {/* Table of Contents */}
-              {tableOfContents.length > 0 && (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-primary-500" />
-                    목차
-                  </h3>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-primary-500" />
+                  목차
+                </h3>
+                {tableOfContents.length > 0 ? (
                   <nav>
                     <ul className="space-y-1.5">
                       {tableOfContents.map((heading, index) => (
@@ -1273,13 +1273,17 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                       ))}
                     </ul>
                   </nav>
-                </div>
-              )}
+                ) : (
+                  <p className="text-sm text-gray-500 text-center py-4">
+                    헤딩을 추가하면 여기서 목차를 볼 수 있어요.
+                  </p>
+                )}
+              </div>
 
               {/* More from Author */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <Code className="w-5 h-5 text-purple-600" />
+                  <FileEdit className="w-5 h-5 text-secondary-600" />
                   저자의 다른 글
                 </h3>
                 <div className="space-y-3">
@@ -1298,12 +1302,12 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                         <Link
                           key={article.id}
                           href={`/articles/${article.slug}`}
-                          className="block group p-4 rounded-xl border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all duration-200 cursor-pointer bg-white hover:bg-purple-50/30"
+                          className="block group p-4 rounded-xl border border-gray-200 hover:border-secondary-300 hover:shadow-md transition-all duration-200 cursor-pointer bg-white hover:bg-secondary-50/30"
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-purple-100 text-purple-700 whitespace-nowrap">
+                                <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-secondary-100 text-secondary-700 whitespace-nowrap">
                                   {article.category}
                                 </span>
                                 {article.viewCount !== undefined && (
@@ -1314,12 +1318,12 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                                 )}
                                 {article.likeCount !== undefined && (
                                   <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
-                                    <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" />
+                                    <ThumbsUp className="w-3.5 h-3.5 text-secondary-600" />
                                     <span className="text-gray-700">{article.likeCount}</span>
                                   </div>
                                 )}
                               </div>
-                              <h4 className="text-sm font-bold text-gray-900 group-hover:text-purple-600 transition-colors mb-1.5 line-clamp-2 leading-snug">
+                              <h4 className="text-sm font-bold text-gray-900 group-hover:text-secondary-600 transition-colors mb-1.5 line-clamp-2 leading-snug">
                                 {article.title}
                               </h4>
                               <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -1333,7 +1337,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                               </div>
                             </div>
                             <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-5 h-5 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                               </svg>
                             </div>

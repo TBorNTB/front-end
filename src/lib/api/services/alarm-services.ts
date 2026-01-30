@@ -50,16 +50,18 @@ export const alarmService = {
 
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
-          throw new Error('Authentication failed');
+          console.warn('[alarmService.getReceivedAlarms] Authentication failed');
+          return [];
         }
-        throw new Error(`Failed to fetch alarms: ${response.status}`);
+        console.warn(`[alarmService.getReceivedAlarms] Failed to fetch alarms: ${response.status}`);
+        return [];
       }
 
       const data = await response.json();
       return Array.isArray(data) ? data : [];
     } catch (error) {
-      console.error('Error fetching alarms:', error);
-      throw error;
+      console.warn('[alarmService.getReceivedAlarms] Error:', error instanceof Error ? error.message : String(error));
+      return [];
     }
   },
 
@@ -82,13 +84,13 @@ export const alarmService = {
 
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
-          throw new Error('Authentication failed');
+          console.warn('[alarmService.markAsSeen] Authentication failed');
+          return;
         }
-        throw new Error(`Failed to mark alarm as seen: ${response.status}`);
+        console.warn(`[alarmService.markAsSeen] Failed to mark alarm as seen: ${response.status}`);
       }
     } catch (error) {
-      console.error('Error marking alarm as seen:', error);
-      throw error;
+      console.warn('[alarmService.markAsSeen] Error:', error instanceof Error ? error.message : String(error));
     }
   },
 };

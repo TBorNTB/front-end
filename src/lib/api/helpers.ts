@@ -42,10 +42,11 @@ export const getAccessTokenFromCookies = (): string | undefined => {
  * Extract access token from browser cookies and throw if missing
  * Useful for APIs that require Authorization header on every request
  */
-export const requireAccessTokenFromCookies = (): string => {
+export const requireAccessTokenFromCookies = (): string | null => {
   const token = getAccessTokenFromCookies();
   if (!token) {
-    throw new Error('로그인이 필요합니다. (accessToken 쿠키 없음)');
+    console.warn('[requireAccessTokenFromCookies] 로그인이 필요합니다. (accessToken 쿠키 없음)');
+    return null;
   }
 
   return token;
@@ -145,7 +146,22 @@ export const cleanStringValue = (value: string | null | undefined): string => {
  */
 export const cleanUserResponse = (data: any): UserResponse => {
   if (!data) {
-    throw new Error('No user data received from backend');
+    console.warn('[cleanUserResponse] No user data received from backend');
+    return {
+      id: 0,
+      nickname: '',
+      role: '',
+      realName: '',
+      email: '',
+      username: '',
+      description: '',
+      githubUrl: '',
+      linkedinUrl: '',
+      blogUrl: '',
+      profileImageUrl: '',
+      createdAt: '',
+      updatedAt: '',
+    };
   }
 
   return {
