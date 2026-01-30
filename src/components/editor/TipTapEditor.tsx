@@ -3,7 +3,6 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
-import Link from '@tiptap/extension-link';
 import { useEffect, useState } from 'react';
 
 interface TipTapEditorProps {
@@ -53,16 +52,16 @@ export default function TipTapEditor({
             class: 'bg-gray-100 rounded p-4 font-mono text-sm',
           },
         },
+        link: {
+          openOnClick: false,
+          HTMLAttributes: {
+            class: 'text-primary-600 underline hover:text-primary-700',
+          },
+        },
       }),
       Image.configure({
         HTMLAttributes: {
           class: 'max-w-full h-auto rounded-lg',
-        },
-      }),
-      Link.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          class: 'text-primary-600 underline hover:text-primary-700',
         },
       }),
     ],

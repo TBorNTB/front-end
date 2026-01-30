@@ -3,10 +3,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, X, Upload, FileText, User, Search, UserCircle, AtSign } from 'lucide-react';
+import { ArrowLeft, Plus, X, Upload, FileText, User, Search, AtSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import TipTapEditor from '@/components/editor/TipTapEditor';
+import TableOfContents from '@/components/editor/TableOfContents';
 import Image from 'next/image';
 import { fetchCategories, createProject } from '@/lib/api/services/project-services';
 import { memberService, CursorUserResponse } from '@/lib/api/services/user-services';
@@ -14,7 +15,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 interface FormData {
   title: string;
-  categories: string[];
+  category: string;
   description: string;
   details: string;
   tags: string[];
@@ -45,12 +46,12 @@ export default function NewProjectForm() {
   // API data states
   const [categories, setCategories] = useState<Array<{ id: number; name: string; description: string }>>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+  const [categorySearchQuery, setCategorySearchQuery] = useState('');
   const [allUsers, setAllUsers] = useState<CursorUserResponse[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<CursorUserResponse[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [nicknameSearch, setNicknameSearch] = useState('');
-  const [realNameSearch, setRealNameSearch] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [nextCursorId, setNextCursorId] = useState<number>(0);
   const [hasNext, setHasNext] = useState<boolean>(true);
   const [searchNextCursorId, setSearchNextCursorId] = useState<number>(0);
@@ -62,7 +63,7 @@ export default function NewProjectForm() {
   
   const [formData, setFormData] = useState<FormData>({
     title: '',
-    categories: [],
+    category: '',
     description: '',
     details: '',
     tags: [],
@@ -136,8 +137,8 @@ export default function NewProjectForm() {
           cursorId: searchNextCursorId, 
           size: 7, 
           direction: 'ASC',
-          nickname: nicknameSearch.trim() || undefined,
-          realName: realNameSearch.trim() || undefined
+          nickname: searchQuery.trim() || undefined,
+          realName: searchQuery.trim() || undefined
         });
         
         setFilteredUsers(prev => [...prev, ...response.content]);
@@ -170,12 +171,12 @@ export default function NewProjectForm() {
         setIsLoadingMore(false);
       }
     }
-  }, [hasNext, isLoadingMore, isLoadingUsers, nextCursorId, isSearchMode, nicknameSearch, realNameSearch, searchHasNext, searchNextCursorId]);
+  }, [hasNext, isLoadingMore, isLoadingUsers, nextCursorId, isSearchMode, searchQuery, searchHasNext, searchNextCursorId]);
 
   // Search users function (called when search button is clicked)
   const handleSearchUsers = useCallback(async () => {
     // Reset search if both fields are empty
-    if (!nicknameSearch.trim() && !realNameSearch.trim()) {
+    if (!searchQuery.trim()) {
       setFilteredUsers(allUsers);
       setSearchHasNext(false);
       setSearchNextCursorId(0);
@@ -192,8 +193,8 @@ export default function NewProjectForm() {
         cursorId: 0, 
         size: 7, 
         direction: 'ASC',
-        nickname: nicknameSearch.trim() || undefined,
-        realName: realNameSearch.trim() || undefined
+        nickname: searchQuery.trim() || undefined,
+        realName: searchQuery.trim() || undefined
       });
       
       setFilteredUsers(response.content);
@@ -207,12 +208,11 @@ export default function NewProjectForm() {
       setIsLoadingUsers(false);
       setIsSearching(false);
     }
-  }, [nicknameSearch, realNameSearch, allUsers]);
+  }, [searchQuery, allUsers]);
 
   // Reset search and show all users
   const handleResetSearch = useCallback(() => {
-    setNicknameSearch('');
-    setRealNameSearch('');
+    setSearchQuery('');
     setFilteredUsers(allUsers);
     setSearchHasNext(false);
     setSearchNextCursorId(0);
@@ -257,6 +257,20 @@ export default function NewProjectForm() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Live search while typing (debounced)
+  useEffect(() => {
+    const trimmed = searchQuery.trim();
+    const timeoutId = setTimeout(() => {
+      if (!trimmed) {
+        handleResetSearch();
+        return;
+      }
+      handleSearchUsers();
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, handleSearchUsers, handleResetSearch]);
+
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
@@ -264,8 +278,8 @@ export default function NewProjectForm() {
       newErrors.title = '프로젝트 이름을 입력해주세요.';
     }
 
-    if (formData.categories.length === 0) {
-      newErrors.categories = '최소 하나의 카테고리를 선택해주세요.';
+    if (!formData.category) {
+      newErrors.category = '카테고리를 선택해주세요.';
     }
 
     if (!formData.description.trim()) {
@@ -339,21 +353,16 @@ export default function NewProjectForm() {
     }));
   };
 
-  const toggleCategory = (categoryName: string) => {
-    setFormData((prev) => {
-      const isSelected = prev.categories.includes(categoryName);
-      return {
-        ...prev,
-        categories: isSelected
-          ? prev.categories.filter((c) => c !== categoryName)
-          : [...prev.categories, categoryName],
-      };
-    });
+  const selectCategory = (categoryName: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      category: prev.category === categoryName ? '' : categoryName,
+    }));
     // Clear error for this field
-    if (errors.categories) {
+    if (errors.category) {
       setErrors((prev) => ({
         ...prev,
-        categories: '',
+        category: '',
       }));
     }
   };
@@ -425,8 +434,7 @@ export default function NewProjectForm() {
           },
         ],
       }));
-      setNicknameSearch('');
-      setRealNameSearch('');
+      setSearchQuery('');
       setIsSearchMode(false);
     }
   };
@@ -462,7 +470,7 @@ export default function NewProjectForm() {
         thumbnail: formData.thumbnailUrl || 'string',
         content: formData.details || '',
         projectStatus: formData.status,
-        categories: formData.categories,
+        categories: formData.category ? [formData.category] : [],
         collaborators: formData.collaborators.map((collab) => collab.email), // email field contains username
         techStacks: formData.tags,
         subGoals: formData.subGoals,
@@ -481,12 +489,13 @@ export default function NewProjectForm() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen py-12 px-4">
+      <div className="w-full mx-auto">
       {/* Loading state for user authentication */}
       {userLoading && (
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
             <p className="text-gray-600">로딩 중...</p>
           </div>
         </div>
@@ -498,7 +507,7 @@ export default function NewProjectForm() {
           <div className="text-center">
             <p className="text-gray-600 mb-4">프로젝트를 생성하려면 먼저 로그인해주세요.</p>
             <Link href="/login">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button className="bg-primary-600 hover:bg-primary-700 text-white">
                 로그인
               </Button>
             </Link>
@@ -508,22 +517,25 @@ export default function NewProjectForm() {
 
       {/* Main form - only show when user is loaded and authenticated */}
       {!userLoading && currentUser && (
-        <>
+        <div className="bg-white rounded-2xl shadow-lg p-8">
           {/* Header */}
-          <div className="flex items-center gap-4 mb-8">
-            <Link href="/projects" className="text-gray-600 hover:text-gray-900">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">새 프로젝트 만들기</h1>
-              <p className="text-gray-600 mt-1">새로운 프로젝트를 등록하고 협력자들과 함께 작업하세요.</p>
+          <div className="mb-8 pb-6 border-b border-gray-200">
+            <div className="flex items-center gap-4 mb-2">
+              <Link
+                href="/projects"
+                className="inline-flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <h1 className="text-4xl font-bold text-gray-900">새 프로젝트 만들기</h1>
             </div>
+            <p className="text-lg text-gray-600 ml-14">새로운 프로젝트를 등록하고 협력자들과 함께 작업하세요.</p>
           </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-8">
         {/* Basic Information */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
-          <h2 className="text-xl font-semibold text-gray-900">기본 정보</h2>
+        <div className="bg-white p-6 space-y-6 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900 border-l-4 border-primary-600 pl-3">기본 정보</h2>
 
           {/* Project Name */}
           <div>
@@ -552,69 +564,79 @@ export default function NewProjectForm() {
               </div>
             ) : (
               <>
+                {/* Category Search Input */}
+                <div className="relative mb-3">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    placeholder="카테고리 검색..."
+                    value={categorySearchQuery}
+                    onChange={(e) => setCategorySearchQuery(e.target.value)}
+                    className="pl-10 border-gray-300 focus:border-primary-500 focus:ring-primary-500"
+                  />
+                </div>
                 <div className={`border rounded-lg p-3 min-h-[120px] max-h-[200px] overflow-y-auto ${
-                  errors.categories ? 'border-red-500' : 'border-gray-300'
+                  errors.category ? 'border-red-500' : 'border-gray-300'
                 }`}>
                   {categories.length === 0 ? (
                     <p className="text-gray-500 text-sm">카테고리가 없습니다</p>
                   ) : (
                     <div className="space-y-2">
-                      {categories.map((cat) => {
-                        const isSelected = formData.categories.includes(cat.name);
-                        return (
-                          <label
-                            key={cat.id}
-                            className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => toggleCategory(cat.name)}
-                              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                            />
-                            <div className="flex-1">
-                              <span className="text-sm font-medium text-gray-900">{cat.name}</span>
-                              {cat.description && (
-                                <p className="text-xs text-gray-500 mt-0.5">{cat.description}</p>
-                              )}
-                            </div>
-                          </label>
-                        );
-                      })}
+                      {categories
+                        .filter((cat) =>
+                          cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase()) ||
+                          cat.description?.toLowerCase().includes(categorySearchQuery.toLowerCase())
+                        )
+                        .map((cat) => {
+                          const isSelected = formData.category === cat.name;
+                          return (
+                            <label
+                              key={cat.id}
+                              className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+                            >
+                              <input
+                                type="radio"
+                                name="category"
+                                value={cat.name}
+                                checked={isSelected}
+                                onChange={() => selectCategory(cat.name)}
+                                className="w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-500"
+                              />
+                              <div className="flex-1">
+                                <span className="text-sm font-medium text-gray-900">{cat.name}</span>
+                                {cat.description && (
+                                  <p className="text-xs text-gray-500 mt-0.5">{cat.description}</p>
+                                )}
+                              </div>
+                            </label>
+                          );
+                        })}
                     </div>
                   )}
                 </div>
-                {/* Selected Categories Display */}
-                {formData.categories.length > 0 && (
+                {/* Selected Category Display */}
+                {formData.category && (
                   <div className="mt-3">
                     <p className="text-xs text-gray-600 mb-2">선택된 카테고리:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {formData.categories.map((categoryName) => (
-                        <span
-                          key={categoryName}
-                          className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium"
-                        >
-                          {categoryName}
-                          <button
-                            type="button"
-                            onClick={() => toggleCategory(categoryName)}
-                            className="hover:text-blue-900"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
+                    <span className="inline-flex items-center gap-2 bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium">
+                      {formData.category}
+                      <button
+                        type="button"
+                        onClick={() => selectCategory(formData.category)}
+                        className="hover:text-primary-900"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </span>
                   </div>
                 )}
               </>
             )}
-            {errors.categories && <p className="text-red-500 text-sm mt-1">{errors.categories}</p>}
+            {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
           </div>
 
           {/* Status */}
           <div>
-            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="status" className="block text-sm font-semibold text-gray-700 mb-2">
               상태
             </label>
             <select
@@ -622,7 +644,7 @@ export default function NewProjectForm() {
               name="status"
               value={formData.status}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors hover:border-gray-400"
             >
               <option value="PLANNING">계획 중</option>
               <option value="IN_PROGRESS">진행 중</option>
@@ -633,7 +655,7 @@ export default function NewProjectForm() {
           {/* Project Duration */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="startDate" className="block text-sm font-semibold text-gray-700 mb-2">
                 시작일
               </label>
               <Input
@@ -645,7 +667,7 @@ export default function NewProjectForm() {
               />
             </div>
             <div>
-              <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="endDate" className="block text-sm font-semibold text-gray-700 mb-2">
                 종료일
               </label>
               <Input
@@ -660,8 +682,8 @@ export default function NewProjectForm() {
         </div>
 
         {/* Thumbnail Upload */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">썸네일 이미지</h2>
+        <div className="bg-white p-6 space-y-4 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900 border-l-4 border-primary-600 pl-3">썸네일 이미지</h2>
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -695,12 +717,12 @@ export default function NewProjectForm() {
         </div>
 
         {/* Description */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">설명</h2>
+        <div className="bg-white p-6 space-y-4 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900 border-l-4 border-primary-600 pl-3">설명</h2>
 
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-              한 줄 설명 <span className="text-red-500">*</span>
+              한 줄 요약 <span className="text-red-500">*</span>
             </label>
             <Input
               id="description"
@@ -713,24 +735,29 @@ export default function NewProjectForm() {
             {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-gray-700">
               상세 설명
             </label>
-            <div className="border border-gray-300 rounded-lg overflow-hidden">
-              <TipTapEditor
-                content={formData.details}
-                onChange={handleEditorChange}
-                placeholder="프로젝트에 대해 자세히 설명해주세요..."
-              />
+            <div className="lg:flex lg:gap-6">
+              <div className="border-2 border-gray-200 rounded-lg overflow-hidden shadow-sm min-h-[500px] lg:w-2/3 w-full">
+                <TipTapEditor
+                  content={formData.details}
+                  onChange={handleEditorChange}
+                  placeholder="프로젝트에 대해 자세히 설명해주세요..."
+                />
+              </div>
+              <aside className="mt-4 lg:mt-0 lg:w-1/3 w-full">
+                <TableOfContents contentHtml={formData.details} />
+              </aside>
             </div>
-            <p className="text-gray-500 text-sm mt-1">리치 텍스트 에디터를 사용하여 작성해주세요.</p>
+            <p className="text-gray-500 text-sm">리치 텍스트 에디터를 사용하여 작성해주세요.</p>
           </div>
         </div>
 
         {/* Tags and Tech Stack */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">태그</h2>
+        <div className="bg-white p-6 space-y-4 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900 border-l-4 border-primary-600 pl-3">태그</h2>
 
           <div>
             <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-2">
@@ -753,7 +780,7 @@ export default function NewProjectForm() {
               <Button
                 type="button"
                 onClick={addTag}
-                className="bg-blue-500 hover:bg-blue-600 text-white"
+                className="bg-primary-500 hover:bg-primary-600 text-white"
               >
                 <Plus className="w-4 h-4" />
               </Button>
@@ -765,13 +792,13 @@ export default function NewProjectForm() {
               {formData.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium"
+                  className="inline-flex items-center gap-2 bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium"
                 >
                   {tag}
                   <button
                     type="button"
                     onClick={() => removeTag(tag)}
-                    className="hover:text-blue-900"
+                    className="hover:text-primary-900"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -801,7 +828,7 @@ export default function NewProjectForm() {
               <Button
                 type="button"
                 onClick={addSubGoal}
-                className="bg-blue-500 hover:bg-blue-600 text-white"
+                className="bg-primary-500 hover:bg-primary-600 text-white"
               >
                 <Plus className="w-4 h-4" />
               </Button>
@@ -829,58 +856,26 @@ export default function NewProjectForm() {
         </div>
 
         {/* Team Members */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">팀원</h2>
+        <div className="bg-white p-6 space-y-4 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900 border-l-4 border-primary-600 pl-3">팀원</h2>
 
           <div className="space-y-4">
             {/* User Search */}
             <div className="relative" ref={userSearchRef}>
               <div className="space-y-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* 닉네임 검색 */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-gray-700 items-center gap-2">
-                      <AtSign className="w-4 h-4 text-blue-500" />
-                      닉네임 검색
-                    </label>
-                    <div className="relative">
-                      <AtSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-blue-500" />
-                      <Input
-                        placeholder="닉네임을 입력하세요"
-                        value={nicknameSearch}
-                        onChange={(e) => setNicknameSearch(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleSearchUsers();
-                          }
-                        }}
-                        className="pl-10 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* 실명 검색 */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-gray-700 items-center gap-2">
-                      <UserCircle className="w-4 h-4 text-green-500" />
-                      실명 검색
-                    </label>
-                    <div className="relative">
-                      <UserCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-green-500" />
-                      <Input
-                        placeholder="실명을 입력하세요"
-                        value={realNameSearch}
-                        onChange={(e) => setRealNameSearch(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleSearchUsers();
-                          }
-                        }}
-                        className="pl-10 border-green-200 focus:border-green-500 focus:ring-green-500"
-                      />
-                    </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700 items-center gap-2">
+                    <AtSign className="w-4 h-4 text-primary-500" />
+                    팀원 검색
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary-500" />
+                    <Input
+                      placeholder="닉네임 또는 실명을 입력하세요"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 border-primary-200 focus:border-primary-500 focus:ring-primary-500"
+                    />
                   </div>
                 </div>
                 
@@ -890,7 +885,7 @@ export default function NewProjectForm() {
                     type="button"
                     onClick={handleSearchUsers}
                     disabled={isLoadingUsers}
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-6"
+                    className="bg-primary-500 hover:bg-primary-600 text-white px-6"
                   >
                     {isLoadingUsers ? (
                       <>
@@ -963,7 +958,7 @@ export default function NewProjectForm() {
               >
                 {isLoadingUsers ? (
                   <div className="p-8 text-center text-gray-500">
-                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mb-2"></div>
+                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mb-2"></div>
                     <p>{isSearching ? '검색 중...' : '사용자 목록을 불러오는 중...'}</p>
                   </div>
                 ) : filteredUsers.length === 0 ? (
@@ -992,7 +987,7 @@ export default function NewProjectForm() {
                               isAlreadyAdded ? 'opacity-50 cursor-not-allowed bg-gray-100' : 'cursor-pointer'
                             }`}
                           >
-                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
                               {user.profileImageUrl ? (
                                 <img
                                   src={user.profileImageUrl}
@@ -1000,7 +995,7 @@ export default function NewProjectForm() {
                                   className="w-full h-full rounded-full object-cover"
                                 />
                               ) : (
-                                <User className="w-5 h-5 text-blue-600" />
+                                <User className="w-5 h-5 text-primary-600" />
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
@@ -1028,7 +1023,7 @@ export default function NewProjectForm() {
                     {/* Loading more indicator */}
                     {isLoadingMore && (
                       <div className="p-4 text-center text-gray-500">
-                        <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mb-2"></div>
+                        <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600 mb-2"></div>
                         <p className="text-sm">
                           {isSearchMode ? '더 많은 검색 결과를 불러오는 중...' : '더 많은 사용자를 불러오는 중...'}
                         </p>
@@ -1063,7 +1058,7 @@ export default function NewProjectForm() {
                       className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
+                        <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center overflow-hidden">
                           {user?.profileImageUrl ? (
                             <img
                               src={user.profileImageUrl}
@@ -1071,7 +1066,7 @@ export default function NewProjectForm() {
                               className="w-full h-full rounded-full object-cover"
                             />
                           ) : (
-                            <User className="w-4 h-4 text-blue-600" />
+                            <User className="w-4 h-4 text-primary-600" />
                           )}
                         </div>
                         <div>
@@ -1080,7 +1075,7 @@ export default function NewProjectForm() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                        <span className="text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded">
                           {collaborator.role === 'OWNER' ? '소유자' :
                            collaborator.role === 'ADMIN' ? '관리자' :
                            collaborator.role === 'CONTRIBUTOR' ? '기여자' :
@@ -1103,8 +1098,8 @@ export default function NewProjectForm() {
         </div>
 
         {/* Documents */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">문서</h2>
+        <div className="bg-white p-6 space-y-4 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900 border-l-4 border-primary-600 pl-3">문서</h2>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1149,8 +1144,8 @@ export default function NewProjectForm() {
         </div>
 
         {/* Links */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">링크</h2>
+        <div className="bg-white p-6 space-y-4 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900 border-l-4 border-primary-600 pl-3">링크</h2>
 
           <div>
             <label htmlFor="repositoryUrl" className="block text-sm font-medium text-gray-700 mb-2">
@@ -1197,14 +1192,15 @@ export default function NewProjectForm() {
           <Button
             type="submit"
             disabled={loading}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="bg-primary-600 hover:bg-primary-700 text-white"
           >
             {loading ? '생성 중...' : '프로젝트 생성'}
           </Button>
         </div>
       </form>
-        </>
+        </div>
       )}
+    </div>
     </div>
   );
 }
