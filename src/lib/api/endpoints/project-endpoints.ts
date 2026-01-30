@@ -16,6 +16,20 @@ export const PROJECT_ENDPOINTS = {
     COUNTS: '/project-service/api/project/counts',
   },
 
+  // Q&A (Question) endpoints
+  QUESTION: {
+    OFFSET_SEARCH: '/project-service/api/question/offset/search',
+    CREATE: '/project-service/api/question',
+    GET_BY_ID: '/project-service/api/question/:id',
+    UPDATE: '/project-service/api/question/:id',
+    DELETE: '/project-service/api/question/:id',
+    ANSWER_OFFSET: '/project-service/api/question/:questionId/answer/offset',
+    ANSWER_CREATE: '/project-service/api/question/:questionId/answer',
+    ANSWER_UPDATE: '/project-service/api/question/answer/:answerId',
+    ANSWER_DELETE: '/project-service/api/question/answer/:answerId',
+    ANSWER_ACCEPT: '/project-service/api/question/:questionId/answer/:answerId/accept',
+  },
+
   // Document endpoints
   DOCUMENT: {
     CREATE: '/project-service/api/document/:projectId',

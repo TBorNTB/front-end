@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Mail, Shield, Clock, BookOpen, Users, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { Mail, Shield, Clock, BookOpen, Users, ChevronDown, ChevronUp } from 'lucide-react';
 import Image from 'next/image';
 import NewsletterSubscribe from './_components/NewsletterSubscribe';
+import NewsletterSubscriberStatus from './_components/NewsletterSubscriberStatus';
+import NewsletterUnsubscribe from './_components/NewsletterUnsubscribe';
 
 const testimonials = [
   {
@@ -299,7 +301,13 @@ export default function SSGNewsletter() {
       {/* Subscription Form */}
       <section id="subscribe-form" className="section py-20">
         <div className="container">
-          <NewsletterSubscribe />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+            <NewsletterSubscribe />
+            <div className="space-y-8">
+              <NewsletterSubscriberStatus />
+              <NewsletterUnsubscribe />
+            </div>
+          </div>
         </div>
       </section>
 
