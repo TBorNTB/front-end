@@ -31,7 +31,7 @@ interface ProjectPageProps {
 interface MappedProject {
   id: string;
   title: string;
-  subtitle: string;
+  description: string;
   category?: string;
   author: {
     username: string;
@@ -49,7 +49,6 @@ interface MappedProject {
     likes: number;
     comments: number;
   };
-  description: string;
   content: string;
   team: Array<{
     name: string;
@@ -233,7 +232,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     return {
       id: String(apiData.id),
       title: apiData.title,
-      subtitle: apiData.description || '',
+      description: apiData.description || '',
       author: {
         username: apiData.username || 'unknown',
         name: apiData.ownerNickname || apiData.ownerRealname || apiData.username || 'Unknown',
@@ -253,7 +252,6 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         likes: 0, // fetchProjectData에서 실제 API로 업데이트됨
         comments: 0, // TODO: 댓글 수 API 필요
       },
-      description: apiData.description || '',
       content: apiData.content || apiData.contentJson || '',
       team: [
         {
@@ -299,7 +297,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       setProject({
         id,
         title: 'XSS 필터 규칙 테스트 스크립트',
-        subtitle: 'Python 기반으로 작성된 URL에서 반사(Reflected) XSS 취약점을 자동으로 테스트 스크립트',
+        description: `이 프로젝트는 웹 애플리케이션의 XSS(Cross-Site Scripting) 취약점을 테스트하기 위한 자동화 도구입니다.`,
         category: '프로젝트',
         author: { username: 'kimdonghyun', name: '김동현', avatar: null },
         createdAt: '2024-02-20',
@@ -309,7 +307,6 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         tags: ['웹 해킹', '보안', '프로젝트'],
         technologies: ['Python', 'Scanner', 'XSS'],
         stats: { views: 126, likes: 10, comments: 2 },
-        description: `이 프로젝트는 웹 애플리케이션의 XSS(Cross-Site Scripting) 취약점을 테스트하기 위한 자동화 도구입니다.`,
         content: '',
         team: [
           { name: '김동현', role: 'Team Leader', username: 'kimdonghyun' },
@@ -991,8 +988,9 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                       <h1 className="text-4xl font-bold text-foreground mb-3">
                         {project.title}
                       </h1>
+                  {/* Description */}
                       <p className="text-lg text-gray-600">
-                        {project.subtitle}
+                        {project.description}
                       </p>
                     </div>
                     <button className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors flex-shrink-0">
@@ -1019,18 +1017,6 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                       className="w-full h-full object-cover"
                     />
                   </div>
-                )}
-
-                {/* Description */}
-                {project.description && (
-                  <section className="mb-12">
-                    <h2 className="text-2xl font-bold text-foreground mb-4">프로젝트 개요</h2>
-                    <div className="prose prose-lg max-w-none">
-                      <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                        {project.description}
-                      </p>
-                    </div>
-                  </section>
                 )}
 
                 {/* Content */}
