@@ -63,9 +63,6 @@ async function handleProxy(request: Request, pathParts: string[]) {
       ? token
       : `Bearer ${token}`;
     headers.set('authorization', authorizationValue);
-  } else if (cookieHeader) {
-    // Fallback: some backends may still accept cookie-based auth.
-    headers.set('cookie', cookieHeader);
   }
 
   const method = request.method.toUpperCase();
@@ -91,7 +88,11 @@ async function handleProxy(request: Request, pathParts: string[]) {
     cache: 'no-store',
   });
 
-  const responseBody = await backendResponse.arrayBuffer();
+  const status = backendResponse.status;
+  const bodyAllowed = method !== 'HEAD' && status !== 204 && status !== 205 && status !== 304;
+
+  // Important: 204/205/304 responses must not include a body.
+  const responseBody = bodyAllowed ? await backendResponse.arrayBuffer() : undefined;
 
   if (ENABLE_API_LOGGING && !backendResponse.ok) {
     const isCsKnowledge = pathParts[0] === 'project-service' && pathParts[1] === 'cs-knowledge';
@@ -100,7 +101,7 @@ async function handleProxy(request: Request, pathParts: string[]) {
     if (shouldLog) {
       const preview = (() => {
         try {
-          const text = new TextDecoder().decode(responseBody);
+          const text = new TextDecoder().decode(responseBody ?? new Uint8Array());
           const trimmed = text.trim();
           return trimmed.length > 500 ? `${trimmed.slice(0, 500)}…` : trimmed;
         } catch {
@@ -124,7 +125,7 @@ async function handleProxy(request: Request, pathParts: string[]) {
 
   const responseHeaders = new Headers();
   const respContentType = backendResponse.headers.get('content-type');
-  if (respContentType) responseHeaders.set('content-type', respContentType);
+  if (respContentType && bodyAllowed) responseHeaders.set('content-type', respContentType);
 
   // Forward Set-Cookie if backend uses it (rare here, but safe)
   const setCookies = backendResponse.headers.getSetCookie?.() ?? [];
@@ -132,8 +133,15 @@ async function handleProxy(request: Request, pathParts: string[]) {
     responseHeaders.append('set-cookie', cookie);
   }
 
+  if (!bodyAllowed) {
+    return new NextResponse(null, {
+      status,
+      headers: responseHeaders,
+    });
+  }
+
   return new NextResponse(responseBody, {
-    status: backendResponse.status,
+    status,
     headers: responseHeaders,
   });
 }

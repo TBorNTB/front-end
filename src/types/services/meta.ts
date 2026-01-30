@@ -2,7 +2,7 @@
 export interface Comment {
   id: string;
   postId: string;
-  postType: 'PROJECT' | 'ARTICLE';
+  postType: 'NEWS' | 'PROJECT' | 'QNA_QUESTION' | 'QNA_ANSWER' | 'DOCUMENT' | 'ARTICLE';
   author: CommentAuthor;
   content: string;
   parentId?: string;
@@ -24,7 +24,7 @@ export interface CommentAuthor {
 export interface Like {
   id: string;
   postId: string;
-  postType: 'PROJECT' | 'ARTICLE' | 'COMMENT';
+  postType: 'NEWS' | 'PROJECT' | 'QNA_QUESTION' | 'QNA_ANSWER' | 'DOCUMENT' | 'ARTICLE' | 'COMMENT';
   userId: string;
   createdAt: string;
 }
@@ -32,7 +32,7 @@ export interface Like {
 // Request Types
 export interface CommentCreateRequest {
   postId: string;
-  postType: 'PROJECT' | 'ARTICLE';
+  postType: 'NEWS' | 'PROJECT' | 'QNA_QUESTION' | 'QNA_ANSWER' | 'DOCUMENT' | 'ARTICLE';
   content: string;
   parentId?: string;
 }
@@ -43,12 +43,12 @@ export interface CommentUpdateRequest {
 
 export interface LikeToggleRequest {
   postId: string;
-  postType: 'PROJECT' | 'ARTICLE' | 'COMMENT';
+  postType: 'NEWS' | 'PROJECT' | 'QNA_QUESTION' | 'QNA_ANSWER' | 'DOCUMENT' | 'ARTICLE' | 'COMMENT';
 }
 
 export interface CommentFilters {
   postId?: string;
-  postType?: 'PROJECT' | 'ARTICLE';
+  postType?: 'NEWS' | 'PROJECT' | 'QNA_QUESTION' | 'QNA_ANSWER' | 'DOCUMENT' | 'ARTICLE';
   parentId?: string;
   author?: string;
   page?: number;

@@ -1,10 +1,13 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import ContentFilterBar from '@/components/layout/TopSection';
 import CategoryFilter from '@/components/layout/CategoryFilter';
 import QuestionCard from './QuestionCard';
 import { MessageSquare, CheckCircle } from 'lucide-react';
+import { categoryService, type CategoryItem } from '@/lib/api/services/category-services';
+import { questionService } from '@/lib/api/services/question-services';
+import type { QuestionSearchItem, QuestionSearchStatus } from '@/types/services/question';
 
 // Types
 interface TechTag {
@@ -42,233 +45,190 @@ interface Question {
   createdAt: string;
   updatedAt: string;
   views: number;
-  answers: Answer[];
-  comments: any[];
+  answers?: Answer[];
+  comments?: any[];
+  answerCount?: number;
+  commentCount?: number;
+  status?: string;
   isBookmarked: boolean;
-  hasAcceptedAnswer: boolean;
+  hasAcceptedAnswer?: boolean;
 }
 
-// Mock Tech Tags
-const availableTechTags: TechTag[] = [
-  { id: '1', name: 'Web Hacking', color: 'bg-red-100 text-red-700' },
-  { id: '2', name: 'Reversing', color: 'bg-blue-100 text-blue-700' },
-  { id: '3', name: 'System Hacking', color: 'bg-green-100 text-green-700' },
-  { id: '4', name: 'Forensics', color: 'bg-purple-100 text-purple-700' },
-  { id: '5', name: 'Network Security', color: 'bg-yellow-100 text-yellow-700' },
-  { id: '6', name: 'Cryptography', color: 'bg-pink-100 text-pink-700' },
-  { id: '7', name: 'IoT Security', color: 'bg-indigo-100 text-indigo-700' },
-  { id: '8', name: 'CTF', color: 'bg-orange-100 text-orange-700' },
-];
+const STATUS_MAP: Record<'all' | 'answered' | 'unanswered' | 'accepted', QuestionSearchStatus> = {
+  all: 'ALL',
+  answered: 'ANSWERED',
+  unanswered: 'UNANSWERED',
+  accepted: 'ACCEPTED',
+};
 
-// Mock Questions Data
-const mockQuestions: Question[] = [
-  {
-    id: '1',
-    title: 'SQL Injection 방어 방법에 대해 궁금합니다',
-    content: 'Prepared Statement를 사용하는 것 외에 다른 방어 방법이 있을까요? 실무에서는 어떤 방식을 주로 사용하시나요?',
-    author: '김민수',
+const TAG_COLOR_PALETTE = [
+  'bg-red-100 text-red-700',
+  'bg-blue-100 text-blue-700',
+  'bg-green-100 text-green-700',
+  'bg-purple-100 text-purple-700',
+  'bg-yellow-100 text-yellow-700',
+  'bg-pink-100 text-pink-700',
+  'bg-indigo-100 text-indigo-700',
+  'bg-orange-100 text-orange-700',
+] as const;
+
+const colorForCategory = (name: string): string => {
+  const hash = Array.from(name).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  return TAG_COLOR_PALETTE[hash % TAG_COLOR_PALETTE.length];
+};
+
+const toQuestionModel = (item: QuestionSearchItem): Question => {
+  const author = item.nickname || item.realName || item.username || '사용자';
+  return {
+    id: String(item.id),
+    title: item.title,
+    content: item.description,
+    author,
     authorRole: 'member',
-    techTags: [
-      { id: '1', name: 'Web Hacking', color: 'bg-red-100 text-red-700' },
-      { id: '5', name: 'Network Security', color: 'bg-yellow-100 text-yellow-700' },
-    ],
-    createdAt: '2025-01-10T10:30:00Z',
-    updatedAt: '2025-01-10T10:30:00Z',
-    views: 142,
-    hasAcceptedAnswer: true,
+    techTags: (item.categories ?? []).map((name) => ({
+      id: name,
+      name,
+      color: colorForCategory(name),
+    })),
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+    views: 0,
     isBookmarked: false,
-    comments: [
-      {
-        id: 'c1',
-        content: '좋은 질문이네요! 저도 궁금합니다.',
-        author: '이지은',
-        authorRole: 'member',
-        createdAt: '2025-01-10T11:00:00Z',
-      },
-    ],
-    answers: [
-      {
-        id: 'a1',
-        content: 'Prepared Statement 외에도 Input Validation, WAF 사용, 최소 권한 원칙 적용 등이 있습니다. 실무에서는 여러 방법을 함께 사용하는 것이 좋습니다.',
-        author: '박준호',
-        authorRole: 'admin',
-        createdAt: '2025-01-10T12:00:00Z',
-        isAccepted: true,
-        upvotes: 15,
-        comments: [
-          {
-            id: 'ac1',
-            content: '명확한 설명 감사합니다!',
-            author: '김민수',
-            authorRole: 'member',
-            createdAt: '2025-01-10T13:00:00Z',
-          },
-        ],
-      },
-      {
-        id: 'a2',
-        content: 'ORM을 사용하는 것도 하나의 방법입니다. 하지만 완벽한 방어는 아니므로 항상 주의가 필요합니다.',
-        author: '최수진',
-        authorRole: 'member',
-        createdAt: '2025-01-10T14:00:00Z',
-        isAccepted: false,
-        upvotes: 8,
-        comments: [],
-      },
-    ],
-  },
-  {
-    id: '2',
-    title: 'IDA Pro에서 디버깅 시 팁이 있을까요?',
-    content: 'IDA Pro를 이용한 리버싱 중 디버깅을 할 때 자주 사용하는 단축키나 팁을 공유해주시면 감사하겠습니다.',
-    author: '정우현',
-    authorRole: 'member',
-    techTags: [
-      { id: '2', name: 'Reversing', color: 'bg-blue-100 text-blue-700' },
-    ],
-    createdAt: '2025-01-12T09:15:00Z',
-    updatedAt: '2025-01-12T09:15:00Z',
-    views: 89,
-    hasAcceptedAnswer: false,
-    isBookmarked: true,
-    comments: [],
-    answers: [
-      {
-        id: 'a3',
-        content: 'F2로 Breakpoint 설정, F9로 실행, F7/F8로 Step Into/Over 등이 기본입니다. Graph View와 Text View를 번갈아 사용하는 것도 좋습니다.',
-        author: '강예린',
-        authorRole: 'member',
-        createdAt: '2025-01-12T10:30:00Z',
-        isAccepted: false,
-        upvotes: 5,
-        comments: [],
-      },
-    ],
-  },
-  {
-    id: '3',
-    title: 'Buffer Overflow 공격 실습 환경 구축 방법',
-    content: 'Buffer Overflow 공격을 연습하기 위한 안전한 실습 환경을 구축하려고 합니다. 추천하는 방법이 있을까요?',
-    author: '이승호',
-    authorRole: 'member',
-    techTags: [
-      { id: '3', name: 'System Hacking', color: 'bg-green-100 text-green-700' },
-      { id: '8', name: 'CTF', color: 'bg-orange-100 text-orange-700' },
-    ],
-    createdAt: '2025-01-13T14:20:00Z',
-    updatedAt: '2025-01-13T14:20:00Z',
-    views: 67,
-    hasAcceptedAnswer: false,
-    isBookmarked: false,
-    comments: [
-      {
-        id: 'c2',
-        content: 'VM에서 해야 안전하겠죠?',
-        author: '박지영',
-        authorRole: 'member',
-        createdAt: '2025-01-13T15:00:00Z',
-      },
-    ],
-    answers: [],
-  },
-  {
-    id: '4',
-    title: 'RSA 암호화 알고리즘의 취약점',
-    content: 'RSA 암호화의 주요 취약점과 이를 보완하는 방법에 대해 알고 싶습니다.',
-    author: '윤서연',
-    authorRole: 'member',
-    techTags: [
-      { id: '6', name: 'Cryptography', color: 'bg-pink-100 text-pink-700' },
-    ],
-    createdAt: '2025-01-14T08:00:00Z',
-    updatedAt: '2025-01-14T08:00:00Z',
-    views: 34,
-    hasAcceptedAnswer: true,
-    isBookmarked: true,
-    comments: [],
-    answers: [
-      {
-        id: 'a4',
-        content: '키 길이가 짧으면 취약하고, Padding Oracle Attack 등의 위험이 있습니다. 충분한 키 길이(최소 2048bit)와 적절한 Padding Scheme(OAEP)을 사용해야 합니다.',
-        author: '박준호',
-        authorRole: 'admin',
-        createdAt: '2025-01-14T09:30:00Z',
-        isAccepted: true,
-        upvotes: 12,
-        comments: [],
-      },
-    ],
-  },
-];
+    status: item.status,
+    answerCount: item.answerCount,
+    commentCount: 0,
+    hasAcceptedAnswer: item.status === 'ACCEPTED',
+  };
+
+};
 
 export default function QnAContent() {
-  const [questions, setQuestions] = useState<Question[]>(mockQuestions);
-  const [filteredQuestions, setFilteredQuestions] = useState<Question[]>(mockQuestions);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [filteredQuestions, setFilteredQuestions] = useState<Question[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [sortBy, setSortBy] = useState('최신순');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filterStatus, setFilterStatus] = useState<'all' | 'answered' | 'unanswered' | 'accepted'>('all');
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [page, setPage] = useState(0);
+  const [totalPage, setTotalPage] = useState(0);
+  const [isSearching, setIsSearching] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [debouncedKeyword, setDebouncedKeyword] = useState('');
   
   // Current user role (this should come from auth context)
   const currentUserRole: 'guest' | 'member' | 'admin' = 'member' as 'guest' | 'member' | 'admin';
 
-  // Filter and sort questions
+  const categoryFilterItems = useMemo(() => {
+    if (categories.length > 0) {
+      return categories.map((c) => ({
+        id: c.name,
+        name: c.name,
+        count: questions.filter((q) => q.techTags.some((t) => t.name === c.name)).length,
+      }));
+    }
+
+    const derivedNames = Array.from(
+      new Set(
+        questions.flatMap((q) => (q.techTags ?? []).map((t) => t.name)).filter(Boolean)
+      )
+    );
+
+    return derivedNames.map((name) => ({
+      id: name,
+      name,
+      count: questions.filter((q) => q.techTags.some((t) => t.name === name)).length,
+    }));
+  }, [categories, questions]);
+
+  // Debounce keyword (backend accepts keyword empty string)
   useEffect(() => {
-    let filtered = [...questions];
+    const handle = setTimeout(() => {
+      setDebouncedKeyword(searchTerm);
+      setPage(0);
+    }, 300);
 
-    // Filter by search term
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (q) =>
-          q.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          q.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          q.author.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
+    return () => clearTimeout(handle);
+  }, [searchTerm]);
 
-    // Filter by tag
-    if (selectedTag !== 'all') {
-      filtered = filtered.filter((q) =>
-        q.techTags.some((tag) => tag.id === selectedTag)
-      );
-    }
+  // Load categories (for sidebar filter)
+  useEffect(() => {
+    let cancelled = false;
 
-    // Filter by status
-    switch (filterStatus) {
-      case 'answered':
-        filtered = filtered.filter((q) => q.answers.length > 0);
-        break;
-      case 'unanswered':
-        filtered = filtered.filter((q) => q.answers.length === 0);
-        break;
-      case 'accepted':
-        filtered = filtered.filter((q) => q.hasAcceptedAnswer);
-        break;
-    }
+    (async () => {
+      try {
+        const res = await categoryService.getCategories();
+        if (cancelled) return;
+        setCategories(res.categories ?? []);
+      } catch (e) {
+        console.error('Failed to load categories:', e);
+      }
+    })();
 
-    // Sort
-    switch (sortBy) {
-      case '최신순':
-        filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        break;
-      case '인기순':
-        filtered.sort((a, b) => b.views - a.views);
-        break;
-      case '답변순':
-        filtered.sort((a, b) => b.answers.length - a.answers.length);
-        break;
-    }
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-    setFilteredQuestions(filtered);
-  }, [searchTerm, selectedTag, filterStatus, sortBy, questions]);
+  // Fetch questions from backend when filters change
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      setIsSearching(true);
+      setErrorMessage(null);
+
+      try {
+        const categoryNames = selectedTag === 'all' ? [] : [selectedTag];
+
+        const res = await questionService.searchOffset({
+          page,
+          size: 10,
+          sortBy: 'createdAt',
+          sortDirection: 'DESC',
+          status: STATUS_MAP[filterStatus],
+          categoryNames,
+          keyword: debouncedKeyword ?? '',
+        });
+
+        if (cancelled) return;
+
+        const items = (res.data ?? []) as QuestionSearchItem[];
+        let mapped = items.map(toQuestionModel);
+
+        // Client-side sort fallback (if backend doesn't support the chosen sort)
+        if (sortBy === '답변순') {
+          mapped = [...mapped].sort((a, b) => (b.answerCount ?? 0) - (a.answerCount ?? 0));
+        }
+
+        setQuestions(mapped);
+        setFilteredQuestions(mapped);
+        setTotalPage(res.totalPage ?? 0);
+      } catch (e) {
+        if (cancelled) return;
+        console.error('Failed to load questions:', e);
+        setErrorMessage(e instanceof Error ? e.message : '질문을 불러오지 못했습니다.');
+        setQuestions([]);
+        setFilteredQuestions([]);
+        setTotalPage(0);
+      } finally {
+        if (!cancelled) setIsSearching(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [page, filterStatus, selectedTag, debouncedKeyword, sortBy]);
 
   const handleBookmark = (questionId: string) => {
     setQuestions((prev) =>
-      prev.map((q) =>
-        q.id === questionId ? { ...q, isBookmarked: !q.isBookmarked } : q
-      )
+      prev.map((q) => (q.id === questionId ? { ...q, isBookmarked: !q.isBookmarked } : q))
+    );
+    setFilteredQuestions((prev) =>
+      prev.map((q) => (q.id === questionId ? { ...q, isBookmarked: !q.isBookmarked } : q))
     );
   };
 
@@ -278,7 +238,11 @@ export default function QnAContent() {
       <ContentFilterBar
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
-        isSearching={false}
+        onSearchSubmit={() => {
+          setDebouncedKeyword(searchTerm);
+          setPage(0);
+        }}
+        isSearching={isSearching}
         suggestions={[]}
         showSuggestions={showSuggestions}
         onSuggestionsShow={setShowSuggestions}
@@ -313,11 +277,11 @@ export default function QnAContent() {
                 const count = questions.filter((q) => {
                   switch (status.value) {
                     case 'answered':
-                      return q.answers.length > 0;
+                      return (q.answerCount ?? q.answers?.length ?? 0) > 0;
                     case 'unanswered':
-                      return q.answers.length === 0;
+                      return (q.answerCount ?? q.answers?.length ?? 0) === 0;
                     case 'accepted':
-                      return q.hasAcceptedAnswer;
+                      return q.hasAcceptedAnswer ?? q.status === 'ACCEPTED';
                     default:
                       return true;
                   }
@@ -326,7 +290,10 @@ export default function QnAContent() {
                 return (
                   <button
                     key={status.value}
-                    onClick={() => setFilterStatus(status.value as any)}
+                    onClick={() => {
+                      setFilterStatus(status.value as any);
+                      setPage(0);
+                    }}
                     className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
                       isActive
                         ? 'bg-primary-600 text-white'
@@ -348,13 +315,12 @@ export default function QnAContent() {
 
           {/* Tech Tags Filter */}
           <CategoryFilter
-            categories={availableTechTags.map((tag) => ({
-              id: tag.id,
-              name: tag.name,
-              count: questions.filter((q) => q.techTags.some((t) => t.id === tag.id)).length,
-            }))}
+            categories={categoryFilterItems}
             selectedCategory={selectedTag}
-            onCategoryChange={setSelectedTag}
+            onCategoryChange={(next) => {
+              setSelectedTag(next);
+              setPage(0);
+            }}
             title="기술 태그"
           />
         </aside>
@@ -364,13 +330,20 @@ export default function QnAContent() {
           {/* Results Info */}
           <div className="flex items-center justify-between mb-6">
             <p className="text-sm text-gray-600">
-              총 <span className="font-semibold text-primary-600">{filteredQuestions.length}</span>개의 질문
-              {searchTerm && ` (검색어: "${searchTerm}")`}
+              현재 <span className="font-semibold text-primary-600">{filteredQuestions.length}</span>개의 질문
+              {totalPage > 0 && ` (페이지: ${page + 1}/${totalPage})`}
+              {debouncedKeyword && ` (검색어: "${debouncedKeyword}")`}
             </p>
           </div>
 
           {/* Questions List */}
-          {filteredQuestions.length === 0 ? (
+          {errorMessage ? (
+            <div className="text-center py-20">
+              <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 text-lg mb-2">불러오기에 실패했습니다</p>
+              <p className="text-gray-400 text-sm">{errorMessage}</p>
+            </div>
+          ) : filteredQuestions.length === 0 ? (
             <div className="text-center py-20">
               <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-500 text-lg mb-2">질문이 없습니다</p>

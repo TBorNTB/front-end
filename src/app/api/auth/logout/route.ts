@@ -2,6 +2,27 @@ import { NextResponse } from 'next/server';
 import { BASE_URL } from '@/lib/api/config';
 import { USER_ENDPOINTS} from '@/lib/api/endpoints/user-endpoints';
 
+function clearAuthCookies(response: NextResponse) {
+  const secure = process.env.NODE_ENV === 'production';
+  const commonOptions = {
+    httpOnly: true,
+    secure,
+    sameSite: 'lax' as const,
+    expires: new Date(0),
+  };
+
+  // Cookies can exist with different Path values (e.g. '/api/auth' if Set-Cookie had no Path).
+  // Expire across common paths to avoid leftover cookies that keep /api/auth/* authenticated.
+  const paths = ['/', '/api', '/api/auth'];
+  const names = ['accessToken', 'refreshToken', 'keepSignedIn'] as const;
+
+  for (const name of names) {
+    for (const path of paths) {
+      response.cookies.set(name, '', { ...commonOptions, path });
+    }
+  }
+}
+
 export async function POST(request: Request) {
   console.log('Logout API route called');
   try {
@@ -30,10 +51,7 @@ export async function POST(request: Request) {
       { status: 200 }
     );
 
-    // 모든 인증 관련 쿠키 삭제
-    response.cookies.delete('accessToken');
-    response.cookies.delete('refreshToken');
-    response.cookies.delete('keepSignedIn');
+    clearAuthCookies(response);
 
     console.log('Logout completed, cookies cleared');
     return response;
@@ -43,9 +61,7 @@ export async function POST(request: Request) {
 
     // 백엔드 실패해도 쿠키 삭제하고 성공 반환
     const response = NextResponse.json({ message: 'Logout completed' }, { status: 200 });
-    response.cookies.delete('accessToken');
-    response.cookies.delete('refreshToken');
-    response.cookies.delete('keepSignedIn');
+    clearAuthCookies(response);
     return response;
   }
 }
