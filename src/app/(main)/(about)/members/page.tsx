@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import TitleBanner from '@/components/layout/TitleBanner';
-import { memberService, UserResponse } from '@/lib/api/services/user-services';
+import { memberService, profileService, UserResponse } from '@/lib/api/services/user-services';
 import { getRoleDisplayLabel, getRoleBadgeColor } from '@/lib/role-utils';
 import {
   AlertCircle,
@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Loader2,
   Search,
+  X,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -21,6 +22,45 @@ const formatDate = (dateString: string) => {
   return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
 };
 
+const formatDateTime = (dateString: string) => {
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return '-';
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  const hh = String(date.getHours()).padStart(2, '0');
+  const min = String(date.getMinutes()).padStart(2, '0');
+  return `${yyyy}.${mm}.${dd} ${hh}:${min}`;
+};
+
+const normalizeTech = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  if (trimmed.length === 1) return trimmed.toUpperCase();
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+};
+
+const parseTechStack = (techStack?: string | null): string[] => {
+  if (!techStack) return [];
+  return techStack
+    .split(',')
+    .map((t) => normalizeTech(t))
+    .filter(Boolean);
+};
+
+const isPlaceholder = (value?: string | null) => {
+  if (!value) return true;
+  const trimmed = value.trim();
+  return trimmed === '' || trimmed === 'string' || trimmed === 'null' || trimmed === 'undefined';
+};
+
+const isValidExternalLink = (url?: string | null) => {
+  if (isPlaceholder(url)) return false;
+  return true;
+};
+
+const displayValue = (value?: string | null) => (isPlaceholder(value) ? '-' : value!.trim());
+
 export default function MembersPage() {
   const [members, setMembers] = useState<UserResponse[]>([]);
   const [availableRoles, setAvailableRoles] = useState<string[]>([]);
@@ -29,6 +69,13 @@ export default function MembersPage() {
   const [selectedLevels, setSelectedLevels] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Profile modal state
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [profileUsername, setProfileUsername] = useState<string | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [profile, setProfile] = useState<UserResponse | null>(null);
 
   // 페이지네이션 상태
   const [currentPage, setCurrentPage] = useState(0);
@@ -97,6 +144,28 @@ export default function MembersPage() {
   const clearAllFilters = () => {
     setSearchTerm('');
     setSelectedLevels([]);
+  };
+
+  const closeProfile = () => {
+    setIsProfileOpen(false);
+  };
+
+  const openProfile = async (username: string) => {
+    setIsProfileOpen(true);
+    setProfileUsername(username);
+    setProfile(null);
+    setProfileError(null);
+    setProfileLoading(true);
+
+    try {
+      const data = await profileService.getProfileByUsername(username);
+      setProfile(data);
+    } catch (err) {
+      setProfile(null);
+      setProfileError(err instanceof Error ? err.message : '프로필 조회에 실패했습니다.');
+    } finally {
+      setProfileLoading(false);
+    }
   };
 
   // 표시용 이름 가져오기
@@ -271,7 +340,11 @@ export default function MembersPage() {
 
                         {/* Action Button */}
                         <div className="mt-4">
-                          <button className="w-full btn btn-primary btn-sm hover:scale-105">
+                          <button
+                            type="button"
+                            onClick={() => openProfile(member.username)}
+                            className="w-full btn btn-primary btn-sm hover:scale-105 inline-flex items-center justify-center"
+                          >
                             프로필 보기
                           </button>
                         </div>
@@ -337,6 +410,172 @@ export default function MembersPage() {
           </div>
         </section>
       </div>
+
+      {/* Profile Modal */}
+      {isProfileOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          role="dialog"
+          aria-modal="true"
+          aria-label="멤버 프로필"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/50"
+            onClick={closeProfile}
+            aria-label="닫기"
+          />
+
+          <div className="relative z-10 w-[92vw] max-w-2xl rounded-xl bg-white shadow-xl">
+            <div className="flex items-start justify-between gap-4 border-b px-5 py-4">
+              <div>
+                <h2 className="text-lg font-bold text-foreground">멤버 프로필</h2>
+                <p className="text-sm text-gray-500">@{profileUsername ?? '-'}</p>
+              </div>
+              <button
+                type="button"
+                className="p-2 rounded-md hover:bg-gray-100"
+                onClick={closeProfile}
+                aria-label="닫기"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="px-5 py-5">
+              {profileLoading ? (
+                <div className="flex items-center justify-center py-10 text-gray-600">
+                  <Loader2 className="h-5 w-5 animate-spin mr-2" /> 로딩중...
+                </div>
+              ) : profileError ? (
+                <div className="py-6">
+                  <p className="text-sm text-red-600">{profileError}</p>
+                </div>
+              ) : !profile ? (
+                <div className="py-6">
+                  <p className="text-sm text-gray-600">프로필 정보를 찾을 수 없습니다.</p>
+                </div>
+              ) : (
+                <div className="flex flex-col sm:flex-row gap-5">
+                  <div className="shrink-0">
+                    <div className="relative w-24 h-24 rounded-full overflow-hidden bg-gray-100">
+                      <ImageWithFallback
+                        src={profile.profileImageUrl || '/images/placeholder/default-avatar.svg'}
+                        alt={profile.realName || profile.nickname || profile.username}
+                        type="avatar"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-xl font-bold text-foreground">
+                        {profile.realName || profile.nickname || profile.username}
+                      </h3>
+                      <Badge className={getRoleBadgeColor(profile.role)}>
+                        {getRoleDisplayLabel(profile.role)}
+                      </Badge>
+                    </div>
+
+                    <div className="mt-2 text-sm text-gray-500">@{profile.username}</div>
+
+                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                      <div className="rounded-lg border border-gray-200 px-3 py-2">
+                        <div className="text-xs text-gray-500 mb-0.5">ID</div>
+                        <div className="text-gray-900">{profile.id}</div>
+                      </div>
+                      <div className="rounded-lg border border-gray-200 px-3 py-2">
+                        <div className="text-xs text-gray-500 mb-0.5">이메일</div>
+                        <div className="text-gray-900 break-all">{displayValue(profile.email)}</div>
+                      </div>
+                      <div className="rounded-lg border border-gray-200 px-3 py-2">
+                        <div className="text-xs text-gray-500 mb-0.5">닉네임</div>
+                        <div className="text-gray-900">{displayValue(profile.nickname)}</div>
+                      </div>
+                      <div className="rounded-lg border border-gray-200 px-3 py-2">
+                        <div className="text-xs text-gray-500 mb-0.5">실명</div>
+                        <div className="text-gray-900">{displayValue(profile.realName)}</div>
+                      </div>
+                      <div className="rounded-lg border border-gray-200 px-3 py-2">
+                        <div className="text-xs text-gray-500 mb-0.5">가입일</div>
+                        <div className="text-gray-900">{isPlaceholder(profile.createdAt) ? '-' : formatDateTime(profile.createdAt)}</div>
+                      </div>
+                      <div className="rounded-lg border border-gray-200 px-3 py-2">
+                        <div className="text-xs text-gray-500 mb-0.5">수정일</div>
+                        <div className="text-gray-900">{isPlaceholder(profile.updatedAt) ? '-' : formatDateTime(profile.updatedAt)}</div>
+                      </div>
+                    </div>
+
+                    <div className="mt-2 space-y-1 text-sm text-gray-700">
+                      <p>
+                        <span className="font-medium text-foreground">소개:</span>{' '}
+                        {isPlaceholder(profile.description) ? '-' : profile.description}
+                      </p>
+                    </div>
+
+                    <div className="mt-4">
+                      <div className="text-sm font-medium text-foreground mb-2">기술스택:</div>
+                      {parseTechStack(profile.techStack).length === 0 ? (
+                        <div className="text-sm text-gray-500">-</div>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {parseTechStack(profile.techStack).map((t) => (
+                            <Badge key={t} variant="outline" size="sm">
+                              {t}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="rounded-lg border border-gray-200 px-3 py-2">
+                        <div className="text-xs text-gray-500 mb-0.5">GitHub</div>
+                        {isValidExternalLink(profile.githubUrl) ? (
+                          <a className="text-sm text-primary-600 underline break-all" href={profile.githubUrl} target="_blank" rel="noreferrer">
+                            {profile.githubUrl}
+                          </a>
+                        ) : (
+                          <div className="text-sm text-gray-500">-</div>
+                        )}
+                      </div>
+
+                      <div className="rounded-lg border border-gray-200 px-3 py-2">
+                        <div className="text-xs text-gray-500 mb-0.5">LinkedIn</div>
+                        {isValidExternalLink(profile.linkedinUrl) ? (
+                          <a className="text-sm text-primary-600 underline break-all" href={profile.linkedinUrl} target="_blank" rel="noreferrer">
+                            {profile.linkedinUrl}
+                          </a>
+                        ) : (
+                          <div className="text-sm text-gray-500">-</div>
+                        )}
+                      </div>
+
+                      <div className="rounded-lg border border-gray-200 px-3 py-2">
+                        <div className="text-xs text-gray-500 mb-0.5">Blog</div>
+                        {isValidExternalLink(profile.blogUrl) ? (
+                          <a className="text-sm text-primary-600 underline break-all" href={profile.blogUrl} target="_blank" rel="noreferrer">
+                            {profile.blogUrl}
+                          </a>
+                        ) : (
+                          <div className="text-sm text-gray-500">-</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {!isPlaceholder(profile.profileImageUrl) && (
+                      <div className="mt-4 text-sm">
+                        <div className="text-xs text-gray-500 mb-1">프로필 이미지 URL</div>
+                        <div className="break-all text-gray-700">{profile.profileImageUrl}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

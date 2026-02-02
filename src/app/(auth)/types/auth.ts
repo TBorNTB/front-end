@@ -11,6 +11,7 @@ export interface User extends BaseEntity {
   role: UserRole;
   profileImageUrl?: string; // Backend field name
   description?: string;
+  techStack?: string;
   githubUrl?: string;
   blogUrl?: string;
   linkedinUrl?: string;
@@ -52,6 +53,7 @@ export interface AuthResponse {
     role: string;
     profileImageUrl?: string; // Primary backend field
     profileImage?: string;    // Alternative backend field
+    techStack?: string;
   };
 }
 
@@ -65,6 +67,7 @@ export interface AuthUser {
   email: string;
   role: UserRole;
   profile_image?: string;  // Mapped from profileImageUrl or profileImage
+  tech_stack?: string;
 }
 
 // ===== FIXED TYPE MAPPERS =====
@@ -90,19 +93,23 @@ export function mapUserToAuthUser(user: UserData): AuthUser {
   // Safe property access with type guards
   let fullName: string;
   let profileImage: string | undefined;
+  let techStack: string | undefined;
   
   if (isUserEntity(user)) {
     // User entity - use realName and profileImageUrl
     fullName = user.realName || user.nickname || "User";
     profileImage = user.profileImageUrl;
+    techStack = user.techStack;
   } else if (isAuthResponseUser(user)) {
     // AuthResponse user - use fullName/realName and profileImage/profileImageUrl
     fullName = user.fullName || user.realName || user.nickname || "User";
     profileImage = user.profileImage || user.profileImageUrl;
+    techStack = user.techStack;
   } else {
     // This case is now properly typed as User | AuthResponse['user']
     fullName = "User";
     profileImage = undefined;
+    techStack = undefined;
   }
   
   return {
@@ -111,6 +118,7 @@ export function mapUserToAuthUser(user: UserData): AuthUser {
     email: user.email || "",
     role: (user.role as UserRole) || UserRole.GUEST,
     profile_image: profileImage || undefined, // FIXED: Ensure undefined instead of false
+    tech_stack: techStack || undefined,
   };
 }
 
@@ -129,6 +137,7 @@ export function mapUserToAuthUserSimple(user: UserData): AuthUser {
   const fullName = 'fullName' in user ? user.fullName : undefined;
   const profileImageUrl = 'profileImageUrl' in user ? user.profileImageUrl : undefined;
   const profileImage = 'profileImage' in user ? user.profileImage : undefined;
+  const techStack = 'techStack' in user ? (user as any).techStack : undefined;
   
   return {
     nickname: user.nickname || "user",
@@ -136,6 +145,7 @@ export function mapUserToAuthUserSimple(user: UserData): AuthUser {
     email: user.email || "",
     role: (user.role as UserRole) || UserRole.GUEST,
     profile_image: profileImageUrl || profileImage || undefined, // FIXED: Always string | undefined
+    tech_stack: typeof techStack === 'string' ? techStack : undefined,
   };
 }
 
@@ -158,6 +168,7 @@ export function mapUserToAuthUserWithAssertions(user: UserData): AuthUser {
     email: user.email || "",
     role: (user.role as UserRole) || UserRole.GUEST,
     profile_image: userAny.profileImageUrl || userAny.profileImage || undefined, // FIXED
+    tech_stack: userAny.techStack || undefined,
   };
 }
 
@@ -179,6 +190,10 @@ export const signupSchema = z.object({
     .max(50, { message: "성명은 50글자 이하여야 합니다." }),
   email: z.string().email({ message: "올바른 이메일 형식을 입력해주세요." }),
   description: z.string().optional(),
+  techStack: z.string()
+    .max(255, { message: "기술스택은 255자 이하여야 합니다." })
+    .optional()
+    .or(z.literal("")),
   githubUrl: z.string().url({ message: "올바른 URL 형식을 입력해주세요." }).optional().or(z.literal("")),
   linkedinUrl: z.string().url({ message: "올바른 URL 형식을 입력해주세요." }).optional().or(z.literal("")),
   blogUrl: z.string().url({ message: "올바른 URL 형식을 입력해주세요." }).optional().or(z.literal("")),
@@ -262,7 +277,7 @@ export function mapSignupFormToRequest(
   formData: SignupFormData,
   fileData?: { fileData: string; fileName: string; fileType: string }
 ): SignupRequest {
-  const { ...baseData } = formData;
+  const { confirmPassword: _confirmPassword, profileImageUrl: _profileImageUrl, ...baseData } = formData;
   
   return {
     ...baseData,
