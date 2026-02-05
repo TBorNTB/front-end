@@ -15,7 +15,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 interface FormData {
   title: string;
-  category: string;
+  categories: string[];
   description: string;
   details: string;
   tags: string[];
@@ -63,7 +63,7 @@ export default function NewProjectForm() {
   
   const [formData, setFormData] = useState<FormData>({
     title: '',
-    category: '',
+    categories: [],
     description: '',
     details: '',
     tags: [],
@@ -278,8 +278,11 @@ export default function NewProjectForm() {
       newErrors.title = '프로젝트 이름을 입력해주세요.';
     }
 
-    if (!formData.category) {
-      newErrors.category = '카테고리를 선택해주세요.';
+
+    if (!formData.categories || formData.categories.length === 0) {
+      newErrors.categories = '카테고리를 1개 이상 선택해주세요.';
+    } else if (formData.categories.length > 3) {
+      newErrors.categories = '카테고리는 최대 3개까지 선택할 수 있습니다.';
     }
 
     if (!formData.description.trim()) {
@@ -353,16 +356,28 @@ export default function NewProjectForm() {
     }));
   };
 
-  const selectCategory = (categoryName: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      category: prev.category === categoryName ? '' : categoryName,
-    }));
+  const toggleCategory = (categoryName: string) => {
+    setFormData((prev) => {
+      const alreadySelected = prev.categories.includes(categoryName);
+      let newCategories;
+      if (alreadySelected) {
+        newCategories = prev.categories.filter((c) => c !== categoryName);
+      } else {
+        if (prev.categories.length >= 3) {
+          return prev; // Do not add more than 3
+        }
+        newCategories = [...prev.categories, categoryName];
+      }
+      return {
+        ...prev,
+        categories: newCategories,
+      };
+    });
     // Clear error for this field
-    if (errors.category) {
+    if (errors.categories) {
       setErrors((prev) => ({
         ...prev,
-        category: '',
+        categories: '',
       }));
     }
   };
@@ -470,7 +485,7 @@ export default function NewProjectForm() {
         thumbnail: formData.thumbnailUrl || 'string',
         content: formData.details || '',
         projectStatus: formData.status,
-        categories: formData.category ? [formData.category] : [],
+        categories: formData.categories,
         collaborators: formData.collaborators.map((collab) => collab.email), // email field contains username
         techStacks: formData.tags,
         subGoals: formData.subGoals,
@@ -597,18 +612,20 @@ export default function NewProjectForm() {
                           cat.description?.toLowerCase().includes(categorySearchQuery.toLowerCase())
                         )
                         .map((cat) => {
-                          const isSelected = formData.category === cat.name;
+                          const isSelected = formData.categories.includes(cat.name);
+                          const disabled = !isSelected && formData.categories.length >= 3;
                           return (
                             <label
                               key={cat.id}
-                              className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+                              className={`flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                               <input
-                                type="radio"
-                                name="category"
+                                type="checkbox"
+                                name="categories"
                                 value={cat.name}
                                 checked={isSelected}
-                                onChange={() => selectCategory(cat.name)}
+                                disabled={disabled}
+                                onChange={() => toggleCategory(cat.name)}
                                 className="w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-500"
                               />
                               <div className="flex-1">
@@ -623,25 +640,29 @@ export default function NewProjectForm() {
                     </div>
                   )}
                 </div>
-                {/* Selected Category Display */}
-                {formData.category && (
+                {/* Selected Categories Display */}
+                {formData.categories.length > 0 && (
                   <div className="mt-3">
                     <p className="text-xs text-gray-600 mb-2">선택된 카테고리:</p>
-                    <span className="inline-flex items-center gap-2 bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium">
-                      {formData.category}
-                      <button
-                        type="button"
-                        onClick={() => selectCategory(formData.category)}
-                        className="hover:text-primary-900"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.categories.map((cat) => (
+                        <span key={cat} className="inline-flex items-center gap-2 bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium">
+                          {cat}
+                          <button
+                            type="button"
+                            onClick={() => toggleCategory(cat)}
+                            className="hover:text-primary-900"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 )}
               </>
             )}
-            {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
+            {errors.categories && <p className="text-red-500 text-sm mt-1">{errors.categories}</p>}
           </div>
 
           {/* Status */}
@@ -844,14 +865,17 @@ export default function NewProjectForm() {
               </Button>
             </div>
 
-            {/* Sub Goals Display */}
-            <div className="flex flex-wrap gap-2">
-              {formData.subGoals.map((goal) => (
-                <span
-                  key={goal}
-                  className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium"
-                >
-                  {goal}
+            {/* Sub Goals Checklist Display */}
+            <div className="flex flex-col gap-2">
+              {formData.subGoals.map((goal, idx) => (
+                <label key={goal} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={false} // Will be managed in project details page
+                    disabled
+                    className="w-4 h-4 text-green-600 border-gray-300"
+                  />
+                  <span className="text-sm text-gray-900">{goal}</span>
                   <button
                     type="button"
                     onClick={() => removeSubGoal(goal)}
@@ -859,7 +883,7 @@ export default function NewProjectForm() {
                   >
                     <X className="w-4 h-4" />
                   </button>
-                </span>
+                </label>
               ))}
             </div>
           </div>
