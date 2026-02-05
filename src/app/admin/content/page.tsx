@@ -29,6 +29,7 @@ type ApiCategory = {
   id: number;
   name: string;
   description: string;
+  content?: string;
 };
 
 const badgeColors = [
@@ -43,7 +44,7 @@ const badgeColors = [
 // Inline Category Management Component
 function InlineCategoryManagement() {
   const [isCreating, setIsCreating] = useState(false);
-  const [newCategory, setNewCategory] = useState({ name: "", description: "" });
+  const [newCategory, setNewCategory] = useState({ name: "", description: "", content: "" });
 
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,8 +52,9 @@ function InlineCategoryManagement() {
   const [isMutating, setIsMutating] = useState(false);
 
   const [editTarget, setEditTarget] = useState<ApiCategory | null>(null);
-  const [editForm, setEditForm] = useState({ nextName: "", description: "" });
+  const [editForm, setEditForm] = useState({ nextName: "", description: "", content: "" });
   const [deleteTarget, setDeleteTarget] = useState<ApiCategory | null>(null);
+  const [viewTarget, setViewTarget] = useState<ApiCategory | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -99,18 +101,24 @@ function InlineCategoryManagement() {
   const handleCreate = async () => {
     const name = newCategory.name.trim();
     const description = newCategory.description.trim();
+    const content = newCategory.content.trim();
 
     if (!name) {
       toast.error("카테고리 이름을 입력해주세요.");
       return;
     }
 
+    if (!content) {
+      toast.error("카테고리 콘텐츠를 입력해주세요.");
+      return;
+    }
+
     setIsMutating(true);
 
     try {
-      await categoryService.createCategory({ name, description });
+      await categoryService.createCategory({ name, description, content });
       toast.success("카테고리가 생성되었습니다.");
-      setNewCategory({ name: "", description: "" });
+      setNewCategory({ name: "", description: "", content: "" });
       setIsCreating(false);
       await reload();
     } catch (err) {
@@ -126,6 +134,7 @@ function InlineCategoryManagement() {
     setEditForm({
       nextName: category.name,
       description: category.description || "",
+      content: category.content || "",
     });
   };
 
@@ -135,16 +144,22 @@ function InlineCategoryManagement() {
     const prevName = editTarget.name;
     const nextName = editForm.nextName.trim();
     const description = editForm.description.trim();
+    const content = editForm.content.trim();
 
     if (!nextName) {
       toast.error("카테고리 이름을 입력해주세요.");
       return;
     }
 
+    if (!content) {
+      toast.error("카테고리 콘텐츠를 입력해주세요.");
+      return;
+    }
+
     setIsMutating(true);
 
     try {
-      await categoryService.updateCategory({ prevName, nextName, description });
+      await categoryService.updateCategory({ prevName, nextName, description, content });
       toast.success("카테고리가 수정되었습니다.");
       setEditTarget(null);
       await reload();
@@ -222,13 +237,24 @@ function InlineCategoryManagement() {
                 disabled={isMutating}
               />
             </div>
+
+            <div className="admin-form-group md:col-span-2">
+              <label className="admin-form-label">콘텐츠</label>
+              <textarea
+                value={newCategory.content}
+                onChange={(e) => setNewCategory({ ...newCategory, content: e.target.value })}
+                placeholder="콘텐츠를 입력하세요"
+                className="admin-form-input min-h-[120px]"
+                disabled={isMutating}
+              />
+            </div>
           </div>
 
           <div className="flex justify-end space-x-3">
             <button
               onClick={() => {
                 setIsCreating(false);
-                setNewCategory({ name: "", description: "" });
+                setNewCategory({ name: "", description: "", content: "" });
               }}
               className="admin-btn-secondary"
               disabled={isMutating}
@@ -267,6 +293,14 @@ function InlineCategoryManagement() {
                     {category.name}
                   </div>
                   <div className="flex space-x-1">
+                    <button
+                      onClick={() => setViewTarget(category)}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                      title="자세히 보기"
+                    >
+                      <Eye className="w-4 h-4" />
+                      자세히
+                    </button>
                     <button
                       onClick={() => openEdit(category)}
                       className="p-1 text-gray-400 hover:text-primary-600 transition-colors"
@@ -311,7 +345,7 @@ function InlineCategoryManagement() {
           <div className="admin-card w-full max-w-lg">
             <div className="admin-card-header">
               <h4 className="admin-card-title">카테고리 수정</h4>
-              <p className="admin-card-description">이름/설명을 수정합니다</p>
+              <p className="admin-card-description">이름/설명/콘텐츠를 수정합니다</p>
             </div>
 
             <div className="space-y-4">
@@ -342,6 +376,16 @@ function InlineCategoryManagement() {
                   value={editForm.description}
                   onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                   className="admin-form-input min-h-[96px]"
+                  disabled={isMutating}
+                />
+              </div>
+
+              <div className="admin-form-group">
+                <label className="admin-form-label">콘텐츠</label>
+                <textarea
+                  value={editForm.content}
+                  onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
+                  className="admin-form-input min-h-[120px]"
                   disabled={isMutating}
                 />
               </div>
@@ -396,6 +440,49 @@ function InlineCategoryManagement() {
                 disabled={isMutating}
               >
                 {isMutating ? "삭제 중..." : "삭제"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      {viewTarget && (
+        <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4">
+          <div className="admin-card w-full max-w-2xl">
+            <div className="admin-card-header">
+              <h4 className="admin-card-title">카테고리 자세히 보기</h4>
+              <p className="admin-card-description">카테고리의 상세 정보를 확인합니다</p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="admin-form-group">
+                <label className="admin-form-label">이름</label>
+                <input type="text" value={viewTarget.name} className="admin-form-input" disabled />
+              </div>
+
+              <div className="admin-form-group">
+                <label className="admin-form-label">설명</label>
+                <textarea
+                  value={viewTarget.description || ''}
+                  className="admin-form-input min-h-[96px]"
+                  disabled
+                />
+              </div>
+
+              <div className="admin-form-group">
+                <label className="admin-form-label">콘텐츠</label>
+                <textarea
+                  value={viewTarget.content || ''}
+                  className="admin-form-input min-h-[160px]"
+                  disabled
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button className="admin-btn-secondary" onClick={() => setViewTarget(null)}>
+                닫기
               </button>
             </div>
           </div>

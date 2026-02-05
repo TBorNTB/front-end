@@ -9,6 +9,7 @@ import {
   Mail, 
   User, 
   FileText, 
+  Code,
   Github, 
   Linkedin, 
   Globe, 
@@ -21,11 +22,13 @@ import { profileService, UserResponse } from '@/lib/api/services/user-services';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { validateImageFile } from '@/lib/form-utils';
 import { Upload, X as XIcon } from 'lucide-react';
+import { TechStackInput } from '@/components/ui/TechStackInput';
 
 interface ProfileEditFormData {
   email: string;
   realName: string;
   description: string;
+  techStack: string;
   githubUrl: string;
   linkedinUrl: string;
   blogUrl: string;
@@ -47,6 +50,7 @@ export default function ProfileEditForm() {
     email: '',
     realName: '',
     description: '',
+    techStack: '',
     githubUrl: '',
     linkedinUrl: '',
     blogUrl: '',
@@ -74,6 +78,7 @@ export default function ProfileEditForm() {
           email: cleanValue(profileData.email),
           realName: cleanValue(profileData.realName),
           description: cleanValue(profileData.description),
+          techStack: cleanValue(profileData.techStack),
           githubUrl: cleanValue(profileData.githubUrl),
           linkedinUrl: cleanValue(profileData.linkedinUrl),
           blogUrl: cleanValue(profileData.blogUrl),
@@ -199,6 +204,7 @@ export default function ProfileEditForm() {
         email: formData.email.trim() || undefined,
         realName: formData.realName.trim() || undefined,
         description: formData.description.trim() || undefined,
+        techStack: formData.techStack.trim() || undefined,
         githubUrl: formData.githubUrl.trim() || undefined,
         linkedinUrl: formData.linkedinUrl.trim() || undefined,
         blogUrl: formData.blogUrl.trim() || undefined,
@@ -465,6 +471,29 @@ export default function ProfileEditForm() {
                          focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 
                          transition-all duration-300 resize-none"
                 placeholder="자기소개를 입력하세요 (선택사항)"
+              />
+            </div>
+
+            {/* Tech Stack */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Code className="inline h-4 w-4 mr-1 text-primary-600" />
+                기술스택
+                <span className="text-xs text-gray-500 font-normal ml-2">(Enter 또는 쉼표로 추가)</span>
+              </label>
+              <TechStackInput
+                value={formData.techStack}
+                onChange={(next) => {
+                  setFormData((prev) => ({ ...prev, techStack: next }));
+                  if (error) setError(null);
+                  if (success) setSuccess(false);
+                }}
+                placeholder="React 입력 후 Enter"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg 
+                         focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 
+                         transition-all duration-300"
+                maxLength={255}
+                onMaxLengthExceeded={() => setError('기술스택은 255자 이하여야 합니다.')}
               />
             </div>
           </div>

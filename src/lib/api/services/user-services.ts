@@ -14,6 +14,7 @@ export interface UserResponse {
   email: string;
   username: string;
   description: string;
+  techStack: string;
   githubUrl: string;
   linkedinUrl: string;
   blogUrl: string;
@@ -214,6 +215,22 @@ export const profileService = {
     }
 
     return data;
+  },
+
+  getProfileByUsername: async (username: string): Promise<UserResponse> => {
+    const response = await fetch(`/api/user/profile/one?username=${encodeURIComponent(username)}`, {
+      method: 'GET',
+      headers: { accept: 'application/json' },
+      cache: 'no-store',
+    });
+
+    const data = await response.json().catch(() => null as never);
+
+    if (!response.ok) {
+      throw new Error(data?.message || data?.error || `프로필 조회 실패 (${response.status})`);
+    }
+
+    return cleanUserResponse(data);
   },
 
   updateProfile: async (data: Partial<UserResponse>): Promise<UserResponse> => {
@@ -792,6 +809,7 @@ export interface User {
   email: string;
   username: string;
   description: string;
+  techStack: string;
   githubUrl: string;
   linkedinUrl: string;
   blogUrl: string;
@@ -854,6 +872,7 @@ const cleanUserResponse = (data: any): UserResponse => {
     realName: cleanValue(data.realName),
     nickname: cleanValue(data.nickname),
     description: cleanValue(data.description),
+    techStack: cleanValue(data.techStack),
     githubUrl: cleanValue(data.githubUrl),
     linkedinUrl: cleanValue(data.linkedinUrl),
     blogUrl: cleanValue(data.blogUrl),

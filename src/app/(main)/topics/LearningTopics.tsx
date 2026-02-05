@@ -58,6 +58,7 @@ interface CategoryDisplayData {
   projects: number;
   type: CategoryType;
   description: string;
+  content: string;
   longDescription: string;
 }
 
@@ -139,6 +140,7 @@ const transformCategoryData = (apiCategory: CategoryItem): CategoryDisplayData |
     projects: 0, // API에서 제공되지 않으면 기본값 0
     type: defaultType,
     description: apiCategory.description || (type ? CategoryDescriptions[type] : apiCategory.description || ''),
+    content: (apiCategory.content ?? '').toString(),
     longDescription: type ? longDescriptions[type] : apiCategory.description || '',
   };
 };
@@ -373,6 +375,14 @@ export function LearningTopics() {
                 <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-line">
                   {cat.longDescription}
                 </p>
+                {cat.content ? (
+                  <div className="mt-4 rounded-lg bg-black/20 border border-white/10 p-4">
+                    <h2 className="text-sm font-semibold text-white mb-2">내용</h2>
+                    <p className="text-sm text-gray-200 leading-relaxed whitespace-pre-line">
+                      {cat.content}
+                    </p>
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>

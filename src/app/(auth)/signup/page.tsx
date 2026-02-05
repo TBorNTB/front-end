@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { TechStackInput } from "@/components/ui/TechStackInput";
 
 // Import from co-located auth types and utilities
 import { 
@@ -63,6 +64,7 @@ export default function SignupPage() {
       realName: "",
       email: "",
       description: "",
+      techStack: "",
       githubUrl: "",
       linkedinUrl: "",
       blogUrl: "",
@@ -358,6 +360,28 @@ export default function SignupPage() {
                         className={getTextareaClassName(!!fieldState.error)}
                         rows={3}
                         {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-error" />
+                  </FormItem>
+                )}
+              />
+
+              {/* Tech Stack */}
+              <FormField
+                control={form.control}
+                name="techStack"
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium text-gray-700">기술스택</FormLabel>
+                    <FormControl>
+                      <TechStackInput
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        placeholder="React 입력 후 Enter (예: React, Next.js, Spring, Aws)"
+                        className={getInputClassName(!!fieldState.error)}
+                        maxLength={255}
+                        onMaxLengthExceeded={() => toast.error('기술스택은 255자 이하여야 합니다.')}
                       />
                     </FormControl>
                     <FormMessage className="text-error" />

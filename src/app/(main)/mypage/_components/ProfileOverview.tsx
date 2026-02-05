@@ -136,6 +136,15 @@ export default function ProfileContent() {
   const displayJoinDate = profile.createdAt ? formatDate(profile.createdAt) : '';
   const displayAvatar = isValidImageUrl(profile.profileImageUrl) || '/images/placeholder/default-avatar.svg';
   const displayRoleLabel = getRoleDisplayLabel(displayRole);
+  const techStacks = (profile.techStack || '')
+    .split(',')
+    .map((s) => {
+      const trimmed = s.trim();
+      if (!trimmed) return '';
+      const lowered = trimmed.toLowerCase();
+      return lowered.charAt(0).toUpperCase() + lowered.slice(1);
+    })
+    .filter(Boolean);
 
   // 통계 정보
   const stats = {
@@ -255,6 +264,26 @@ export default function ProfileContent() {
               <Badge className="bg-primary-500/20 text-primary-700 border-primary-400/50 px-3 py-1">
                 {displayRoleLabel}
               </Badge>
+            </div>
+
+            <div className="mb-4">
+              <div className="text-sm text-gray-500 mb-1">기술스택:</div>
+              {techStacks.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {techStacks.slice(0, 8).map((tag) => (
+                    <Badge key={tag} variant="outline" className="text-xs">
+                      {tag}
+                    </Badge>
+                  ))}
+                  {techStacks.length > 8 && (
+                    <Badge variant="outline" className="text-xs">
+                      +{techStacks.length - 8}
+                    </Badge>
+                  )}
+                </div>
+              ) : (
+                <div className="text-sm text-gray-400">-</div>
+              )}
             </div>
             
             {/* 닉네임과 실명 표시 */}
