@@ -1,10 +1,10 @@
 'use client';
 
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { EditorContent, useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface TipTapEditorProps {
   content?: string;
@@ -102,6 +102,35 @@ export default function TipTapEditor({
       setIsUploadingImage(false);
     }
   }, [editor, onImageUpload]);
+
+  // Ctrl+V 붙여넣기로 이미지 업로드
+  useEffect(() => {
+    if (!editor || !editable) return;
+
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          e.preventDefault();
+          const file = items[i].getAsFile();
+          if (file) {
+            handleImageUpload(file);
+          }
+          break;
+        }
+      }
+    };
+
+    // editor DOM에 paste 이벤트 리스너 추가
+    const editorDOM = editor.view.dom;
+    editorDOM?.addEventListener('paste', handlePaste);
+
+    return () => {
+      editorDOM?.removeEventListener('paste', handlePaste);
+    };
+  }, [editor, editable, handleImageUpload]);
 
   const handleImageFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
