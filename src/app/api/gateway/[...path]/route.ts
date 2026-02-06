@@ -33,13 +33,13 @@ function buildBackendUrl(request: Request, pathParts: string[]): string {
 
 async function handleProxy(request: Request, pathParts: string[]) {
   if (!pathParts.length) {
-    return NextResponse.json({ error: 'Missing path' }, { status: 400 });
+    return NextResponse.json({ message: 'Missing path', error: 'Missing path' }, { status: 400 });
   }
 
   const servicePrefix = pathParts[0];
   if (!ALLOWED_PREFIXES.has(servicePrefix)) {
     return NextResponse.json(
-      { error: `Disallowed service prefix: ${servicePrefix}` },
+      { message: `Disallowed service prefix: ${servicePrefix}`, error: `Disallowed service prefix: ${servicePrefix}` },
       { status: 400 }
     );
   }

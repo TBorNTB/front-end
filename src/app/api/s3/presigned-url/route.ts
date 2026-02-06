@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 
   if (!result.success) {
     return NextResponse.json(
-      { error: result.error ?? 'Failed to get presigned URL' },
+      { message: result.error ?? 'Failed to get presigned URL', error: result.error ?? 'Failed to get presigned URL' },
       { status: result.status || 500 }
     );
   }

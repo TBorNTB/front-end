@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiUrl } from '@/lib/api/config';
 import { cookies } from 'next/headers';
+import { nextErrorFromBackendResponse } from '@/lib/api/route-utils';
 
 export async function GET(
   request: NextRequest,
@@ -11,7 +12,7 @@ export async function GET(
     
     if (!id) {
       return NextResponse.json(
-        { error: 'News ID is required' },
+        { message: 'News ID is required', error: 'News ID is required' },
         { status: 400 }
       );
     }
@@ -30,13 +31,8 @@ export async function GET(
     });
     
     if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
-      console.error(`News API error: ${response.status} ${response.statusText}`, errorText);
-      
-      return NextResponse.json(
-        { error: `API error: ${response.status}` },
-        { status: response.status }
-      );
+      console.error(`News API error: ${response.status} ${response.statusText}`);
+      return nextErrorFromBackendResponse(response, '뉴스를 불러오지 못했습니다.');
     }
     
     const data = await response.json();
@@ -44,7 +40,7 @@ export async function GET(
   } catch (error) {
     console.error('Error in news detail API route:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { message: error instanceof Error ? error.message : 'Unknown error', error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
@@ -60,7 +56,7 @@ export async function PUT(
     
     if (!id) {
       return NextResponse.json(
-        { error: 'News ID is required' },
+        { message: 'News ID is required', error: 'News ID is required' },
         { status: 400 }
       );
     }
@@ -68,7 +64,7 @@ export async function PUT(
     // Validate required fields
     if (!body.title || !body.summary || !body.content || !body.category) {
       return NextResponse.json(
-        { error: '필수 필드가 누락되었습니다.' },
+        { message: '필수 필드가 누락되었습니다.', error: '필수 필드가 누락되었습니다.' },
         { status: 400 }
       );
     }
@@ -108,13 +104,8 @@ export async function PUT(
     });
     
     if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
-      console.error(`News update API error: ${response.status} ${response.statusText}`, errorText);
-      
-      return NextResponse.json(
-        { error: `API error: ${response.status}`, details: errorText },
-        { status: response.status }
-      );
+      console.error(`News update API error: ${response.status} ${response.statusText}`);
+      return nextErrorFromBackendResponse(response, '뉴스 수정에 실패했습니다.');
     }
     
     const data = await response.json();
@@ -122,7 +113,7 @@ export async function PUT(
   } catch (error) {
     console.error('Error in news update API route:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { message: error instanceof Error ? error.message : 'Unknown error', error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
@@ -137,7 +128,7 @@ export async function DELETE(
     
     if (!id) {
       return NextResponse.json(
-        { error: 'News ID is required' },
+        { message: 'News ID is required', error: 'News ID is required' },
         { status: 400 }
       );
     }
@@ -161,20 +152,15 @@ export async function DELETE(
     });
     
     if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
-      console.error(`News delete API error: ${response.status} ${response.statusText}`, errorText);
-      
-      return NextResponse.json(
-        { error: `API error: ${response.status}`, details: errorText },
-        { status: response.status }
-      );
+      console.error(`News delete API error: ${response.status} ${response.statusText}`);
+      return nextErrorFromBackendResponse(response, '뉴스 삭제에 실패했습니다.');
     }
     
     return NextResponse.json({ message: 'News deleted successfully' }, { status: 200 });
   } catch (error) {
     console.error('Error in news delete API route:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { message: error instanceof Error ? error.message : 'Unknown error', error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

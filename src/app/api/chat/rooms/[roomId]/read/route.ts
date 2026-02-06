@@ -18,7 +18,7 @@ export async function PUT(
 
   if (!result.success) {
     return NextResponse.json(
-      { error: result.error ?? 'Failed to mark room as read' },
+      { message: result.error ?? 'Failed to mark room as read', error: result.error ?? 'Failed to mark room as read' },
       { status: result.status || 500 }
     );
   }

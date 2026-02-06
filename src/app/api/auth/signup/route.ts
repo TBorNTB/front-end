@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getUserApiUrl, USER_ENDPOINTS } from '@/lib/api/endpoints/user-endpoints';
+import { nextErrorFromBackendResponse } from '@/lib/api/route-utils';
 
 export async function POST(request: Request) {
   try {
@@ -36,12 +37,7 @@ export async function POST(request: Request) {
     console.log('📡 Signup Response Status:', backendResponse.status);
 
     if (!backendResponse.ok) {
-      const errorText = await backendResponse.text();
-      console.error('❌ Signup failed:', errorText);
-      return NextResponse.json({
-        message: `Registration failed: ${backendResponse.status}`,
-        details: errorText
-      }, { status: backendResponse.status });
+      return nextErrorFromBackendResponse(backendResponse, '회원가입에 실패했습니다.');
     }
 
     const data = await backendResponse.json();
@@ -61,9 +57,11 @@ export async function POST(request: Request) {
       }, { status: 408 });
     }
 
-    return NextResponse.json({
-      message: 'Registration failed - please try again',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        message: error instanceof Error ? error.message : 'Registration failed - please try again',
+      },
+      { status: 500 }
+    );
   }
 }

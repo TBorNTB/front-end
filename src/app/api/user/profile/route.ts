@@ -11,7 +11,7 @@ export async function GET(request: Request) {
 
   if (!result.success) {
     return NextResponse.json(
-      { error: result.error ?? 'Failed to fetch profile' },
+      { message: result.error ?? 'Failed to fetch profile', error: result.error ?? 'Failed to fetch profile' },
       { status: result.status || 500 }
     );
   }
@@ -35,7 +35,7 @@ export async function PATCH(request: Request) {
 
   if (!result.success) {
     return NextResponse.json(
-      { error: result.error ?? 'Failed to update profile' },
+      { message: result.error ?? 'Failed to update profile', error: result.error ?? 'Failed to update profile' },
       { status: result.status || 500 }
     );
   }

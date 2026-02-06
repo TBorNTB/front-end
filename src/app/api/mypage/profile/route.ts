@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getUserApiUrl, USER_ENDPOINTS } from '@/lib/api/endpoints/user-endpoints';
+import { nextErrorFromBackendResponse } from '@/lib/api/route-utils';
 
 export async function POST(request: Request) {
   try {
@@ -143,11 +144,7 @@ export async function POST(request: Request) {
     console.log('👤 Signup Response Status:', backendResponse.status);
 
     if (!backendResponse.ok) {
-      const errorText = await backendResponse.text();
-      return NextResponse.json({
-        message: `Registration failed: ${backendResponse.status}`,
-        details: errorText
-      }, { status: backendResponse.status });
+      return nextErrorFromBackendResponse(backendResponse, '요청에 실패했습니다.');
     }
 
     const data = await backendResponse.json();

@@ -28,7 +28,7 @@ export async function GET(
 
   if (!result.success) {
     return NextResponse.json(
-      { error: result.error ?? 'Failed to fetch chat history' },
+      { message: result.error ?? 'Failed to fetch chat history', error: result.error ?? 'Failed to fetch chat history' },
       { status: result.status || 500 }
     );
   }

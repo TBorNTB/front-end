@@ -8,7 +8,10 @@ export async function GET(request: Request) {
   const username = url.searchParams.get('username');
 
   if (!username) {
-    return NextResponse.json({ error: 'username is required' }, { status: 400 });
+    return NextResponse.json(
+      { message: 'username is required', error: 'username is required' },
+      { status: 400 }
+    );
   }
 
   const endpoint = `${USER_ENDPOINTS.USER.PROFILE_ONE}?username=${encodeURIComponent(username)}`;
@@ -21,7 +24,7 @@ export async function GET(request: Request) {
 
   if (!result.success) {
     return NextResponse.json(
-      { error: result.error ?? 'Failed to fetch profile' },
+      { message: result.error ?? 'Failed to fetch profile', error: result.error ?? 'Failed to fetch profile' },
       { status: result.status || 500 }
     );
   }

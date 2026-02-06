@@ -18,7 +18,7 @@ export async function DELETE(
 
   if (!result.success) {
     return NextResponse.json(
-      { error: result.error ?? 'Failed to leave chat room' },
+      { message: result.error ?? 'Failed to leave chat room', error: result.error ?? 'Failed to leave chat room' },
       { status: result.status || 500 }
     );
   }

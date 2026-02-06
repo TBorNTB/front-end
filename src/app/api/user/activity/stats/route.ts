@@ -11,7 +11,7 @@ export async function GET(request: Request) {
 
   if (!result.success) {
     return NextResponse.json(
-      { error: result.error ?? 'Failed to fetch activity stats' },
+      { message: result.error ?? 'Failed to fetch activity stats', error: result.error ?? 'Failed to fetch activity stats' },
       { status: result.status || 500 }
     );
   }

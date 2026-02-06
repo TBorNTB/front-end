@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiUrl } from '@/lib/api/config';
 import { cookies } from 'next/headers';
+import { nextErrorFromBackendResponse } from '@/lib/api/route-utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,7 +10,7 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!body.title || !body.summary || !body.content || !body.category) {
       return NextResponse.json(
-        { error: '필수 필드가 누락되었습니다.' },
+        { message: '필수 필드가 누락되었습니다.', error: '필수 필드가 누락되었습니다.' },
         { status: 400 }
       );
     }
@@ -49,13 +50,8 @@ export async function POST(request: NextRequest) {
     });
     
     if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
-      console.error(`News create API error: ${response.status} ${response.statusText}`, errorText);
-      
-      return NextResponse.json(
-        { error: `API error: ${response.status}`, details: errorText },
-        { status: response.status }
-      );
+      console.error(`News create API error: ${response.status} ${response.statusText}`);
+      return nextErrorFromBackendResponse(response, '뉴스 생성에 실패했습니다.');
     }
     
     const data = await response.json();
@@ -63,7 +59,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error in news create API route:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { message: error instanceof Error ? error.message : 'Unknown error', error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

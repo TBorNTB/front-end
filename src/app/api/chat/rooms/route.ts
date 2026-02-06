@@ -23,7 +23,7 @@ export async function GET(request: Request) {
 
   if (!result.success) {
     return NextResponse.json(
-      { error: result.error ?? 'Failed to fetch chat rooms' },
+      { message: result.error ?? 'Failed to fetch chat rooms', error: result.error ?? 'Failed to fetch chat rooms' },
       { status: result.status || 500 }
     );
   }
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
 
   if (!result.success) {
     return NextResponse.json(
-      { error: result.error ?? 'Failed to create chat room' },
+      { message: result.error ?? 'Failed to create chat room', error: result.error ?? 'Failed to create chat room' },
       { status: result.status || 500 }
     );
   }

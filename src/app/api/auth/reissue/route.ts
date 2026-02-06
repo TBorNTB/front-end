@@ -5,6 +5,7 @@
 import { NextResponse } from 'next/server';
 import { BASE_URL } from '@/lib/api/config';
 import { USER_ENDPOINTS } from '@/lib/api/endpoints/user-endpoints';
+import { nextErrorFromBackendResponse } from '@/lib/api/route-utils';
 
 export async function POST(request: Request) {
   try {
@@ -13,14 +14,14 @@ export async function POST(request: Request) {
     // keepSignedIn=false면 토큰 갱신 안 함
     if (cookieHeader?.includes('keepSignedIn=false')) {
       return NextResponse.json(
-        { success: false, error: 'Keep signed in disabled' },
+        { success: false, message: 'Keep signed in disabled', error: 'Keep signed in disabled' },
         { status: 401 }
       );
     }
 
     if (!cookieHeader?.includes('refreshToken')) {
       return NextResponse.json(
-        { success: false, error: 'No refresh token' },
+        { success: false, message: 'No refresh token', error: 'No refresh token' },
         { status: 401 }
       );
     }
@@ -42,8 +43,16 @@ export async function POST(request: Request) {
     );
 
     if (!backendResponse.ok) {
+      const proxied = await nextErrorFromBackendResponse(backendResponse, 'Reissue failed');
+      // Keep a stable shape for existing callers.
+      const data = await proxied.clone().json().catch(() => null);
       return NextResponse.json(
-        { success: false, error: 'Reissue failed' },
+        {
+          success: false,
+          ...(data && typeof data === 'object' ? data : null),
+          message: (data as any)?.message ?? 'Reissue failed',
+          error: (data as any)?.message ?? (data as any)?.error ?? 'Reissue failed',
+        },
         { status: backendResponse.status }
       );
     }
@@ -60,7 +69,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Reissue error:', error);
     return NextResponse.json(
-      { success: false, error: 'Reissue failed' },
+      { success: false, message: 'Reissue failed', error: 'Reissue failed' },
       { status: 500 }
     );
   }

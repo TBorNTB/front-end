@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ELASTIC_ENDPOINTS, getElasticApiUrl } from '@/lib/api/endpoints';
+import { extractMessageFromPayload, readJsonOrText } from '@/lib/api/route-utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -42,8 +43,9 @@ export async function GET(request: NextRequest) {
     });
     
     if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
-      console.error(`Elastic service error: ${response.status} ${response.statusText}`, errorText);
+      const payload = await readJsonOrText(response);
+      const message = extractMessageFromPayload(payload, `API error: ${response.status}`);
+      console.error(`Elastic service error: ${response.status} ${response.statusText}`, message);
       
       return NextResponse.json(
         {
@@ -52,7 +54,8 @@ export async function GET(request: NextRequest) {
           size: parseInt(size),
           totalElements: 0,
           totalPages: 0,
-          error: `API error: ${response.status}`,
+          message,
+          error: message,
         },
         { status: response.status }
       );
@@ -62,6 +65,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(data, { status: 200 });
   } catch (error) {
     console.error('Error in news search API route:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
       {
         content: [],
@@ -69,7 +73,8 @@ export async function GET(request: NextRequest) {
         size: 6,
         totalElements: 0,
         totalPages: 0,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        message,
+        error: message,
       },
       { status: 500 }
     );
