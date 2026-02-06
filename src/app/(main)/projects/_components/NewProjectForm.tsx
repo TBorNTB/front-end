@@ -602,6 +602,7 @@ export default function NewProjectForm() {
                 <div className={`border rounded-lg p-3 min-h-[120px] max-h-[200px] overflow-y-auto ${
                   errors.category ? 'border-red-500' : 'border-gray-300'
                 }`}>
+                  <p className="text-xs text-primary-600 mb-2">카테고리는 최대 3개까지 선택할 수 있습니다.</p>
                   {categories.length === 0 ? (
                     <p className="text-gray-500 text-sm">카테고리가 없습니다</p>
                   ) : (
@@ -843,6 +844,7 @@ export default function NewProjectForm() {
             <label htmlFor="subGoals" className="block text-sm font-medium text-gray-700 mb-2">
               서브 목표
             </label>
+            <p className="text-xs text-gray-500 mb-2">프로젝트를 생성할 때 달성하고 싶은 서브 목표 체크리스트를 입력하세요. 이 목표들은 프로젝트 진행 중 달성 여부를 체크할 수 있습니다.</p>
             <div className="flex gap-2 mb-3">
               <Input
                 id="subGoals"

@@ -7,7 +7,6 @@ import { Menu, Transition } from '@headlessui/react';
 import DocumentModal from '../_components/DocumentModal';
 import { fetchProjectDetail, deleteDocument } from '@/lib/api/services/project-services';
 import { 
-  fetchViewCount,
   incrementViewCount,
   fetchLikeCount,
   fetchLikeStatus,
@@ -70,6 +69,7 @@ interface MappedProject {
   }>;
   projectStatus: string;
   thumbnailUrl?: string;
+  subGoals?: string[];
 }
 
 export default function ProjectPage({ params }: ProjectPageProps) {
@@ -79,7 +79,26 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   const [isDocModalOpen, setIsDocModalOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
-  
+
+  // Checklist state for subGoals
+  const [checkedGoals, setCheckedGoals] = useState<boolean[]>([]);
+  // Add subgoal state
+  const [newSubGoal, setNewSubGoal] = useState('');
+
+  // Handler to add subgoal
+  const handleAddSubGoal = () => {
+    if (!newSubGoal.trim() || !project) return;
+    setProject(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        subGoals: [...(prev.subGoals || []), newSubGoal.trim()],
+      };
+    });
+    setCheckedGoals(prev => [...prev, false]);
+    setNewSubGoal('');
+  };
+
   // Comment states
   const [comments, setComments] = useState<Comment[]>([]);
   const commentsRef = useRef<Comment[]>([]); // 현재 댓글 목록 추적용
@@ -96,7 +115,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   const [editContent, setEditContent] = useState('');
   const [replyingToId, setReplyingToId] = useState<number | null>(null);
   const [replyContent, setReplyContent] = useState('');
-  
+
   // Dropdown states
   const [openSections, setOpenSections] = useState<{[key: string]: boolean}>({
     info: true,
@@ -106,10 +125,26 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   });
 
   const [project, setProject] = useState<MappedProject | null>(null);
-  
+
   // Like states
   const [isLiked, setIsLiked] = useState(false);
   const [isTogglingLike, setIsTogglingLike] = useState(false);
+
+  // Update checkedGoals when project.subGoals changes
+  useEffect(() => {
+    if (project && project.subGoals && Array.isArray(project.subGoals)) {
+      setCheckedGoals(Array(project.subGoals.length).fill(false));
+    }
+  }, [project?.subGoals]);
+
+  // Toggle checklist item
+  const handleToggleGoal = (idx: number) => {
+    setCheckedGoals((prev) => {
+      const updated = [...prev];
+      updated[idx] = !updated[idx];
+      return updated;
+    });
+  };
 
   // Comment functions - useEffect보다 먼저 정의
   const loadComments = async (postId: string, direction: 'ASC' | 'DESC', reset: boolean = true) => {
@@ -184,7 +219,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   };
 
   useEffect(() => {
-    params.then((resolvedParams) => {
+    params.then((resolvedParams: { id: string }) => {
       setProjectId(resolvedParams.id);
       fetchProjectData(resolvedParams.id);
       // 초기 로드 시 최신순(DESC)으로 댓글 로드
@@ -279,6 +314,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       relatedProjects: [], // TODO: 연관 프로젝트 API 필요
       projectStatus: statusMap[apiData.projectStatus] || apiData.projectStatus,
       thumbnailUrl: apiData.thumbnailUrl,
+      subGoals: (apiData.subGoalDtos || []).map((goal: any) => goal.content),
     };
   };
 
@@ -664,6 +700,41 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           )}
                         </div>
                       </div>
+                      {/* 서버 목표 체크리스트 UI 이동 */}
+                      <div className="pb-4">
+                        <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">서버 목표 체크리스트</p>
+                        <div className="flex gap-2 mb-4">
+                          <input
+                            type="text"
+                            placeholder="새 목표를 입력하세요"
+                            value={newSubGoal}
+                            onChange={e => setNewSubGoal(e.target.value)}
+                            className="border border-gray-300 rounded-lg px-3 py-2 text-sm flex-1"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleAddSubGoal}
+                            className="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                          >
+                            추가
+                          </button>
+                        </div>
+                        {project.subGoals && project.subGoals.length > 0 && (
+                          <div className="flex flex-col gap-2">
+                            {project.subGoals.map((goal: string, idx: number) => (
+                              <label key={goal} className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={typeof checkedGoals !== 'undefined' && checkedGoals[idx]}
+                                  onChange={() => handleToggleGoal(idx)}
+                                  className="w-4 h-4 text-green-600 border-gray-300"
+                                />
+                                <span className="text-sm text-gray-900">{goal}</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                       {project.github && (
                         <div>
                           <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">링크</p>
@@ -1029,6 +1100,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     />
                   </section>
                 )}
+
 
                 {/* Tags */}
                 {(project.tags || []).length > 0 && (
