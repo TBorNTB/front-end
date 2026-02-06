@@ -1,18 +1,18 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft, Plus, X, Upload, Search, UserCircle, AtSign } from 'lucide-react';
+import TipTapEditor from '@/components/editor/TipTapEditor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import TipTapEditor from '@/components/editor/TipTapEditor';
-import Image from 'next/image';
-import { updateNews } from '@/lib/api/services/news-services';
-import { memberService, CursorUserResponse } from '@/lib/api/services/user-services';
-import { s3Service } from '@/lib/api/services/user-services';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { updateNews } from '@/lib/api/services/news-services';
+import { s3Service } from '@/lib/api/services/s3-services';
+import { CursorUserResponse, memberService } from '@/lib/api/services/user-services';
+import { ArrowLeft, AtSign, Plus, Search, Upload, UserCircle, X } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface NewsDetailPageProps {
   params: Promise<{ id: string }>;
@@ -25,7 +25,6 @@ interface FormData {
   content: string;
   tags: string[];
   participantIds: string[];
-  thumbnailPath: string;
 }
 
 interface FormErrors {
@@ -45,6 +44,8 @@ export default function EditNewsPage({ params }: NewsDetailPageProps) {
   const [thumbnailPreview, setThumbnailPreview] = useState<string>('');
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
+  const [thumbnailKey, setThumbnailKey] = useState<string>('');
+  const [contentImageKeys, setContentImageKeys] = useState<string[]>([]);
   
   // User search states
   const [allUsers, setAllUsers] = useState<CursorUserResponse[]>([]);
@@ -70,7 +71,6 @@ export default function EditNewsPage({ params }: NewsDetailPageProps) {
     content: '',
     tags: [],
     participantIds: [],
-    thumbnailPath: '',
   });
 
   // Load news data
@@ -102,11 +102,10 @@ export default function EditNewsPage({ params }: NewsDetailPageProps) {
         content: news.content || '',
         tags: news.tags || [],
         participantIds: news.participantIds || [],
-        thumbnailPath: news.thumbnailPath || '',
       });
-      
-      if (news.thumbnailPath) {
-        setThumbnailPreview(news.thumbnailPath);
+
+      if (news.thumbnailUrl) {
+        setThumbnailPreview(news.thumbnailUrl);
       }
     } catch (error) {
       console.error('Failed to load news:', error);
@@ -310,6 +309,12 @@ export default function EditNewsPage({ params }: NewsDetailPageProps) {
     }
   };
 
+  const handleEditorImageUpload = useCallback(async (file: File) => {
+    const result = await s3Service.uploadFile(file);
+    setContentImageKeys(prev => [...prev, result.key]);
+    return result;
+  }, []);
+
   const handleEditorChange = (html: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -354,13 +359,14 @@ export default function EditNewsPage({ params }: NewsDetailPageProps) {
     setLoading(true);
 
     try {
-      let thumbnailPath = formData.thumbnailPath;
-      
+      let uploadedThumbnailKey = thumbnailKey;
+
       // Upload thumbnail if new file exists
-      if (thumbnailFile) {
+      if (thumbnailFile && !thumbnailKey) {
         setIsUploadingThumbnail(true);
         try {
-          thumbnailPath = await s3Service.uploadFile(thumbnailFile);
+          const result = await s3Service.uploadFile(thumbnailFile);
+          uploadedThumbnailKey = result.key;
         } catch (uploadError) {
           console.error('Failed to upload thumbnail:', uploadError);
           alert('썸네일 업로드에 실패했습니다. 다시 시도해주세요.');
@@ -380,7 +386,8 @@ export default function EditNewsPage({ params }: NewsDetailPageProps) {
         category: formData.category,
         participantIds: formData.participantIds,
         tags: formData.tags,
-        ...(thumbnailPath && thumbnailPath.trim() && { thumbnailPath }),
+        ...(uploadedThumbnailKey && { thumbnailKey: uploadedThumbnailKey }),
+        ...(contentImageKeys.length > 0 && { contentImageKeys }),
       };
 
       await updateNews(newsId, newsData);
@@ -557,6 +564,7 @@ export default function EditNewsPage({ params }: NewsDetailPageProps) {
               <TipTapEditor
                 content={formData.content}
                 onChange={handleEditorChange}
+                onImageUpload={handleEditorImageUpload}
                 placeholder="뉴스 내용을 작성해주세요..."
               />
             </div>

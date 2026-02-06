@@ -12,7 +12,7 @@ import Image from 'next/image';
 import { fetchCategories } from '@/lib/api/services/project-services';
 import { createNews } from '@/lib/api/services/news-services';
 import { memberService, CursorUserResponse } from '@/lib/api/services/user-services';
-import { s3Service } from '@/lib/api/services/user-services';
+import { s3Service } from '@/lib/api/services/s3-services';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 interface FormData {
@@ -22,7 +22,6 @@ interface FormData {
   content: string;
   tags: string[];
   participantIds: string[];
-  thumbnailPath: string;
 }
 
 interface FormErrors {
@@ -40,6 +39,8 @@ export default function NewNewsForm() {
   const [thumbnailPreview, setThumbnailPreview] = useState<string>('');
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
+  const [thumbnailKey, setThumbnailKey] = useState<string>('');
+  const [contentImageKeys, setContentImageKeys] = useState<string[]>([]);
   
   // User search states
   const [allUsers, setAllUsers] = useState<CursorUserResponse[]>([]);
@@ -65,7 +66,6 @@ export default function NewNewsForm() {
     content: '',
     tags: [],
     participantIds: [],
-    thumbnailPath: '',
   });
 
   // Load initial users
@@ -266,6 +266,12 @@ export default function NewNewsForm() {
     }
   };
 
+  const handleEditorImageUpload = useCallback(async (file: File) => {
+    const result = await s3Service.uploadFile(file);
+    setContentImageKeys(prev => [...prev, result.key]);
+    return result;
+  }, []);
+
   const handleEditorChange = (html: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -310,13 +316,14 @@ export default function NewNewsForm() {
     setLoading(true);
 
     try {
-      let thumbnailPath = '';
-      
-      // Upload thumbnail if file exists
-      if (thumbnailFile) {
+      let uploadedThumbnailKey = thumbnailKey;
+
+      // Upload thumbnail if file exists and not yet uploaded
+      if (thumbnailFile && !thumbnailKey) {
         setIsUploadingThumbnail(true);
         try {
-          thumbnailPath = await s3Service.uploadFile(thumbnailFile);
+          const result = await s3Service.uploadFile(thumbnailFile);
+          uploadedThumbnailKey = result.key;
         } catch (uploadError) {
           console.error('Failed to upload thumbnail:', uploadError);
           alert('썸네일 업로드에 실패했습니다. 다시 시도해주세요.');
@@ -336,7 +343,8 @@ export default function NewNewsForm() {
         category: formData.category,
         participantIds: formData.participantIds,
         tags: formData.tags,
-        ...(thumbnailPath && { thumbnailPath }),
+        ...(uploadedThumbnailKey && { thumbnailKey: uploadedThumbnailKey }),
+        ...(contentImageKeys.length > 0 && { contentImageKeys }),
       };
 
       const response = await createNews(newsData);
@@ -511,6 +519,7 @@ export default function NewNewsForm() {
                   <TipTapEditor
                     content={formData.content}
                     onChange={handleEditorChange}
+                    onImageUpload={handleEditorImageUpload}
                     placeholder="뉴스 내용을 작성해주세요..."
                   />
                 </div>

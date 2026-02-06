@@ -9,7 +9,8 @@ export interface CreateNewsRequest {
   category: string;
   participantIds?: string[];
   tags?: string[];
-  thumbnailPath?: string;
+  thumbnailKey?: string;
+  contentImageKeys?: string[];
 }
 
 export interface CreateNewsResponse {
@@ -18,7 +19,7 @@ export interface CreateNewsResponse {
   summary: string;
   content: string;
   category: string;
-  thumbnailPath?: string;
+  thumbnailKey?: string;
   writerId: string;
   writerNickname: string;
   participantIds: string[];
@@ -35,7 +36,8 @@ export interface UpdateNewsRequest {
   category: string;
   participantIds?: string[];
   tags?: string[];
-  thumbnailPath?: string;
+  thumbnailKey?: string;
+  contentImageKeys?: string[];
 }
 
 export interface UpdateNewsResponse {
@@ -44,7 +46,7 @@ export interface UpdateNewsResponse {
   summary: string;
   content: string;
   category: string;
-  thumbnailPath?: string;
+  thumbnailKey?: string;
   writerId: string;
   writerNickname: string;
   participantIds: string[];
@@ -58,7 +60,7 @@ export interface UpdateNewsResponse {
 export const createNews = async (data: CreateNewsRequest): Promise<CreateNewsResponse> => {
   const url = getApiUrl('/project-service/news');
 
-  // Only include thumbnailPath if it has a value
+  // Only include thumbnailKey if it has a value
   const requestBody: any = {
     title: data.title,
     summary: data.summary,
@@ -68,8 +70,12 @@ export const createNews = async (data: CreateNewsRequest): Promise<CreateNewsRes
     tags: data.tags || [],
   };
 
-  if (data.thumbnailPath && data.thumbnailPath.trim()) {
-    requestBody.thumbnailPath = data.thumbnailPath;
+  if (data.thumbnailKey && data.thumbnailKey.trim()) {
+    requestBody.thumbnailKey = data.thumbnailKey;
+  }
+
+  if (data.contentImageKeys && data.contentImageKeys.length > 0) {
+    requestBody.contentImageKeys = data.contentImageKeys;
   }
 
   const response = await fetch(url, {
@@ -97,7 +103,7 @@ export const updateNews = async (
 ): Promise<UpdateNewsResponse> => {
   const url = getApiUrl(`/project-service/news/${id}`);
 
-  // Only include thumbnailPath if it has a value
+  // Only include thumbnailKey if it has a value
   const requestBody: any = {
     title: data.title,
     summary: data.summary,
@@ -107,8 +113,12 @@ export const updateNews = async (
     tags: data.tags || [],
   };
 
-  if (data.thumbnailPath && data.thumbnailPath.trim()) {
-    requestBody.thumbnailPath = data.thumbnailPath;
+  if (data.thumbnailKey && data.thumbnailKey.trim()) {
+    requestBody.thumbnailKey = data.thumbnailKey;
+  }
+
+  if (data.contentImageKeys && data.contentImageKeys.length > 0) {
+    requestBody.contentImageKeys = data.contentImageKeys;
   }
 
   const response = await fetchWithRefresh(url, {
