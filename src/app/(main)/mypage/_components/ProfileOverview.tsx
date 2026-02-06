@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { profileService, s3Service, UserResponse } from '@/lib/api/services/user-services';
+import { profileService, UserResponse } from '@/lib/api/services/user-services';
 import { useAuth } from '@/context/AuthContext';
 import { validateImageFile } from '@/lib/form-utils';
 import { getRoleDisplayLabel } from '@/lib/role-utils';
@@ -176,13 +176,8 @@ export default function ProfileContent() {
     setError(null);
 
     try {
-      // S3에 파일 업로드
-      const uploadedUrl = await s3Service.uploadFile(file);
-      
-      // 프로필 업데이트
-      const updatedProfile = await profileService.updateProfile({
-        profileImageUrl: uploadedUrl,
-      });
+      // 프로필 이미지 직접 업로드
+      const updatedProfile = await profileService.uploadProfileImage(file);
       
       // 프로필 상태 업데이트
       setProfile(updatedProfile);
