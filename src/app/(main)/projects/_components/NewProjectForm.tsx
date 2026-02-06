@@ -10,6 +10,7 @@ import TipTapEditor from '@/components/editor/TipTapEditor';
 import Image from 'next/image';
 import { fetchCategories, createProject } from '@/lib/api/services/project-services';
 import { memberService, CursorUserResponse } from '@/lib/api/services/user-services';
+import { s3Service } from '@/lib/api/services/s3-services';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 interface FormData {
@@ -24,7 +25,6 @@ interface FormData {
   status: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED';
   startDate: string;
   endDate: string;
-  thumbnailUrl: string;
   documents: File[];
   collaborators: Array<{ name: string; email: string; role: string }>;
 }
@@ -41,6 +41,10 @@ export default function NewProjectForm() {
   const [subGoalInput, setSubGoalInput] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
   const [thumbnailPreview, setThumbnailPreview] = useState<string>('');
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailKey, setThumbnailKey] = useState<string>('');
+  const [contentImageKeys, setContentImageKeys] = useState<string[]>([]);
+  const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
   
   // API data states
   const [categories, setCategories] = useState<Array<{ id: number; name: string; description: string }>>([]);
@@ -72,7 +76,6 @@ export default function NewProjectForm() {
     status: 'PLANNING',
     startDate: '',
     endDate: '',
-    thumbnailUrl: '',
     documents: [],
     collaborators: [],
   });
@@ -378,13 +381,10 @@ export default function NewProjectForm() {
   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setThumbnailFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setThumbnailPreview(reader.result as string);
-        setFormData((prev) => ({
-          ...prev,
-          thumbnailUrl: reader.result as string,
-        }));
       };
       reader.readAsDataURL(file);
     }
@@ -438,6 +438,12 @@ export default function NewProjectForm() {
     }));
   };
 
+  const handleEditorImageUpload = useCallback(async (file: File) => {
+    const result = await s3Service.uploadFile(file);
+    setContentImageKeys(prev => [...prev, result.key]);
+    return result;
+  }, []);
+
   const handleEditorChange = useCallback((html: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -455,21 +461,40 @@ export default function NewProjectForm() {
     setLoading(true);
 
     try {
+      let uploadedThumbnailKey = thumbnailKey;
+
+      // Upload thumbnail if file exists and not yet uploaded
+      if (thumbnailFile && !thumbnailKey) {
+        setIsUploadingThumbnail(true);
+        try {
+          const result = await s3Service.uploadFile(thumbnailFile);
+          uploadedThumbnailKey = result.key;
+        } catch (uploadError) {
+          console.error('Failed to upload thumbnail:', uploadError);
+          alert('썸네일 업로드에 실패했습니다. 다시 시도해주세요.');
+          setIsUploadingThumbnail(false);
+          setLoading(false);
+          return;
+        } finally {
+          setIsUploadingThumbnail(false);
+        }
+      }
+
       // Prepare data according to API spec
       const projectData = {
         title: formData.title,
         description: formData.description,
-        thumbnail: formData.thumbnailUrl || 'string',
+        thumbnail: '',
         content: formData.details || '',
         projectStatus: formData.status,
         categories: formData.categories,
-        collaborators: formData.collaborators.map((collab) => collab.email), // email field contains username
+        collaborators: formData.collaborators.map((collab) => collab.email),
         techStacks: formData.tags,
         subGoals: formData.subGoals,
         startedAt: formData.startDate ? new Date(formData.startDate).toISOString() : new Date().toISOString(),
         endedAt: formData.endDate ? new Date(formData.endDate).toISOString() : new Date().toISOString(),
-        thumbnailKey: null,
-        contentImageKeys: [],
+        thumbnailKey: uploadedThumbnailKey || null,
+        contentImageKeys: contentImageKeys,
       };
 
       const response = await createProject(projectData);
@@ -723,6 +748,7 @@ export default function NewProjectForm() {
               <TipTapEditor
                 content={formData.details}
                 onChange={handleEditorChange}
+                onImageUpload={handleEditorImageUpload}
                 placeholder="프로젝트에 대해 자세히 설명해주세요..."
               />
             </div>
@@ -1198,10 +1224,10 @@ export default function NewProjectForm() {
           </Link>
           <Button
             type="submit"
-            disabled={loading}
+            disabled={loading || isUploadingThumbnail}
             className="bg-blue-600 hover:bg-blue-700 text-white"
           >
-            {loading ? '생성 중...' : '프로젝트 생성'}
+            {loading || isUploadingThumbnail ? '생성 중...' : '프로젝트 생성'}
           </Button>
         </div>
       </form>
