@@ -27,6 +27,28 @@ export async function PATCH(request: Request) {
     body = null;
   }
 
+  // 이메일은 최초 설정 이후 변경 불가: 이미 이메일이 있는 경우, PATCH payload의 email 필드를 무시
+  if (body && typeof body === 'object' && !Array.isArray(body)) {
+    const record = body as Record<string, unknown>;
+    if ('email' in record) {
+      const currentProfile = await serverApiClient.request(USER_ENDPOINTS.USER.PROFILE, {
+        method: 'GET',
+        request,
+      });
+
+      const currentEmail =
+        currentProfile.success &&
+        currentProfile.data &&
+        typeof (currentProfile.data as any).email === 'string'
+          ? String((currentProfile.data as any).email).trim()
+          : '';
+
+      if (currentEmail !== '') {
+        delete record.email;
+      }
+    }
+  }
+
   const result = await serverApiClient.request(USER_ENDPOINTS.USER.UPDATE_USER, {
     method: 'PATCH',
     body,

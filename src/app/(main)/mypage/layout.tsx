@@ -35,7 +35,7 @@ const menuItems = [
   },
     { 
     id: 'settings', 
-    label: '계정 설정', 
+    label: '권한 요청', 
     icon: Settings, 
     href: '/mypage/settings',
   },

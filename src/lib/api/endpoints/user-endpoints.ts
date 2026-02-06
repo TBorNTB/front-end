@@ -18,6 +18,7 @@ export const USER_ENDPOINTS = {
     COMMENTED_POSTS: '/user-service/users/commented-posts',
     GET_BY_ROLES: '/user-service/users/search',
     GET_ALL_ROLES: '/user-service/users/role',
+    ROLE_REQUEST: '/user-service/users/role/request',
     OAUTH_GITHUB: '/user-service/oauth2/authorization/github',
 
     //admin endpoints

@@ -38,6 +38,7 @@ interface ProfileEditFormData {
 export default function ProfileEditForm() {
   const router = useRouter();
   const [profile, setProfile] = useState<UserResponse | null>(null);
+  const [originalEmail, setOriginalEmail] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -57,6 +58,8 @@ export default function ProfileEditForm() {
     profileImageUrl: '',
   });
 
+  const isEmailLocked = originalEmail.trim() !== '';
+
   // 빈 값이나 잘못된 값 정리 함수
   const cleanValue = (value: string | null | undefined): string => {
     if (!value || typeof value !== 'string') return '';
@@ -74,6 +77,7 @@ export default function ProfileEditForm() {
         setError(null);
         const profileData = await profileService.getProfile();
         setProfile(profileData);
+        setOriginalEmail(cleanValue(profileData.email));
         setFormData({
           email: cleanValue(profileData.email),
           realName: cleanValue(profileData.realName),
@@ -174,6 +178,14 @@ export default function ProfileEditForm() {
     setError(null);
     setSuccess(false);
 
+    const nextEmail = formData.email.trim();
+    const currentEmail = originalEmail.trim();
+    if (currentEmail && nextEmail !== currentEmail) {
+      setError('이메일은 한 번 설정하면 변경할 수 없습니다.');
+      setIsSaving(false);
+      return;
+    }
+
     try {
       // 파일이 선택되어 있고 아직 업로드되지 않은 경우 먼저 업로드
       let finalProfileImageUrl = formData.profileImageUrl;
@@ -201,7 +213,6 @@ export default function ProfileEditForm() {
 
       // 빈 값 정리 및 필터링 (profileImageUrl은 이미 업로드로 처리됨)
       const cleanedData: Partial<ProfileEditFormData> = {
-        email: formData.email.trim() || undefined,
         realName: formData.realName.trim() || undefined,
         description: formData.description.trim() || undefined,
         techStack: formData.techStack.trim() || undefined,
@@ -209,6 +220,11 @@ export default function ProfileEditForm() {
         linkedinUrl: formData.linkedinUrl.trim() || undefined,
         blogUrl: formData.blogUrl.trim() || undefined,
       };
+
+      // 이메일은 최초 설정 이후에는 수정 불가
+      if (!isEmailLocked) {
+        cleanedData.email = nextEmail || undefined;
+      }
 
       // 빈 값 제거 (undefined 필드는 제외)
       const filteredData = Object.fromEntries(
@@ -218,6 +234,7 @@ export default function ProfileEditForm() {
       // 프로필 업데이트
       const updatedProfile = await profileService.updateProfile(filteredData);
       setProfile(updatedProfile);
+      setOriginalEmail(cleanValue(updatedProfile.email));
       setSuccess(true);
 
       // 성공 토스트 메시지 표시
@@ -427,13 +444,19 @@ export default function ProfileEditForm() {
                 type="email"
                 name="email"
                 value={formData.email}
-                onChange={handleInputChange}
+                onChange={isEmailLocked ? undefined : handleInputChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg 
-                         focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 
-                         transition-all duration-300"
+                readOnly={isEmailLocked}
+                className={`w-full px-4 py-3 border border-gray-300 rounded-lg transition-all duration-300 ${
+                  isEmailLocked
+                    ? 'bg-gray-50 text-gray-600 cursor-not-allowed'
+                    : 'focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200'
+                }`}
                 placeholder="이메일 주소를 입력하세요"
               />
+              {isEmailLocked && (
+                <p className="text-xs text-gray-500 mt-2">이메일은 한 번 설정하면 변경할 수 없습니다.</p>
+              )}
             </div>
 
             {/* Real Name */}

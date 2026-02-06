@@ -22,6 +22,7 @@ import { profileService, UserResponse } from '@/lib/api/services/user-services';
 import { useAuth } from '@/context/AuthContext';
 import { validateImageFile } from '@/lib/form-utils';
 import { getRoleDisplayLabel } from '@/lib/role-utils';
+import ProfileEditModal from './ProfileEditModal';
 
 // 날짜 포맷팅 헬퍼 함수
 const formatDate = (dateString: string) => {
@@ -33,6 +34,7 @@ export default function ProfileContent() {
   const router = useRouter();
   const { isAuthenticated, user: _user } = useAuth();
   const [profile, setProfile] = useState<UserResponse | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -208,6 +210,17 @@ export default function ProfileContent() {
 
   return (
     <div className="space-y-8">
+      {profile && (
+        <ProfileEditModal
+          open={isEditOpen}
+          profile={profile}
+          onClose={() => setIsEditOpen(false)}
+          onUpdated={(next) => {
+            setProfile(next);
+            router.refresh();
+          }}
+        />
+      )}
       {/* Profile Header */}
       <div className="card">
         <div className="flex flex-col lg:flex-row gap-8">
@@ -248,9 +261,13 @@ export default function ProfileContent() {
                 )}
               </div>
             </div>
-            <Link href="/mypage/settings" className="btn btn-primary mt-4">
+            <button
+              type="button"
+              onClick={() => setIsEditOpen(true)}
+              className="btn btn-primary mt-4"
+            >
               프로필 편집
-            </Link>
+            </button>
           </div>
           
           <div className="flex-1">

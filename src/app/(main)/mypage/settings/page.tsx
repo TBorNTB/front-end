@@ -1,12 +1,12 @@
 // app/profile/settings/page.tsx
 import { Metadata } from 'next';
-import ProfileEditForm from './_components/ProfileEditForm';
+import RoleRequestForm from './_components/RoleRequestForm';
 
 export const metadata: Metadata = {
-  title: '프로필 편집 - SSG',
-  description: '프로필 정보를 수정하세요.',
+  title: '권한 요청 - SSG',
+  description: '사용자 권한을 요청하세요.',
 };
 
 export default function SettingsPage() {
-  return <ProfileEditForm />;
+  return <RoleRequestForm />;
 }

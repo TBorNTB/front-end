@@ -777,3 +777,41 @@ const cleanUserResponse = (data: any): UserResponse => {
     profileImageUrl: cleanValue(data.profileImageUrl),
   };
 };
+
+export const roleService = {
+  requestRole: async (requestRole: string): Promise<string> => {
+    const response = await fetchWithRefresh('/api/user/role/request', {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ requestRole }),
+    });
+
+    const rawText = await response.text().catch(() => '');
+    const parsed = (() => {
+      try {
+        return rawText ? JSON.parse(rawText) : null;
+      } catch {
+        return null;
+      }
+    })();
+
+    if (!response.ok) {
+      const message =
+        (parsed && typeof parsed === 'object' && ((parsed as any).message || (parsed as any).error)) ||
+        rawText ||
+        `권한 요청 실패 (${response.status})`;
+      throw new Error(String(message));
+    }
+
+    if (typeof parsed === 'string') return parsed;
+    if (parsed && typeof parsed === 'object') {
+      const message = (parsed as any).message;
+      if (typeof message === 'string' && message.trim()) return message.trim();
+    }
+
+    return rawText || 'OK';
+  },
+} as const;
