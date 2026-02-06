@@ -466,8 +466,10 @@ export default function NewProjectForm() {
         collaborators: formData.collaborators.map((collab) => collab.email), // email field contains username
         techStacks: formData.tags,
         subGoals: formData.subGoals,
-        createdAt: formData.startDate ? new Date(formData.startDate).toISOString() : new Date().toISOString(),
+        startedAt: formData.startDate ? new Date(formData.startDate).toISOString() : new Date().toISOString(),
         endedAt: formData.endDate ? new Date(formData.endDate).toISOString() : new Date().toISOString(),
+        thumbnailKey: null,
+        contentImageKeys: [],
       };
 
       const response = await createProject(projectData);

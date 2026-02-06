@@ -172,21 +172,18 @@ export interface ProjectDetail extends Project {
 // Form interfaces
 export interface CreateProjectRequest {
   title: string;
-  description?: string;
-  projectStatus?: ProjectStatus;
-  thumbnailUrl?: string;
-  categories: CategoryType[];
-  techStacks: Array<{
-    name: string;
-    version?: string;
-    category: ProjectTechStack['category'];
-  }>;
-  initialGoals?: Array<{
-    title: string;
-    description?: string;
-    priority: SubGoal['priority'];
-    dueDate?: Date;
-  }>;
+  description: string;
+  thumbnail: string;
+  content: string;
+  projectStatus: ProjectStatus;
+  categories: string[];
+  collaborators: string[];
+  techStacks: string[];
+  subGoals: string[];
+  startedAt: string;
+  endedAt: string;
+  thumbnailKey: string | null;
+  contentImageKeys: string[];
 }
 
 export interface UpdateProjectRequest {

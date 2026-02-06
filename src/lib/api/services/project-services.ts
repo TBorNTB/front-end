@@ -173,15 +173,17 @@ export const fetchCategories = async (): Promise<CategoryListResponse> => {
 export interface CreateProjectRequest {
   title: string;
   description: string;
-  thumbnail?: string;
-  content?: string;
+  thumbnail: string;
+  content: string;
   projectStatus: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED';
   categories: string[];
   collaborators: string[]; // usernames
   techStacks: string[];
   subGoals: string[];
-  createdAt?: string;
-  endedAt?: string;
+  startedAt: string;
+  endedAt: string;
+  thumbnailKey: string | null;
+  contentImageKeys: string[];
 }
 
 export interface CreateProjectResponse {

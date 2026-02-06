@@ -6,17 +6,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // Validate required fields
-    if (!body.title || !body.category || !body.description) {
+    if (!body.title || !body.description || !Array.isArray(body.categories) || body.categories.length === 0) {
       return NextResponse.json(
         { message: '필수 필드가 누락되었습니다.' },
         { status: 400 }
       );
     }
 
-    // Validate tags
-    if (!body.tags || body.tags.length === 0) {
+    // Validate tech stacks
+    if (!Array.isArray(body.techStacks) || body.techStacks.length === 0) {
       return NextResponse.json(
-        { message: '최소 하나의 태그가 필요합니다.' },
+        { message: '최소 하나의 기술 스택이 필요합니다.' },
         { status: 400 }
       );
     }
@@ -25,8 +25,8 @@ export async function POST(request: NextRequest) {
     const currentDate = new Date().toISOString();
 
     // Format period from dates
-    const period = body.startDate && body.endDate
-      ? `${body.startDate.substring(0, 7)} ~ ${body.endDate}`
+    const period = body.startedAt && body.endedAt
+      ? `${String(body.startedAt).substring(0, 7)} ~ ${String(body.endedAt).substring(0, 10)}`
       : '';
 
     // Create complete project object
@@ -34,9 +34,9 @@ export async function POST(request: NextRequest) {
       id: projectId,
       title: body.title,
       subtitle: body.description,
-      description: body.details || body.description,
-      category: body.category,
-      status: body.status || 'PLANNING',
+      description: body.content || body.description,
+      category: body.categories?.[0] || '',
+      status: body.projectStatus || 'PLANNING',
       author: {
         username: 'current-user', // Should be replaced with actual user from auth
         name: '현재 사용자',
@@ -45,20 +45,13 @@ export async function POST(request: NextRequest) {
       createdAt: currentDate.substring(0, 10),
       updatedAt: currentDate.substring(0, 10),
       period: period,
-      github: body.repositoryUrl || '',
-      projectUrl: body.projectUrl || '',
-      thumbnailUrl: body.thumbnailUrl || '',
-      tags: body.tags,
-      technologies: body.tags, // Using tags as technologies for now
+      github: '',
+      projectUrl: '',
+      thumbnailUrl: body.thumbnail || '',
+      tags: body.techStacks,
+      technologies: body.techStacks,
       team: body.collaborators || [],
-      documents: body.documents?.map((doc: any, index: number) => ({
-        id: `${projectId}_doc_${index}`,
-        name: doc.name || `Document ${index + 1}`,
-        type: doc.type || 'file',
-        size: doc.size ? `${(doc.size / 1024).toFixed(1)}KB` : 'Unknown',
-        uploadedAt: currentDate.substring(0, 10),
-        createdBy: '현재 사용자',
-      })) || [],
+      documents: [],
       stats: {
         views: 0,
         likes: 0,
