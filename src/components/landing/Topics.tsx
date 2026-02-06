@@ -115,73 +115,24 @@ const generateSlugFromName = (name: string): string => {
   return name.toLowerCase().replace(/\s+/g, '-');
 };
 
-// API 응답을 Topic 형식으로 변환
+
+// API 응답을 Topic 형식으로 변환 (only backend data, no fallback)
 const transformApiResponseToTopics = (apiCategories: CategoryItem[]): Topic[] => {
-  return apiCategories
-    .map((category) => {
-      // API 응답의 name을 제목으로 직접 사용
-      const type = CategoryHelpers.getTypeByName(category.name);
-      
-      // 타입을 찾지 못해도 기본값으로 처리 (name은 API에서 받은 값 사용)
-      const defaultType = type || CategoryType.WEB_HACKING; // 기본값
-      
-      // slug 생성: 타입이 있으면 해당 slug, 없으면 name 기반으로 생성
-      const slug = type 
-        ? CategoryHelpers.getSlug(type)
-        : generateSlugFromName(category.name);
-
-      return {
-        id: `topic-${category.id}`,
-        name: category.name, // API 응답의 name을 제목으로 사용
-        slug: slug,
-        description: category.description || (type ? getCategoryDescription(type) : category.description || ''),
-        type: defaultType,
-        projectCount: 0, // API에서 제공되지 않으면 기본값 0
-        articleCount: 0, // API에서 제공되지 않으면 기본값 0
-      };
-    });
-};
-
-// Fallback: 목 데이터 (API 실패 시 사용)
-const getTopicsData = (): Topic[] => {
-  const baseTopics: Array<{
-    type: CategoryType;
-    projectCount: number;
-    articleCount: number;
-  }> = [
-    { type: CategoryType.WEB_HACKING, projectCount: 24, articleCount: 18 },
-    { type: CategoryType.SYSTEM_HACKING, projectCount: 31, articleCount: 22 },
-    { type: CategoryType.CRYPTOGRAPHY, projectCount: 19, articleCount: 15 },
-    { type: CategoryType.DIGITAL_FORENSICS, projectCount: 16, articleCount: 12 },
-    { type: CategoryType.NETWORK_SECURITY, projectCount: 28, articleCount: 20 },
-    { type: CategoryType.IOT_SECURITY, projectCount: 21, articleCount: 17 },
-    { type: CategoryType.REVERSING, projectCount: 18, articleCount: 14 }
-  ];
-
-  return baseTopics.map((topic, index) => ({
-    id: `topic-${index + 1}`,
-    name: CategoryHelpers.getDisplayName(topic.type),
-    slug: CategoryHelpers.getSlug(topic.type),
-    description: getCategoryDescription(topic.type),
-    type: topic.type,
-    projectCount: topic.projectCount,
-    articleCount: topic.articleCount
-  }));
-};
-
-// Korean descriptions for each category
-const getCategoryDescription = (type: CategoryType): string => {
-  const descriptions: Record<CategoryType, string> = {
-    [CategoryType.WEB_HACKING]: 'SQL Injection, XSS, CSRF 등 웹 애플리케이션 보안 취약점 분석 및 대응',
-    [CategoryType.REVERSING]: '바이너리 분석, 역공학 기술을 통한 소프트웨어 구조 분석 및 이해',
-    [CategoryType.SYSTEM_HACKING]: 'Buffer Overflow, ROP 등 시스템 레벨 취약점 분석 및 익스플로잇 개발',
-    [CategoryType.DIGITAL_FORENSICS]: '디지털 증거 수집 및 분석, 사고 대응을 위한 포렌식 기법',
-    [CategoryType.NETWORK_SECURITY]: '네트워크 트래픽 분석, 침입 탐지 및 방화벽 보안 기술',
-    [CategoryType.IOT_SECURITY]: '스마트 기기의 보안 취약점을 분석 및 대응',
-    [CategoryType.CRYPTOGRAPHY]: '현대 암호학 이론, 암호 시스템 분석 및 보안 프로토콜 구현'
-  };
-  
-  return descriptions[type];
+  return apiCategories.map((category) => {
+    const type = CategoryHelpers.getTypeByName(category.name) || CategoryType.WEB_HACKING;
+    const slug = type
+      ? CategoryHelpers.getSlug(type)
+      : generateSlugFromName(category.name);
+    return {
+      id: `topic-${category.id}`,
+      name: category.name,
+      slug,
+      description: category.description || '', // Only use backend description
+      type,
+      projectCount: 0,
+      articleCount: 0,
+    };
+  });
 };
 
 interface TopicsSectionProps {
@@ -223,9 +174,8 @@ export default function TopicsSection({
         const transformedTopics = transformApiResponseToTopics(response.categories);
         setTopicsData(transformedTopics);
       } catch (error) {
-        console.error('Failed to fetch categories, using fallback data:', error);
-        // API 실패 시 목 데이터 사용
-        setTopicsData(getTopicsData());
+        console.error('Failed to fetch categories:', error);
+        setTopicsData([]);
       } finally {
         setLoading(false);
       }

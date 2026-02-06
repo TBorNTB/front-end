@@ -61,30 +61,8 @@ interface CategoryDisplayData {
   longDescription: string;
 }
 
-// longDescription 매핑 (기존 설명 유지)
-const longDescriptions: Record<CategoryType, string> = {
-  [CategoryType.WEB_HACKING]: `웹 해킹은 웹 애플리케이션에서 발생할 수 있는 다양한 보안 취약점을 실습하고 분석하는 분야입니다. 
 
-SQL 인젝션, XSS(Cross-Site Scripting), CSRF(Cross-Site Request Forgery) 등의 공격 기법과 이에 대한 방어 매커니즘을 실습합니다. 자동화된 취약점 스캐너 개발, 웹 애플리케이션 펜테스팅 도구 사용법, 그리고 현실적인 공격 시나리오 분석을 다룹니다.`,
-  [CategoryType.REVERSING]: `리버싱(역공학)은 컴파일된 바이너리 파일을 분석하여 원본 코드의 로직과 구조를 이해하는 기술입니다.
-
-IDA Pro, Ghidra, x64dbg와 같은 전문 도구를 사용하여 바이너리를 분석하고, 어셈블리어를 해독하며, 프로그램의 실행 흐름을 파악합니다. 또한 패킹된 악성코드 언패킹, 프로텍션 우회, 크랙미 문제 해결 등의 실습을 진행합니다.`,
-  [CategoryType.SYSTEM_HACKING]: `시스템 해킹은 운영체제와 시스템 레벨에서 발생하는 취약점을 분석하고 익스플로잇을 개발하는 분야입니다.
-
-Buffer Overflow, Format String Bug, Use-After-Free와 같은 메모리 corruption 취약점을 실습하고, ROP(Return-Oriented Programming), JOP(Jump-Oriented Programming) 등의 고급 익스플로잇 기법을 학습합니다. 또한 ASLR, DEP, Stack Canary와 같은 보안 메커니즘 우회 기법도 다룹니다.`,
-  [CategoryType.DIGITAL_FORENSICS]: `디지털 포렌식은 사이버 범죄나 보안 사고 발생 시 디지털 증거를 수집하고 분석하는 전문 분야입니다.
-
-파일 시스템 분석, 메모리 덤프 분석, 네트워크 패킷 분석을 통해 침해 흔적을 추적하고 사고 원인을 규명합니다. Volatility, Autopsy, Wireshark 등의 전문 도구를 활용하여 실제 사고 시나리오를 분석하고, 법정에서 인정받을 수 있는 증거 수집 절차를 학습합니다.`,
-  [CategoryType.NETWORK_SECURITY]: `네트워크 보안은 네트워크를 통한 공격과 방어에 대한 전반적인 보안 기술을 다루는 분야입니다.
-
-패킷 분석을 통한 네트워크 트래픽 모니터링, IDS/IPS 시스템 구축 및 운영, 방화벽 정책 설계, 그리고 무선 네트워크 보안을 실습합니다. 또한 네트워크 스캐닝, 포트 스캐닝, 네트워크 기반 공격 기법들과 이에 대한 탐지 및 차단 방법을 학습합니다.`,
-  [CategoryType.IOT_SECURITY]: `IoT 보안은 점점 증가하는 사물인터넷 기기들의 보안 취약점을 분석하고 대응하는 새로운 보안 분야입니다.
-
-임베디드 시스템 보안, 펌웨어 분석, 하드웨어 해킹, 무선 통신 프로토콜 보안을 다룹니다. 실제 IoT 기기를 대상으로 펌웨어 추출, 바이너리 분석, 통신 패킷 분석을 실습하고, UART, JTAG와 같은 하드웨어 인터페이스를 활용한 분석 기법을 학습합니다.`,
-  [CategoryType.CRYPTOGRAPHY]: `암호학은 정보 보안의 핵심 이론과 기술을 다루는 근본적인 보안 분야입니다.
-
-대칭키/비대칭키 암호, 해시 함수, 디지털 서명의 이론적 배경과 실제 구현을 학습합니다. RSA, AES, ECC와 같은 주요 암호 알고리즘의 동작 원리와 보안성을 분석하고, TLS/SSL, PKI와 같은 실제 보안 프로토콜의 설계와 취약점을 연구합니다.`,
-};
+// (Removed longDescriptions mapping. Use only backend content field for longDescription)
 
 // 범용 slug 생성 함수 - 어떤 카테고리 이름이 와도 자동으로 처리
 const createSlugFromName = (name: string, id: number): string => {
@@ -138,8 +116,8 @@ const transformCategoryData = (apiCategory: CategoryItem): CategoryDisplayData |
     articles: 0, // API에서 제공되지 않으면 기본값 0
     projects: 0, // API에서 제공되지 않으면 기본값 0
     type: defaultType,
-    description: apiCategory.description || (type ? CategoryDescriptions[type] : apiCategory.description || ''),
-    longDescription: type ? longDescriptions[type] : apiCategory.description || '',
+    description: apiCategory.description || '',
+    longDescription: apiCategory.content || '', // Use only backend content field
   };
 };
 
@@ -371,7 +349,7 @@ export function LearningTopics() {
               <div className="flex-1">
                 <h1 className="text-3xl font-bold text-white mb-2">{cat.name}</h1>
                 <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-line">
-                  {cat.longDescription}
+                  {cat.longDescription || '설명이 없습니다.'}
                 </p>
               </div>
             </div>
