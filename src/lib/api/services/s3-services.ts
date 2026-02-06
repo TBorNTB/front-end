@@ -85,18 +85,27 @@ export const s3Service = {
         throw new Error('Presigned URL을 받을 수 없습니다.');
       }
 
-      // 2. 파일을 S3에 업로드
-      const uploadResponse = await fetch(presignedUrl, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': file.type,
-        },
-        body: file,
+      console.log('📤 S3 업로드 시작 (프록시 사용):', {
+        fileName: file.name,
+        fileSize: `${(file.size / 1024).toFixed(2)} KB`,
+      });
+
+      // 2. Next.js 프록시를 통해 S3에 업로드 (CORS 우회)
+      const formData = new FormData();
+      formData.append('presignedUrl', presignedUrl);
+      formData.append('file', file);
+
+      const uploadResponse = await fetch('/api/s3/upload-proxy', {
+        method: 'POST',
+        body: formData,
       });
 
       if (!uploadResponse.ok) {
-        throw new Error(`파일 업로드 실패 (${uploadResponse.status})`);
+        const errorData = await uploadResponse.json().catch(() => ({}));
+        throw new Error(errorData.error || `파일 업로드 실패 (${uploadResponse.status})`);
       }
+
+      console.log('✅ S3 업로드 성공:', fileUrl);
 
       // 3. 업로드된 파일 URL과 key 반환
       return {
@@ -104,8 +113,8 @@ export const s3Service = {
         key: key || '',
       };
     } catch (error: any) {
-      console.error('Error uploading file to S3:', error);
-      throw error;
+      console.error('❌ S3 파일 업로드 실패:', error);
+      throw new Error(error.message || '파일 업로드 중 오류가 발생했습니다.');
     }
   },
 };
