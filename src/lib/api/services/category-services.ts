@@ -8,7 +8,6 @@ import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
 
 // API 응답 타입 정의
 export interface CategoryItem {
-  content: string;
   id: number;
   name: string;
   description: string;

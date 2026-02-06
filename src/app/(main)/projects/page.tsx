@@ -295,7 +295,9 @@ function ProjectsLoadingSkeleton() {
   );
 }
 
-export default function ProjectsPage() {
+import { Suspense } from 'react';
+
+function ProjectsPageInner() {
   const searchParams = useSearchParams();
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
@@ -867,5 +869,13 @@ export default function ProjectsPage() {
         </section>
       </div>
     </div>
+  );
+}
+
+export default function ProjectsPage() {
+  return (
+    <Suspense>
+      <ProjectsPageInner />
+    </Suspense>
   );
 }
