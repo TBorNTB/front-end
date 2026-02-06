@@ -15,6 +15,11 @@ export interface VerifyRequest {
   code: string;
 }
 
+export interface VerifyEmailRequest {
+  email: string;
+  code: string;
+}
+
 export interface CancelVerifyRequest {
   email: string;
 }
@@ -156,6 +161,52 @@ export const newsletterService = {
       }
       
       // 기존 에러 메시지가 있으면 그대로 사용
+      throw error;
+    }
+  },
+
+  /**
+   * 이메일 인증 코드 확인 (verify/email)
+   * POST /newsletter-service/api/newsletter/subscribers/verify/email
+   */
+  verifyEmail: async (data: VerifyEmailRequest): Promise<NewsletterResponse> => {
+    try {
+      const url = '/api/newsletter/subscribers/verify/email';
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        cache: 'no-store',
+        body: JSON.stringify(data),
+      });
+
+      const responseData = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const errorMessage =
+          responseData?.message || responseData?.error || `이메일 인증 실패 (${response.status})`;
+        throw new Error(errorMessage);
+      }
+
+      if (!responseData) {
+        throw new Error('서버 응답을 받을 수 없습니다.');
+      }
+
+      return {
+        email: responseData.email || data.email,
+        message: responseData.message || '이메일 인증이 완료되었습니다!',
+      };
+    } catch (error: any) {
+      console.error('Error verifying email code:', error);
+
+      if (error.name === 'TypeError' || error.message?.includes?.('fetch')) {
+        throw new Error('네트워크 연결을 확인해주세요.');
+      }
+
       throw error;
     }
   },
