@@ -21,6 +21,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { TechStackInput } from "@/components/ui/TechStackInput";
 
+import EmailVerification from "../_components/EmailVerification";
+
 // Import from co-located auth types and utilities
 import { 
   signupSchema,
@@ -261,14 +263,19 @@ export default function SignupPage() {
                       이메일 <span className="text-red-500">*</span>
                     </FormLabel>
                     <FormControl>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        <Input
-                          type="email"
-                          placeholder="이메일을 입력하세요"
-                          className={getIconInputClassName(!!fieldState.error)}
-                          {...field}
-                        />
+                      <div className="space-y-2">
+                        <div className="flex gap-2 items-start">
+                          <div className="relative flex-1">
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <Input
+                              type="email"
+                              placeholder="이메일을 입력하세요"
+                              className={getIconInputClassName(!!fieldState.error)}
+                              {...field}
+                            />
+                          </div>
+                          <EmailVerification email={field.value || ""} disabled={isLoading} />
+                        </div>
                       </div>
                     </FormControl>
                     <FormMessage className="text-error" />
