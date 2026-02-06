@@ -4,22 +4,26 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 
 interface TipTapEditorProps {
   content?: string;
   onChange?: (html: string) => void;
+  onImageUpload?: (file: File) => Promise<{ url: string; key: string }>;
   editable?: boolean;
   placeholder?: string;
 }
 
-export default function TipTapEditor({ 
-  content = '', 
-  onChange, 
+export default function TipTapEditor({
+  content = '',
+  onChange,
+  onImageUpload,
   editable = true,
   placeholder = '문서 작성을 시작하세요...'
 }: TipTapEditorProps) {
   const [isMounted, setIsMounted] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Prevent SSR hydration issues
   useEffect(() => {
@@ -84,6 +88,28 @@ export default function TipTapEditor({
       editor.commands.setContent(content);
     }
   }, [content, editor]);
+
+  const handleImageUpload = useCallback(async (file: File) => {
+    if (!editor || !onImageUpload) return;
+    setIsUploadingImage(true);
+    try {
+      const { url } = await onImageUpload(file);
+      editor.chain().focus().setImage({ src: url }).run();
+    } catch (error) {
+      console.error('이미지 업로드 실패:', error);
+      alert('이미지 업로드에 실패했습니다.');
+    } finally {
+      setIsUploadingImage(false);
+    }
+  }, [editor, onImageUpload]);
+
+  const handleImageFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleImageUpload(file);
+    }
+    e.target.value = '';
+  }, [handleImageUpload]);
 
   // Don't render until mounted (prevents hydration mismatch)
   if (!isMounted || !editor) {
@@ -210,6 +236,35 @@ export default function TipTapEditor({
               </svg>
             </ToolbarButton>
           </div>
+
+          {/* Image Upload */}
+          {onImageUpload && (
+            <div className="flex gap-1 border-r border-gray-300 pr-2 mr-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageFileChange}
+                className="hidden"
+              />
+              <ToolbarButton
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingImage}
+                title="이미지 삽입"
+              >
+                {isUploadingImage ? (
+                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                  </svg>
+                )}
+              </ToolbarButton>
+            </div>
+          )}
 
           {/* Undo/Redo */}
           <div className="flex gap-1">
