@@ -10,7 +10,8 @@
   --color-foreground: #060810;
     /* Gradient Backgrounds */
   --color-gradient-background: linear-gradient(to bottom, #000000, #3a4da1);
-  
+  --color-gradient-auth: linear-gradient(180deg, #d1e5fa 0%, #3a4da1 100%);
+
   /* Primary Scale */
   --color-primary-50: #ebedf6;
   --color-primary-100: #c2c8e2;
@@ -89,6 +90,10 @@
     overflow: hidden;
   }
 
+    .bg-authentication {
+    background: var(--color-gradient-auth);
+    min-height: 100vh;
+  }
   .btn {
     @apply inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer border-0 outline-none px-4 py-2;
   }

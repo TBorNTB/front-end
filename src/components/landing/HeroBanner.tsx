@@ -56,7 +56,7 @@ export default function HeroBanner() {
         <div className="flex flex-col sm:flex-row gap-3 justify-center mb-4">
           <Link 
             href="/topics"
-            className="text-black px-6 py-3 rounded-lg font-bold text-base transition-all shadow-lg glow-button flex items-center justify-center space-x-2 bg-gradient-to-r from-primary-500 to-secondary-300 hover:from-primary-600 hover:to-secondary-200  shadow-primary-500/30 hover:shadow-primary-500/50"
+            className="text-primary-700 px-6 py-3 rounded-lg font-bold text-base transition-all shadow-lg glow-button flex items-center justify-center space-x-2 bg-gradient-to-r from-secondary-500 to-secondary-100 hover:bg-gradient-to-r hover:from-secondary-500 hover:to-secondary-100 shadow-primary-500/30 hover:shadow-primary-500/50"
           >
             <BookOpen size={20} />
             <span>학습 보기</span>
