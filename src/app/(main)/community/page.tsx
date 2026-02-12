@@ -1,9 +1,9 @@
 // app/(main)/community/page.tsx
 "use client";
 
-import { useState, Suspense } from "react";
-import { Megaphone, Calendar, User, Pin, Users, HelpCircle } from "lucide-react";
 import TitleBanner from "@/components/layout/TitleBanner";
+import { Calendar, HelpCircle, Megaphone, Pin, User, Users } from "lucide-react";
+import { Suspense, useState } from "react";
 import NewsContent from "./_components/NewsContent";
 import QnAContent from "./_components/QnAContent";
 
@@ -70,7 +70,7 @@ export default function CommunityPage() {
             />
             <TabButton
               icon={Users}
-              label="멤버 소식"
+              label="SSG 활동 뉴스"
               active={activeTab === "posts"}
               onClick={() => setActiveTab("posts")}
             />
