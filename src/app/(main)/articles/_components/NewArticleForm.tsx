@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Plus, X, Upload, Search } from 'lucide-react';
@@ -13,6 +13,7 @@ import Image from 'next/image';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { fetchCategories } from '@/lib/api/services/project-services';
 import { createArticle } from '@/lib/api/services/article-services';
+import { s3Service } from '@/lib/api/services/s3-services';
 
 interface FormData {
   title: string;
@@ -20,7 +21,6 @@ interface FormData {
   excerpt: string;
   content: string;
   tags: string[];
-  thumbnailUrl: string;
 }
 
 interface FormErrors {
@@ -35,8 +35,11 @@ export default function NewArticleForm() {
   const [categorySearch, setCategorySearch] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
   const [thumbnailPreview, setThumbnailPreview] = useState<string>('');
-  
-  
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailKey, setThumbnailKey] = useState<string>('');
+  const [contentImageKeys, setContentImageKeys] = useState<string[]>([]);
+  const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
+
   // API data states
   const [categories, setCategories] = useState<Array<{ id: number; name: string; description: string }>>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
@@ -47,7 +50,6 @@ export default function NewArticleForm() {
     excerpt: '',
     content: '',
     tags: [],
-    thumbnailUrl: '',
   });
 
   // Load categories on mount
@@ -137,17 +139,20 @@ export default function NewArticleForm() {
   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setThumbnailFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setThumbnailPreview(reader.result as string);
-        setFormData((prev) => ({
-          ...prev,
-          thumbnailUrl: reader.result as string,
-        }));
       };
       reader.readAsDataURL(file);
     }
   };
+
+  const handleEditorImageUpload = useCallback(async (file: File) => {
+    const result = await s3Service.uploadFile(file);
+    setContentImageKeys(prev => [...prev, result.key]);
+    return result;
+  }, []);
 
   const handleEditorChange = (html: string) => {
     setFormData((prev) => ({
@@ -172,16 +177,33 @@ export default function NewArticleForm() {
     setLoading(true);
 
     try {
-      // API 요청 데이터 준비 (API 스펙에 맞게)
+      let uploadedThumbnailKey = thumbnailKey;
+
+      if (thumbnailFile && !thumbnailKey) {
+        setIsUploadingThumbnail(true);
+        try {
+          const result = await s3Service.uploadFile(thumbnailFile);
+          uploadedThumbnailKey = result.key;
+        } catch (uploadError) {
+          console.error('Failed to upload thumbnail:', uploadError);
+          alert('썸네일 업로드에 실패했습니다. 다시 시도해주세요.');
+          setIsUploadingThumbnail(false);
+          setLoading(false);
+          return;
+        } finally {
+          setIsUploadingThumbnail(false);
+        }
+      }
+
       const articleData = {
         title: formData.title,
         content: formData.content,
         category: formData.category,
+        ...(uploadedThumbnailKey && { thumbnailKey: uploadedThumbnailKey }),
+        ...(contentImageKeys.length > 0 && { contentImageKeys }),
       };
 
       const response = await createArticle(articleData);
-      
-      // 생성 성공 시 반환된 id로 상세 페이지로 이동
       alert('글이 성공적으로 작성되었습니다!');
       router.push(`/articles/${response.id}`);
     } catch (error) {
@@ -421,7 +443,8 @@ export default function NewArticleForm() {
                         type="button"
                         onClick={() => {
                           setThumbnailPreview('');
-                          setFormData((prev) => ({ ...prev, thumbnailUrl: '' }));
+                          setThumbnailFile(null);
+                          setThumbnailKey('');
                         }}
                         className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 transition-colors"
                       >
@@ -511,6 +534,7 @@ export default function NewArticleForm() {
                   <TipTapEditor
                     content={formData.content}
                     onChange={handleEditorChange}
+                    onImageUpload={handleEditorImageUpload}
                     placeholder="글의 내용을 자유롭게 작성해주세요..."
                   />
                 </div>
@@ -534,10 +558,10 @@ export default function NewArticleForm() {
               </Link>
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={loading || isUploadingThumbnail}
                 className="px-8 py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? (
+                {loading || isUploadingThumbnail ? (
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     작성 중...

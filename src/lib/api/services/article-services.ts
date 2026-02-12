@@ -19,12 +19,16 @@ export interface ArticleCreateRequest {
   title: string;
   content: string;
   category: string;
+  thumbnailKey?: string;
+  contentImageKeys?: string[];
 }
 
 export interface ArticleUpdateRequest {
   title: string;
   content: string;
   category: string;
+  thumbnailKey?: string;
+  contentImageKeys?: string[];
 }
 
 /**
