@@ -640,14 +640,10 @@ export default function NewsContent({ createHref = '/community/news/create' }: N
         {/* Sidebar Filter - aligned with Articles styling */}
         <aside className="w-64 flex-shrink-0 hidden md:block">
           <CategoryFilter
-            categories={newsCategories.filter(cat => cat.value !== 'all').map(category => {
-              const categoryCount = mockNewsData.filter(n => n.content.category === category.value).length;
-              return {
-                id: String(category.value),
-                name: category.name,
-                count: categoryCount,
-              };
-            })}
+            categories={newsCategories.filter(cat => cat.value !== 'all').map(category => ({
+              id: String(category.value),
+              name: category.name,
+            }))}
             selectedCategory={selectedCategory}
             onCategoryChange={handleCategoryChange}
             title="카테고리"

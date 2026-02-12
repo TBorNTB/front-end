@@ -3,7 +3,6 @@
 interface Category {
   id: string;
   name: string;
-  count?: number;
 }
 
 interface CategoryFilterProps {
@@ -25,22 +24,13 @@ export default function CategoryFilter({
       <div className="space-y-1">
         <button
           onClick={() => onCategoryChange('all')}
-          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
+          className={`w-full flex items-center px-3 py-2 rounded-lg text-sm ${
             selectedCategory === 'all'
               ? 'bg-primary-600 text-white'
               : 'text-gray-700 hover:bg-gray-50'
           }`}
         >
           <span>전체</span>
-          {typeof categories.reduce((sum, cat) => sum + (cat.count || 0), 0) === 'number' && (
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-              selectedCategory === 'all' 
-                ? 'bg-white/20 text-white' 
-                : 'bg-gray-100 text-gray-700'
-            }`}>
-              {categories.reduce((sum, cat) => sum + (cat.count || 0), 0)}
-            </span>
-          )}
         </button>
         {categories.map((category) => {
           const isActive = selectedCategory === category.id;
@@ -49,20 +39,13 @@ export default function CategoryFilter({
             <button
               key={category.id}
               onClick={() => onCategoryChange(category.id)}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
+              className={`w-full flex items-center px-3 py-2 rounded-lg text-sm ${
                 isActive
                   ? 'bg-primary-600 text-white'
                   : 'text-gray-700 hover:bg-gray-50'
               }`}
             >
               <span>{category.name}</span>
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                isActive 
-                  ? 'bg-white/20 text-white' 
-                  : 'bg-gray-100 text-gray-700'
-              }`}>
-                {category.count ?? 0}
-              </span>
             </button>
           );
         })}
