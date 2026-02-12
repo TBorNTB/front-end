@@ -14,7 +14,7 @@ type Article = {
     content: string;
     category: string;
   };
-  thumbnailPath: string;
+  thumbnailUrl: string;
   writerId: string;
   participantIds: string[];
   tags: string[];
@@ -356,7 +356,7 @@ function ArticlesContent() {
     likes: item.likeCount || 0,
     comments: 0,
     tags: [],
-    image: item.thumbnailPath || '', // Use thumbnailPath if available, otherwise empty string triggers placeholder
+    image: item.thumbnailUrl || '', // Use thumbnailUrl if available, otherwise empty string triggers placeholder
   })) || [];
 
   // 페이지네이션 계산

@@ -74,7 +74,7 @@ interface NewsResponse {
     content: string;
     category: string;
   };
-  thumbnailPath: string;
+  thumbnailUrl: string;
   tags: string[];
   createdAt: string;
   updatedAt: string;
@@ -308,7 +308,7 @@ export default function ActivityContent() {
         type: 'news',
         title: item.content.title,
         description: item.content.summary || item.content.content.substring(0, 150) + (item.content.content.length > 150 ? '...' : ''),
-        image: item.thumbnailPath || undefined,
+        image: item.thumbnailUrl || undefined,
         date: formatDate(item.createdAt),
         views: item.viewCount,
         likes: item.likeCount,

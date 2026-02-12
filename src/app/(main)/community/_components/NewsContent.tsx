@@ -32,7 +32,7 @@ interface NewsItem {
     content: string;
     category: string;
   };
-  thumbnailPath?: string;
+  thumbnailUrl?: string;
   tags: string[];
   createdAt: string;
   updatedAt: string;
@@ -197,7 +197,7 @@ const mockNewsData: NewsItem[] = [
       content: '세종대학교 정보보안 동아리 SSG의 2025년 신입생 오리엔테이션이 개최됩니다. 많은 참여 부탁드립니다.',
       category: NewsCategoryType.OT
     },
-    thumbnailPath: undefined,
+    thumbnailUrl: undefined,
     tags: ['OT', '신입생', '안내'],
     createdAt: new Date(2025, 0, 15).toISOString(),
     updatedAt: new Date(2025, 0, 15).toISOString(),
@@ -217,7 +217,7 @@ const mockNewsData: NewsItem[] = [
       content: '웹 해킹 기초부터 실전까지 함께 공부하는 스터디를 모집합니다. 매주 화요일 오후 7시에 진행됩니다.',
       category: NewsCategoryType.STUDY
     },
-    thumbnailPath: undefined,
+    thumbnailUrl: undefined,
     tags: ['스터디', '웹해킹', '모집'],
     createdAt: new Date(2025, 0, 12).toISOString(),
     updatedAt: new Date(2025, 0, 12).toISOString(),
@@ -237,7 +237,7 @@ const mockNewsData: NewsItem[] = [
       content: 'IDA Pro를 활용한 리버싱 기초 세미나가 개최됩니다. 실습 위주로 진행되니 노트북을 지참해주세요.',
       category: NewsCategoryType.SEMINAR
     },
-    thumbnailPath: undefined,
+    thumbnailUrl: undefined,
     tags: ['세미나', '리버싱', 'IDA Pro'],
     createdAt: new Date(2025, 0, 10).toISOString(),
     updatedAt: new Date(2025, 0, 10).toISOString(),
@@ -257,7 +257,7 @@ const mockNewsData: NewsItem[] = [
       content: '2025년도 MT(Membership Training) 일정을 안내드립니다. 많은 참여 부탁드립니다.',
       category: NewsCategoryType.MT
     },
-    thumbnailPath: undefined,
+    thumbnailUrl: undefined,
     tags: ['MT', '일정', '안내'],
     createdAt: new Date(2025, 0, 8).toISOString(),
     updatedAt: new Date(2025, 0, 8).toISOString(),
@@ -277,7 +277,7 @@ const mockNewsData: NewsItem[] = [
       content: '다른 대학 동아리와 함께하는 연합 세미나가 개최됩니다. 최신 사이버 보안 트렌드에 대해 논의합니다.',
       category: NewsCategoryType.UNITED_SEMINAR
     },
-    thumbnailPath: undefined,
+    thumbnailUrl: undefined,
     tags: ['연합세미나', '보안트렌드'],
     createdAt: new Date(2025, 0, 5).toISOString(),
     updatedAt: new Date(2025, 0, 5).toISOString(),
@@ -297,7 +297,7 @@ const mockNewsData: NewsItem[] = [
       content: 'SSG 동아리원들이 DEF CON Korea 컨퍼런스에 참가합니다. 많은 관심 부탁드립니다.',
       category: NewsCategoryType.CONFERENCE
     },
-    thumbnailPath: undefined,
+    thumbnailUrl: undefined,
     tags: ['컨퍼런스', 'DEF CON'],
     createdAt: new Date(2025, 0, 3).toISOString(),
     updatedAt: new Date(2025, 0, 3).toISOString(),
@@ -317,7 +317,7 @@ const mockNewsData: NewsItem[] = [
       content: 'CTF 대회 준비를 위한 스터디가 시작됩니다. Pwn, Web, Crypto 등 다양한 분야를 다룹니다.',
       category: NewsCategoryType.CTF
     },
-    thumbnailPath: undefined,
+    thumbnailUrl: undefined,
     tags: ['CTF', '대회', '스터디'],
     createdAt: new Date(2025, 0, 1).toISOString(),
     updatedAt: new Date(2025, 0, 1).toISOString(),
@@ -337,7 +337,7 @@ const mockNewsData: NewsItem[] = [
       content: '시스템 해킹 심화 스터디를 모집합니다. Buffer Overflow, ROP 등 고급 기법을 다룹니다.',
       category: NewsCategoryType.STUDY
     },
-    thumbnailPath: undefined,
+    thumbnailUrl: undefined,
     tags: ['스터디', '시스템해킹'],
     createdAt: new Date(2024, 11, 28).toISOString(),
     updatedAt: new Date(2024, 11, 28).toISOString(),
@@ -526,7 +526,7 @@ export default function NewsContent({ createHref = '/community/news/create' }: N
     title: item.content.title,
     summary: item.content.summary || item.content.content?.substring(0, 150) || '',
     content: item.content.content,
-    thumbnailPath: item.thumbnailPath,
+    thumbnailUrl: item.thumbnailUrl,
     writerId: item.writer?.nickname || item.writer?.realname || item.writer?.username || '작성자',
     writer: item.writer ? {
       username: item.writer.username || '',

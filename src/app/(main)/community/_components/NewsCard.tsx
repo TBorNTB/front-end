@@ -3,13 +3,14 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Calendar, Eye, Heart, User, Crown, Users } from 'lucide-react';
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 
 interface NewsItem {
   id: string;
   title: string;
   summary: string;
   content?: string;
-  thumbnailPath?: string;
+  thumbnailUrl?: string;
   writerId: string;
   writer?: {
     username: string;
@@ -131,19 +132,6 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
     });
   };
 
-  const isValidImageUrl = (url?: string): string | null => {
-    if (!url || url === 'null' || url === 'undefined') return null;
-    if (url.startsWith('/')) return url;
-    try {
-      new URL(url);
-      return url;
-    } catch {
-      return null;
-    }
-  };
-
-  const thumbnailUrl = isValidImageUrl(news.thumbnailPath);
-  
   // Default writer and participants
   const writer = news.writer || {
     username: '',
@@ -159,21 +147,14 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
         <article className="group bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-primary-300 hover:shadow-md transition-all duration-200 flex cursor-pointer">
         {/* Image - Left side */}
         <div className="w-56 flex-shrink-0 relative overflow-hidden bg-gray-100">
-          {thumbnailUrl ? (
-            <Image
-              src={thumbnailUrl}
-              alt={news.title}
-              width={224}
-              height={224}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
-              <div className="text-primary-600 text-3xl font-bold">
-                {news.title.charAt(0).toUpperCase()}
-              </div>
-            </div>
-          )}
+          <ImageWithFallback
+            src={news.thumbnailUrl || ''}
+            type="news"
+            alt={news.title}
+            width={224}
+            height={224}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+          />
         </div>
 
         {/* Content - Right side */}
@@ -229,24 +210,17 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
     <Link href={`/community/news/${news.id}`}>
       <article className="group bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-primary-300 hover:shadow-lg transition-all duration-200 flex flex-col h-full cursor-pointer">
       {/* Image */}
-      <div className="relative overflow-hidden bg-gray-100">
-        {thumbnailUrl ? (
-          <Image
-            src={thumbnailUrl}
-            alt={news.title}
-            width={400}
-            height={240}
-            className="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-200"
-          />
-        ) : (
-          <div className="w-full h-56 bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
-            <div className="text-primary-600 text-4xl font-bold">
-              {news.title.charAt(0).toUpperCase()}
-            </div>
-          </div>
-        )}
+      <div className="relative overflow-hidden bg-gray-100 h-56">
+        <ImageWithFallback
+          src={news.thumbnailUrl || ''}
+          type="news"
+          alt={news.title}
+          width={400}
+          height={240}
+          className="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-200"
+        />
         {news.category && (
-          <div className="absolute top-3 left-3">
+          <div className="absolute top-3 left-3 z-10">
             <span className="bg-primary-600 text-white px-2.5 py-1 rounded-full text-xs font-semibold">
               {news.category}
             </span>

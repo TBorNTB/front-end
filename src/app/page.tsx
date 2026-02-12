@@ -138,7 +138,7 @@ export default function Home() {
           profileImage: '',
         },
         category: a.content.category || '기타',
-        thumbnailImage: normalizeImageUrl(a.thumbnailPath) || '',
+        thumbnailImage: normalizeImageUrl(a.thumbnailUrl) || '',
         likes: a.likeCount || 0,
         views: a.viewCount || 0,
         tags: a.tags || [],

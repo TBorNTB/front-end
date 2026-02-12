@@ -9,7 +9,7 @@ interface ImageWithFallbackProps extends Omit<ImageProps, 'src' | 'alt'> {
   alt?: string;
   fallbackSrc?: string;
   showPlaceholder?: boolean;
-  type?: 'avatar' | 'article' | 'project';
+  type?: 'avatar' | 'article' | 'project' | 'news';
 }
 
 // URL 유효성 검사 함수
@@ -48,6 +48,8 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
         return '/images/placeholder/article.png';
       case 'project':
         return '/images/placeholder/project.png';
+      case 'news':
+        return '/images/placeholder/news.png';
       case 'avatar':
       default:
         return '/images/placeholder/default-avatar.svg';

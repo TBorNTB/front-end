@@ -27,7 +27,7 @@ type Article = {
     content: string;
     category: string;
   };
-  thumbnailPath: string;
+  thumbnailUrl: string;
   writerId: string;
   participantIds: string[];
   tags: string[];
@@ -137,7 +137,7 @@ const fetchLatestNews = async (): Promise<Article[]> => {
         content: typeof item.content?.content === 'string' ? item.content.content : (typeof item.content === 'string' ? item.content : ''),
         category: item.content?.category || item.category || '',
       },
-      thumbnailPath: item.thumbnailPath || '',
+      thumbnailUrl: item.thumbnailUrl || '',
       writerId: item.writer?.username || item.writer?.nickname || item.writerId || '',
       participantIds: item.participantIds || [],
       tags: item.tags || [],

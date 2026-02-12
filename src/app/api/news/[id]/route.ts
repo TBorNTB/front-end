@@ -73,7 +73,7 @@ export async function PUT(
     const cookieStore = await cookies();
     const accessToken = cookieStore.get('accessToken')?.value;
 
-    // Build request body (only include thumbnailPath if it has a value)
+    // Build request body (only include thumbnailUrl if it has a value)
     const requestBody: any = {
       title: body.title,
       summary: body.summary,
@@ -83,8 +83,8 @@ export async function PUT(
       tags: body.tags || [],
     };
 
-    if (body.thumbnailPath && body.thumbnailPath.trim()) {
-      requestBody.thumbnailPath = body.thumbnailPath;
+    if (body.thumbnailUrl && body.thumbnailUrl.trim()) {
+      requestBody.thumbnailUrl = body.thumbnailUrl;
     }
 
     // Build URL for project service news API

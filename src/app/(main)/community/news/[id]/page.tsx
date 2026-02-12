@@ -34,7 +34,7 @@ interface NewsDetail {
   summary: string;
   content: string;
   category: string;
-  thumbnailPath?: string;
+  thumbnailUrl?: string;
   writerId: string;
   writerNickname: string;
   participantIds: string[];
@@ -86,7 +86,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
     id: number;
     title: string;
     summary: string;
-    thumbnailPath?: string;
+    thumbnailUrl?: string;
     writerNickname: string;
     createdAt: string;
     viewCount: number;
@@ -175,7 +175,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
             id: item.id,
             title: item.content?.title || '',
             summary: item.content?.summary || '',
-            thumbnailPath: item.thumbnailPath,
+            thumbnailUrl: item.thumbnailUrl,
             writerNickname: item.writer?.nickname || item.writer?.realname || item.writer?.username || '작성자',
             createdAt: item.createdAt,
             viewCount: item.viewCount || 0,
@@ -434,7 +434,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
     );
   }
 
-  const thumbnailUrl = isValidImageUrl(news.thumbnailPath);
+  const thumbnailUrl = isValidImageUrl(news.thumbnailUrl);
   const readTime = Math.ceil((news.content?.length || 0) / 500);
 
   return (
@@ -556,7 +556,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                     ) : relatedNews.length > 0 ? (
                       <div className="space-y-3">
                         {relatedNews.map((item) => {
-                          const thumbnailUrl = isValidImageUrl(item.thumbnailPath);
+                          const thumbnailUrl = isValidImageUrl(item.thumbnailUrl);
                           return (
                             <Link
                               key={item.id}
