@@ -15,9 +15,11 @@ export async function GET(request: NextRequest) {
       queryParams.append('keyword', keyword.trim());
     }
     
-    // Category: append if provided (default to MT for member news)
-    const category = searchParams.get('category') || 'MT';
-    queryParams.append('category', category);
+    // Category: only append if a specific category is provided
+    const category = searchParams.get('category');
+    if (category && category !== 'all') {
+      queryParams.append('category', category);
+    }
     
     // Sort type: use postSortType from request, default to LATEST
     const postSortType = searchParams.get('postSortType') || 'LATEST';

@@ -62,9 +62,10 @@ const fetchNews = async (params: NewsSearchParams): Promise<NewsSearchResponse> 
       queryParams.append('keyword', params.keyword.trim());
     }
     
-    // Category: default to MT for member news
-    const category = params.category && params.category !== 'all' ? params.category : 'MT';
-    queryParams.append('category', category);
+    // Category: only append if a specific category is selected
+    if (params.category && params.category !== 'all') {
+      queryParams.append('category', params.category);
+    }
     
     // Sort type: default to LATEST
     queryParams.append('postSortType', params.postSortType || 'LATEST');
@@ -402,10 +403,9 @@ export default function NewsContent({ createHref = '/community/news/create' }: N
       setError(null);
       
       try {
-        const apiCategory = selectedCategory !== 'all' ? selectedCategory : 'MT';
         const response = await fetchNews({
           keyword: activeSearchTerm && activeSearchTerm.trim() ? activeSearchTerm.trim() : undefined,
-          category: apiCategory,
+          category: selectedCategory,
           postSortType: convertSortToApiType(sortBy),
           page: currentPage,
           size: PAGE_SIZE
