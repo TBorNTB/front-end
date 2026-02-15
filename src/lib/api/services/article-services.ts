@@ -4,14 +4,20 @@ import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
 import { parseApiError, safeJsonParse } from '@/lib/api/helpers';
 import { INTERNAL_ENDPOINTS, getInternalApiUrl } from '@/lib/api/endpoints';
 
+export interface WriterProfile {
+  username: string;
+  nickname: string;
+  realName: string;
+  profileImageUrl: string;
+}
+
 export interface ArticleResponse {
-  thumbnail: null;
   id: number;
   title: string;
   content: string;
-  writerId: string;
-  nickname: string;
+  writerProfile: WriterProfile;
   category: string;
+  thumbnailUrl: string;
   createdAt: string;
 }
 

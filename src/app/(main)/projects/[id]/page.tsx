@@ -6,6 +6,7 @@ import { useState, useEffect, Fragment, useRef } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import DocumentModal from '../_components/DocumentModal';
 import { fetchProjectDetail, deleteDocument } from '@/lib/api/services/project-services';
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { 
   fetchViewCount,
   incrementViewCount,
@@ -55,15 +56,17 @@ interface MappedProject {
     name: string;
     role: string;
     username: string;
+    avatar?: string | null;
   }>;
-  documents: Array<{
-    id: string;
-    name: string;
-    type: string;
-    size?: string;
-    uploadedAt: string;
-    createdBy: string;
-  }>;
+      documents: Array<{
+        id: string;
+        name: string;
+        type: string;
+        size?: string;
+        uploadedAt: string;
+        createdBy: string;
+        thumbnailUrl?: string | null;
+      }>;
   relatedProjects: Array<{
     id: string;
     title: string;
@@ -230,14 +233,30 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     const endedDate = apiData.endedAt ? new Date(apiData.endedAt) : (apiData.updatedAt ? new Date(apiData.updatedAt) : new Date());
     const period = `${formatDateForPeriod(createdDate)} ~ ${formatDateForPeriod(endedDate)}`;
 
+    // 탈퇴한 유저 확인 헬퍼 함수
+    const getDisplayName = (nickname?: string, realName?: string): string => {
+      if (!nickname && !realName) {
+        return '탈퇴한 유저';
+      }
+      return nickname || realName || '탈퇴한 유저';
+    };
+
+    // Owner profile 정보 추출
+    const ownerProfile = apiData.ownerProfile || {
+      username: 'unknown',
+      nickname: '',
+      realName: '',
+      profileImageUrl: '',
+    };
+
     return {
       id: String(apiData.id),
       title: apiData.title,
       subtitle: apiData.description || '',
       author: {
-        username: apiData.username || 'unknown',
-        name: apiData.ownerNickname || apiData.ownerRealname || apiData.username || 'Unknown',
-        avatar: null,
+        username: ownerProfile.username || 'unknown',
+        name: getDisplayName(ownerProfile.nickname, ownerProfile.realName),
+        avatar: ownerProfile.profileImageUrl || null,
       },
       createdAt: formatDate(apiData.createdAt),
       updatedAt: formatDate(apiData.updatedAt),
@@ -257,17 +276,22 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       content: apiData.content || apiData.contentJson || '',
       team: [
         {
-          name: apiData.ownerNickname || apiData.ownerRealname || apiData.username || 'Unknown',
+          name: getDisplayName(ownerProfile.nickname, ownerProfile.realName),
           role: 'Owner',
-          username: apiData.username || 'unknown',
+          username: ownerProfile.username || 'unknown',
+          avatar: ownerProfile.profileImageUrl || null,
         },
         ...(apiData.collaborators || [])
-          .filter(collab => collab && collab.username)
-          .map(collab => ({
-            name: collab.nickname || collab.realname || collab.username || 'Unknown',
-            role: 'Collaborator',
-            username: collab.username || 'unknown',
-          })),
+          .filter(collab => collab && collab.profile && collab.profile.username)
+          .map(collab => {
+            const profile = collab.profile;
+            return {
+              name: getDisplayName(profile.nickname, profile.realName),
+              role: 'Collaborator',
+              username: profile.username || 'unknown',
+              avatar: profile.profileImageUrl || null,
+            };
+          }),
       ],
       documents: (apiData.documentDtos || [])
         .filter(doc => doc && doc.id !== undefined)
@@ -277,6 +301,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
           type: 'document',
           uploadedAt: doc.createdAt ? formatDate(doc.createdAt) : 'Unknown',
           createdBy: doc.description || 'Unknown',
+          thumbnailUrl: doc.thumbnailUrl || null,
         })),
       relatedProjects: [], // TODO: 연관 프로젝트 API 필요
       projectStatus: statusMap[apiData.projectStatus] || apiData.projectStatus,
@@ -696,9 +721,21 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                         .map((member: any, idx: number) => (
                         <div key={idx} className="flex items-center gap-3">
                           <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                            <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-500">
-                              {(member.name || 'U').charAt(0).toUpperCase()}
-                            </div>
+                            {member.avatar ? (
+                              <ImageWithFallback
+                                src={member.avatar}
+                                fallbackSrc="/images/placeholder/default-avatar.svg"
+                                alt={member.name || 'Member'}
+                                type="avatar"
+                                width={40}
+                                height={40}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-500">
+                                {(member.name || 'U').charAt(0).toUpperCase()}
+                              </div>
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-gray-900 text-sm truncate">
@@ -753,9 +790,23 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                               href={`/projects/${projectId}/documents/${doc.id}`}
                               className="flex items-center gap-2 flex-1 min-w-0"
                             >
-                              <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                              </svg>
+                              {doc.thumbnailUrl ? (
+                                <div className="w-10 h-10 rounded overflow-hidden bg-gray-100 flex-shrink-0">
+                                  <ImageWithFallback
+                                    src={doc.thumbnailUrl}
+                                    fallbackSrc="/images/placeholder/document.png"
+                                    alt={doc.name || 'Document'}
+                                    type="article"
+                                    width={40}
+                                    height={40}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              ) : (
+                                <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                              )}
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm text-gray-900 truncate group-hover:text-primary-600 font-medium">
                                   {doc.name || 'Untitled Document'}
@@ -954,9 +1005,21 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600">
                     <div className="flex items-center gap-2">
                       <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200">
-                        <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
-                          {(project.author?.name || 'U').charAt(0).toUpperCase()}
-                        </div>
+                        {project.author?.avatar ? (
+                          <ImageWithFallback
+                            src={project.author.avatar}
+                            fallbackSrc="/images/placeholder/default-avatar.svg"
+                            alt={project.author.name || 'Author'}
+                            type="avatar"
+                            width={32}
+                            height={32}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
+                            {(project.author?.name || 'U').charAt(0).toUpperCase()}
+                          </div>
+                        )}
                       </div>
                       <span className="font-medium">{project.author?.name || 'Unknown'}</span>
                     </div>

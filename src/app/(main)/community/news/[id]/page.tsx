@@ -6,6 +6,7 @@ import { useState, useEffect, useRef, Fragment } from 'react';
 import { Heart, Eye, Clock, ArrowLeft, Crown, Users, Calendar, Tag, MessageCircle, ChevronDown, Edit, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Menu, Transition } from '@headlessui/react';
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { 
   fetchViewCount,
   incrementViewCount,
@@ -28,17 +29,29 @@ interface NewsDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
+interface WriterProfile {
+  username: string;
+  nickname: string;
+  realName: string;
+  profileImageUrl: string;
+}
+
+interface ParticipantProfile {
+  username: string;
+  nickname: string;
+  realName: string;
+  profileImageUrl: string;
+}
+
 interface NewsDetail {
   id: number;
   title: string;
   summary: string;
   content: string;
   category: string;
-  thumbnailUrl?: string;
-  writerId: string;
-  writerNickname: string;
-  participantIds: string[];
-  participantNicknames: string[];
+  thumbnailUrl: string;
+  writerProfile: WriterProfile;
+  participantProfiles: ParticipantProfile[];
   tags: string[];
   createdAt: string;
   updatedAt: string;
@@ -87,7 +100,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
     title: string;
     summary: string;
     thumbnailUrl?: string;
-    writerNickname: string;
+    writerNickname?: string;
     createdAt: string;
     viewCount: number;
     likeCount: number;
@@ -192,6 +205,14 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
     }
   };
 
+  // 탈퇴한 유저 확인 헬퍼 함수
+  const getDisplayName = (nickname?: string, realName?: string): string => {
+    if (!nickname && !realName) {
+      return '탈퇴한 유저';
+    }
+    return nickname || realName || '탈퇴한 유저';
+  };
+
   // API 호출
   useEffect(() => {
     if (!newsId) return;
@@ -213,7 +234,28 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
           throw new Error(`Failed to fetch news: ${newsResponse.status}`);
         }
 
-        const data: NewsDetail = await newsResponse.json();
+        const apiData = await newsResponse.json();
+        
+        // API 응답을 NewsDetail 형식으로 매핑
+        const data: NewsDetail = {
+          id: apiData.id,
+          title: apiData.title,
+          summary: apiData.summary || '',
+          content: apiData.content || '',
+          category: apiData.category || '',
+          thumbnailUrl: apiData.thumbnailUrl || '',
+          writerProfile: apiData.writerProfile || {
+            username: 'unknown',
+            nickname: '',
+            realName: '',
+            profileImageUrl: '',
+          },
+          participantProfiles: apiData.participantProfiles || [],
+          tags: apiData.tags || [],
+          createdAt: apiData.createdAt || '',
+          updatedAt: apiData.updatedAt || '',
+        };
+        
         setNews(data);
         setViewCount(viewCountData.viewCount);
         setLikeCount(likeStatusData.likeCount || likeCountData.likedCount);
@@ -402,7 +444,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
     }
   };
 
-  const isOwner = currentUser?.username === news?.writerId;
+  const isOwner = currentUser?.username === news?.writerProfile?.username;
 
   if (isLoading) {
     return (
@@ -434,7 +476,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
     );
   }
 
-  const thumbnailUrl = isValidImageUrl(news.thumbnailUrl);
+  // 썸네일 URL 정규화 (이미 API에서 받은 thumbnailUrl 사용)
   const readTime = Math.ceil((news.content?.length || 0) / 500);
 
   return (
@@ -497,13 +539,13 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
               </div>
 
               {/* Participants Section */}
-              {news.participantNicknames && news.participantNicknames.length > 0 && (
+              {news.participantProfiles && news.participantProfiles.length > 0 && (
                 <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
                   <button
                     onClick={() => toggleSection('participants')}
                     className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
                   >
-                    <span className="font-bold text-gray-900">참여자 ({news.participantNicknames.length})</span>
+                    <span className="font-bold text-gray-900">참여자 ({news.participantProfiles.length})</span>
                     <ChevronDown
                       className={`w-5 h-5 text-gray-600 transition-transform ${
                         openSections.participants ? 'rotate-180' : ''
@@ -513,20 +555,35 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                   
                   {openSections.participants && (
                     <div className="p-4 space-y-3">
-                      {news.participantNicknames.map((nickname, idx) => (
-                        <div key={idx} className="flex items-center gap-3">
-                          <div className="relative w-10 h-10 rounded-full overflow-hidden bg-blue-200 flex-shrink-0">
-                            <div className="w-full h-full flex items-center justify-center text-sm font-bold text-blue-700">
-                              {nickname.charAt(0).toUpperCase()}
+                      {news.participantProfiles.map((participant, idx) => {
+                        const displayName = getDisplayName(participant.nickname, participant.realName);
+                        return (
+                          <div key={idx} className="flex items-center gap-3">
+                            <div className="relative w-10 h-10 rounded-full overflow-hidden bg-blue-200 flex-shrink-0">
+                              {participant.profileImageUrl ? (
+                                <ImageWithFallback
+                                  src={participant.profileImageUrl}
+                                  fallbackSrc="/images/placeholder/default-avatar.svg"
+                                  alt={displayName}
+                                  type="avatar"
+                                  width={40}
+                                  height={40}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-sm font-bold text-blue-700">
+                                  {displayName.charAt(0).toUpperCase()}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-gray-900 text-sm truncate">
+                                {displayName}
+                              </p>
                             </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-gray-900 text-sm truncate">
-                              {nickname}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -556,7 +613,6 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                     ) : relatedNews.length > 0 ? (
                       <div className="space-y-3">
                         {relatedNews.map((item) => {
-                          const thumbnailUrl = isValidImageUrl(item.thumbnailUrl);
                           return (
                             <Link
                               key={item.id}
@@ -564,13 +620,16 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                               className="block p-3 rounded-lg hover:bg-gray-50 transition-colors border border-gray-100"
                             >
                               <div className="flex gap-3">
-                                {thumbnailUrl && (
+                                {item.thumbnailUrl && (
                                   <div className="relative w-16 h-16 flex-shrink-0 rounded overflow-hidden bg-gray-100">
-                                    <Image
-                                      src={thumbnailUrl}
+                                    <ImageWithFallback
+                                      src={item.thumbnailUrl}
+                                      fallbackSrc="/images/placeholder/news.png"
                                       alt={item.title}
-                                      fill
-                                      className="object-cover"
+                                      type="news"
+                                      width={64}
+                                      height={64}
+                                      className="w-full h-full object-cover"
                                     />
                                   </div>
                                 )}
@@ -584,7 +643,8 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                                     </p>
                                   )}
                                   <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
-                                    <span>{item.writerNickname}</span>
+                                    {item.writerNickname && <span>{item.writerNickname}</span>}
+                                    {item.writerNickname && <span>·</span>}
                                     <span>·</span>
                                     <span>
                                       {(() => {
@@ -658,16 +718,28 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                 {/* Author & Metadata */}
                 <div className="flex items-center gap-4 mb-4">
                   <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 border-2 border-yellow-400">
-                    <div className="w-full h-full flex items-center justify-center text-lg font-bold text-gray-500">
-                      {news.writerNickname?.charAt(0) || 'U'}
-                    </div>
+                    {news.writerProfile?.profileImageUrl ? (
+                      <ImageWithFallback
+                        src={news.writerProfile.profileImageUrl}
+                        fallbackSrc="/images/placeholder/default-avatar.svg"
+                        alt={getDisplayName(news.writerProfile.nickname, news.writerProfile.realName)}
+                        type="avatar"
+                        width={48}
+                        height={48}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-lg font-bold text-gray-500">
+                        {getDisplayName(news.writerProfile?.nickname, news.writerProfile?.realName).charAt(0).toUpperCase()}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <Crown className="w-4 h-4 text-yellow-500" />
                       <p className="font-semibold text-gray-900">
-                        {news.writerNickname || news.writerId || '작성자'}
+                        {getDisplayName(news.writerProfile?.nickname, news.writerProfile?.realName)}
                       </p>
                     </div>
                     <div className="flex items-center gap-3 mt-1">
@@ -728,14 +800,15 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
               </header>
 
               {/* Thumbnail Image */}
-              {thumbnailUrl && (
+              {news.thumbnailUrl && (
                 <div className="relative w-full h-96 overflow-hidden bg-gray-100">
-                  <Image
-                    src={thumbnailUrl}
+                  <ImageWithFallback
+                    src={news.thumbnailUrl}
+                    fallbackSrc="/images/placeholder/news.png"
                     alt={news.title}
+                    type="news"
                     fill
                     className="object-cover"
-                    priority
                   />
                 </div>
               )}

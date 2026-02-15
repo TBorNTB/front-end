@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useState, useEffect, createElement, useRef, JSX } from 'react';
 import { Heart, Eye, MessageCircle, Share2, Edit, Clock, ArrowLeft, Code, FileText, Trash2 } from 'lucide-react';
 import { fetchArticleById, deleteArticle, type ArticleResponse } from '@/lib/api/services/article-services';
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { useRouter } from 'next/navigation';
 import TableOfContents from '@/components/editor/TableOfContents';
 import { searchCSKnowledge, searchCSKnowledgeByMember } from '@/lib/api/services/elastic-services';
@@ -400,9 +401,25 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
         ]);
         
         if (articleData) {
+          // 탈퇴한 유저 확인 헬퍼 함수
+          const getDisplayName = (nickname?: string, realName?: string): string => {
+            if (!nickname && !realName) {
+              return '탈퇴한 유저';
+            }
+            return nickname || realName || '탈퇴한 유저';
+          };
+
+          // Writer profile 정보 추출
+          const writerProfile = articleData.writerProfile || {
+            username: 'unknown',
+            nickname: '',
+            realName: '',
+            profileImageUrl: '',
+          };
+
           // 저자의 다른 글 조회 (nickname 기반으로 직접 조회 - 추가 API 호출 제거)
           const authorArticlesResponse = await searchCSKnowledgeByMember({ 
-            name: articleData.nickname, 
+            name: writerProfile.nickname || writerProfile.realName, 
             page: 0, 
             size: 4 // 현재 글 제외하고 3개 필요하므로 4개 가져옴
           }).catch(() => ({ content: [], page: 0, size: 4, totalElements: 0, totalPages: 0 }));
@@ -445,11 +462,11 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
             title: articleData.title,
             category: articleData.category,
             content: articleData.content,
-            thumbnail: articleData.thumbnail || null,
+            thumbnail: articleData.thumbnailUrl || null,
             author: {
-              username: articleData.writerId,
-              name: articleData.nickname,
-              avatar: null,
+              username: writerProfile.username || 'unknown',
+              name: getDisplayName(writerProfile.nickname, writerProfile.realName),
+              avatar: writerProfile.profileImageUrl || null,
             },
             publishedAt: articleData.createdAt,
             readTime: `${Math.ceil(articleData.content.length / 500)}분`,
@@ -852,10 +869,24 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
                 {/* Author, Date, Time, Category in one line */}
                 <div className="flex flex-wrap items-center gap-3 mb-4 text-sm text-gray-600">
-                  <div className="flex items-center gap-1.5">
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
+                  <div className="flex items-center gap-2">
+                    <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200">
+                      {displayPost.author.avatar ? (
+                        <ImageWithFallback
+                          src={displayPost.author.avatar}
+                          fallbackSrc="/images/placeholder/default-avatar.svg"
+                          alt={displayPost.author.name || 'Author'}
+                          type="avatar"
+                          width={32}
+                          height={32}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
+                          {(displayPost.author.name || 'U').charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
                     <span className="font-medium text-gray-900">{displayPost.author.name}</span>
                   </div>
                   
@@ -900,25 +931,18 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
               </header>
 
               {/* Thumbnail Image */}
-              <div className="relative w-full h-80 mb-8 rounded-xl overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center border border-gray-200 shadow-sm">
-                {displayPost.thumbnail ? (
-                  <Image
+              {displayPost.thumbnail && (
+                <div className="relative w-full h-80 mb-8 rounded-xl overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 border border-gray-200 shadow-sm">
+                  <ImageWithFallback
                     src={displayPost.thumbnail}
+                    fallbackSrc="/images/placeholder/article.png"
                     alt={displayPost.title}
+                    type="article"
                     fill
                     className="object-cover"
-                    priority
                   />
-                ) : (
-                  <Image
-                    src="/images/placeholder/article.png"
-                    alt={displayPost.title}
-                    fill
-                    className="object-cover"
-                    priority
-                  />
-                )}
-              </div>
+                </div>
+              )}
 
               {/* Post Content */}
               <div
