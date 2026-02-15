@@ -16,7 +16,7 @@ import { Check, Eye, EyeOff, Github, Lock, User, X } from "lucide-react";
 import Image from 'next/image';
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 
@@ -42,6 +42,8 @@ type FormData = z.infer<typeof formSchema>;
 function LogInPageInner() {
   const { isLoading, error, setIsLoading, handleError } = useAuthFormState();
   const [showPassword, setShowPassword] = useState(false);
+  const [isOAuthLoading, setIsOAuthLoading] = useState(false);
+  const oauthRedirectingRef = useRef(false); // 중복 클릭 방지
   const { login } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -193,8 +195,33 @@ function LogInPageInner() {
   }
 
   const handleGithubLogin = () => {
-    window.location.href =
-      `${BASE_URL}${USER_ENDPOINTS.USER.OAUTH_GITHUB}`;
+    // 중복 클릭 방지
+    if (oauthRedirectingRef.current || isOAuthLoading) {
+      console.log('OAuth redirect already in progress, ignoring click');
+      return;
+    }
+
+    // 리다이렉트 시작 플래그 설정
+    oauthRedirectingRef.current = true;
+    setIsOAuthLoading(true);
+
+    try {
+      // OAuth 리다이렉트 플래그 설정 (홈페이지에서 콜백 감지용)
+      sessionStorage.setItem('oauth_redirecting', 'true');
+      
+      const oauthUrl = `${BASE_URL}${USER_ENDPOINTS.USER.OAUTH_GITHUB}`;
+      console.log('Redirecting to GitHub OAuth:', oauthUrl);
+      
+      // 리다이렉트 실행
+      window.location.href = oauthUrl;
+    } catch (error) {
+      console.error('OAuth redirect error:', error);
+      // 에러 발생 시 플래그 리셋
+      sessionStorage.removeItem('oauth_redirecting');
+      oauthRedirectingRef.current = false;
+      setIsOAuthLoading(false);
+      handleError(error instanceof Error ? error : new Error('OAuth redirect failed'));
+    }
   };
 
   return (
@@ -347,12 +374,16 @@ function LogInPageInner() {
 
           <button
             onClick={handleGithubLogin}
-            disabled={isLoading}
+            disabled={isLoading || isOAuthLoading}
             type="button"
-            className="w-full h-12 px-6 text-base bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-primary-500 hover:text-primary-600 transition-colors rounded-lg font-medium flex items-center justify-center cursor-pointer flex-shrink-0"
+            className={`w-full h-12 px-6 text-base bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-primary-500 hover:text-primary-600 transition-colors rounded-lg font-medium flex items-center justify-center flex-shrink-0 ${
+              isLoading || isOAuthLoading 
+                ? 'opacity-50 cursor-not-allowed' 
+                : 'cursor-pointer'
+            }`}
           >
             <Github className="mr-2 h-4 w-4" />
-            깃허브로 간편 로그인
+            {isOAuthLoading ? '리다이렉트 중...' : '깃허브로 간편 로그인'}
           </button>
         </div>
       </div>

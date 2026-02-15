@@ -50,14 +50,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsAuthenticated(false);
   };
 
-  // 초기화: 페이지 로드 시 인증 상태 확인
+  // 초기화: 페이지 로드 시 인증 상태 확인 및 OAuth 콜백 처리
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        // OAuth 콜백 후 쿠키가 설정되었는지 확인
         const serverUser = await fetchUserProfile();
         if (serverUser) {
           setUser(serverUser);
           setIsAuthenticated(true);
+          
+          // OAuth 콜백 페이지가 아닌 경우에만 리다이렉트 체크
+          // (콜백 페이지에서 이미 처리하므로 중복 방지)
+          if (typeof window !== 'undefined') {
+            const pathname = window.location.pathname;
+            const isCallbackPage = pathname === '/callback' || pathname === '/auth/callback';
+            
+            // OAuth 콜백 후 홈페이지로 돌아온 경우, 사용자가 로그인되었는지 확인
+            // (회원가입과 로그인이 한번에 처리되었는지 확인)
+            if (!isCallbackPage && pathname === '/' && serverUser) {
+              console.log('✅ OAuth login successful, user authenticated:', serverUser);
+            }
+          }
         } else {
           clearAuthState();
         }
