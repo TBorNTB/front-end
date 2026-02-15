@@ -90,15 +90,49 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // 로그아웃
   const logout = async () => {
     try {
-      const response = await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
-      if (response.ok) {
-        clearAuthState();
-        window.location.href = '/';
-      } else {
-        throw new Error('Logout failed');
+      console.log('Logout initiated');
+      
+      // 클라이언트 사이드에서도 쿠키 삭제 시도 (httpOnly가 아닌 경우)
+      // httpOnly 쿠키는 서버에서만 삭제 가능하지만, 혹시 모를 경우를 대비
+      const cookieNames = ['accessToken', 'refreshToken', 'keepSignedIn'];
+      cookieNames.forEach(name => {
+        // 여러 path에서 삭제 시도
+        ['/', '/api', '/api/auth'].forEach(path => {
+          document.cookie = `${name}=; path=${path}; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+          document.cookie = `${name}=; path=${path}; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure`;
+        });
+        // path 없이도 시도
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+      });
+      
+      const response = await fetch('/api/auth/logout', { 
+        method: 'POST', 
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      console.log('Logout response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      // 서버가 항상 쿠키를 삭제하므로, 응답 상태와 관계없이 상태를 정리
+      clearAuthState();
+      
+      // 응답 본문 확인 (디버깅용)
+      try {
+        const data = await response.json();
+        console.log('Logout response data:', data);
+      } catch (e) {
+        // JSON 파싱 실패는 무시 (이미 상태는 정리됨)
+        console.warn('Could not parse logout response:', e);
       }
+      
+      // 상태 정리 후 리다이렉트 (강제 새로고침으로 쿠키 상태 확인)
+      window.location.href = '/';
     } catch (error) {
       console.error('Logout error:', error);
+      // 네트워크 에러 등이 발생해도 상태는 정리
       clearAuthState();
       window.location.href = '/';
     }
