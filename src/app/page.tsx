@@ -180,6 +180,9 @@ export default function Home() {
         });
       }
       
+      // Normalize thumbnail URL like the first project
+      const thumbnail = normalizeImageUrl(p.thumbnailUrl);
+      
       return {
         id: p.id,
         title: p.title,
@@ -191,7 +194,7 @@ export default function Home() {
         views: p.viewCount,
         techStacks: p.projectTechStacks || [],
         owner: p.owner || undefined,
-        thumbnailUrl: p.thumbnailUrl || '',
+        thumbnailUrl: thumbnail,
       };
     });
 
