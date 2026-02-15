@@ -1086,18 +1086,41 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {displayedComments.map((comment) => (
-                      <div key={comment.id} className="bg-white rounded-lg p-4 border border-gray-200">
-                        <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-                            <span className="text-sm font-semibold text-gray-600">
-                              {comment.username.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold text-gray-900">{comment.username}</span>
+                    {displayedComments.map((comment) => {
+                      const getDisplayName = (user?: { nickname?: string; realName?: string }): string => {
+                        if (!user || (!user.nickname && !user.realName)) {
+                          return '탈퇴한 유저';
+                        }
+                        return user.nickname || user.realName || '탈퇴한 유저';
+                      };
+                      const displayName = comment.user ? getDisplayName(comment.user) : comment.username;
+                      const profileImageUrl = comment.user?.profileImageUrl;
+                      const initial = displayName.charAt(0).toUpperCase();
+
+                      return (
+                        <div key={comment.id} className="bg-white rounded-lg p-4 border border-gray-200">
+                          <div className="flex items-start gap-3">
+                            <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                              {profileImageUrl ? (
+                                <ImageWithFallback
+                                  src={profileImageUrl}
+                                  fallbackSrc="/images/placeholder/default-avatar.svg"
+                                  alt={displayName}
+                                  type="avatar"
+                                  width={40}
+                                  height={40}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-sm font-semibold text-gray-600">
+                                  {initial}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-gray-900">{displayName}</span>
                                 <span className="text-xs text-gray-500">
                                   {new Date(comment.createdAt).toLocaleDateString('ko-KR', {
                                     year: 'numeric',
@@ -1201,16 +1224,33 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                             )}
                             {expandedReplies.has(comment.id) && replies[comment.id] && (
                               <div className="mt-4 ml-4 space-y-3 border-l-2 border-gray-200 pl-4">
-                                {replies[comment.id].map((reply) => (
-                                  <div key={reply.id} className="flex items-start gap-2">
-                                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-                                      <span className="text-xs font-semibold text-gray-600">
-                                        {reply.username.charAt(0).toUpperCase()}
-                                      </span>
-                                    </div>
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-2 mb-1">
-                                        <span className="font-medium text-gray-900 text-sm">{reply.username}</span>
+                                {replies[comment.id].map((reply) => {
+                                  const replyDisplayName = reply.user ? getDisplayName(reply.user) : reply.username;
+                                  const replyProfileImageUrl = reply.user?.profileImageUrl;
+                                  const replyInitial = replyDisplayName.charAt(0).toUpperCase();
+
+                                  return (
+                                    <div key={reply.id} className="flex items-start gap-2">
+                                      <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                                        {replyProfileImageUrl ? (
+                                          <ImageWithFallback
+                                            src={replyProfileImageUrl}
+                                            fallbackSrc="/images/placeholder/default-avatar.svg"
+                                            alt={replyDisplayName}
+                                            type="avatar"
+                                            width={32}
+                                            height={32}
+                                            className="w-full h-full object-cover"
+                                          />
+                                        ) : (
+                                          <div className="w-full h-full flex items-center justify-center text-xs font-semibold text-gray-600">
+                                            {replyInitial}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <span className="font-medium text-gray-900 text-sm">{replyDisplayName}</span>
                                         <span className="text-xs text-gray-500">
                                           {new Date(reply.createdAt).toLocaleDateString('ko-KR')}
                                         </span>
@@ -1218,13 +1258,15 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                                       <p className="text-gray-700 text-sm">{reply.content}</p>
                                     </div>
                                   </div>
-                                ))}
+                                  );
+                                })}
                               </div>
                             )}
                           </div>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                     {hasNextComments && (
                       <div className="text-center pt-4">
                         <button

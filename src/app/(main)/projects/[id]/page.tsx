@@ -1201,25 +1201,48 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {comments.map((comment) => (
-                        <div key={`comment-${comment.id}`} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                          <div className="flex gap-4">
-                            <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                              <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-500">
-                                {comment.username.charAt(0).toUpperCase()}
+                      {comments.map((comment) => {
+                        const getDisplayName = (user?: { nickname?: string; realName?: string }): string => {
+                          if (!user || (!user.nickname && !user.realName)) {
+                            return '탈퇴한 유저';
+                          }
+                          return user.nickname || user.realName || '탈퇴한 유저';
+                        };
+                        const displayName = comment.user ? getDisplayName(comment.user) : comment.username;
+                        const profileImageUrl = comment.user?.profileImageUrl;
+                        const initial = displayName.charAt(0).toUpperCase();
+
+                        return (
+                          <div key={`comment-${comment.id}`} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <div className="flex gap-4">
+                              <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                                {profileImageUrl ? (
+                                  <ImageWithFallback
+                                    src={profileImageUrl}
+                                    fallbackSrc="/images/placeholder/default-avatar.svg"
+                                    alt={displayName}
+                                    type="avatar"
+                                    width={40}
+                                    height={40}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-500">
+                                    {initial}
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium text-gray-900">{comment.username}</span>
-                                  <span className="text-sm text-gray-500">{formatDate(comment.createdAt)}</span>
-                                  {comment.updatedAt !== comment.createdAt && (
-                                    <span className="text-xs text-gray-400">(수정됨)</span>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Menu as="div" className="relative">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium text-gray-900">{displayName}</span>
+                                    <span className="text-sm text-gray-500">{formatDate(comment.createdAt)}</span>
+                                    {comment.updatedAt !== comment.createdAt && (
+                                      <span className="text-xs text-gray-400">(수정됨)</span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Menu as="div" className="relative">
                                     <Menu.Button className="p-1 hover:bg-gray-200 rounded-full">
                                       <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
@@ -1360,105 +1383,123 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                   {/* Replies */}
                                   {expandedReplies.has(comment.id) && replies[comment.id] && (
                                     <div className="mt-4 space-y-3 pl-4 border-l-2 border-gray-200">
-                                      {replies[comment.id].map((reply) => (
-                                        <div key={`reply-${comment.id}-${reply.id}`} className="bg-white rounded-lg p-3 border border-gray-200">
-                                          <div className="flex gap-3">
-                                            <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                                              <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
-                                                {reply.username.charAt(0).toUpperCase()}
-                                              </div>
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                              <div className="flex items-center justify-between mb-1">
-                                                <div className="flex items-center gap-2">
-                                                  <span className="text-sm font-medium text-gray-900">{reply.username}</span>
-                                                  <span className="text-xs text-gray-500">{formatDate(reply.createdAt)}</span>
-                                                  {reply.updatedAt !== reply.createdAt && (
-                                                    <span className="text-xs text-gray-400">(수정됨)</span>
-                                                  )}
-                                                </div>
-                                                <Menu as="div" className="relative">
-                                                  <Menu.Button className="p-1 hover:bg-gray-200 rounded-full">
-                                                    <svg className="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                                                    </svg>
-                                                  </Menu.Button>
-                                                  <Transition
-                                                    as={Fragment}
-                                                    enter="transition ease-out duration-100"
-                                                    enterFrom="transform opacity-0 scale-95"
-                                                    enterTo="transform opacity-100 scale-100"
-                                                    leave="transition ease-in duration-75"
-                                                    leaveFrom="transform opacity-100 scale-100"
-                                                    leaveTo="transform opacity-0 scale-95"
-                                                  >
-                                                    <Menu.Items className="absolute right-0 mt-2 w-32 origin-top-right bg-white divide-y divide-gray-100 rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
-                                                      <div className="p-1">
-                                                        <Menu.Item>
-                                                          {({ active }: { active: boolean }) => (
-                                                            <button
-                                                              onClick={() => {
-                                                                setEditingCommentId(reply.id);
-                                                                setEditContent(reply.content);
-                                                              }}
-                                                              className={`${
-                                                                active ? 'bg-gray-100' : ''
-                                                              } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-700`}
-                                                            >
-                                                              편집
-                                                            </button>
-                                                          )}
-                                                        </Menu.Item>
-                                                        <Menu.Item>
-                                                          {({ active }: { active: boolean }) => (
-                                                            <button
-                                                              onClick={() => handleDeleteComment(reply.id)}
-                                                              className={`${
-                                                                active ? 'bg-red-50' : ''
-                                                              } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-red-600`}
-                                                            >
-                                                              삭제
-                                                            </button>
-                                                          )}
-                                                        </Menu.Item>
-                                                      </div>
-                                                    </Menu.Items>
-                                                  </Transition>
-                                                </Menu>
-                                              </div>
-                                              {editingCommentId === reply.id ? (
-                                                <div className="space-y-2">
-                                                  <textarea
-                                                    value={editContent}
-                                                    onChange={(e) => setEditContent(e.target.value)}
-                                                    className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
-                                                    rows={2}
+                                      {replies[comment.id].map((reply) => {
+                                        const replyDisplayName = reply.user ? getDisplayName(reply.user) : reply.username;
+                                        const replyProfileImageUrl = reply.user?.profileImageUrl;
+                                        const replyInitial = replyDisplayName.charAt(0).toUpperCase();
+
+                                        return (
+                                          <div key={`reply-${comment.id}-${reply.id}`} className="bg-white rounded-lg p-3 border border-gray-200">
+                                            <div className="flex gap-3">
+                                              <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                                                {replyProfileImageUrl ? (
+                                                  <ImageWithFallback
+                                                    src={replyProfileImageUrl}
+                                                    fallbackSrc="/images/placeholder/default-avatar.svg"
+                                                    alt={replyDisplayName}
+                                                    type="avatar"
+                                                    width={32}
+                                                    height={32}
+                                                    className="w-full h-full object-cover"
                                                   />
-                                                  <div className="flex gap-2">
-                                                    <button
-                                                      onClick={() => handleEditComment(reply.id)}
-                                                      className="px-3 py-1 bg-primary-600 text-white rounded-lg text-xs hover:bg-primary-700"
-                                                    >
-                                                      저장
-                                                    </button>
-                                                    <button
-                                                      onClick={() => {
-                                                        setEditingCommentId(null);
-                                                        setEditContent('');
-                                                      }}
-                                                      className="px-3 py-1 bg-gray-200 text-gray-700 rounded-lg text-xs hover:bg-gray-300"
-                                                    >
-                                                      취소
-                                                    </button>
+                                                ) : (
+                                                  <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
+                                                    {replyInitial}
                                                   </div>
+                                                )}
+                                              </div>
+                                              <div className="flex-1 min-w-0">
+                                                <div className="flex items-center justify-between mb-1">
+                                                  <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-medium text-gray-900">{replyDisplayName}</span>
+                                                    <span className="text-xs text-gray-500">{formatDate(reply.createdAt)}</span>
+                                                    {reply.updatedAt !== reply.createdAt && (
+                                                      <span className="text-xs text-gray-400">(수정됨)</span>
+                                                    )}
+                                                  </div>
+                                                  <Menu as="div" className="relative">
+                                                    <Menu.Button className="p-1 hover:bg-gray-200 rounded-full">
+                                                      <svg className="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                                      </svg>
+                                                    </Menu.Button>
+                                                    <Transition
+                                                      as={Fragment}
+                                                      enter="transition ease-out duration-100"
+                                                      enterFrom="transform opacity-0 scale-95"
+                                                      enterTo="transform opacity-100 scale-100"
+                                                      leave="transition ease-in duration-75"
+                                                      leaveFrom="transform opacity-100 scale-100"
+                                                      leaveTo="transform opacity-0 scale-95"
+                                                    >
+                                                      <Menu.Items className="absolute right-0 mt-2 w-32 origin-top-right bg-white divide-y divide-gray-100 rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+                                                        <div className="p-1">
+                                                          <Menu.Item>
+                                                            {({ active }: { active: boolean }) => (
+                                                              <button
+                                                                onClick={() => {
+                                                                  setEditingCommentId(reply.id);
+                                                                  setEditContent(reply.content);
+                                                                }}
+                                                                className={`${
+                                                                  active ? 'bg-gray-100' : ''
+                                                                } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-700`}
+                                                              >
+                                                                편집
+                                                              </button>
+                                                            )}
+                                                          </Menu.Item>
+                                                          <Menu.Item>
+                                                            {({ active }: { active: boolean }) => (
+                                                              <button
+                                                                onClick={() => handleDeleteComment(reply.id)}
+                                                                className={`${
+                                                                  active ? 'bg-red-50' : ''
+                                                                } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-red-600`}
+                                                              >
+                                                                삭제
+                                                              </button>
+                                                            )}
+                                                          </Menu.Item>
+                                                        </div>
+                                                      </Menu.Items>
+                                                    </Transition>
+                                                  </Menu>
                                                 </div>
-                                              ) : (
-                                                <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">{reply.content}</p>
-                                              )}
+                                                {editingCommentId === reply.id ? (
+                                                  <div className="space-y-2 mt-2">
+                                                    <textarea
+                                                      value={editContent}
+                                                      onChange={(e) => setEditContent(e.target.value)}
+                                                      className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                                                      rows={2}
+                                                    />
+                                                    <div className="flex gap-2">
+                                                      <button
+                                                        onClick={() => handleEditComment(reply.id)}
+                                                        className="px-3 py-1 bg-primary-600 text-white rounded-lg text-xs hover:bg-primary-700"
+                                                      >
+                                                        저장
+                                                      </button>
+                                                      <button
+                                                        onClick={() => {
+                                                          setEditingCommentId(null);
+                                                          setEditContent('');
+                                                        }}
+                                                        className="px-3 py-1 bg-gray-200 text-gray-700 rounded-lg text-xs hover:bg-gray-300"
+                                                      >
+                                                        취소
+                                                      </button>
+                                                    </div>
+                                                  </div>
+                                                ) : (
+                                                  <p className="text-sm text-gray-700 whitespace-pre-wrap break-words mt-1">{reply.content}</p>
+                                                )}
+                                              </div>
                                             </div>
                                           </div>
-                                        </div>
-                                      ))}
+                                        );
+                                      })}
                                     </div>
                                   )}
                                 </>
@@ -1466,7 +1507,8 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                             </div>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                       
                       {/* Load More Button */}
                       {hasNextComments && (
