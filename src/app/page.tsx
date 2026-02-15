@@ -175,7 +175,7 @@ export default function Home() {
       if (p.collaborators && p.collaborators.length > 0) {
         p.collaborators.forEach((collab) => {
           collaboratorsList.push({
-            profileImage: collab.avatarUrl || '',
+            profileImage: collab.profileImageUrl || '',
           });
         });
       }

@@ -40,7 +40,7 @@ const AvatarStack = ({
   collaborators,
   maxVisible = 3
 }: {
-  owner?: { username?: string; nickname?: string; realname?: string; avatarUrl?: string };
+  owner?: { username?: string; nickname?: string; realname?: string; profileImageUrl?: string };
   collaborators: { profileImage: string }[];
   maxVisible?: number;
 }) => {
@@ -64,7 +64,7 @@ const AvatarStack = ({
               title={ownerName}
             >
               <ImageWithFallback
-                src={owner.avatarUrl || ''}
+                src={owner.profileImageUrl || ''}
                 fallbackSrc="/images/placeholder/default-avatar.svg"
                 alt={ownerName}
                 width={28}

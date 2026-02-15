@@ -349,6 +349,7 @@ function ArticlesContent() {
       bio: item.writer?.realname || '',
       username: item.writer?.username,
       realname: item.writer?.realname,
+      avatarUrl: item.writer?.profileImageUrl || '',
     },
     date: item.createdAt ? new Date(item.createdAt).toLocaleDateString('ko-KR') : new Date().toLocaleDateString('ko-KR'),
     readTime: '5분',

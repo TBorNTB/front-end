@@ -14,8 +14,8 @@ type Project = {
   updatedAt: string;
   likeCount: number;
   viewCount: number;
-  owner?: { username?: string; nickname?: string; realname?: string; avatarUrl?: string } | null;
-  collaborators?: Array<{ username?: string; nickname?: string; realname?: string; avatarUrl?: string }>;
+  owner?: { username?: string; nickname?: string; realname?: string; profileImageUrl?: string } | null;
+  collaborators?: Array<{ username?: string; nickname?: string; realname?: string; profileImageUrl?: string }>;
 };
 
 type Article = {

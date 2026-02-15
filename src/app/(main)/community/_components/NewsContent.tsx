@@ -42,11 +42,13 @@ interface NewsItem {
     username: string;
     nickname: string;
     realname: string;
+    profileImageUrl?: string;
   };
   participants?: Array<{
     username: string;
     nickname: string;
     realname: string;
+    profileImageUrl?: string;
   }>;
 }
 
@@ -520,6 +522,22 @@ export default function NewsContent({ createHref = '/community/news/create' }: N
     updateURL({ category, page: 0 });
   };
 
+  // 프로필 이미지 URL 검증 함수
+  const getValidProfileImageUrl = (url: string | null | undefined): string => {
+    if (!url || typeof url !== 'string') return '/images/placeholder/default-avatar.svg';
+    const trimmed = url.trim();
+    if (trimmed === '' || trimmed === 'string' || trimmed === 'null' || trimmed === 'undefined') {
+      return '/images/placeholder/default-avatar.svg';
+    }
+    if (trimmed.startsWith('/')) return trimmed;
+    try {
+      new URL(trimmed);
+      return trimmed;
+    } catch {
+      return '/images/placeholder/default-avatar.svg';
+    }
+  };
+
   // News 데이터 변환
   const transformedNews = news.map((item) => ({
     id: item.id.toString(),
@@ -532,18 +550,18 @@ export default function NewsContent({ createHref = '/community/news/create' }: N
       username: item.writer.username || '',
       nickname: item.writer.nickname || 'Unknown',
       realname: item.writer.realname || '',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+      avatar: getValidProfileImageUrl(item.writer.profileImageUrl)
     } : {
       username: '',
       nickname: 'Unknown',
       realname: '',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+      avatar: '/images/placeholder/default-avatar.svg'
     },
     participants: (item.participants || []).map((participant: any) => ({
       username: participant.username || '',
       nickname: participant.nickname || 'Unknown',
       realname: participant.realname || '',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+      avatar: getValidProfileImageUrl(participant.profileImageUrl)
     })),
     tags: item.tags || [],
     createdAt: item.createdAt,

@@ -14,13 +14,13 @@ export interface FeaturedProject {
     username?: string;
     nickname?: string;
     realname?: string;
-    avatarUrl?: string;
+    profileImageUrl?: string;
   };
   collaborators?: Array<{
     username?: string;
     nickname?: string;
     realname?: string;
-    avatarUrl?: string;
+    profileImageUrl?: string;
   }>;
 }
 
@@ -38,7 +38,7 @@ export interface ProjectCardData {
     username?: string;
     nickname?: string;
     realname?: string;
-    avatarUrl?: string;
+    profileImageUrl?: string;
   };
   thumbnailUrl?: string;
 }

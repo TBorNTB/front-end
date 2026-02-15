@@ -23,6 +23,7 @@ export interface CSKnowledgeWriter {
   username: string;
   nickname: string;
   realname: string;
+  profileImageUrl: string;
 }
 
 export interface CSKnowledgeItem {
