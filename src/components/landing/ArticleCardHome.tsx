@@ -36,7 +36,7 @@ export function ArticleCardHome({ article }: ArticleCardHomeProps) {
   const defaultAvatar = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face';
 
   return (
-    <Link href={`/community/news/${article.id}`}>
+    <Link href={`/articles/${article.id}`}>
       <article className="group bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-primary hover:shadow-lg transition-all duration-200 hover:-translate-y-1">
         {/* Image */}
         <div className="relative h-56 overflow-hidden">

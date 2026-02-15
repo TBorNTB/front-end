@@ -576,47 +576,8 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
   const tableOfContents = extractHeadings(displayPost.content);
 
-  // Mock comments data for default display
-  const mockComments: Comment[] = [
-    {
-      id: 1,
-      username: 'SecurityGenius',
-      content: '정말 잘 정리된 자료네요. 버퍼 오버플로우 부분이 특히 도움이 됐습니다!',
-      createdAt: new Date(Date.now() - 86400000).toISOString(), // 1일 전
-      updatedAt: new Date(Date.now() - 86400000).toISOString(),
-      replyCount: 2,
-      postType: 'ARTICLE',
-      postId: Number(articleId),
-      parentId: 0,
-      depth: 0,
-    },
-    {
-      id: 2,
-      username: 'CodeMaster',
-      content: '스택 오버플로우의 실제 사례를 더 보고 싶은데 다음 글에서 다룰 예정이신가요?',
-      createdAt: new Date(Date.now() - 172800000).toISOString(), // 2일 전
-      updatedAt: new Date(Date.now() - 172800000).toISOString(),
-      replyCount: 1,
-      postType: 'ARTICLE',
-      postId: Number(articleId),
-      parentId: 0,
-      depth: 0,
-    },
-    {
-      id: 3,
-      username: 'HackingEnthusiast',
-      content: '메모리 구조 부분이 복잡하지만 이해하기 쉽게 설명해주셨습니다. 감사합니다! 🎯',
-      createdAt: new Date(Date.now() - 259200000).toISOString(), // 3일 전
-      updatedAt: new Date(Date.now() - 259200000).toISOString(),
-      replyCount: 0,
-      postType: 'ARTICLE',
-      postId: Number(articleId),
-      parentId: 0,
-      depth: 0,
-    },
-  ];
-
-  const displayedComments = comments.length === 0 ? mockComments : comments;
+  // 댓글이 없으면 빈 배열 사용 (목데이터 제거)
+  const displayedComments = comments;
   const displayedCommentCount = displayedComments.length;
 
   if (isLoading) {
@@ -630,20 +591,39 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
     );
   }
 
-  // 에러가 있고 post도 없는 경우에만 에러 화면 표시
-  // post가 null이어도 displayPost는 기본값이 있으므로 계속 진행
-  if (error && !post) {
+  // 포스트가 없거나 에러가 있는 경우 삭제된 게시글 메시지 표시
+  if ((error && !post) || (!isLoading && !post)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">{error}</p>
-          <Link
-            href="/articles"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            목록으로 돌아가기
-          </Link>
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm">
+            <div className="mb-4">
+              <svg
+                className="w-16 h-16 mx-auto text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">해당 게시글은 삭제 된 게시글입니다</h2>
+            <p className="text-gray-600 mb-6">
+              요청하신 게시글을 찾을 수 없습니다. 삭제되었거나 존재하지 않는 게시글일 수 있습니다.
+            </p>
+            <Link
+              href="/articles"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              목록으로 돌아가기
+            </Link>
+          </div>
         </div>
       </div>
     );

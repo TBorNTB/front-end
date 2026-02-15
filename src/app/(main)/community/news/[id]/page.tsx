@@ -457,15 +457,34 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
     );
   }
 
-  if (error || !news) {
+  // 뉴스가 없거나 에러가 있는 경우 삭제된 게시글 메시지 표시
+  if ((error && !news) || (!isLoading && !news)) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="container py-8">
-          <div className="bg-white rounded-lg border border-red-200 p-8 text-center">
-            <p className="text-red-500 mb-4">{error || '뉴스를 찾을 수 없습니다.'}</p>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm">
+            <div className="mb-4">
+              <svg
+                className="w-16 h-16 mx-auto text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">해당 게시글은 삭제 된 게시글입니다</h2>
+            <p className="text-gray-600 mb-6">
+              요청하신 게시글을 찾을 수 없습니다. 삭제되었거나 존재하지 않는 게시글일 수 있습니다.
+            </p>
             <Link
               href="/community"
-              className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               목록으로 돌아가기

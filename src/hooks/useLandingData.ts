@@ -29,6 +29,12 @@ type Article = {
   };
   thumbnailUrl: string;
   writerId: string;
+  writer?: {
+    username?: string;
+    nickname?: string;
+    realname?: string;
+    profileImageUrl?: string;
+  };
   participantIds: string[];
   tags: string[];
   createdAt: string;
@@ -139,6 +145,12 @@ const fetchLatestArticles = async (): Promise<Article[]> => {
       },
       thumbnailUrl: item.thumbnailUrl || '',
       writerId: item.writer?.username || item.writer?.nickname || '',
+      writer: item.writer ? {
+        username: item.writer.username,
+        nickname: item.writer.nickname,
+        realname: item.writer.realname,
+        profileImageUrl: item.writer.profileImageUrl,
+      } : undefined,
       participantIds: [],
       tags: [],
       createdAt: item.createdAt || new Date().toISOString(),
