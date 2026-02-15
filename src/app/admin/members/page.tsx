@@ -1383,13 +1383,17 @@ export default function AdminMembersContent() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {gradeStats.map((grade, index) => (
-                <div key={index} className={`p-6 rounded-lg border-2 hover:shadow-lg transition-all cursor-pointer ${
-                  getRoleColor(grade.role) === 'gray' ? 'bg-gray-50 border-gray-200 hover:border-gray-300' :
-                  getRoleColor(grade.role) === 'blue' ? 'bg-blue-50 border-blue-200 hover:border-blue-300' :
-                  getRoleColor(grade.role) === 'green' ? 'bg-green-50 border-green-200 hover:border-green-300' :
-                  getRoleColor(grade.role) === 'purple' ? 'bg-purple-50 border-purple-200 hover:border-purple-300' :
-                  'bg-orange-50 border-orange-200 hover:border-orange-300'
-                }`}>
+                <div 
+                  key={index} 
+                  onClick={() => handleRoleManagement(grade.role)}
+                  className={`p-6 rounded-lg border-2 hover:shadow-lg transition-all cursor-pointer ${
+                    getRoleColor(grade.role) === 'gray' ? 'bg-gray-50 border-gray-200 hover:border-gray-300' :
+                    getRoleColor(grade.role) === 'blue' ? 'bg-blue-50 border-blue-200 hover:border-blue-300' :
+                    getRoleColor(grade.role) === 'green' ? 'bg-green-50 border-green-200 hover:border-green-300' :
+                    getRoleColor(grade.role) === 'purple' ? 'bg-purple-50 border-purple-200 hover:border-purple-300' :
+                    'bg-orange-50 border-orange-200 hover:border-orange-300'
+                  }`}
+                >
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
                       <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
@@ -1425,23 +1429,6 @@ export default function AdminMembersContent() {
                         `총 ${grade.count}명`
                       )}
                     </span>
-                    <button 
-                      onClick={() => handleRoleManagement(grade.role)}
-                      disabled={gradeStatsLoading}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                        gradeStatsLoading 
-                          ? 'opacity-50 cursor-not-allowed' 
-                          : ''
-                      } ${
-                        grade.color === 'gray' ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' :
-                        grade.color === 'blue' ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' :
-                        grade.color === 'green' ? 'bg-green-100 text-green-700 hover:bg-green-200' :
-                        grade.color === 'purple' ? 'bg-purple-100 text-purple-700 hover:bg-purple-200' :
-                        'bg-orange-100 text-orange-700 hover:bg-orange-200'
-                      }`}
-                    >
-                      관리
-                    </button>
                   </div>
                 </div>
               ))}
