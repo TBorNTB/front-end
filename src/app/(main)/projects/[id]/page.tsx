@@ -2,11 +2,12 @@
 
 import { notFound, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, X, UserPlus, Search, Pencil, Trash2 } from 'lucide-react';
 import { useState, useEffect, Fragment, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Menu, Transition } from '@headlessui/react';
 import DocumentModal from '../_components/DocumentModal';
-import { fetchProjectDetail, deleteDocument } from '@/lib/api/services/project-services';
+import { fetchProjectDetail, deleteDocument, updateCollaborators, deleteProject } from '@/lib/api/services/project-services';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { 
   fetchViewCount,
@@ -21,9 +22,12 @@ import {
   deleteComment,
   fetchReplies,
   Comment,
-  CommentListResponse
+  CommentListResponse,
+  memberService,
+  CursorUserResponse
 } from '@/lib/api/services/user-services';
 import { ProjectDetailResponse } from '../../../../types/services/project';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 interface ProjectPageProps {
   params: Promise<{ id: string }>;
@@ -75,10 +79,16 @@ interface MappedProject {
   }>;
   projectStatus: string;
   thumbnailUrl?: string;
+  subGoals: Array<{
+    id: string;
+    content: string;
+    completed: boolean;
+  }>;
 }
 
 export default function ProjectPage({ params }: ProjectPageProps) {
   const router = useRouter();
+  const { user: currentUser } = useCurrentUser();
   const [projectId, setProjectId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -103,15 +113,31 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   const [replyingToId, setReplyingToId] = useState<number | null>(null);
   const [replyContent, setReplyContent] = useState('');
   
-  // Dropdown states
+  // Dropdown states (팀원 섹션 기본 펼침)
   const [openSections, setOpenSections] = useState<{[key: string]: boolean}>({
     info: true,
-    team: false,
-    documents: true, // Open by default
+    subgoals: true,
+    team: true,
+    documents: true,
     related: false,
   });
 
+  // 협력자 변경 모달 (클릭 시 바로 모달에서 변경)
+  const [isCollaboratorModalOpen, setIsCollaboratorModalOpen] = useState(false);
+  const [editingTeam, setEditingTeam] = useState<MappedProject['team']>([]);
+  const [collaboratorSearchQuery, setCollaboratorSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<CursorUserResponse[]>([]);
+  const [isLoadingCollaboratorSearch, setIsLoadingCollaboratorSearch] = useState(false);
+  const [isLoadingMoreCollaborator, setIsLoadingMoreCollaborator] = useState(false);
+  const [searchNextCursorId, setSearchNextCursorId] = useState(0);
+  const [searchHasNext, setSearchHasNext] = useState(false);
+  const [isSavingCollaborators, setIsSavingCollaborators] = useState(false);
+  const [isDeletingProject, setIsDeletingProject] = useState(false);
+  const collaboratorUserListRef = useRef<HTMLDivElement>(null);
+
   const [project, setProject] = useState<MappedProject | null>(null);
+
+  const canEditProject = currentUser && project && (project.author?.username === currentUser.username || (project.team || []).some((m: any) => m?.username === currentUser.username));
   
   // Like states
   const [isLiked, setIsLiked] = useState(false);
@@ -308,6 +334,13 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       relatedProjects: [], // TODO: 연관 프로젝트 API 필요
       projectStatus: statusMap[apiData.projectStatus] || apiData.projectStatus,
       thumbnailUrl: apiData.thumbnailUrl,
+      subGoals: (apiData.subGoalDtos || [])
+        .filter((sg: any) => sg && (sg.content != null || sg.id != null))
+        .map((sg: any) => ({
+          id: String(sg.id),
+          content: sg.content ?? '',
+          completed: Boolean(sg.completed),
+        })),
     };
   };
 
@@ -445,6 +478,152 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       ...prev,
       [section]: !prev[section]
     }));
+  };
+
+  // 협력자 변경 모달 열기 (바로 창에서 변경)
+  const openCollaboratorModal = () => {
+    setEditingTeam(project ? [...(project.team || [])] : []);
+    setCollaboratorSearchQuery('');
+    setSearchResults([]);
+    setIsCollaboratorModalOpen(true);
+    loadCollaboratorModalUsers();
+  };
+
+  const closeCollaboratorModal = () => {
+    setIsCollaboratorModalOpen(false);
+    setEditingTeam([]);
+    setCollaboratorSearchQuery('');
+    setSearchResults([]);
+  };
+
+  // 모달 열었을 때 초기 유저 목록 로드
+  const loadCollaboratorModalUsers = async () => {
+    try {
+      setIsLoadingCollaboratorSearch(true);
+      const res = await memberService.getMembersByCursor({ cursorId: 0, size: 20, direction: 'ASC' });
+      setSearchResults(res.content);
+      setSearchNextCursorId(res.nextCursorId);
+      setSearchHasNext(res.hasNext);
+    } catch (e) {
+      console.error('Failed to load users:', e);
+      setSearchResults([]);
+    } finally {
+      setIsLoadingCollaboratorSearch(false);
+    }
+  };
+
+  // 유저 검색 (닉네임/실명)
+  const searchCollaboratorUsers = async () => {
+    const q = collaboratorSearchQuery.trim();
+    try {
+      setIsLoadingCollaboratorSearch(true);
+      if (!q) {
+        await loadCollaboratorModalUsers();
+        return;
+      }
+      const res = await memberService.getMembersByCursorByName({
+        cursorId: 0,
+        size: 20,
+        direction: 'ASC',
+        nickname: q,
+        realName: q,
+      });
+      setSearchResults(res.content);
+      setSearchNextCursorId(res.nextCursorId);
+      setSearchHasNext(res.hasNext);
+    } catch (e) {
+      console.error('Failed to search users:', e);
+      setSearchResults([]);
+    } finally {
+      setIsLoadingCollaboratorSearch(false);
+    }
+  };
+
+  // 유저 목록 더 보기 (커서 스크롤)
+  const loadMoreCollaboratorUsers = async () => {
+    if (isLoadingMoreCollaborator || !searchHasNext) return;
+    const q = collaboratorSearchQuery.trim();
+    try {
+      setIsLoadingMoreCollaborator(true);
+      if (q) {
+        const res = await memberService.getMembersByCursorByName({
+          cursorId: searchNextCursorId,
+          size: 20,
+          direction: 'ASC',
+          nickname: q,
+          realName: q,
+        });
+        setSearchResults(prev => [...prev, ...res.content]);
+        setSearchNextCursorId(res.nextCursorId);
+        setSearchHasNext(res.hasNext);
+      } else {
+        const res = await memberService.getMembersByCursor({
+          cursorId: searchNextCursorId,
+          size: 20,
+          direction: 'ASC',
+        });
+        setSearchResults(prev => [...prev, ...res.content]);
+        setSearchNextCursorId(res.nextCursorId);
+        setSearchHasNext(res.hasNext);
+      }
+    } catch (e) {
+      console.error('Failed to load more users:', e);
+    } finally {
+      setIsLoadingMoreCollaborator(false);
+    }
+  };
+
+  // 팀원 수정 저장 (협력자 username만 API로 전송, Owner 제외)
+  const saveTeamEdit = async () => {
+    if (!projectId || !project) return;
+    const usernames = editingTeam
+      .filter((m: any) => m?.role !== 'Owner')
+      .map((m: any) => m.username)
+      .filter(Boolean);
+    try {
+      setIsSavingCollaborators(true);
+      await updateCollaborators(projectId, usernames);
+      setProject({ ...project, team: [...editingTeam] });
+      closeCollaboratorModal();
+    } catch (e: any) {
+      console.error('Failed to update collaborators:', e);
+      alert(e?.message || '협력자 수정에 실패했습니다.');
+    } finally {
+      setIsSavingCollaborators(false);
+    }
+  };
+
+  // 협력자 목록에서 제거 (Owner는 제거 불가)
+  const removeCollaborator = (idx: number) => {
+    const member = editingTeam[idx];
+    if (member?.role === 'Owner') return;
+    setEditingTeam(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  // 협력자 추가 (검색 결과에서 선택)
+  const addCollaborator = (user: CursorUserResponse) => {
+    const name = (user.realName || user.nickname || user.email || '').trim() || user.username;
+    const exists = editingTeam.some(m => m.username === user.username);
+    if (exists) return;
+    setEditingTeam(prev => [...prev, {
+      name,
+      role: 'Collaborator',
+      username: user.username,
+      avatar: user.profileImageUrl || null,
+    }]);
+  };
+
+  const handleDeleteProject = async () => {
+    if (!projectId || !confirm('정말로 이 프로젝트를 삭제하시겠습니까? 삭제된 프로젝트는 복구할 수 없습니다.')) return;
+    try {
+      setIsDeletingProject(true);
+      await deleteProject(projectId);
+      router.push('/projects');
+    } catch (e: any) {
+      alert(e?.message || '프로젝트 삭제에 실패했습니다.');
+    } finally {
+      setIsDeletingProject(false);
+    }
   };
 
   const handleDocumentAction = async (docId: string, action: 'edit' | 'delete' | 'share' | 'download') => {
@@ -708,16 +887,18 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   )}
                 </div>
 
-                {/* Team Section */}
+                {/* 하위 목표 (노션 스타일) */}
                 <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
                   <button
-                    onClick={() => toggleSection('team')}
+                    onClick={() => toggleSection('subgoals')}
                     className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
                   >
-                    <span className="font-bold text-gray-900">팀원 ({(project.team || []).length})</span>
+                    <span className="font-bold text-gray-900">
+                      하위 목표 ({(project.subGoals || []).length})
+                    </span>
                     <svg
                       className={`w-5 h-5 text-gray-600 transition-transform ${
-                        openSections.team ? 'rotate-180' : ''
+                        openSections.subgoals ? 'rotate-180' : ''
                       }`}
                       fill="none"
                       stroke="currentColor"
@@ -726,13 +907,98 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
+                  {openSections.subgoals && (
+                    <div className="p-4">
+                      {(project.subGoals || []).length === 0 ? (
+                        <p className="text-sm text-gray-500 py-2">등록된 하위 목표가 없습니다.</p>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-xs font-medium text-gray-500">
+                              {(project.subGoals || []).filter((sg: any) => sg.completed).length} / {(project.subGoals || []).length} 완료
+                            </span>
+                            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-primary-500 rounded-full transition-all duration-300"
+                                style={{
+                                  width: `${((project.subGoals || []).filter((sg: any) => sg.completed).length / Math.max((project.subGoals || []).length, 1)) * 100}%`,
+                                }}
+                              />
+                            </div>
+                          </div>
+                          <ul className="space-y-0.5">
+                            {(project.subGoals || []).map((sg: any) => (
+                              <li
+                                key={sg.id}
+                                className="flex items-start gap-3 py-2 px-2 rounded-md hover:bg-gray-50/80 transition-colors group"
+                              >
+                                <span
+                                  className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                    sg.completed
+                                      ? 'bg-primary-500 border-primary-500 text-white'
+                                      : 'border-gray-300 bg-white'
+                                  }`}
+                                  aria-hidden
+                                >
+                                  {sg.completed && (
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  )}
+                                </span>
+                                <span
+                                  className={`text-sm flex-1 min-w-0 ${
+                                    sg.completed ? 'text-gray-500 line-through' : 'text-gray-900'
+                                  }`}
+                                >
+                                  {sg.content || '(제목 없음)'}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Team Section - 팀원 기본 펼침, 협력자 변경 클릭 시 모달에서 변경 */}
+                <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+                  <div className="px-4 py-3 flex items-center justify-between bg-gray-50">
+                    <button
+                      onClick={() => toggleSection('team')}
+                      className="flex-1 flex items-center justify-between hover:opacity-80 transition-opacity text-left"
+                    >
+                      <span className="font-bold text-gray-900">팀원 ({(project.team || []).length})</span>
+                      <svg
+                        className={`w-5 h-5 text-gray-600 transition-transform flex-shrink-0 ml-2 ${
+                          openSections.team ? 'rotate-180' : ''
+                        }`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {currentUser && project && (project.author?.username === currentUser.username || (project.team || []).some((m: any) => m?.username === currentUser.username)) && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); openCollaboratorModal(); }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                        협력자 변경
+                      </button>
+                    )}
+                  </div>
                   
                   {openSections.team && (
                     <div className="p-4 space-y-3">
                       {(project.team || [])
-                        .filter(member => member && member.name)
+                        .filter((member: any) => member && member.name)
                         .map((member: any, idx: number) => (
-                        <div key={idx} className="flex items-center gap-3">
+                        <div key={member.username ?? idx} className="flex items-center gap-3">
                           <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
                             {member.avatar ? (
                               <ImageWithFallback
@@ -760,12 +1026,183 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           </div>
                         </div>
                       ))}
-                      <button className="w-full mt-2 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                        팀원 추가
-                      </button>
                     </div>
                   )}
                 </div>
+
+                {/* 협력자 변경 모달 - body에 포탈로 렌더링해 썸네일/레이아웃 위에 표시 */}
+                {isCollaboratorModalOpen && typeof document !== 'undefined' && createPortal(
+                  <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50"
+                    onClick={closeCollaboratorModal}
+                  >
+                    <div
+                      className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[85vh] flex flex-col"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                        <h3 className="text-lg font-semibold text-gray-900">협력자 변경</h3>
+                        <button
+                          type="button"
+                          onClick={closeCollaboratorModal}
+                          className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        {/* 현재 협력자 목록 (제거 가능, Owner 제외) */}
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">현재 협력자</h4>
+                          <div className="space-y-2">
+                            {editingTeam.filter((m: any) => m && m.name).map((member: any, idx: number) => (
+                              <div key={member.username ?? idx} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50">
+                                <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                                  {member.avatar ? (
+                                    <ImageWithFallback
+                                      src={member.avatar}
+                                      fallbackSrc="/images/placeholder/default-avatar.svg"
+                                      alt={member.name}
+                                      type="avatar"
+                                      width={36}
+                                      height={36}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
+                                      {(member.name || 'U').charAt(0).toUpperCase()}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium text-gray-900 text-sm truncate">{member.name}</p>
+                                  <p className="text-xs text-gray-500 truncate">{member.role}</p>
+                                </div>
+                                {member.role !== 'Owner' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeCollaborator(idx)}
+                                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full"
+                                    title="제거"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        {/* 유저 검색 및 추가 */}
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">협력자 추가</h4>
+                          <div className="flex gap-2 mb-3">
+                            <div className="relative flex-1">
+                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                              <input
+                                type="text"
+                                placeholder="닉네임 또는 실명으로 검색..."
+                                value={collaboratorSearchQuery}
+                                onChange={(e) => setCollaboratorSearchQuery(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), searchCollaboratorUsers())}
+                                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={searchCollaboratorUsers}
+                              disabled={isLoadingCollaboratorSearch}
+                              className="px-4 py-2.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg disabled:opacity-50"
+                            >
+                              {isLoadingCollaboratorSearch ? '조회 중...' : '조회'}
+                            </button>
+                          </div>
+                          <div
+                            ref={collaboratorUserListRef}
+                            onScroll={() => {
+                              const el = collaboratorUserListRef.current;
+                              if (!el || isLoadingMoreCollaborator || !searchHasNext) return;
+                              if (el.scrollTop + el.clientHeight >= el.scrollHeight - 24) {
+                                loadMoreCollaboratorUsers();
+                              }
+                            }}
+                            className="border border-gray-200 rounded-lg max-h-48 overflow-y-auto"
+                          >
+                            {isLoadingCollaboratorSearch && searchResults.length === 0 ? (
+                              <div className="p-6 text-center text-gray-500 text-sm">불러오는 중...</div>
+                            ) : searchResults.length === 0 ? (
+                              <div className="p-6 text-center text-gray-500 text-sm">
+                                검색어를 입력한 뒤 조회하면 유저 목록이 표시됩니다.
+                              </div>
+                            ) : (
+                              <ul className="divide-y divide-gray-100">
+                                {searchResults.map((user) => {
+                                  const added = editingTeam.some((m: any) => m.username === user.username);
+                                  return (
+                                    <li key={user.id}>
+                                      <button
+                                        type="button"
+                                        onClick={() => !added && addCollaborator(user)}
+                                        disabled={added}
+                                        className={`w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-gray-50 transition-colors ${added ? 'opacity-50 cursor-not-allowed bg-gray-50' : ''}`}
+                                      >
+                                        <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                                          {user.profileImageUrl ? (
+                                            <img src={user.profileImageUrl} alt="" className="w-full h-full object-cover" />
+                                          ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
+                                              {(user.realName || user.nickname || user.username || 'U').charAt(0).toUpperCase()}
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="font-medium text-gray-900 text-sm truncate">
+                                            {user.realName || user.nickname || user.email || user.username}
+                                          </p>
+                                          <p className="text-xs text-gray-500 truncate">@{user.username}</p>
+                                        </div>
+                                        {added && <span className="text-xs text-primary-600">추가됨</span>}
+                                      </button>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            )}
+                            {searchHasNext && searchResults.length > 0 && (
+                              <div className="py-2 text-center">
+                                <button
+                                  type="button"
+                                  onClick={loadMoreCollaboratorUsers}
+                                  disabled={isLoadingMoreCollaborator}
+                                  className="text-sm text-primary-600 hover:text-primary-700 disabled:opacity-50"
+                                >
+                                  {isLoadingMoreCollaborator ? '불러오는 중...' : '더 보기'}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-4 border-t border-gray-200 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={saveTeamEdit}
+                          disabled={isSavingCollaborators}
+                          className="flex-1 py-2.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg disabled:opacity-50"
+                        >
+                          {isSavingCollaborators ? '저장 중...' : '저장'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={closeCollaboratorModal}
+                          className="flex-1 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg"
+                        >
+                          취소
+                        </button>
+                      </div>
+                    </div>
+                  </div>,
+                  document.body
+                )}
 
                 {/* 📄 ENHANCED DOCUMENTS SECTION */}
                 <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
@@ -1039,6 +1476,26 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     <span>👁 {project.stats?.views || 0}</span>
                     <span>❤️ {project.stats?.likes || 0}</span>
                     <span>💬 {project.stats?.comments || 0}</span>
+                    {canEditProject && (
+                      <div className="flex items-center gap-2 ml-auto">
+                        <Link
+                          href={`/projects/${projectId}/edit`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors"
+                        >
+                          <Pencil className="w-4 h-4" />
+                          수정
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={handleDeleteProject}
+                          disabled={isDeletingProject}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          {isDeletingProject ? '삭제 중...' : '삭제'}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </header>
 

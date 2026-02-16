@@ -9,9 +9,10 @@ export const PROJECT_ENDPOINTS = {
     GET_BY_ID: '/project-service/api/project/:id', // Updated to match actual API path
     GET_BY_CATEGORY: '/project-service/projects/category/:category',
     CREATE: '/project-service/api/project',
-    UPDATE: '/project-service/projects/:id',
+    UPDATE: '/project-service/api/project/:id',
     DELETE: '/project-service/api/project/:id',
     GET_COLLABORATORS: '/project-service/projects/:id/collaborators',
+    UPDATE_COLLABORATORS: '/project-service/api/collaborator/:id',
     GET_CATEGORIES: '/project-service/api/category',
     COUNTS: '/project-service/api/project/counts',
   },

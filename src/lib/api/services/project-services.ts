@@ -138,6 +138,42 @@ export const deleteDocument = async (documentId: string | number): Promise<void>
   }
 };
 
+/**
+ * PUT /project-service/api/collaborator/:id
+ * Body: string[] (협력자 username만, Owner 제외)
+ */
+export const updateCollaborators = async (
+  projectId: string | number,
+  usernames: string[]
+): Promise<{ id: number; collaboratorName: string }[]> => {
+  const endpoint = PROJECT_ENDPOINTS.PROJECT.UPDATE_COLLABORATORS.replace(':id', String(projectId));
+  const url = getProjectApiUrl(endpoint);
+
+  const response = await fetchWithRefresh(url, {
+    method: 'PUT',
+    headers: {
+      'accept': 'application/json',
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify(usernames),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    try {
+      const data = JSON.parse(errorText);
+      const msg = data?.message || data?.error || data?.detail;
+      if (msg) throw new Error(String(msg));
+    } catch (e) {
+      if (e instanceof Error && e.message && e.message !== errorText) throw e;
+      throw new Error('협력자 수정에 실패했습니다.');
+    }
+  }
+
+  return response.json();
+};
+
 // Category types
 export interface Category {
   id: number;
@@ -216,6 +252,60 @@ export const createProject = async (data: CreateProjectRequest): Promise<CreateP
   return response.json();
 };
 
+// Parse API error response and throw with user-facing message
+function parseApiError(errorText: string, status: number, fallback: string): never {
+  try {
+    const data = JSON.parse(errorText);
+    const msg = data?.message || data?.error || data?.detail || (typeof data?.errors === 'string' ? data.errors : undefined);
+    if (msg) throw new Error(String(msg));
+  } catch (e) {
+    if (e instanceof Error && e.message !== errorText) throw e;
+  }
+  throw new Error(fallback || errorText || `요청에 실패했습니다. (${status})`);
+}
+
+export interface UpdateProjectRequestBody {
+  title: string;
+  description: string;
+  projectStatus: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED';
+  thumbnailUrl: string;
+  thumbnailKey: string;
+  contentImageKeys: string[];
+  content: string;
+}
+
+export interface UpdateProjectResponse {
+  id: number;
+  title: string;
+  message: string;
+}
+
+// Update a project (PUT /project-service/api/project/:id)
+export const updateProject = async (
+  projectId: string | number,
+  data: UpdateProjectRequestBody
+): Promise<UpdateProjectResponse> => {
+  const endpoint = PROJECT_ENDPOINTS.PROJECT.UPDATE.replace(':id', String(projectId));
+  const url = getProjectApiUrl(endpoint);
+
+  const response = await fetchWithRefresh(url, {
+    method: 'PUT',
+    headers: {
+      'accept': 'application/json',
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    parseApiError(errorText, response.status, '프로젝트 수정에 실패했습니다.');
+  }
+
+  return response.json();
+};
+
 // Delete a project
 export const deleteProject = async (projectId: string | number): Promise<void> => {
   const endpoint = PROJECT_ENDPOINTS.PROJECT.DELETE.replace(':id', String(projectId));
@@ -231,6 +321,6 @@ export const deleteProject = async (projectId: string | number): Promise<void> =
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Failed to delete project: ${response.status} - ${errorText}`);
+    parseApiError(errorText, response.status, '프로젝트 삭제에 실패했습니다.');
   }
 };
