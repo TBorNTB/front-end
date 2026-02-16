@@ -324,3 +324,106 @@ export const deleteProject = async (projectId: string | number): Promise<void> =
     parseApiError(errorText, response.status, '프로젝트 삭제에 실패했습니다.');
   }
 };
+
+// --- Subgoal APIs ---
+
+export interface SubGoalItem {
+  id: number;
+  content: string;
+  completed: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** GET /project-service/api/subgoal/:projectId - 하위 목표 목록 조회 */
+export const fetchSubgoals = async (projectId: string | number): Promise<SubGoalItem[]> => {
+  const endpoint = PROJECT_ENDPOINTS.SUBGOAL.LIST.replace(':projectId', String(projectId));
+  const url = getProjectApiUrl(endpoint);
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: { accept: 'application/json' },
+    cache: 'no-store',
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    try {
+      const data = JSON.parse(errorText);
+      const msg = data?.message || data?.error || data?.detail;
+      if (msg) throw new Error(String(msg));
+    } catch (e) {
+      if (e instanceof Error && e.message !== errorText) throw e;
+    }
+    throw new Error('하위 목표 조회에 실패했습니다.');
+  }
+  const list = await response.json();
+  return Array.isArray(list) ? list : [];
+};
+
+/** PUT /project-service/api/subgoal/check/:projectId?subGoalId= - 체크/해제 (completed 반영) */
+export const checkSubgoal = async (
+  projectId: string | number,
+  subGoalId: string | number,
+  isCheck: boolean
+): Promise<{ isCheck: boolean; content: string; message: string }> => {
+  const endpoint = PROJECT_ENDPOINTS.SUBGOAL.CHECK.replace(':projectId', String(projectId));
+  const url = `${getProjectApiUrl(endpoint)}?subGoalId=${encodeURIComponent(String(subGoalId))}`;
+  const response = await fetchWithRefresh(url, {
+    method: 'PUT',
+    headers: {
+      accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify({ isCheck }),
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    parseApiError(errorText, response.status, '체크 상태 변경에 실패했습니다.');
+  }
+  return response.json();
+};
+
+/** DELETE /project-service/api/subgoal/:projectId/:subGoalId */
+export const deleteSubgoal = async (
+  projectId: string | number,
+  subGoalId: string | number
+): Promise<{ id: number; message: string }> => {
+  const endpoint = PROJECT_ENDPOINTS.SUBGOAL.DELETE.replace(':projectId', String(projectId)).replace(
+    ':subGoalId',
+    String(subGoalId)
+  );
+  const url = getProjectApiUrl(endpoint);
+  const response = await fetchWithRefresh(url, {
+    method: 'DELETE',
+    headers: { accept: 'application/json' },
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    parseApiError(errorText, response.status, '하위 목표 삭제에 실패했습니다.');
+  }
+  return response.json();
+};
+
+/** POST /project-service/api/subgoal/:projectId - 하위 목표 추가 (completed 필드로 체크 여부 판단) */
+export const createSubgoal = async (
+  projectId: string | number,
+  content: string
+): Promise<{ content: string; message: string; completed: boolean }> => {
+  const endpoint = PROJECT_ENDPOINTS.SUBGOAL.CREATE.replace(':projectId', String(projectId));
+  const url = getProjectApiUrl(endpoint);
+  const response = await fetchWithRefresh(url, {
+    method: 'POST',
+    headers: {
+      accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify({ content: content.trim() }),
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    parseApiError(errorText, response.status, '하위 목표 추가에 실패했습니다.');
+  }
+  return response.json();
+};

@@ -2,12 +2,12 @@
 
 import { notFound, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, X, UserPlus, Search, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeft, X, UserPlus, Search, Pencil, Trash2, Plus } from 'lucide-react';
 import { useState, useEffect, Fragment, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Menu, Transition } from '@headlessui/react';
 import DocumentModal from '../_components/DocumentModal';
-import { fetchProjectDetail, deleteDocument, updateCollaborators, deleteProject } from '@/lib/api/services/project-services';
+import { fetchProjectDetail, deleteDocument, updateCollaborators, deleteProject, fetchSubgoals, checkSubgoal, deleteSubgoal, createSubgoal } from '@/lib/api/services/project-services';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { 
   fetchViewCount,
@@ -133,6 +133,10 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   const [searchHasNext, setSearchHasNext] = useState(false);
   const [isSavingCollaborators, setIsSavingCollaborators] = useState(false);
   const [isDeletingProject, setIsDeletingProject] = useState(false);
+  const [subgoalNewContent, setSubgoalNewContent] = useState('');
+  const [subgoalTogglingId, setSubgoalTogglingId] = useState<string | null>(null);
+  const [subgoalDeletingId, setSubgoalDeletingId] = useState<string | null>(null);
+  const [subgoalAdding, setSubgoalAdding] = useState(false);
   const collaboratorUserListRef = useRef<HTMLDivElement>(null);
 
   const [project, setProject] = useState<MappedProject | null>(null);
@@ -626,6 +630,68 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     }
   };
 
+  const refreshSubgoalsInProject = async () => {
+    if (!projectId || !project) return;
+    try {
+      const list = await fetchSubgoals(projectId);
+      setProject((prev) =>
+        prev
+          ? {
+              ...prev,
+              subGoals: list.map((sg) => ({
+                id: String(sg.id),
+                content: sg.content ?? '',
+                completed: Boolean(sg.completed),
+              })),
+            }
+          : prev
+      );
+    } catch (e) {
+      console.error('Failed to refresh subgoals:', e);
+    }
+  };
+
+  const handleSubgoalCheck = async (sg: { id: string; completed: boolean }) => {
+    if (!projectId || !canEditProject) return;
+    try {
+      setSubgoalTogglingId(sg.id);
+      await checkSubgoal(projectId, sg.id, !sg.completed);
+      await refreshSubgoalsInProject();
+    } catch (e: any) {
+      alert(e?.message || '체크 상태 변경에 실패했습니다.');
+    } finally {
+      setSubgoalTogglingId(null);
+    }
+  };
+
+  const handleSubgoalDelete = async (sgId: string) => {
+    if (!projectId || !canEditProject || !confirm('이 하위 목표를 삭제할까요?')) return;
+    try {
+      setSubgoalDeletingId(sgId);
+      await deleteSubgoal(projectId, sgId);
+      await refreshSubgoalsInProject();
+    } catch (e: any) {
+      alert(e?.message || '하위 목표 삭제에 실패했습니다.');
+    } finally {
+      setSubgoalDeletingId(null);
+    }
+  };
+
+  const handleSubgoalCreate = async () => {
+    const content = subgoalNewContent.trim();
+    if (!projectId || !canEditProject || !content) return;
+    try {
+      setSubgoalAdding(true);
+      await createSubgoal(projectId, content);
+      setSubgoalNewContent('');
+      await refreshSubgoalsInProject();
+    } catch (e: any) {
+      alert(e?.message || '하위 목표 추가에 실패했습니다.');
+    } finally {
+      setSubgoalAdding(false);
+    }
+  };
+
   const handleDocumentAction = async (docId: string, action: 'edit' | 'delete' | 'share' | 'download') => {
     switch (action) {
       case 'edit':
@@ -909,7 +975,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   </button>
                   {openSections.subgoals && (
                     <div className="p-4">
-                      {(project.subGoals || []).length === 0 ? (
+                      {(project.subGoals || []).length === 0 && !canEditProject ? (
                         <p className="text-sm text-gray-500 py-2">등록된 하위 목표가 없습니다.</p>
                       ) : (
                         <>
@@ -932,20 +998,38 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                 key={sg.id}
                                 className="flex items-start gap-3 py-2 px-2 rounded-md hover:bg-gray-50/80 transition-colors group"
                               >
-                                <span
-                                  className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                                    sg.completed
-                                      ? 'bg-primary-500 border-primary-500 text-white'
-                                      : 'border-gray-300 bg-white'
-                                  }`}
-                                  aria-hidden
-                                >
-                                  {sg.completed && (
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                  )}
-                                </span>
+                                {canEditProject ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSubgoalCheck(sg)}
+                                    disabled={subgoalTogglingId === sg.id}
+                                    className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors disabled:opacity-50 ${
+                                      sg.completed
+                                        ? 'bg-primary-500 border-primary-500 text-white'
+                                        : 'border-gray-300 bg-white hover:border-primary-300'
+                                    }`}
+                                    aria-label={sg.completed ? '완료 해제' : '완료로 표시'}
+                                  >
+                                    {sg.completed && (
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    )}
+                                  </button>
+                                ) : (
+                                  <span
+                                    className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                      sg.completed ? 'bg-primary-500 border-primary-500 text-white' : 'border-gray-300 bg-white'
+                                    }`}
+                                    aria-hidden
+                                  >
+                                    {sg.completed && (
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    )}
+                                  </span>
+                                )}
                                 <span
                                   className={`text-sm flex-1 min-w-0 ${
                                     sg.completed ? 'text-gray-500 line-through' : 'text-gray-900'
@@ -953,9 +1037,41 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                 >
                                   {sg.content || '(제목 없음)'}
                                 </span>
+                                {canEditProject && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSubgoalDelete(sg.id)}
+                                    disabled={subgoalDeletingId === sg.id}
+                                    className="p-1 text-gray-400 hover:text-red-600 rounded opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                                    title="삭제"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                )}
                               </li>
                             ))}
                           </ul>
+                          {canEditProject && (
+                            <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+                              <input
+                                type="text"
+                                value={subgoalNewContent}
+                                onChange={(e) => setSubgoalNewContent(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleSubgoalCreate())}
+                                placeholder="하위 목표 추가..."
+                                className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                              />
+                              <button
+                                type="button"
+                                onClick={handleSubgoalCreate}
+                                disabled={subgoalAdding || !subgoalNewContent.trim()}
+                                className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg disabled:opacity-50"
+                              >
+                                <Plus className="w-4 h-4" />
+                                추가
+                              </button>
+                            </div>
+                          )}
                         </>
                       )}
                     </div>

@@ -38,6 +38,14 @@ export const PROJECT_ENDPOINTS = {
     UPDATE: '/project-service/api/document/:id',
     DELETE: '/project-service/api/document/:id',
   },
+
+  // Subgoal endpoints
+  SUBGOAL: {
+    LIST: '/project-service/api/subgoal/:projectId',
+    CHECK: '/project-service/api/subgoal/check/:projectId',
+    DELETE: '/project-service/api/subgoal/:projectId/:subGoalId',
+    CREATE: '/project-service/api/subgoal/:projectId',
+  },
 } as const;
 
 export const getProjectApiUrl = (endpoint: string) => getApiUrl(endpoint);
