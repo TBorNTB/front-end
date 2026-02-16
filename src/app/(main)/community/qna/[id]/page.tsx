@@ -56,6 +56,7 @@ interface Answer {
   content: string;
   author: string;
   authorRole: 'member' | 'admin' | 'guest';
+  profileImageUrl?: string;
   createdAt: string;
   isAccepted: boolean;
   comments: Comment[];

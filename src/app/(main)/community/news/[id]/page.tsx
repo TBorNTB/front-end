@@ -495,8 +495,9 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
     );
   }
 
+  const item = news!;
   // 썸네일 URL 정규화 (이미 API에서 받은 thumbnailUrl 사용)
-  const readTime = Math.ceil((news.content?.length || 0) / 500);
+  const readTime = Math.ceil((item.content?.length || 0) / 500);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -538,16 +539,16 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                     <div>
                       <p className="text-gray-600 mb-1">카테고리</p>
                       <span className="px-2 py-1 rounded text-xs bg-primary-100 text-primary-700">
-                        {news.category}
+                        {item.category}
                       </span>
                     </div>
                     <div>
                       <p className="text-gray-600 mb-1">작성일</p>
-                      <p className="text-gray-900">{formatDate(news.createdAt)}</p>
+                      <p className="text-gray-900">{formatDate(item.createdAt)}</p>
                     </div>
                     <div>
                       <p className="text-gray-600 mb-1">수정일</p>
-                      <p className="text-gray-900">{formatDate(news.updatedAt)}</p>
+                      <p className="text-gray-900">{formatDate(item.updatedAt)}</p>
                     </div>
                     <div>
                       <p className="text-gray-600 mb-1">읽기 시간</p>
@@ -558,13 +559,13 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
               </div>
 
               {/* Participants Section */}
-              {news.participantProfiles && news.participantProfiles.length > 0 && (
+              {item.participantProfiles && item.participantProfiles.length > 0 && (
                 <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
                   <button
                     onClick={() => toggleSection('participants')}
                     className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
                   >
-                    <span className="font-bold text-gray-900">참여자 ({news.participantProfiles.length})</span>
+                    <span className="font-bold text-gray-900">참여자 ({item.participantProfiles.length})</span>
                     <ChevronDown
                       className={`w-5 h-5 text-gray-600 transition-transform ${
                         openSections.participants ? 'rotate-180' : ''
@@ -574,7 +575,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                   
                   {openSections.participants && (
                     <div className="p-4 space-y-3">
-                      {news.participantProfiles.map((participant, idx) => {
+                      {item.participantProfiles.map((participant, idx) => {
                         const displayName = getDisplayName(participant.nickname, participant.realName);
                         return (
                           <div key={idx} className="flex items-center gap-3">
@@ -643,7 +644,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                                   <div className="relative w-16 h-16 flex-shrink-0 rounded overflow-hidden bg-gray-100">
                                     <ImageWithFallback
                                       src={item.thumbnailUrl}
-                                      fallbackSrc="/images/placeholder/news.png"
+                                      fallbackSrc="/images/placeholder/item.png"
                                       alt={item.title}
                                       type="news"
                                       width={64}
@@ -714,34 +715,34 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
               {/* Header */}
               <header className="p-8 border-b border-gray-200">
                 {/* Category */}
-                {news.category && (
+                {item.category && (
                   <div className="mb-4">
                     <span className="px-3 py-1.5 rounded-full text-sm font-semibold bg-primary-100 text-primary-700">
-                      {news.category}
+                      {item.category}
                     </span>
                   </div>
                 )}
 
                 {/* Title */}
                 <h1 className="text-4xl font-bold text-gray-900 mb-6">
-                  {news.title}
+                  {item.title}
                 </h1>
 
                 {/* Summary */}
-                {news.summary && (
+                {item.summary && (
                   <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-                    {news.summary}
+                    {item.summary}
                   </p>
                 )}
 
                 {/* Author & Metadata */}
                 <div className="flex items-center gap-4 mb-4">
                   <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 border-2 border-yellow-400">
-                    {news.writerProfile?.profileImageUrl ? (
+                    {item.writerProfile?.profileImageUrl ? (
                       <ImageWithFallback
-                        src={news.writerProfile.profileImageUrl}
+                        src={item.writerProfile.profileImageUrl}
                         fallbackSrc="/images/placeholder/default-avatar.svg"
-                        alt={getDisplayName(news.writerProfile.nickname, news.writerProfile.realName)}
+                        alt={getDisplayName(item.writerProfile.nickname, item.writerProfile.realName)}
                         type="avatar"
                         width={48}
                         height={48}
@@ -749,7 +750,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-lg font-bold text-gray-500">
-                        {getDisplayName(news.writerProfile?.nickname, news.writerProfile?.realName).charAt(0).toUpperCase()}
+                        {getDisplayName(item.writerProfile?.nickname, item.writerProfile?.realName).charAt(0).toUpperCase()}
                       </div>
                     )}
                   </div>
@@ -758,12 +759,12 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                     <div className="flex items-center gap-2">
                       <Crown className="w-4 h-4 text-yellow-500" />
                       <p className="font-semibold text-gray-900">
-                        {getDisplayName(news.writerProfile?.nickname, news.writerProfile?.realName)}
+                        {getDisplayName(item.writerProfile?.nickname, item.writerProfile?.realName)}
                       </p>
                     </div>
                     <div className="flex items-center gap-3 mt-1">
                       <p className="text-sm text-gray-500">
-                        {new Date(news.createdAt).toLocaleDateString('ko-KR', {
+                        {new Date(item.createdAt).toLocaleDateString('ko-KR', {
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric',
@@ -819,12 +820,12 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
               </header>
 
               {/* Thumbnail Image */}
-              {news.thumbnailUrl && (
+              {item.thumbnailUrl && (
                 <div className="relative w-full h-96 overflow-hidden bg-gray-100">
                   <ImageWithFallback
-                    src={news.thumbnailUrl}
-                    fallbackSrc="/images/placeholder/news.png"
-                    alt={news.title}
+                    src={item.thumbnailUrl}
+                    fallbackSrc="/images/placeholder/item.png"
+                    alt={item.title}
                     type="news"
                     fill
                     className="object-cover"
@@ -965,10 +966,10 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                         font-weight: 600;
                       }
                     `}</style>
-                    {news.content ? (
+                    {item.content ? (
                       <div 
                         dangerouslySetInnerHTML={{ 
-                          __html: news.content
+                          __html: item.content
                         }}
                       />
                     ) : (
@@ -978,14 +979,14 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                 </div>
 
                 {/* Tags */}
-                {news.tags && news.tags.length > 0 && (
+                {item.tags && item.tags.length > 0 && (
                   <div className="mt-8 pt-8 border-t border-gray-200">
                     <div className="flex items-center gap-2 mb-4">
                       <Tag className="w-5 h-5 text-gray-400" />
                       <h3 className="text-sm font-semibold text-gray-700">태그</h3>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {news.tags.map((tag, index) => (
+                      {item.tags.map((tag, index) => (
                         <span
                           key={index}
                           className="px-3 py-1.5 rounded-full text-sm font-medium bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors cursor-pointer border border-primary-200"

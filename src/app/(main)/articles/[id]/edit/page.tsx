@@ -107,8 +107,8 @@ export default function EditArticlePage({ params }: EditPageProps) {
             tags: [], // tags is not returned from API, keep it empty for edit
           });
 
-          if (articleData.thumbnail) {
-            setThumbnailPreview(articleData.thumbnail as string);
+          if (articleData.thumbnailUrl) {
+            setThumbnailPreview(articleData.thumbnailUrl);
           }
         }
       } catch (error) {
