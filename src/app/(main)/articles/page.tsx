@@ -338,7 +338,7 @@ function ArticlesContent() {
   }> = searchResults?.content.map((item) => ({
     id: Number(item.id),
     title: item.title,
-    excerpt: item.content.length > 100 ? item.content.substring(0, 100) + '...' : item.content,
+    excerpt: item.description || (item.content?.length > 100 ? item.content.substring(0, 100) + '...' : item.content || ''),
     content: item.content,
     category: item.category || (selectedCategory !== 'all' 
       ? categories.find((cat) => cat.slug === selectedCategory)?.name || ''

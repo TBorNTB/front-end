@@ -139,7 +139,7 @@ const fetchLatestArticles = async (): Promise<Article[]> => {
       id: String(item.id),
       content: {
         title: item.title || '',
-        summary: item.content?.substring(0, 150) || item.content || '', // content의 처음 150자
+        summary: item.description || item.content?.substring(0, 150) || item.content || '', // 요약: description 우선
         content: item.content || '',
         category: item.category || '',
       },

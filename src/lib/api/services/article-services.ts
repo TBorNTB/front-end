@@ -15,6 +15,7 @@ export interface ArticleResponse {
   id: number;
   title: string;
   content: string;
+  description?: string;
   writerProfile: WriterProfile;
   category: string;
   thumbnailUrl: string;
@@ -24,6 +25,7 @@ export interface ArticleResponse {
 export interface ArticleCreateRequest {
   title: string;
   content: string;
+  description: string;
   category: string;
   thumbnailKey?: string;
   contentImageKeys?: string[];
@@ -32,6 +34,7 @@ export interface ArticleCreateRequest {
 export interface ArticleUpdateRequest {
   title: string;
   content: string;
+  description: string;
   category: string;
   thumbnailKey?: string;
   contentImageKeys?: string[];
@@ -91,7 +94,10 @@ export const updateArticle = async (id: string | number, data: ArticleUpdateRequ
     method: 'PUT',
     headers,
     credentials: 'include',
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      ...data,
+      description: data.description ?? '',
+    }),
   });
 
   if (!response.ok) {
@@ -155,7 +161,10 @@ export const createArticle = async (data: ArticleCreateRequest): Promise<Article
     method: 'POST',
     headers,
     credentials: 'include',
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      ...data,
+      description: data.description ?? '',
+    }),
   });
 
   if (!response.ok) {

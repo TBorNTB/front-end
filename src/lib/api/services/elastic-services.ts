@@ -30,6 +30,7 @@ export interface CSKnowledgeItem {
   id: number;
   title: string;
   content: string;
+  description?: string;
   category: string;
   createdAt: string;
   likeCount: number;

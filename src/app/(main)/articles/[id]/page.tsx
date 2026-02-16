@@ -64,6 +64,7 @@ interface PostData {
   title: string;
   category: string;
   subcategory?: string;
+  description?: string;
   content: string;
   thumbnail?: string | null;
   author: {
@@ -461,6 +462,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
             id: articleData.id,
             title: articleData.title,
             category: articleData.category,
+            description: articleData.description || undefined,
             content: articleData.content,
             thumbnail: articleData.thumbnailUrl || null,
             author: {
@@ -906,7 +908,14 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                         #{tag}
                       </span>
                     ))}
-                  </div>
+                </div>
+              )}
+
+                {/* 요약 (description) */}
+                {displayPost.description && displayPost.description.trim() && (
+                  <p className="text-gray-600 text-base leading-relaxed mb-6 border-l-4 border-primary-200 pl-4 py-2 bg-gray-50/50 rounded-r">
+                    {displayPost.description}
+                  </p>
                 )}
               </header>
 

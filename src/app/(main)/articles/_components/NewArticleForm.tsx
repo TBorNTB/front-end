@@ -198,6 +198,7 @@ export default function NewArticleForm() {
       const articleData = {
         title: formData.title,
         content: formData.content,
+        description: formData.excerpt.trim(),
         category: formData.category,
         ...(uploadedThumbnailKey && { thumbnailKey: uploadedThumbnailKey }),
         ...(contentImageKeys.length > 0 && { contentImageKeys }),
