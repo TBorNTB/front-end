@@ -11,6 +11,9 @@ import {
   Eye,
   BookOpen,
   Newspaper,
+  FileText,
+  Upload,
+  Brain,
 } from "lucide-react";
 
 // Import complex components - REMOVED ArticleManagement
@@ -19,10 +22,11 @@ import CSKnowledgeManagement from "./components/CSKnowledgeManagement";
 import NewsManagement from "./components/NewsManagement";
 import { fetchAdminMetaCount } from "@/lib/api/services/meta-services";
 import { categoryService } from "@/lib/api/services/category-services";
+import { uploadRAGDocument } from "@/lib/api/services/elastic-services";
 import toast from "react-hot-toast";
 
 // UPDATED: Removed "articles" from TabType
-type TabType = "overview" | "projects" | "cs-knowledge" | "news" | "categories";
+type TabType = "overview" | "projects" | "cs-knowledge" | "news" | "categories" | "rag";
 
 type ApiCategory = {
   id: number;
@@ -490,6 +494,144 @@ function InlineCategoryManagement() {
   );
 }
 
+// RAG 학습용 PDF 업로드 UI (간단 버전)
+function RAGLearningManagement() {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type === "application/pdf") {
+      setSelectedFile(file);
+    } else if (file) {
+      toast.error("PDF 파일만 업로드 가능합니다.");
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type === "application/pdf") {
+      setSelectedFile(file);
+    } else if (file) {
+      toast.error("PDF 파일만 업로드 가능합니다.");
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => setIsDragging(false);
+
+  const handleLearn = async () => {
+    if (!selectedFile) {
+      toast.error("PDF 파일을 선택해주세요.");
+      return;
+    }
+    setIsUploading(true);
+    try {
+      const res = await uploadRAGDocument(selectedFile);
+      setSelectedFile(null);
+      toast.success(res.data?.message || "RAG 학습 요청이 완료되었습니다.");
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "학습 요청에 실패했습니다.";
+      toast.error(message);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const clearFile = () => setSelectedFile(null);
+
+  return (
+    <div className="space-y-8">
+      <div className="admin-card">
+        <div className="admin-card-header">
+          <div className="flex items-center gap-2">
+            <Brain className="w-6 h-6 text-indigo-600" />
+            <h3 className="admin-card-title">RAG 학습용 PDF 업로드</h3>
+          </div>
+          <p className="admin-card-description">
+            챗봇/검색에 활용할 PDF 문서를 업로드하여 학습시킵니다. 한 번에 1개 파일만 업로드 가능합니다.
+          </p>
+          <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-2">
+            용량이 큰 PDF는 업로드가 제한될 수 있습니다. 오류 시 더 작은 파일로 나누거나 용량을 줄여 올려주세요.
+          </p>
+        </div>
+
+        <div
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+            isDragging ? "border-indigo-500 bg-indigo-50" : "border-gray-300 bg-gray-50/50"
+          }`}
+        >
+          <input
+            type="file"
+            accept=".pdf,application/pdf"
+            onChange={handleFileChange}
+            className="hidden"
+            id="rag-pdf-input"
+          />
+          <label htmlFor="rag-pdf-input" className="cursor-pointer block">
+            <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+            <p className="text-gray-600 font-medium">
+              PDF 파일을 여기에 끌어다 놓거나 클릭하여 선택하세요
+            </p>
+            <p className="text-sm text-gray-500 mt-1">*.pdf 만 지원 · 한 번에 1개만 선택</p>
+          </label>
+        </div>
+
+        {selectedFile && (
+          <div className="mt-4 flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center gap-3">
+              <FileText className="w-8 h-8 text-red-500 flex-shrink-0" />
+              <div>
+                <p className="font-medium text-gray-900">{selectedFile.name}</p>
+                <p className="text-sm text-gray-500">
+                  {(selectedFile.size / 1024).toFixed(1)} KB
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={clearFile}
+                className="admin-btn-secondary text-sm py-2"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={handleLearn}
+                disabled={isUploading}
+                className="admin-btn-cta text-sm py-2 flex items-center gap-2"
+              >
+                {isUploading ? (
+                  <>
+                    <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    학습 중...
+                  </>
+                ) : (
+                  <>
+                    <Brain className="w-4 h-4" />
+                    학습 시키기
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // Main Content Management Component
 export default function AdminContent() {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
@@ -547,6 +689,7 @@ export default function AdminContent() {
     { id: "cs-knowledge" as TabType, label: "CS 지식", icon: BookOpen, color: "text-purple-600" },
     { id: "news" as TabType, label: "뉴스", icon: Newspaper, color: "text-blue-600" },
     { id: "categories" as TabType, label: "카테고리 관리", icon: Tag, color: "text-orange-600" },
+    { id: "rag" as TabType, label: "RAG 학습", icon: Brain, color: "text-indigo-600" },
   ];
 
   const stats = useMemo(() => {
@@ -611,7 +754,7 @@ export default function AdminContent() {
           <h3 className="admin-card-title">빠른 작업</h3>
           <p className="admin-card-description">자주 사용하는 기능들에 빠르게 접근하세요</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <button 
             onClick={() => setActiveTab("projects")}
             className="flex flex-col items-center p-6 bg-green-50 hover:bg-green-100 rounded-lg transition-colors group"
@@ -642,6 +785,14 @@ export default function AdminContent() {
           >
             <Tag className="w-8 h-8 text-orange-600 mb-2 group-hover:scale-110 transition-transform" />
             <span className="font-medium text-orange-900">카테고리 정리</span>
+          </button>
+
+          <button 
+            onClick={() => setActiveTab("rag")}
+            className="flex flex-col items-center p-6 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors group"
+          >
+            <Brain className="w-8 h-8 text-indigo-600 mb-2 group-hover:scale-110 transition-transform" />
+            <span className="font-medium text-indigo-900">RAG 학습</span>
           </button>
         </div>
       </div>
@@ -681,6 +832,7 @@ export default function AdminContent() {
         {activeTab === "cs-knowledge" && <CSKnowledgeManagement />}
         {activeTab === "news" && <NewsManagement />}
         {activeTab === "categories" && <InlineCategoryManagement />}
+        {activeTab === "rag" && <RAGLearningManagement />}
       </div>
     </div>
   );
