@@ -17,6 +17,7 @@ import {
   X,
   Check
 } from 'lucide-react';
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 
 import { questionService } from '@/lib/api/services/question-services';
 import type { AnswerItem, QuestionDetail } from '@/types/services/question';
@@ -43,6 +44,7 @@ interface Comment {
   content: string;
   author: string;
   authorRole: 'member' | 'admin' | 'guest';
+  profileImageUrl?: string;
   createdAt: string;
   updatedAt?: string;
   replyCount: number;
@@ -54,6 +56,7 @@ interface Answer {
   content: string;
   author: string;
   authorRole: 'member' | 'admin' | 'guest';
+  profileImageUrl?: string;
   createdAt: string;
   isAccepted: boolean;
   comments: Comment[];
@@ -69,6 +72,7 @@ interface Question {
   content: string;
   author: string;
   authorRole: 'member' | 'admin' | 'guest';
+  profileImageUrl?: string;
   techTags: TechTag[];
   createdAt: string;
   updatedAt: string;
@@ -103,7 +107,13 @@ const toQuestionState = (
   likeCount: number,
   isLiked: boolean
 ): Question => {
-  const author = q.nickname || q.realName || q.username || '사용자';
+  const getDisplayName = (nickname?: string, realName?: string): string => {
+    if (!nickname && !realName) {
+      return '탈퇴한 유저';
+    }
+    return nickname || realName || '탈퇴한 유저';
+  };
+  const author = getDisplayName(q.nickname, q.realName);
   return {
     id: String(q.id),
     username: q.username,
@@ -112,6 +122,7 @@ const toQuestionState = (
     content: q.content,
     author,
     authorRole: 'member',
+    profileImageUrl: q.profileImageUrl,
     techTags: (q.categories ?? []).map((name) => ({
       id: name,
       name,
@@ -130,13 +141,20 @@ const toQuestionState = (
 };
 
 const toAnswerState = (a: AnswerItem): Answer => {
-  const author = a.nickname || a.realName || a.username || '사용자';
+  const getDisplayName = (nickname?: string, realName?: string): string => {
+    if (!nickname && !realName) {
+      return '탈퇴한 유저';
+    }
+    return nickname || realName || '탈퇴한 유저';
+  };
+  const author = getDisplayName(a.nickname, a.realName);
   return {
     id: String(a.id),
     username: a.username,
     content: a.content,
     author,
     authorRole: 'member',
+    profileImageUrl: a.profileImageUrl,
     createdAt: a.createdAt,
     isAccepted: Boolean(a.accepted),
     comments: [],
@@ -146,11 +164,19 @@ const toAnswerState = (a: AnswerItem): Answer => {
 };
 
 const toCommentState = (c: any): Comment => {
+  const getDisplayName = (user?: { nickname?: string; realName?: string }): string => {
+    if (!user || (!user.nickname && !user.realName)) {
+      return '탈퇴한 유저';
+    }
+    return user.nickname || user.realName || '탈퇴한 유저';
+  };
+  const displayName = c.user ? getDisplayName(c.user) : (c.username ?? '사용자');
   return {
     id: String(c.id ?? ''),
     content: String(c.content ?? ''),
-    author: String(c.username ?? '사용자'),
+    author: displayName,
     authorRole: 'member',
+    profileImageUrl: c.user?.profileImageUrl,
     createdAt: String(c.createdAt ?? new Date().toISOString()),
     updatedAt: c.updatedAt ? String(c.updatedAt) : undefined,
     replyCount: Number(c.replyCount ?? 0) || 0,
@@ -764,6 +790,19 @@ export default function QuestionDetailPage() {
               {/* Meta Info */}
               <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-4">
                 <div className="flex items-center gap-2">
+                  {question.profileImageUrl && (
+                    <div className="relative w-6 h-6 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                      <ImageWithFallback
+                        src={question.profileImageUrl}
+                        fallbackSrc="/images/placeholder/default-avatar.svg"
+                        alt={question.author}
+                        type="avatar"
+                        width={24}
+                        height={24}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
                   <span className="font-medium text-gray-700">{question.author}</span>
                   {getRoleBadge(question.authorRole)}
                 </div>
@@ -915,6 +954,19 @@ export default function QuestionDetailPage() {
                 <div key={comment.id} className="bg-gray-50 rounded-lg p-3">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="flex items-center gap-2">
+                      {comment.profileImageUrl && (
+                        <div className="relative w-6 h-6 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                          <ImageWithFallback
+                            src={comment.profileImageUrl}
+                            fallbackSrc="/images/placeholder/default-avatar.svg"
+                            alt={comment.author}
+                            type="avatar"
+                            width={24}
+                            height={24}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
                       <span className="text-sm font-medium text-gray-900">{comment.author}</span>
                       {getRoleBadge(comment.authorRole)}
                       <span className="text-xs text-gray-500">{formatDate(comment.createdAt)}</span>
@@ -1009,6 +1061,19 @@ export default function QuestionDetailPage() {
                         {replies.map((reply) => (
                           <div key={`reply-${comment.id}-${reply.id}`} className="bg-white rounded-lg p-3 border border-gray-200">
                             <div className="flex items-center gap-2 mb-1">
+                              {reply.profileImageUrl && (
+                                <div className="relative w-6 h-6 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                                  <ImageWithFallback
+                                    src={reply.profileImageUrl}
+                                    fallbackSrc="/images/placeholder/default-avatar.svg"
+                                    alt={reply.author}
+                                    type="avatar"
+                                    width={24}
+                                    height={24}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              )}
                               <span className="text-sm font-medium text-gray-900">{reply.author}</span>
                               {getRoleBadge(reply.authorRole)}
                               <span className="text-xs text-gray-500">{formatDate(reply.createdAt)}</span>
@@ -1103,6 +1168,19 @@ export default function QuestionDetailPage() {
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
+                      {answer.profileImageUrl && (
+                        <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                          <ImageWithFallback
+                            src={answer.profileImageUrl}
+                            fallbackSrc="/images/placeholder/default-avatar.svg"
+                            alt={answer.author}
+                            type="avatar"
+                            width={32}
+                            height={32}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
                       <span className="font-medium text-gray-900">{answer.author}</span>
                       {getRoleBadge(answer.authorRole)}
                     </div>
@@ -1222,6 +1300,19 @@ export default function QuestionDetailPage() {
                     {answer.comments.map((comment) => (
                       <div key={comment.id} className="bg-gray-50 rounded-lg p-3">
                         <div className="flex items-center gap-2 mb-1">
+                          {comment.profileImageUrl && (
+                            <div className="relative w-6 h-6 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                              <ImageWithFallback
+                                src={comment.profileImageUrl}
+                                fallbackSrc="/images/placeholder/default-avatar.svg"
+                                alt={comment.author}
+                                type="avatar"
+                                width={24}
+                                height={24}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
                           <span className="text-sm font-medium text-gray-900">{comment.author}</span>
                           {getRoleBadge(comment.authorRole)}
                           <span className="text-xs text-gray-500">{formatDate(comment.createdAt)}</span>
@@ -1315,6 +1406,19 @@ export default function QuestionDetailPage() {
                               {replies.map((reply) => (
                                 <div key={`reply-${comment.id}-${reply.id}`} className="bg-white rounded-lg p-3 border border-gray-200">
                                   <div className="flex items-center gap-2 mb-1">
+                                    {reply.profileImageUrl && (
+                                      <div className="relative w-6 h-6 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                                        <ImageWithFallback
+                                          src={reply.profileImageUrl}
+                                          fallbackSrc="/images/placeholder/default-avatar.svg"
+                                          alt={reply.author}
+                                          type="avatar"
+                                          width={24}
+                                          height={24}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      </div>
+                                    )}
                                     <span className="text-sm font-medium text-gray-900">{reply.author}</span>
                                     {getRoleBadge(reply.authorRole)}
                                     <span className="text-xs text-gray-500">{formatDate(reply.createdAt)}</span>

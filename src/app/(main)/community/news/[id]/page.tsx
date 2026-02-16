@@ -6,6 +6,7 @@ import { useState, useEffect, useRef, Fragment } from 'react';
 import { Heart, Eye, Clock, ArrowLeft, Crown, Users, Calendar, Tag, MessageCircle, ChevronDown, Edit, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Menu, Transition } from '@headlessui/react';
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { 
   fetchViewCount,
   incrementViewCount,
@@ -28,17 +29,29 @@ interface NewsDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
+interface WriterProfile {
+  username: string;
+  nickname: string;
+  realName: string;
+  profileImageUrl: string;
+}
+
+interface ParticipantProfile {
+  username: string;
+  nickname: string;
+  realName: string;
+  profileImageUrl: string;
+}
+
 interface NewsDetail {
   id: number;
   title: string;
   summary: string;
   content: string;
   category: string;
-  thumbnailUrl?: string;
-  writerId: string;
-  writerNickname: string;
-  participantIds: string[];
-  participantNicknames: string[];
+  thumbnailUrl: string;
+  writerProfile: WriterProfile;
+  participantProfiles: ParticipantProfile[];
   tags: string[];
   createdAt: string;
   updatedAt: string;
@@ -87,7 +100,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
     title: string;
     summary: string;
     thumbnailUrl?: string;
-    writerNickname: string;
+    writerNickname?: string;
     createdAt: string;
     viewCount: number;
     likeCount: number;
@@ -192,6 +205,14 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
     }
   };
 
+  // 탈퇴한 유저 확인 헬퍼 함수
+  const getDisplayName = (nickname?: string, realName?: string): string => {
+    if (!nickname && !realName) {
+      return '탈퇴한 유저';
+    }
+    return nickname || realName || '탈퇴한 유저';
+  };
+
   // API 호출
   useEffect(() => {
     if (!newsId) return;
@@ -213,7 +234,28 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
           throw new Error(`Failed to fetch news: ${newsResponse.status}`);
         }
 
-        const data: NewsDetail = await newsResponse.json();
+        const apiData = await newsResponse.json();
+        
+        // API 응답을 NewsDetail 형식으로 매핑
+        const data: NewsDetail = {
+          id: apiData.id,
+          title: apiData.title,
+          summary: apiData.summary || '',
+          content: apiData.content || '',
+          category: apiData.category || '',
+          thumbnailUrl: apiData.thumbnailUrl || '',
+          writerProfile: apiData.writerProfile || {
+            username: 'unknown',
+            nickname: '',
+            realName: '',
+            profileImageUrl: '',
+          },
+          participantProfiles: apiData.participantProfiles || [],
+          tags: apiData.tags || [],
+          createdAt: apiData.createdAt || '',
+          updatedAt: apiData.updatedAt || '',
+        };
+        
         setNews(data);
         setViewCount(viewCountData.viewCount);
         setLikeCount(likeStatusData.likeCount || likeCountData.likedCount);
@@ -402,7 +444,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
     }
   };
 
-  const isOwner = currentUser?.username === news?.writerId;
+  const isOwner = currentUser?.username === news?.writerProfile?.username;
 
   if (isLoading) {
     return (
@@ -415,15 +457,34 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
     );
   }
 
-  if (error || !news) {
+  // 뉴스가 없거나 에러가 있는 경우 삭제된 게시글 메시지 표시
+  if ((error && !news) || (!isLoading && !news)) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="container py-8">
-          <div className="bg-white rounded-lg border border-red-200 p-8 text-center">
-            <p className="text-red-500 mb-4">{error || '뉴스를 찾을 수 없습니다.'}</p>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm">
+            <div className="mb-4">
+              <svg
+                className="w-16 h-16 mx-auto text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">해당 게시글은 삭제 된 게시글입니다</h2>
+            <p className="text-gray-600 mb-6">
+              요청하신 게시글을 찾을 수 없습니다. 삭제되었거나 존재하지 않는 게시글일 수 있습니다.
+            </p>
             <Link
               href="/community"
-              className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               목록으로 돌아가기
@@ -434,8 +495,9 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
     );
   }
 
-  const thumbnailUrl = isValidImageUrl(news.thumbnailUrl);
-  const readTime = Math.ceil((news.content?.length || 0) / 500);
+  const item = news!;
+  // 썸네일 URL 정규화 (이미 API에서 받은 thumbnailUrl 사용)
+  const readTime = Math.ceil((item.content?.length || 0) / 500);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -477,16 +539,16 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                     <div>
                       <p className="text-gray-600 mb-1">카테고리</p>
                       <span className="px-2 py-1 rounded text-xs bg-primary-100 text-primary-700">
-                        {news.category}
+                        {item.category}
                       </span>
                     </div>
                     <div>
                       <p className="text-gray-600 mb-1">작성일</p>
-                      <p className="text-gray-900">{formatDate(news.createdAt)}</p>
+                      <p className="text-gray-900">{formatDate(item.createdAt)}</p>
                     </div>
                     <div>
                       <p className="text-gray-600 mb-1">수정일</p>
-                      <p className="text-gray-900">{formatDate(news.updatedAt)}</p>
+                      <p className="text-gray-900">{formatDate(item.updatedAt)}</p>
                     </div>
                     <div>
                       <p className="text-gray-600 mb-1">읽기 시간</p>
@@ -497,13 +559,13 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
               </div>
 
               {/* Participants Section */}
-              {news.participantNicknames && news.participantNicknames.length > 0 && (
+              {item.participantProfiles && item.participantProfiles.length > 0 && (
                 <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
                   <button
                     onClick={() => toggleSection('participants')}
                     className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
                   >
-                    <span className="font-bold text-gray-900">참여자 ({news.participantNicknames.length})</span>
+                    <span className="font-bold text-gray-900">참여자 ({item.participantProfiles.length})</span>
                     <ChevronDown
                       className={`w-5 h-5 text-gray-600 transition-transform ${
                         openSections.participants ? 'rotate-180' : ''
@@ -513,20 +575,35 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                   
                   {openSections.participants && (
                     <div className="p-4 space-y-3">
-                      {news.participantNicknames.map((nickname, idx) => (
-                        <div key={idx} className="flex items-center gap-3">
-                          <div className="relative w-10 h-10 rounded-full overflow-hidden bg-blue-200 flex-shrink-0">
-                            <div className="w-full h-full flex items-center justify-center text-sm font-bold text-blue-700">
-                              {nickname.charAt(0).toUpperCase()}
+                      {item.participantProfiles.map((participant, idx) => {
+                        const displayName = getDisplayName(participant.nickname, participant.realName);
+                        return (
+                          <div key={idx} className="flex items-center gap-3">
+                            <div className="relative w-10 h-10 rounded-full overflow-hidden bg-blue-200 flex-shrink-0">
+                              {participant.profileImageUrl ? (
+                                <ImageWithFallback
+                                  src={participant.profileImageUrl}
+                                  fallbackSrc="/images/placeholder/default-avatar.svg"
+                                  alt={displayName}
+                                  type="avatar"
+                                  width={40}
+                                  height={40}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-sm font-bold text-blue-700">
+                                  {displayName.charAt(0).toUpperCase()}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-gray-900 text-sm truncate">
+                                {displayName}
+                              </p>
                             </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-gray-900 text-sm truncate">
-                              {nickname}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -556,7 +633,6 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                     ) : relatedNews.length > 0 ? (
                       <div className="space-y-3">
                         {relatedNews.map((item) => {
-                          const thumbnailUrl = isValidImageUrl(item.thumbnailUrl);
                           return (
                             <Link
                               key={item.id}
@@ -564,13 +640,16 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                               className="block p-3 rounded-lg hover:bg-gray-50 transition-colors border border-gray-100"
                             >
                               <div className="flex gap-3">
-                                {thumbnailUrl && (
+                                {item.thumbnailUrl && (
                                   <div className="relative w-16 h-16 flex-shrink-0 rounded overflow-hidden bg-gray-100">
-                                    <Image
-                                      src={thumbnailUrl}
+                                    <ImageWithFallback
+                                      src={item.thumbnailUrl}
+                                      fallbackSrc="/images/placeholder/item.png"
                                       alt={item.title}
-                                      fill
-                                      className="object-cover"
+                                      type="news"
+                                      width={64}
+                                      height={64}
+                                      className="w-full h-full object-cover"
                                     />
                                   </div>
                                 )}
@@ -584,7 +663,8 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                                     </p>
                                   )}
                                   <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
-                                    <span>{item.writerNickname}</span>
+                                    {item.writerNickname && <span>{item.writerNickname}</span>}
+                                    {item.writerNickname && <span>·</span>}
                                     <span>·</span>
                                     <span>
                                       {(() => {
@@ -635,44 +715,56 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
               {/* Header */}
               <header className="p-8 border-b border-gray-200">
                 {/* Category */}
-                {news.category && (
+                {item.category && (
                   <div className="mb-4">
                     <span className="px-3 py-1.5 rounded-full text-sm font-semibold bg-primary-100 text-primary-700">
-                      {news.category}
+                      {item.category}
                     </span>
                   </div>
                 )}
 
                 {/* Title */}
                 <h1 className="text-4xl font-bold text-gray-900 mb-6">
-                  {news.title}
+                  {item.title}
                 </h1>
 
                 {/* Summary */}
-                {news.summary && (
+                {item.summary && (
                   <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-                    {news.summary}
+                    {item.summary}
                   </p>
                 )}
 
                 {/* Author & Metadata */}
                 <div className="flex items-center gap-4 mb-4">
                   <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 border-2 border-yellow-400">
-                    <div className="w-full h-full flex items-center justify-center text-lg font-bold text-gray-500">
-                      {news.writerNickname?.charAt(0) || 'U'}
-                    </div>
+                    {item.writerProfile?.profileImageUrl ? (
+                      <ImageWithFallback
+                        src={item.writerProfile.profileImageUrl}
+                        fallbackSrc="/images/placeholder/default-avatar.svg"
+                        alt={getDisplayName(item.writerProfile.nickname, item.writerProfile.realName)}
+                        type="avatar"
+                        width={48}
+                        height={48}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-lg font-bold text-gray-500">
+                        {getDisplayName(item.writerProfile?.nickname, item.writerProfile?.realName).charAt(0).toUpperCase()}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <Crown className="w-4 h-4 text-yellow-500" />
                       <p className="font-semibold text-gray-900">
-                        {news.writerNickname || news.writerId || '작성자'}
+                        {getDisplayName(item.writerProfile?.nickname, item.writerProfile?.realName)}
                       </p>
                     </div>
                     <div className="flex items-center gap-3 mt-1">
                       <p className="text-sm text-gray-500">
-                        {new Date(news.createdAt).toLocaleDateString('ko-KR', {
+                        {new Date(item.createdAt).toLocaleDateString('ko-KR', {
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric',
@@ -728,14 +820,15 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
               </header>
 
               {/* Thumbnail Image */}
-              {thumbnailUrl && (
+              {item.thumbnailUrl && (
                 <div className="relative w-full h-96 overflow-hidden bg-gray-100">
-                  <Image
-                    src={thumbnailUrl}
-                    alt={news.title}
+                  <ImageWithFallback
+                    src={item.thumbnailUrl}
+                    fallbackSrc="/images/placeholder/item.png"
+                    alt={item.title}
+                    type="news"
                     fill
                     className="object-cover"
-                    priority
                   />
                 </div>
               )}
@@ -873,10 +966,10 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                         font-weight: 600;
                       }
                     `}</style>
-                    {news.content ? (
+                    {item.content ? (
                       <div 
                         dangerouslySetInnerHTML={{ 
-                          __html: news.content
+                          __html: item.content
                         }}
                       />
                     ) : (
@@ -886,14 +979,14 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                 </div>
 
                 {/* Tags */}
-                {news.tags && news.tags.length > 0 && (
+                {item.tags && item.tags.length > 0 && (
                   <div className="mt-8 pt-8 border-t border-gray-200">
                     <div className="flex items-center gap-2 mb-4">
                       <Tag className="w-5 h-5 text-gray-400" />
                       <h3 className="text-sm font-semibold text-gray-700">태그</h3>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {news.tags.map((tag, index) => (
+                      {item.tags.map((tag, index) => (
                         <span
                           key={index}
                           className="px-3 py-1.5 rounded-full text-sm font-medium bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors cursor-pointer border border-primary-200"
@@ -1008,18 +1101,41 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {comments.map((comment) => (
-                      <div key={`comment-${comment.id}`} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                        <div className="flex gap-4">
-                          <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                            <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-500">
-                              {comment.username.charAt(0).toUpperCase()}
+                    {comments.map((comment) => {
+                      const getDisplayName = (user?: { nickname?: string; realName?: string }): string => {
+                        if (!user || (!user.nickname && !user.realName)) {
+                          return '탈퇴한 유저';
+                        }
+                        return user.nickname || user.realName || '탈퇴한 유저';
+                      };
+                      const displayName = comment.user ? getDisplayName(comment.user) : comment.username;
+                      const profileImageUrl = comment.user?.profileImageUrl;
+                      const initial = displayName.charAt(0).toUpperCase();
+
+                      return (
+                        <div key={`comment-${comment.id}`} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                          <div className="flex gap-4">
+                            <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                              {profileImageUrl ? (
+                                <ImageWithFallback
+                                  src={profileImageUrl}
+                                  fallbackSrc="/images/placeholder/default-avatar.svg"
+                                  alt={displayName}
+                                  type="avatar"
+                                  width={40}
+                                  height={40}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-500">
+                                  {initial}
+                                </div>
+                              )}
                             </div>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-gray-900">{comment.username}</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-gray-900">{displayName}</span>
                                 <span className="text-sm text-gray-500">{formatDate(comment.createdAt)}</span>
                                 {comment.updatedAt !== comment.createdAt && (
                                   <span className="text-xs text-gray-400">(수정됨)</span>
@@ -1167,18 +1283,35 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                                 {/* Replies */}
                                 {expandedReplies.has(comment.id) && replies[comment.id] && (
                                   <div className="mt-4 space-y-3 pl-4 border-l-2 border-gray-200">
-                                    {replies[comment.id].map((reply) => (
-                                      <div key={`reply-${comment.id}-${reply.id}`} className="bg-white rounded-lg p-3 border border-gray-200">
-                                        <div className="flex gap-3">
-                                          <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                                            <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
-                                              {reply.username.charAt(0).toUpperCase()}
+                                    {replies[comment.id].map((reply) => {
+                                      const replyDisplayName = reply.user ? getDisplayName(reply.user) : reply.username;
+                                      const replyProfileImageUrl = reply.user?.profileImageUrl;
+                                      const replyInitial = replyDisplayName.charAt(0).toUpperCase();
+
+                                      return (
+                                        <div key={`reply-${comment.id}-${reply.id}`} className="bg-white rounded-lg p-3 border border-gray-200">
+                                          <div className="flex gap-3">
+                                            <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                                              {replyProfileImageUrl ? (
+                                                <ImageWithFallback
+                                                  src={replyProfileImageUrl}
+                                                  fallbackSrc="/images/placeholder/default-avatar.svg"
+                                                  alt={replyDisplayName}
+                                                  type="avatar"
+                                                  width={32}
+                                                  height={32}
+                                                  className="w-full h-full object-cover"
+                                                />
+                                              ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
+                                                  {replyInitial}
+                                                </div>
+                                              )}
                                             </div>
-                                          </div>
-                                          <div className="flex-1 min-w-0">
-                                            <div className="flex items-center justify-between mb-1">
-                                              <div className="flex items-center gap-2">
-                                                <span className="text-sm font-medium text-gray-900">{reply.username}</span>
+                                            <div className="flex-1 min-w-0">
+                                              <div className="flex items-center justify-between mb-1">
+                                                <div className="flex items-center gap-2">
+                                                  <span className="text-sm font-medium text-gray-900">{replyDisplayName}</span>
                                                 <span className="text-xs text-gray-500">{formatDate(reply.createdAt)}</span>
                                                 {reply.updatedAt !== reply.createdAt && (
                                                   <span className="text-xs text-gray-400">(수정됨)</span>
@@ -1265,7 +1398,8 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                                           </div>
                                         </div>
                                       </div>
-                                    ))}
+                                      );
+                                    })}
                                   </div>
                                 )}
                               </>
@@ -1273,7 +1407,8 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                           </div>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                     
                     {/* Load More Button */}
                     {hasNextComments && (

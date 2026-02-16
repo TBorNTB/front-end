@@ -31,6 +31,7 @@ export interface QuestionDetail {
   username: string;
   nickname: string;
   realName: string;
+  profileImageUrl?: string;
   categories: string[];
   status: string;
   createdAt: string;
@@ -51,6 +52,7 @@ export interface AnswerItem {
   username: string;
   nickname: string;
   realName: string;
+  profileImageUrl?: string;
   accepted: boolean;
   createdAt: string;
   updatedAt: string;

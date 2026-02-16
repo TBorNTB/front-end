@@ -1,5 +1,6 @@
 // lib/api/services/elastic.ts
 import { ELASTIC_ENDPOINTS, getElasticApiUrl } from '@/lib/api/endpoints';
+import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
 
 export interface CSKnowledgeSuggestionParams {
   query: string; // 검색어
@@ -23,12 +24,14 @@ export interface CSKnowledgeWriter {
   username: string;
   nickname: string;
   realname: string;
+  profileImageUrl: string;
 }
 
 export interface CSKnowledgeItem {
   id: number;
   title: string;
   content: string;
+  description?: string;
   category: string;
   createdAt: string;
   likeCount: number;
@@ -199,9 +202,58 @@ export const getCSKnowledgeSuggestion = async (
   }
 };
 
+/** RAG 문서 업로드 응답 (한 번에 1개 PDF만 가능, 용량 제한 있음) */
+export interface RAGDocumentUploadResponse {
+  success: boolean;
+  data?: { documentId: string; message: string };
+  error?: string;
+}
+
+/**
+ * RAG 학습용 PDF 업로드 (1개만 가능, 용량 초과 시 더 작은 파일 요청 안내)
+ * POST /elastic-service/api/v1/rag/documents, multipart/form-data, field: file
+ */
+export async function uploadRAGDocument(file: File): Promise<RAGDocumentUploadResponse> {
+  if (!file || file.type !== 'application/pdf') {
+    throw new Error('PDF 파일만 업로드 가능합니다.');
+  }
+  const url = getElasticApiUrl(ELASTIC_ENDPOINTS.RAG.DOCUMENTS);
+  const formData = new FormData();
+  formData.append('file', file, file.name);
+
+  const response = await fetchWithRefresh(url, {
+    method: 'POST',
+    headers: {
+      accept: 'application/json',
+    },
+    credentials: 'include',
+    body: formData,
+  });
+
+  const json = (await response.json().catch(() => ({}))) as RAGDocumentUploadResponse;
+
+  if (!response.ok) {
+    const msg =
+      response.status === 413 || /용량|크기|size|limit|초과/i.test(json.error || '')
+        ? '용량이 초과되었습니다. 더 작은 파일을 올려주세요.'
+        : json.error || `업로드 실패 (${response.status})`;
+    throw new Error(msg);
+  }
+
+  if (json.success === false && json.error) {
+    const msg = /용량|크기|size|limit|초과/i.test(json.error)
+      ? '용량이 초과되었습니다. 더 작은 파일을 올려주세요.'
+      : json.error;
+    throw new Error(msg);
+  }
+
+  return json;
+}
+
 export const elasticService = {
   searchCSKnowledge,
   searchCSKnowledgeByMember,
   getCSKnowledgeSuggestion,
+  uploadRAGDocument,
 };
 

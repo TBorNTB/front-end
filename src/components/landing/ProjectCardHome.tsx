@@ -40,7 +40,7 @@ const AvatarStack = ({
   collaborators,
   maxVisible = 3
 }: {
-  owner?: { username?: string; nickname?: string; realname?: string; avatarUrl?: string };
+  owner?: { username?: string; nickname?: string; realname?: string; profileImageUrl?: string };
   collaborators: { profileImage: string }[];
   maxVisible?: number;
 }) => {
@@ -64,7 +64,7 @@ const AvatarStack = ({
               title={ownerName}
             >
               <ImageWithFallback
-                src={owner.avatarUrl || ''}
+                src={owner.profileImageUrl || ''}
                 fallbackSrc="/images/placeholder/default-avatar.svg"
                 alt={ownerName}
                 width={28}
@@ -130,12 +130,14 @@ export function ProjectCardHome({ project }: ProjectCardHomeProps) {
     <Link href={`/projects/${project.id}`}>
       <div className="group bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-primary hover:shadow-lg transition-all duration-200 hover:-translate-y-1">
         {/* Image */}
-        <div className="relative overflow-hidden">
+        <div className="relative overflow-hidden h-56">
           <ImageWithFallback
             src={project.thumbnailUrl || ''}
             fallbackSrc="/images/placeholder/project.png"
-            height={240}
-            className="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-200"
+            alt={project.title}
+            type="project"
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-200"
           />
           <div className="absolute top-3 left-3">
             <span className="bg-white/90 backdrop-blur-sm border border-gray-200 text-primary px-2 py-1 rounded-full text-xs font-medium">

@@ -102,13 +102,13 @@ export default function EditArticlePage({ params }: EditPageProps) {
           setFormData({
             title: articleData.title || '',
             category: articleData.category || '',
-            excerpt: '', // excerpt is not returned from API, keep it empty for edit
+            excerpt: articleData.description || '',
             content: articleData.content || '',
             tags: [], // tags is not returned from API, keep it empty for edit
           });
 
-          if (articleData.thumbnail) {
-            setThumbnailPreview(articleData.thumbnail as string);
+          if (articleData.thumbnailUrl) {
+            setThumbnailPreview(articleData.thumbnailUrl);
           }
         }
       } catch (error) {
@@ -252,6 +252,7 @@ export default function EditArticlePage({ params }: EditPageProps) {
       const articleData = {
         title: formData.title,
         content: formData.content,
+        description: formData.excerpt.trim(),
         category: formData.category,
         ...(uploadedThumbnailKey && { thumbnailKey: uploadedThumbnailKey }),
         ...(contentImageKeys.length > 0 && { contentImageKeys }),

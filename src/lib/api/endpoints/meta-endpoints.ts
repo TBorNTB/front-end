@@ -7,6 +7,7 @@ export const META_ENDPOINTS = {
   // User-service endpoints
   META: {
     COUNT: '/user-service/api/meta/count',
+    ADMIN_COUNT: '/user-service/api/meta/admin/count',
     COMMENTS: '/user-service/comments',
     COMMENTS_BY_POST: '/user-service/comments/post/:postId',
     LIKES: '/user-service/likes',

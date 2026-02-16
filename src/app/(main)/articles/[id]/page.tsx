@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useState, useEffect, createElement, useRef, JSX } from 'react';
 import { Heart, Eye, MessageCircle, Share2, Edit, Clock, ArrowLeft, Code, FileText, Trash2 } from 'lucide-react';
 import { fetchArticleById, deleteArticle, type ArticleResponse } from '@/lib/api/services/article-services';
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { useRouter } from 'next/navigation';
 import TableOfContents from '@/components/editor/TableOfContents';
 import { searchCSKnowledge, searchCSKnowledgeByMember } from '@/lib/api/services/elastic-services';
@@ -63,6 +64,7 @@ interface PostData {
   title: string;
   category: string;
   subcategory?: string;
+  description?: string;
   content: string;
   thumbnail?: string | null;
   author: {
@@ -400,9 +402,25 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
         ]);
         
         if (articleData) {
+          // 탈퇴한 유저 확인 헬퍼 함수
+          const getDisplayName = (nickname?: string, realName?: string): string => {
+            if (!nickname && !realName) {
+              return '탈퇴한 유저';
+            }
+            return nickname || realName || '탈퇴한 유저';
+          };
+
+          // Writer profile 정보 추출
+          const writerProfile = articleData.writerProfile || {
+            username: 'unknown',
+            nickname: '',
+            realName: '',
+            profileImageUrl: '',
+          };
+
           // 저자의 다른 글 조회 (nickname 기반으로 직접 조회 - 추가 API 호출 제거)
           const authorArticlesResponse = await searchCSKnowledgeByMember({ 
-            name: articleData.nickname, 
+            name: writerProfile.nickname || writerProfile.realName, 
             page: 0, 
             size: 4 // 현재 글 제외하고 3개 필요하므로 4개 가져옴
           }).catch(() => ({ content: [], page: 0, size: 4, totalElements: 0, totalPages: 0 }));
@@ -444,12 +462,13 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
             id: articleData.id,
             title: articleData.title,
             category: articleData.category,
+            description: articleData.description || undefined,
             content: articleData.content,
-            thumbnail: articleData.thumbnail || null,
+            thumbnail: articleData.thumbnailUrl || null,
             author: {
-              username: articleData.writerId,
-              name: articleData.nickname,
-              avatar: null,
+              username: writerProfile.username || 'unknown',
+              name: getDisplayName(writerProfile.nickname, writerProfile.realName),
+              avatar: writerProfile.profileImageUrl || null,
             },
             publishedAt: articleData.createdAt,
             readTime: `${Math.ceil(articleData.content.length / 500)}분`,
@@ -559,47 +578,8 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
   const tableOfContents = extractHeadings(displayPost.content);
 
-  // Mock comments data for default display
-  const mockComments: Comment[] = [
-    {
-      id: 1,
-      username: 'SecurityGenius',
-      content: '정말 잘 정리된 자료네요. 버퍼 오버플로우 부분이 특히 도움이 됐습니다!',
-      createdAt: new Date(Date.now() - 86400000).toISOString(), // 1일 전
-      updatedAt: new Date(Date.now() - 86400000).toISOString(),
-      replyCount: 2,
-      postType: 'ARTICLE',
-      postId: Number(articleId),
-      parentId: 0,
-      depth: 0,
-    },
-    {
-      id: 2,
-      username: 'CodeMaster',
-      content: '스택 오버플로우의 실제 사례를 더 보고 싶은데 다음 글에서 다룰 예정이신가요?',
-      createdAt: new Date(Date.now() - 172800000).toISOString(), // 2일 전
-      updatedAt: new Date(Date.now() - 172800000).toISOString(),
-      replyCount: 1,
-      postType: 'ARTICLE',
-      postId: Number(articleId),
-      parentId: 0,
-      depth: 0,
-    },
-    {
-      id: 3,
-      username: 'HackingEnthusiast',
-      content: '메모리 구조 부분이 복잡하지만 이해하기 쉽게 설명해주셨습니다. 감사합니다! 🎯',
-      createdAt: new Date(Date.now() - 259200000).toISOString(), // 3일 전
-      updatedAt: new Date(Date.now() - 259200000).toISOString(),
-      replyCount: 0,
-      postType: 'ARTICLE',
-      postId: Number(articleId),
-      parentId: 0,
-      depth: 0,
-    },
-  ];
-
-  const displayedComments = comments.length === 0 ? mockComments : comments;
+  // 댓글이 없으면 빈 배열 사용 (목데이터 제거)
+  const displayedComments = comments;
   const displayedCommentCount = displayedComments.length;
 
   if (isLoading) {
@@ -613,20 +593,39 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
     );
   }
 
-  // 에러가 있고 post도 없는 경우에만 에러 화면 표시
-  // post가 null이어도 displayPost는 기본값이 있으므로 계속 진행
-  if (error && !post) {
+  // 포스트가 없거나 에러가 있는 경우 삭제된 게시글 메시지 표시
+  if ((error && !post) || (!isLoading && !post)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">{error}</p>
-          <Link
-            href="/articles"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            목록으로 돌아가기
-          </Link>
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm">
+            <div className="mb-4">
+              <svg
+                className="w-16 h-16 mx-auto text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">해당 게시글은 삭제 된 게시글입니다</h2>
+            <p className="text-gray-600 mb-6">
+              요청하신 게시글을 찾을 수 없습니다. 삭제되었거나 존재하지 않는 게시글일 수 있습니다.
+            </p>
+            <Link
+              href="/articles"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              목록으로 돌아가기
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -852,10 +851,24 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
                 {/* Author, Date, Time, Category in one line */}
                 <div className="flex flex-wrap items-center gap-3 mb-4 text-sm text-gray-600">
-                  <div className="flex items-center gap-1.5">
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
+                  <div className="flex items-center gap-2">
+                    <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200">
+                      {displayPost.author.avatar ? (
+                        <ImageWithFallback
+                          src={displayPost.author.avatar}
+                          fallbackSrc="/images/placeholder/default-avatar.svg"
+                          alt={displayPost.author.name || 'Author'}
+                          type="avatar"
+                          width={32}
+                          height={32}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
+                          {(displayPost.author.name || 'U').charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
                     <span className="font-medium text-gray-900">{displayPost.author.name}</span>
                   </div>
                   
@@ -895,30 +908,30 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                         #{tag}
                       </span>
                     ))}
-                  </div>
+                </div>
+              )}
+
+                {/* 요약 (description) */}
+                {displayPost.description && displayPost.description.trim() && (
+                  <p className="text-gray-600 text-base leading-relaxed mb-6 border-l-4 border-primary-200 pl-4 py-2 bg-gray-50/50 rounded-r">
+                    {displayPost.description}
+                  </p>
                 )}
               </header>
 
               {/* Thumbnail Image */}
-              <div className="relative w-full h-80 mb-8 rounded-xl overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center border border-gray-200 shadow-sm">
-                {displayPost.thumbnail ? (
-                  <Image
+              {displayPost.thumbnail && (
+                <div className="relative w-full h-80 mb-8 rounded-xl overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 border border-gray-200 shadow-sm">
+                  <ImageWithFallback
                     src={displayPost.thumbnail}
+                    fallbackSrc="/images/placeholder/article.png"
                     alt={displayPost.title}
+                    type="article"
                     fill
                     className="object-cover"
-                    priority
                   />
-                ) : (
-                  <Image
-                    src="/images/placeholder/article.png"
-                    alt={displayPost.title}
-                    fill
-                    className="object-cover"
-                    priority
-                  />
-                )}
-              </div>
+                </div>
+              )}
 
               {/* Post Content */}
               <div
@@ -1082,18 +1095,41 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {displayedComments.map((comment) => (
-                      <div key={comment.id} className="bg-white rounded-lg p-4 border border-gray-200">
-                        <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-                            <span className="text-sm font-semibold text-gray-600">
-                              {comment.username.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold text-gray-900">{comment.username}</span>
+                    {displayedComments.map((comment) => {
+                      const getDisplayName = (user?: { nickname?: string; realName?: string }): string => {
+                        if (!user || (!user.nickname && !user.realName)) {
+                          return '탈퇴한 유저';
+                        }
+                        return user.nickname || user.realName || '탈퇴한 유저';
+                      };
+                      const displayName = comment.user ? getDisplayName(comment.user) : comment.username;
+                      const profileImageUrl = comment.user?.profileImageUrl;
+                      const initial = displayName.charAt(0).toUpperCase();
+
+                      return (
+                        <div key={comment.id} className="bg-white rounded-lg p-4 border border-gray-200">
+                          <div className="flex items-start gap-3">
+                            <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                              {profileImageUrl ? (
+                                <ImageWithFallback
+                                  src={profileImageUrl}
+                                  fallbackSrc="/images/placeholder/default-avatar.svg"
+                                  alt={displayName}
+                                  type="avatar"
+                                  width={40}
+                                  height={40}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-sm font-semibold text-gray-600">
+                                  {initial}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-gray-900">{displayName}</span>
                                 <span className="text-xs text-gray-500">
                                   {new Date(comment.createdAt).toLocaleDateString('ko-KR', {
                                     year: 'numeric',
@@ -1197,16 +1233,33 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                             )}
                             {expandedReplies.has(comment.id) && replies[comment.id] && (
                               <div className="mt-4 ml-4 space-y-3 border-l-2 border-gray-200 pl-4">
-                                {replies[comment.id].map((reply) => (
-                                  <div key={reply.id} className="flex items-start gap-2">
-                                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-                                      <span className="text-xs font-semibold text-gray-600">
-                                        {reply.username.charAt(0).toUpperCase()}
-                                      </span>
-                                    </div>
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-2 mb-1">
-                                        <span className="font-medium text-gray-900 text-sm">{reply.username}</span>
+                                {replies[comment.id].map((reply) => {
+                                  const replyDisplayName = reply.user ? getDisplayName(reply.user) : reply.username;
+                                  const replyProfileImageUrl = reply.user?.profileImageUrl;
+                                  const replyInitial = replyDisplayName.charAt(0).toUpperCase();
+
+                                  return (
+                                    <div key={reply.id} className="flex items-start gap-2">
+                                      <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                                        {replyProfileImageUrl ? (
+                                          <ImageWithFallback
+                                            src={replyProfileImageUrl}
+                                            fallbackSrc="/images/placeholder/default-avatar.svg"
+                                            alt={replyDisplayName}
+                                            type="avatar"
+                                            width={32}
+                                            height={32}
+                                            className="w-full h-full object-cover"
+                                          />
+                                        ) : (
+                                          <div className="w-full h-full flex items-center justify-center text-xs font-semibold text-gray-600">
+                                            {replyInitial}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <span className="font-medium text-gray-900 text-sm">{replyDisplayName}</span>
                                         <span className="text-xs text-gray-500">
                                           {new Date(reply.createdAt).toLocaleDateString('ko-KR')}
                                         </span>
@@ -1214,13 +1267,15 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                                       <p className="text-gray-700 text-sm">{reply.content}</p>
                                     </div>
                                   </div>
-                                ))}
+                                  );
+                                })}
                               </div>
                             )}
                           </div>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                     {hasNextComments && (
                       <div className="text-center pt-4">
                         <button

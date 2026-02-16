@@ -24,6 +24,7 @@ export const ELASTIC_ENDPOINTS = {
     // RAG Service endpoints
   RAG: {
     QUERY: '/elastic-service/api/v1/rag/query',
+    DOCUMENTS: '/elastic-service/api/v1/rag/documents',
   },
 } as const;
 

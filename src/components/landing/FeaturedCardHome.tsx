@@ -20,13 +20,13 @@ interface FeaturedProjectCardProps {
       username?: string;
       nickname?: string;
       realname?: string;
-      avatarUrl?: string;
+      profileImageUrl?: string;
     };
     collaborators?: Array<{
       username?: string;
       nickname?: string;
       realname?: string;
-      avatarUrl?: string;
+      profileImageUrl?: string;
     }>;
   };
 }
@@ -103,7 +103,7 @@ export function FeaturedProjectCard({ project }: FeaturedProjectCardProps) {
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full overflow-hidden border-2 border-yellow-400 bg-gray-200">
                       <ImageWithFallback
-                        src={project.owner.avatarUrl || ''}
+                        src={project.owner.profileImageUrl || ''}
                         fallbackSrc="/images/placeholder/default-avatar.svg"
                         alt={project.owner.nickname || project.owner.realname || 'Owner'}
                         width={24}
@@ -130,7 +130,7 @@ export function FeaturedProjectCard({ project }: FeaturedProjectCardProps) {
                           className="w-6 h-6 rounded-full overflow-hidden border-2 border-white/50 bg-gray-200"
                         >
                           <ImageWithFallback
-                            src={collab.avatarUrl || ''}
+                            src={collab.profileImageUrl || ''}
                             fallbackSrc="/images/placeholder/default-avatar.svg"
                             alt={collab.nickname || collab.realname || 'Collaborator'}
                             width={24}

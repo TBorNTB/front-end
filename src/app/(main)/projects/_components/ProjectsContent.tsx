@@ -27,13 +27,13 @@ interface Project {
     username?: string;
     nickname?: string;
     realname?: string;
-    avatarUrl?: string;
+    profileImageUrl?: string;
   } | null;
   collaborators?: Array<{
     username?: string;
     nickname?: string;
     realname?: string;
-    avatarUrl?: string;
+    profileImageUrl?: string;
   }>;
 }
 
@@ -182,9 +182,44 @@ const getStatusColor = (status: string) => {
 };
 
 const getValidImageUrl = (url: string | null | undefined): string => {
-  if (!url || typeof url !== 'string' || !url.trim()) return '/images/placeholder/project.png';
-  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/')) return url;
+  if (!url || typeof url !== 'string') return '/images/placeholder/project.png';
+  
+  const trimmed = url.trim();
+  
+  // 빈 문자열이나 잘못된 값 체크 (API에서 "string" 같은 값이 올 수 있음)
+  if (trimmed === '' || 
+      trimmed === 'string' || 
+      trimmed === 'null' || 
+      trimmed === 'undefined' ||
+      trimmed.toLowerCase() === 'null' ||
+      trimmed.toLowerCase() === 'undefined') {
+    return '/images/placeholder/project.png';
+  }
+  
+  // 유효한 URL 형식인지 확인
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('/')) {
+    return trimmed;
+  }
+  
   return '/images/placeholder/project.png';
+};
+
+// 프로필 이미지 URL 검증 및 정규화 함수
+const getValidProfileImageUrl = (url: string | null | undefined): string => {
+  if (!url || typeof url !== 'string') return '/images/placeholder/default-avatar.svg';
+  const trimmed = url.trim();
+  if (trimmed === '' || trimmed === 'string' || trimmed === 'null' || trimmed === 'undefined') {
+    return '/images/placeholder/default-avatar.svg';
+  }
+  // 상대 경로는 유효함
+  if (trimmed.startsWith('/')) return trimmed;
+  // 절대 URL 검사
+  try {
+    new URL(trimmed);
+    return trimmed;
+  } catch {
+    return '/images/placeholder/default-avatar.svg';
+  }
 };
 
 // ============================================================================
@@ -213,16 +248,18 @@ const AvatarStack = ({
         </div>
         <div className="flex items-center gap-2">
           <div 
-            className="relative inline-block"
+            className="relative inline-block w-7 h-7"
             title={creator.nickname}
           >
             <ImageWithFallback
-              src={creator.avatar}
+              key={`creator-${creator.username}-${creator.avatar}`}
+              src={creator.avatar || '/images/placeholder/default-avatar.svg'}
               type="avatar"
               alt={creator.nickname}
               width={28}
               height={28}
-              className="w-7 h-7 rounded-full border-2 border-yellow-400 bg-gray-200 shadow-sm"
+              className="w-full h-full rounded-full border-2 border-yellow-400 bg-gray-200 shadow-sm"
+              fallbackSrc="/images/placeholder/default-avatar.svg"
             />
           </div>
           <span 
@@ -251,12 +288,14 @@ const AvatarStack = ({
                     title={contributor.nickname}
                   >
                     <ImageWithFallback
-                      src={contributor.avatar}
+                      key={`contributor-${contributor.username}-${contributor.avatar}`}
+                      src={contributor.avatar || '/images/placeholder/default-avatar.svg'}
                       type="avatar"
                       alt={contributor.nickname}
                       width={24}
                       height={24}
                       className="w-6 h-6 rounded-full border-2 border-white bg-gray-200"
+                      fallbackSrc="/images/placeholder/default-avatar.svg"
                     />
                   </div>
                 ))}
@@ -384,18 +423,18 @@ export default function ProjectsContent() {
           username: item.owner.username || '',
           nickname: item.owner.nickname || 'Unknown',
           realname: item.owner.realname || '',
-          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+          avatar: getValidProfileImageUrl(item.owner.profileImageUrl)
         } : {
           username: '',
           nickname: 'Unknown',
           realname: '',
-          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+          avatar: '/images/placeholder/default-avatar.svg'
         },
         contributors: (item.collaborators || []).map((collab: any) => ({
           username: collab.username || '',
           nickname: collab.nickname || 'Unknown',
           realname: collab.realname || '',
-          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+          avatar: getValidProfileImageUrl(collab.profileImageUrl)
         })),
         lastUpdate: item.updatedAt || item.createdAt || '',
         github: '',

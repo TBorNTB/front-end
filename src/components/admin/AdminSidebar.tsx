@@ -28,8 +28,8 @@ const navigation = [
     icon: Users,
   },
   {
-    name: "콘텐츠 관리", 
-    mobileText: ["콘텐츠", "관리"],
+    name: "카테고리 관리", 
+    mobileText: ["카테고리", "관리"],
     href: "/admin/content",
     icon: FileText,
   },
@@ -51,7 +51,7 @@ export default function AdminSidebar() {
   const pathname = usePathname();
 
   const handleViewPublicSite = () => {
-    window.open('/', '_blank');
+    window.location.href = '/';
   };
 
   return (
@@ -59,19 +59,19 @@ export default function AdminSidebar() {
       {/* Header - Shows full on desktop, compact on mobile */}
       <div className="flex-shrink-0 border-b border-primary-800">
         {/* Desktop header */}
-        <div className="hidden md:flex items-center h-18 px-5">
+        <Link href="/" className="hidden md:flex items-center h-18 px-5 cursor-pointer hover:bg-primary-800 transition-colors">
           <div className="flex items-center gap-2 p-2.5 font-bold">
             <Image src="/logo-white.svg" alt="SSG Logo" width={36} height={36} className="filter" />
           </div>
           <span className="ml-2.5 text-lg font-bold text-primary-100">ADMIN</span>
-        </div>
+        </Link>
         
         {/* Mobile header - Just icon */}
-        <div className="md:hidden flex justify-center py-4.5">
+        <Link href="/" className="md:hidden flex justify-center py-4.5 cursor-pointer hover:bg-primary-800 transition-colors">
           <div className="flex items-center gap-2 p-2.5 font-bold">
             <Image src="/logo-white.svg" alt="SSG Logo" width={36} height={36} className="filter" />
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* Navigation - Responsive icons/text with mobile-friendly layout */}

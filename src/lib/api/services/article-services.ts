@@ -4,20 +4,28 @@ import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
 import { parseApiError, safeJsonParse } from '@/lib/api/helpers';
 import { INTERNAL_ENDPOINTS, getInternalApiUrl } from '@/lib/api/endpoints';
 
+export interface WriterProfile {
+  username: string;
+  nickname: string;
+  realName: string;
+  profileImageUrl: string;
+}
+
 export interface ArticleResponse {
-  thumbnail: null;
   id: number;
   title: string;
   content: string;
-  writerId: string;
-  nickname: string;
+  description?: string;
+  writerProfile: WriterProfile;
   category: string;
+  thumbnailUrl: string;
   createdAt: string;
 }
 
 export interface ArticleCreateRequest {
   title: string;
   content: string;
+  description: string;
   category: string;
   thumbnailKey?: string;
   contentImageKeys?: string[];
@@ -26,6 +34,7 @@ export interface ArticleCreateRequest {
 export interface ArticleUpdateRequest {
   title: string;
   content: string;
+  description: string;
   category: string;
   thumbnailKey?: string;
   contentImageKeys?: string[];
@@ -85,7 +94,10 @@ export const updateArticle = async (id: string | number, data: ArticleUpdateRequ
     method: 'PUT',
     headers,
     credentials: 'include',
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      ...data,
+      description: data.description ?? '',
+    }),
   });
 
   if (!response.ok) {
@@ -149,7 +161,10 @@ export const createArticle = async (data: ArticleCreateRequest): Promise<Article
     method: 'POST',
     headers,
     credentials: 'include',
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      ...data,
+      description: data.description ?? '',
+    }),
   });
 
   if (!response.ok) {

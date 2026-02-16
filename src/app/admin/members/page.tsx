@@ -85,9 +85,7 @@ export default function AdminMembersContent() {
   const [roleChangeRealNameSearch, setRoleChangeRealNameSearch] = useState("");
   const [roleChangeSelectedRole, setRoleChangeSelectedRole] = useState<string>("");
   
-  const [allMembers, setAllMembers] = useState<Member[]>([]); // 전체 조회된 회원 목록
-  const [filteredMembers, setFilteredMembers] = useState<Member[]>([]); // 필터링된 회원 목록
-  const [members, setMembers] = useState<Member[]>([]); // 페이지네이션된 회원 목록
+  const [members, setMembers] = useState<Member[]>([]); // 현재 페이지의 회원 목록
   const [isLoading, setIsLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(0);
@@ -182,13 +180,24 @@ export default function AdminMembersContent() {
         throw new Error(`Failed to change role: ${response.status}`);
       }
 
-      // 성공 시 회원 목록 새로고침
+      // 성공 시 회원 목록 새로고침 (현재 페이지 유지)
       const fetchMembers = async () => {
         const params = new URLSearchParams();
-        params.append('page', '0');
-        params.append('size', '1000');
+        params.append('page', String(page));
+        params.append('size', String(size));
         params.append('sortDirection', 'ASC');
         params.append('sortBy', 'createdAt');
+
+        // 현재 검색/필터 파라미터 유지
+        if (nicknameSearch.trim()) {
+          params.append('nickname', nicknameSearch.trim());
+        }
+        if (realNameSearch.trim()) {
+          params.append('realName', realNameSearch.trim());
+        }
+        if (selectedRole) {
+          params.append('roles', selectedRole);
+        }
 
         const response = await fetch(
           `${getApiUrl(USER_ENDPOINTS.USER.SEARCH)}?${params.toString()}`,
@@ -201,7 +210,10 @@ export default function AdminMembersContent() {
 
         if (response.ok) {
           const data: MembersSearchResponse = await response.json();
-          setAllMembers(data.data || []);
+          setMembers(data.data || []);
+          setTotalPage(data.totalPage || 0);
+          // totalElements는 대략적으로 계산 (정확한 값은 API에서 제공하지 않을 수 있음)
+          setTotalElements((data.totalPage || 0) * size);
         }
       };
 
@@ -278,13 +290,24 @@ export default function AdminMembersContent() {
         throw new Error(`Failed to change roles: ${response.status}`);
       }
 
-      // 성공 시 회원 목록 새로고침
+      // 성공 시 회원 목록 새로고침 (현재 페이지 유지)
       const fetchMembers = async () => {
         const params = new URLSearchParams();
-        params.append('page', '0');
-        params.append('size', '1000');
+        params.append('page', String(page));
+        params.append('size', String(size));
         params.append('sortDirection', 'ASC');
         params.append('sortBy', 'createdAt');
+
+        // 현재 검색/필터 파라미터 유지
+        if (nicknameSearch.trim()) {
+          params.append('nickname', nicknameSearch.trim());
+        }
+        if (realNameSearch.trim()) {
+          params.append('realName', realNameSearch.trim());
+        }
+        if (selectedRole) {
+          params.append('roles', selectedRole);
+        }
 
         const response = await fetch(
           `${getApiUrl(USER_ENDPOINTS.USER.SEARCH)}?${params.toString()}`,
@@ -297,7 +320,10 @@ export default function AdminMembersContent() {
 
         if (response.ok) {
           const data: MembersSearchResponse = await response.json();
-          setAllMembers(data.data || []);
+          setMembers(data.data || []);
+          setTotalPage(data.totalPage || 0);
+          // totalElements는 대략적으로 계산 (정확한 값은 API에서 제공하지 않을 수 있음)
+          setTotalElements((data.totalPage || 0) * size);
         }
       };
 
@@ -369,7 +395,7 @@ export default function AdminMembersContent() {
     }
   }, [selectedRole, nicknameSearch, realNameSearch, activeTab]);
 
-  // 회원 목록 조회 (전체 조회, 검색 파라미터 없이)
+  // 회원 목록 조회 (서버 사이드 페이지네이션, 10개씩)
   useEffect(() => {
     if (activeTab !== "all") return;
 
@@ -377,12 +403,23 @@ export default function AdminMembersContent() {
       try {
         setIsLoading(true);
         
-        // 전체 회원 조회 (검색 파라미터 없이)
+        // 서버 사이드 페이지네이션 (10개씩)
         const params = new URLSearchParams();
-        params.append('page', '0');
-        params.append('size', '1000'); // 충분히 큰 수로 전체 조회
+        params.append('page', String(page));
+        params.append('size', String(size)); // 10개씩 요청
         params.append('sortDirection', 'ASC');
         params.append('sortBy', 'createdAt');
+
+        // 검색/필터 파라미터 추가
+        if (nicknameSearch.trim()) {
+          params.append('nickname', nicknameSearch.trim());
+        }
+        if (realNameSearch.trim()) {
+          params.append('realName', realNameSearch.trim());
+        }
+        if (selectedRole) {
+          params.append('roles', selectedRole);
+        }
 
         const response = await fetch(
           `${getApiUrl(USER_ENDPOINTS.USER.SEARCH)}?${params.toString()}`,
@@ -400,57 +437,30 @@ export default function AdminMembersContent() {
         }
 
         const data: MembersSearchResponse = await response.json();
-        setAllMembers(data.data || []);
+        setMembers(data.data || []);
+        setTotalPage(data.totalPage || 0);
+        // totalElements 계산: 마지막 페이지인 경우 실제 아이템 수를 고려
+        if (data.totalPage === 0) {
+          setTotalElements(0);
+        } else if (page === data.totalPage - 1) {
+          // 마지막 페이지인 경우: 이전 페이지들의 아이템 수 + 현재 페이지 아이템 수
+          setTotalElements((data.totalPage - 1) * size + (data.data?.length || 0));
+        } else {
+          // 중간 페이지인 경우: 대략적으로 계산
+          setTotalElements(data.totalPage * size);
+        }
       } catch (err) {
         console.error('Error fetching members:', err);
-        setAllMembers([]);
+        setMembers([]);
+        setTotalPage(0);
+        setTotalElements(0);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchMembers();
-  }, [activeTab]);
-
-  // 클라이언트 사이드 필터링 (닉네임, 실명, 역할)
-  useEffect(() => {
-    if (activeTab !== "all") return;
-
-    let filtered = [...allMembers];
-
-    // 닉네임 필터링
-    if (nicknameSearch.trim()) {
-      filtered = filtered.filter(member =>
-        member.nickname?.toLowerCase().includes(nicknameSearch.trim().toLowerCase())
-      );
-    }
-
-    // 실명 필터링
-    if (realNameSearch.trim()) {
-      filtered = filtered.filter(member =>
-        member.realName?.toLowerCase().includes(realNameSearch.trim().toLowerCase())
-      );
-    }
-
-    // 역할 필터링
-    if (selectedRole) {
-      filtered = filtered.filter(member => member.role === selectedRole);
-    }
-
-    setFilteredMembers(filtered);
-    setTotalElements(filtered.length);
-    setTotalPage(Math.ceil(filtered.length / size));
-  }, [allMembers, nicknameSearch, realNameSearch, selectedRole, activeTab, size]);
-
-  // 페이지네이션 처리
-  useEffect(() => {
-    if (activeTab !== "all") return;
-
-    const startIndex = page * size;
-    const endIndex = startIndex + size;
-    const paginated = filteredMembers.slice(startIndex, endIndex);
-    setMembers(paginated);
-  }, [filteredMembers, page, size, activeTab]);
+  }, [activeTab, page, size, nicknameSearch, realNameSearch, selectedRole]);
 
   // 등급 변경 요청 조회
   useEffect(() => {
@@ -1383,13 +1393,17 @@ export default function AdminMembersContent() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {gradeStats.map((grade, index) => (
-                <div key={index} className={`p-6 rounded-lg border-2 hover:shadow-lg transition-all cursor-pointer ${
-                  getRoleColor(grade.role) === 'gray' ? 'bg-gray-50 border-gray-200 hover:border-gray-300' :
-                  getRoleColor(grade.role) === 'blue' ? 'bg-blue-50 border-blue-200 hover:border-blue-300' :
-                  getRoleColor(grade.role) === 'green' ? 'bg-green-50 border-green-200 hover:border-green-300' :
-                  getRoleColor(grade.role) === 'purple' ? 'bg-purple-50 border-purple-200 hover:border-purple-300' :
-                  'bg-orange-50 border-orange-200 hover:border-orange-300'
-                }`}>
+                <div 
+                  key={index} 
+                  onClick={() => handleRoleManagement(grade.role)}
+                  className={`p-6 rounded-lg border-2 hover:shadow-lg transition-all cursor-pointer ${
+                    getRoleColor(grade.role) === 'gray' ? 'bg-gray-50 border-gray-200 hover:border-gray-300' :
+                    getRoleColor(grade.role) === 'blue' ? 'bg-blue-50 border-blue-200 hover:border-blue-300' :
+                    getRoleColor(grade.role) === 'green' ? 'bg-green-50 border-green-200 hover:border-green-300' :
+                    getRoleColor(grade.role) === 'purple' ? 'bg-purple-50 border-purple-200 hover:border-purple-300' :
+                    'bg-orange-50 border-orange-200 hover:border-orange-300'
+                  }`}
+                >
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
                       <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
@@ -1425,23 +1439,6 @@ export default function AdminMembersContent() {
                         `총 ${grade.count}명`
                       )}
                     </span>
-                    <button 
-                      onClick={() => handleRoleManagement(grade.role)}
-                      disabled={gradeStatsLoading}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                        gradeStatsLoading 
-                          ? 'opacity-50 cursor-not-allowed' 
-                          : ''
-                      } ${
-                        grade.color === 'gray' ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' :
-                        grade.color === 'blue' ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' :
-                        grade.color === 'green' ? 'bg-green-100 text-green-700 hover:bg-green-200' :
-                        grade.color === 'purple' ? 'bg-purple-100 text-purple-700 hover:bg-purple-200' :
-                        'bg-orange-100 text-orange-700 hover:bg-orange-200'
-                      }`}
-                    >
-                      관리
-                    </button>
                   </div>
                 </div>
               ))}

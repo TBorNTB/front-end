@@ -452,11 +452,19 @@ export const toggleLike = async (id: string | number, postType: string = 'PROJEC
 };
 
 // Comment types
+export interface CommentUser {
+  username: string;
+  nickname: string;
+  realName: string;
+  profileImageUrl: string;
+}
+
 export interface Comment {
   id: number;
   postType: 'PROJECT' | 'NEWS' | 'ARTICLE';
   postId: number;
-  username: string;
+  username: string; // 하위 호환성을 위해 유지
+  user?: CommentUser; // 새로운 필드
   content: string;
   parentId: number;
   depth: number;

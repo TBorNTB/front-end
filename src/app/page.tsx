@@ -175,10 +175,13 @@ export default function Home() {
       if (p.collaborators && p.collaborators.length > 0) {
         p.collaborators.forEach((collab) => {
           collaboratorsList.push({
-            profileImage: collab.avatarUrl || '',
+            profileImage: collab.profileImageUrl || '',
           });
         });
       }
+      
+      // Normalize thumbnail URL like the first project
+      const thumbnail = normalizeImageUrl(p.thumbnailUrl);
       
       return {
         id: p.id,
@@ -191,7 +194,7 @@ export default function Home() {
         views: p.viewCount,
         techStacks: p.projectTechStacks || [],
         owner: p.owner || undefined,
-        thumbnailUrl: p.thumbnailUrl || '',
+        thumbnailUrl: thumbnail,
       };
     });
 
@@ -226,13 +229,29 @@ export default function Home() {
         (contentStr ? contentStr.substring(0, 150) : '') || 
         '';
       
+      // 프로필 이미지 URL 검증 함수
+      const getValidProfileImageUrl = (url: string | null | undefined): string => {
+        if (!url || typeof url !== 'string') return '/images/placeholder/default-avatar.svg';
+        const trimmed = url.trim();
+        if (trimmed === '' || trimmed === 'string' || trimmed === 'null' || trimmed === 'undefined') {
+          return '/images/placeholder/default-avatar.svg';
+        }
+        if (trimmed.startsWith('/')) return trimmed;
+        try {
+          new URL(trimmed);
+          return trimmed;
+        } catch {
+          return '/images/placeholder/default-avatar.svg';
+        }
+      };
+
       return {
         id: a.id,
         title: a.content.title,
         description,
         author: {
-          name: a.writerId || '작성자',
-          profileImage: '',
+          name: a.writer?.nickname || a.writer?.realname || a.writerId || '작성자',
+          profileImage: getValidProfileImageUrl(a.writer?.profileImageUrl),
         },
         category: a.content.category || '기타',
         thumbnailImage: normalizeImageUrl(a.thumbnailUrl) || '',

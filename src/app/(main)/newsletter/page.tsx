@@ -7,6 +7,90 @@ import NewsletterSubscribe from './_components/NewsletterSubscribe';
 import NewsletterSubscriberStatus from './_components/NewsletterSubscriberStatus';
 import NewsletterUnsubscribe from './_components/NewsletterUnsubscribe';
 
+// Newsletter Tabs Component
+function NewsletterTabs() {
+  const [activeTab, setActiveTab] = useState<'subscribe' | 'status' | 'unsubscribe'>('subscribe');
+
+  const tabs = [
+    {
+      id: 'subscribe' as const,
+      label: '구독하기',
+      icon: Mail,
+      description: '보안 학습 콘텐츠를 이메일로 받아보세요',
+    },
+    {
+      id: 'status' as const,
+      label: '구독 상태 확인',
+      icon: Shield,
+      description: '이메일이 구독되어 있는지 확인할 수 있어요',
+    },
+    {
+      id: 'unsubscribe' as const,
+      label: '구독 해제',
+      icon: Users,
+      description: '해제 전 이메일 인증이 필요해요',
+    },
+  ];
+
+  return (
+    <div className="max-w-4xl mx-auto">
+      {/* Tab Navigation */}
+      <div className="mb-8">
+        <div className="flex flex-wrap gap-3 justify-center border-b border-gray-200 pb-4">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`
+                  flex items-center gap-2 px-6 py-3 rounded-t-lg font-medium transition-all
+                  ${
+                    isActive
+                      ? 'bg-primary-600 text-white shadow-lg'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }
+                `}
+              >
+                <Icon className="w-5 h-5" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      <div className="card p-8">
+        {activeTab === 'subscribe' && (
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">뉴스레터 구독</h3>
+            <p className="text-gray-600 mb-6">{tabs[0].description}</p>
+            <NewsletterSubscribe />
+          </div>
+        )}
+
+        {activeTab === 'status' && (
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">구독 상태 확인</h3>
+            <p className="text-gray-600 mb-6">{tabs[1].description}</p>
+            <NewsletterSubscriberStatus />
+          </div>
+        )}
+
+        {activeTab === 'unsubscribe' && (
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">구독 해제</h3>
+            <p className="text-gray-600 mb-6">{tabs[2].description}</p>
+            <NewsletterUnsubscribe />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const testimonials = [
   {
     name: '김**',
@@ -301,13 +385,7 @@ export default function SSGNewsletter() {
       {/* Subscription Form */}
       <section id="subscribe-form" className="section py-20">
         <div className="container">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-            <NewsletterSubscribe />
-            <div className="space-y-8">
-              <NewsletterSubscriberStatus />
-              <NewsletterUnsubscribe />
-            </div>
-          </div>
+          <NewsletterTabs />
         </div>
       </section>
 

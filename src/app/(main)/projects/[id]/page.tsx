@@ -2,10 +2,13 @@
 
 import { notFound, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { ArrowLeft, X, UserPlus, Search, Pencil, Trash2, Plus } from 'lucide-react';
 import { useState, useEffect, Fragment, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Menu, Transition } from '@headlessui/react';
 import DocumentModal from '../_components/DocumentModal';
-import { fetchProjectDetail, deleteDocument } from '@/lib/api/services/project-services';
+import { fetchProjectDetail, deleteDocument, updateCollaborators, deleteProject, fetchSubgoals, checkSubgoal, deleteSubgoal, createSubgoal } from '@/lib/api/services/project-services';
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { 
   fetchViewCount,
   incrementViewCount,
@@ -19,9 +22,12 @@ import {
   deleteComment,
   fetchReplies,
   Comment,
-  CommentListResponse
+  CommentListResponse,
+  memberService,
+  CursorUserResponse
 } from '@/lib/api/services/user-services';
 import { ProjectDetailResponse } from '../../../../types/services/project';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 interface ProjectPageProps {
   params: Promise<{ id: string }>;
@@ -55,15 +61,17 @@ interface MappedProject {
     name: string;
     role: string;
     username: string;
+    avatar?: string | null;
   }>;
-  documents: Array<{
-    id: string;
-    name: string;
-    type: string;
-    size?: string;
-    uploadedAt: string;
-    createdBy: string;
-  }>;
+      documents: Array<{
+        id: string;
+        name: string;
+        type: string;
+        size?: string;
+        uploadedAt: string;
+        createdBy: string;
+        thumbnailUrl?: string | null;
+      }>;
   relatedProjects: Array<{
     id: string;
     title: string;
@@ -71,12 +79,19 @@ interface MappedProject {
   }>;
   projectStatus: string;
   thumbnailUrl?: string;
+  subGoals: Array<{
+    id: string;
+    content: string;
+    completed: boolean;
+  }>;
 }
 
 export default function ProjectPage({ params }: ProjectPageProps) {
   const router = useRouter();
+  const { user: currentUser } = useCurrentUser();
   const [projectId, setProjectId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isDocModalOpen, setIsDocModalOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
@@ -98,15 +113,35 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   const [replyingToId, setReplyingToId] = useState<number | null>(null);
   const [replyContent, setReplyContent] = useState('');
   
-  // Dropdown states
+  // Dropdown states (팀원 섹션 기본 펼침)
   const [openSections, setOpenSections] = useState<{[key: string]: boolean}>({
     info: true,
-    team: false,
-    documents: true, // Open by default
+    subgoals: true,
+    team: true,
+    documents: true,
     related: false,
   });
 
+  // 협력자 변경 모달 (클릭 시 바로 모달에서 변경)
+  const [isCollaboratorModalOpen, setIsCollaboratorModalOpen] = useState(false);
+  const [editingTeam, setEditingTeam] = useState<MappedProject['team']>([]);
+  const [collaboratorSearchQuery, setCollaboratorSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<CursorUserResponse[]>([]);
+  const [isLoadingCollaboratorSearch, setIsLoadingCollaboratorSearch] = useState(false);
+  const [isLoadingMoreCollaborator, setIsLoadingMoreCollaborator] = useState(false);
+  const [searchNextCursorId, setSearchNextCursorId] = useState(0);
+  const [searchHasNext, setSearchHasNext] = useState(false);
+  const [isSavingCollaborators, setIsSavingCollaborators] = useState(false);
+  const [isDeletingProject, setIsDeletingProject] = useState(false);
+  const [subgoalNewContent, setSubgoalNewContent] = useState('');
+  const [subgoalTogglingId, setSubgoalTogglingId] = useState<string | null>(null);
+  const [subgoalDeletingId, setSubgoalDeletingId] = useState<string | null>(null);
+  const [subgoalAdding, setSubgoalAdding] = useState(false);
+  const collaboratorUserListRef = useRef<HTMLDivElement>(null);
+
   const [project, setProject] = useState<MappedProject | null>(null);
+
+  const canEditProject = currentUser && project && (project.author?.username === currentUser.username || (project.team || []).some((m: any) => m?.username === currentUser.username));
   
   // Like states
   const [isLiked, setIsLiked] = useState(false);
@@ -230,14 +265,30 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     const endedDate = apiData.endedAt ? new Date(apiData.endedAt) : (apiData.updatedAt ? new Date(apiData.updatedAt) : new Date());
     const period = `${formatDateForPeriod(createdDate)} ~ ${formatDateForPeriod(endedDate)}`;
 
+    // 탈퇴한 유저 확인 헬퍼 함수
+    const getDisplayName = (nickname?: string, realName?: string): string => {
+      if (!nickname && !realName) {
+        return '탈퇴한 유저';
+      }
+      return nickname || realName || '탈퇴한 유저';
+    };
+
+    // Owner profile 정보 추출
+    const ownerProfile = apiData.ownerProfile || {
+      username: 'unknown',
+      nickname: '',
+      realName: '',
+      profileImageUrl: '',
+    };
+
     return {
       id: String(apiData.id),
       title: apiData.title,
       subtitle: apiData.description || '',
       author: {
-        username: apiData.username || 'unknown',
-        name: apiData.ownerNickname || apiData.ownerRealname || apiData.username || 'Unknown',
-        avatar: null,
+        username: ownerProfile.username || 'unknown',
+        name: getDisplayName(ownerProfile.nickname, ownerProfile.realName),
+        avatar: ownerProfile.profileImageUrl || null,
       },
       createdAt: formatDate(apiData.createdAt),
       updatedAt: formatDate(apiData.updatedAt),
@@ -257,17 +308,22 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       content: apiData.content || apiData.contentJson || '',
       team: [
         {
-          name: apiData.ownerNickname || apiData.ownerRealname || apiData.username || 'Unknown',
+          name: getDisplayName(ownerProfile.nickname, ownerProfile.realName),
           role: 'Owner',
-          username: apiData.username || 'unknown',
+          username: ownerProfile.username || 'unknown',
+          avatar: ownerProfile.profileImageUrl || null,
         },
         ...(apiData.collaborators || [])
-          .filter(collab => collab && collab.username)
-          .map(collab => ({
-            name: collab.nickname || collab.realname || collab.username || 'Unknown',
-            role: 'Collaborator',
-            username: collab.username || 'unknown',
-          })),
+          .filter(collab => collab && collab.profile && collab.profile.username)
+          .map(collab => {
+            const profile = collab.profile;
+            return {
+              name: getDisplayName(profile.nickname, profile.realName),
+              role: 'Collaborator',
+              username: profile.username || 'unknown',
+              avatar: profile.profileImageUrl || null,
+            };
+          }),
       ],
       documents: (apiData.documentDtos || [])
         .filter(doc => doc && doc.id !== undefined)
@@ -277,15 +333,24 @@ export default function ProjectPage({ params }: ProjectPageProps) {
           type: 'document',
           uploadedAt: doc.createdAt ? formatDate(doc.createdAt) : 'Unknown',
           createdBy: doc.description || 'Unknown',
+          thumbnailUrl: doc.thumbnailUrl || null,
         })),
       relatedProjects: [], // TODO: 연관 프로젝트 API 필요
       projectStatus: statusMap[apiData.projectStatus] || apiData.projectStatus,
       thumbnailUrl: apiData.thumbnailUrl,
+      subGoals: (apiData.subGoalDtos || [])
+        .filter((sg: any) => sg && (sg.content != null || sg.id != null))
+        .map((sg: any) => ({
+          id: String(sg.id),
+          content: sg.content ?? '',
+          completed: Boolean(sg.completed),
+        })),
     };
   };
 
   const fetchProjectData = async (id: string) => {
     setIsLoading(true);
+    setError(null); // 에러 상태 초기화
 
     // 1) 기본 프로젝트 데이터 가져오기 (실패 시 Fallback)
     try {
@@ -293,41 +358,12 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       if (!response.ok) throw new Error('Failed to fetch project');
       const data = await response.json();
       setProject(data);
+      setError(null); // 성공 시 에러 초기화
     } catch (error) {
       console.error('Error fetching project:', error);
-      // Fallback to default/mock data if API fails
-      setProject({
-        id,
-        title: 'XSS 필터 규칙 테스트 스크립트',
-        subtitle: 'Python 기반으로 작성된 URL에서 반사(Reflected) XSS 취약점을 자동으로 테스트 스크립트',
-        category: '프로젝트',
-        author: { username: 'kimdonghyun', name: '김동현', avatar: null },
-        createdAt: '2024-02-20',
-        updatedAt: '2024-03-15',
-        period: '2025-03 ~ 2025-05-31',
-        github: 'https://github.com/username/xss-filter-test',
-        tags: ['웹 해킹', '보안', '프로젝트'],
-        technologies: ['Python', 'Scanner', 'XSS'],
-        stats: { views: 126, likes: 10, comments: 2 },
-        description: `이 프로젝트는 웹 애플리케이션의 XSS(Cross-Site Scripting) 취약점을 테스트하기 위한 자동화 도구입니다.`,
-        content: '',
-        team: [
-          { name: '김동현', role: 'Team Leader', username: 'kimdonghyun' },
-          { name: '이진우', role: 'Backend Developer', username: 'leejinwoo' },
-        ],
-        documents: [
-          { id: '1', name: '프로젝트 기획서', type: 'pdf', size: '2.5MB', uploadedAt: '2025-03-01', createdBy: '김동현' },
-          { id: '2', name: '1주차 회의록', type: 'pdf', size: '1.2MB', uploadedAt: '2025-03-08', createdBy: '이진우' },
-          { id: '3', name: 'API 명세서', type: 'pdf', size: '3.1MB', uploadedAt: '2025-03-15', createdBy: '김동현' },
-          { id: '4', name: 'Final-Report.pdf', type: 'pdf', size: '4.8MB', uploadedAt: '2025-05-31', createdBy: '김동현' },
-        ],
-        relatedProjects: [
-          { id: '2', title: '새로운 프로젝트', version: 'v1.1 업데이트 개발 중' },
-          { id: '3', title: 'v1.2 DCM기반 탐지 v1', version: 'v1.2 DCM기반 탐지 v1 추가' },
-        ],
-        projectStatus: '진행중',
-        thumbnailUrl: '',
-      });
+      // Mock data fallback 제거 - 에러 발생 시 null로 설정하여 삭제된 게시글 처리
+      setProject(null);
+      setError('프로젝트를 불러오는 중 오류가 발생했습니다.');
       setImageError(false);
     }
 
@@ -387,7 +423,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     }
   };
 
-  if (isLoading || !project) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -398,8 +434,47 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     );
   }
 
+  // 프로젝트가 없거나 에러가 있는 경우 삭제된 게시글 메시지 표시
+  if (!isLoading && !project) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm">
+            <div className="mb-4">
+              <svg
+                className="w-16 h-16 mx-auto text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">해당 게시글은 삭제 된 게시글입니다</h2>
+            <p className="text-gray-600 mb-6">
+              요청하신 게시글을 찾을 수 없습니다. 삭제되었거나 존재하지 않는 게시글일 수 있습니다.
+            </p>
+            <Link
+              href="/projects"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              목록으로 돌아가기
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // project가 null이면 렌더링하지 않음 (위에서 이미 처리됨)
   if (!project) {
-    notFound();
+    return null;
   }
 
   const toggleSection = (section: string) => {
@@ -407,6 +482,214 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       ...prev,
       [section]: !prev[section]
     }));
+  };
+
+  // 협력자 변경 모달 열기 (바로 창에서 변경)
+  const openCollaboratorModal = () => {
+    setEditingTeam(project ? [...(project.team || [])] : []);
+    setCollaboratorSearchQuery('');
+    setSearchResults([]);
+    setIsCollaboratorModalOpen(true);
+    loadCollaboratorModalUsers();
+  };
+
+  const closeCollaboratorModal = () => {
+    setIsCollaboratorModalOpen(false);
+    setEditingTeam([]);
+    setCollaboratorSearchQuery('');
+    setSearchResults([]);
+  };
+
+  // 모달 열었을 때 초기 유저 목록 로드
+  const loadCollaboratorModalUsers = async () => {
+    try {
+      setIsLoadingCollaboratorSearch(true);
+      const res = await memberService.getMembersByCursor({ cursorId: 0, size: 20, direction: 'ASC' });
+      setSearchResults(res.content);
+      setSearchNextCursorId(res.nextCursorId);
+      setSearchHasNext(res.hasNext);
+    } catch (e) {
+      console.error('Failed to load users:', e);
+      setSearchResults([]);
+    } finally {
+      setIsLoadingCollaboratorSearch(false);
+    }
+  };
+
+  // 유저 검색 (닉네임/실명)
+  const searchCollaboratorUsers = async () => {
+    const q = collaboratorSearchQuery.trim();
+    try {
+      setIsLoadingCollaboratorSearch(true);
+      if (!q) {
+        await loadCollaboratorModalUsers();
+        return;
+      }
+      const res = await memberService.getMembersByCursorByName({
+        cursorId: 0,
+        size: 20,
+        direction: 'ASC',
+        nickname: q,
+        realName: q,
+      });
+      setSearchResults(res.content);
+      setSearchNextCursorId(res.nextCursorId);
+      setSearchHasNext(res.hasNext);
+    } catch (e) {
+      console.error('Failed to search users:', e);
+      setSearchResults([]);
+    } finally {
+      setIsLoadingCollaboratorSearch(false);
+    }
+  };
+
+  // 유저 목록 더 보기 (커서 스크롤)
+  const loadMoreCollaboratorUsers = async () => {
+    if (isLoadingMoreCollaborator || !searchHasNext) return;
+    const q = collaboratorSearchQuery.trim();
+    try {
+      setIsLoadingMoreCollaborator(true);
+      if (q) {
+        const res = await memberService.getMembersByCursorByName({
+          cursorId: searchNextCursorId,
+          size: 20,
+          direction: 'ASC',
+          nickname: q,
+          realName: q,
+        });
+        setSearchResults(prev => [...prev, ...res.content]);
+        setSearchNextCursorId(res.nextCursorId);
+        setSearchHasNext(res.hasNext);
+      } else {
+        const res = await memberService.getMembersByCursor({
+          cursorId: searchNextCursorId,
+          size: 20,
+          direction: 'ASC',
+        });
+        setSearchResults(prev => [...prev, ...res.content]);
+        setSearchNextCursorId(res.nextCursorId);
+        setSearchHasNext(res.hasNext);
+      }
+    } catch (e) {
+      console.error('Failed to load more users:', e);
+    } finally {
+      setIsLoadingMoreCollaborator(false);
+    }
+  };
+
+  // 팀원 수정 저장 (협력자 username만 API로 전송, Owner 제외)
+  const saveTeamEdit = async () => {
+    if (!projectId || !project) return;
+    const usernames = editingTeam
+      .filter((m: any) => m?.role !== 'Owner')
+      .map((m: any) => m.username)
+      .filter(Boolean);
+    try {
+      setIsSavingCollaborators(true);
+      await updateCollaborators(projectId, usernames);
+      setProject({ ...project, team: [...editingTeam] });
+      closeCollaboratorModal();
+    } catch (e: any) {
+      console.error('Failed to update collaborators:', e);
+      alert(e?.message || '협력자 수정에 실패했습니다.');
+    } finally {
+      setIsSavingCollaborators(false);
+    }
+  };
+
+  // 협력자 목록에서 제거 (Owner는 제거 불가)
+  const removeCollaborator = (idx: number) => {
+    const member = editingTeam[idx];
+    if (member?.role === 'Owner') return;
+    setEditingTeam(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  // 협력자 추가 (검색 결과에서 선택)
+  const addCollaborator = (user: CursorUserResponse) => {
+    const name = (user.realName || user.nickname || user.email || '').trim() || user.username;
+    const exists = editingTeam.some(m => m.username === user.username);
+    if (exists) return;
+    setEditingTeam(prev => [...prev, {
+      name,
+      role: 'Collaborator',
+      username: user.username,
+      avatar: user.profileImageUrl || null,
+    }]);
+  };
+
+  const handleDeleteProject = async () => {
+    if (!projectId || !confirm('정말로 이 프로젝트를 삭제하시겠습니까? 삭제된 프로젝트는 복구할 수 없습니다.')) return;
+    try {
+      setIsDeletingProject(true);
+      await deleteProject(projectId);
+      router.push('/projects');
+    } catch (e: any) {
+      alert(e?.message || '프로젝트 삭제에 실패했습니다.');
+    } finally {
+      setIsDeletingProject(false);
+    }
+  };
+
+  const refreshSubgoalsInProject = async () => {
+    if (!projectId || !project) return;
+    try {
+      const list = await fetchSubgoals(projectId);
+      setProject((prev) =>
+        prev
+          ? {
+              ...prev,
+              subGoals: list.map((sg) => ({
+                id: String(sg.id),
+                content: sg.content ?? '',
+                completed: Boolean(sg.completed),
+              })),
+            }
+          : prev
+      );
+    } catch (e) {
+      console.error('Failed to refresh subgoals:', e);
+    }
+  };
+
+  const handleSubgoalCheck = async (sg: { id: string; completed: boolean }) => {
+    if (!projectId || !canEditProject) return;
+    try {
+      setSubgoalTogglingId(sg.id);
+      await checkSubgoal(projectId, sg.id, !sg.completed);
+      await refreshSubgoalsInProject();
+    } catch (e: any) {
+      alert(e?.message || '체크 상태 변경에 실패했습니다.');
+    } finally {
+      setSubgoalTogglingId(null);
+    }
+  };
+
+  const handleSubgoalDelete = async (sgId: string) => {
+    if (!projectId || !canEditProject || !confirm('이 하위 목표를 삭제할까요?')) return;
+    try {
+      setSubgoalDeletingId(sgId);
+      await deleteSubgoal(projectId, sgId);
+      await refreshSubgoalsInProject();
+    } catch (e: any) {
+      alert(e?.message || '하위 목표 삭제에 실패했습니다.');
+    } finally {
+      setSubgoalDeletingId(null);
+    }
+  };
+
+  const handleSubgoalCreate = async () => {
+    const content = subgoalNewContent.trim();
+    if (!projectId || !canEditProject || !content) return;
+    try {
+      setSubgoalAdding(true);
+      await createSubgoal(projectId, content);
+      setSubgoalNewContent('');
+      await refreshSubgoalsInProject();
+    } catch (e: any) {
+      alert(e?.message || '하위 목표 추가에 실패했습니다.');
+    } finally {
+      setSubgoalAdding(false);
+    }
   };
 
   const handleDocumentAction = async (docId: string, action: 'edit' | 'delete' | 'share' | 'download') => {
@@ -670,16 +953,18 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   )}
                 </div>
 
-                {/* Team Section */}
+                {/* 하위 목표 (노션 스타일) */}
                 <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
                   <button
-                    onClick={() => toggleSection('team')}
+                    onClick={() => toggleSection('subgoals')}
                     className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
                   >
-                    <span className="font-bold text-gray-900">팀원 ({(project.team || []).length})</span>
+                    <span className="font-bold text-gray-900">
+                      하위 목표 ({(project.subGoals || []).length})
+                    </span>
                     <svg
                       className={`w-5 h-5 text-gray-600 transition-transform ${
-                        openSections.team ? 'rotate-180' : ''
+                        openSections.subgoals ? 'rotate-180' : ''
                       }`}
                       fill="none"
                       stroke="currentColor"
@@ -688,17 +973,164 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
+                  {openSections.subgoals && (
+                    <div className="p-4">
+                      {(project.subGoals || []).length === 0 && !canEditProject ? (
+                        <p className="text-sm text-gray-500 py-2">등록된 하위 목표가 없습니다.</p>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-xs font-medium text-gray-500">
+                              {(project.subGoals || []).filter((sg: any) => sg.completed).length} / {(project.subGoals || []).length} 완료
+                            </span>
+                            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-primary-500 rounded-full transition-all duration-300"
+                                style={{
+                                  width: `${((project.subGoals || []).filter((sg: any) => sg.completed).length / Math.max((project.subGoals || []).length, 1)) * 100}%`,
+                                }}
+                              />
+                            </div>
+                          </div>
+                          <ul className="space-y-0.5">
+                            {(project.subGoals || []).map((sg: any) => (
+                              <li
+                                key={sg.id}
+                                className="flex items-start gap-3 py-2 px-2 rounded-md hover:bg-gray-50/80 transition-colors group"
+                              >
+                                {canEditProject ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSubgoalCheck(sg)}
+                                    disabled={subgoalTogglingId === sg.id}
+                                    className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors disabled:opacity-50 ${
+                                      sg.completed
+                                        ? 'bg-primary-500 border-primary-500 text-white'
+                                        : 'border-gray-300 bg-white hover:border-primary-300'
+                                    }`}
+                                    aria-label={sg.completed ? '완료 해제' : '완료로 표시'}
+                                  >
+                                    {sg.completed && (
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    )}
+                                  </button>
+                                ) : (
+                                  <span
+                                    className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                      sg.completed ? 'bg-primary-500 border-primary-500 text-white' : 'border-gray-300 bg-white'
+                                    }`}
+                                    aria-hidden
+                                  >
+                                    {sg.completed && (
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    )}
+                                  </span>
+                                )}
+                                <span
+                                  className={`text-sm flex-1 min-w-0 ${
+                                    sg.completed ? 'text-gray-500 line-through' : 'text-gray-900'
+                                  }`}
+                                >
+                                  {sg.content || '(제목 없음)'}
+                                </span>
+                                {canEditProject && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSubgoalDelete(sg.id)}
+                                    disabled={subgoalDeletingId === sg.id}
+                                    className="p-1 text-gray-400 hover:text-red-600 rounded opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                                    title="삭제"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                          {canEditProject && (
+                            <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+                              <input
+                                type="text"
+                                value={subgoalNewContent}
+                                onChange={(e) => setSubgoalNewContent(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleSubgoalCreate())}
+                                placeholder="하위 목표 추가..."
+                                className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                              />
+                              <button
+                                type="button"
+                                onClick={handleSubgoalCreate}
+                                disabled={subgoalAdding || !subgoalNewContent.trim()}
+                                className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg disabled:opacity-50"
+                              >
+                                <Plus className="w-4 h-4" />
+                                추가
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Team Section - 팀원 기본 펼침, 협력자 변경 클릭 시 모달에서 변경 */}
+                <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+                  <div className="px-4 py-3 flex items-center justify-between bg-gray-50">
+                    <button
+                      onClick={() => toggleSection('team')}
+                      className="flex-1 flex items-center justify-between hover:opacity-80 transition-opacity text-left"
+                    >
+                      <span className="font-bold text-gray-900">팀원 ({(project.team || []).length})</span>
+                      <svg
+                        className={`w-5 h-5 text-gray-600 transition-transform flex-shrink-0 ml-2 ${
+                          openSections.team ? 'rotate-180' : ''
+                        }`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {currentUser && project && (project.author?.username === currentUser.username || (project.team || []).some((m: any) => m?.username === currentUser.username)) && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); openCollaboratorModal(); }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                        협력자 변경
+                      </button>
+                    )}
+                  </div>
                   
                   {openSections.team && (
                     <div className="p-4 space-y-3">
                       {(project.team || [])
-                        .filter(member => member && member.name)
+                        .filter((member: any) => member && member.name)
                         .map((member: any, idx: number) => (
-                        <div key={idx} className="flex items-center gap-3">
+                        <div key={member.username ?? idx} className="flex items-center gap-3">
                           <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                            <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-500">
-                              {(member.name || 'U').charAt(0).toUpperCase()}
-                            </div>
+                            {member.avatar ? (
+                              <ImageWithFallback
+                                src={member.avatar}
+                                fallbackSrc="/images/placeholder/default-avatar.svg"
+                                alt={member.name || 'Member'}
+                                type="avatar"
+                                width={40}
+                                height={40}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-500">
+                                {(member.name || 'U').charAt(0).toUpperCase()}
+                              </div>
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-gray-900 text-sm truncate">
@@ -710,12 +1142,183 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           </div>
                         </div>
                       ))}
-                      <button className="w-full mt-2 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                        팀원 추가
-                      </button>
                     </div>
                   )}
                 </div>
+
+                {/* 협력자 변경 모달 - body에 포탈로 렌더링해 썸네일/레이아웃 위에 표시 */}
+                {isCollaboratorModalOpen && typeof document !== 'undefined' && createPortal(
+                  <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50"
+                    onClick={closeCollaboratorModal}
+                  >
+                    <div
+                      className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[85vh] flex flex-col"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                        <h3 className="text-lg font-semibold text-gray-900">협력자 변경</h3>
+                        <button
+                          type="button"
+                          onClick={closeCollaboratorModal}
+                          className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        {/* 현재 협력자 목록 (제거 가능, Owner 제외) */}
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">현재 협력자</h4>
+                          <div className="space-y-2">
+                            {editingTeam.filter((m: any) => m && m.name).map((member: any, idx: number) => (
+                              <div key={member.username ?? idx} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50">
+                                <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                                  {member.avatar ? (
+                                    <ImageWithFallback
+                                      src={member.avatar}
+                                      fallbackSrc="/images/placeholder/default-avatar.svg"
+                                      alt={member.name}
+                                      type="avatar"
+                                      width={36}
+                                      height={36}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
+                                      {(member.name || 'U').charAt(0).toUpperCase()}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium text-gray-900 text-sm truncate">{member.name}</p>
+                                  <p className="text-xs text-gray-500 truncate">{member.role}</p>
+                                </div>
+                                {member.role !== 'Owner' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeCollaborator(idx)}
+                                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full"
+                                    title="제거"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        {/* 유저 검색 및 추가 */}
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">협력자 추가</h4>
+                          <div className="flex gap-2 mb-3">
+                            <div className="relative flex-1">
+                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                              <input
+                                type="text"
+                                placeholder="닉네임 또는 실명으로 검색..."
+                                value={collaboratorSearchQuery}
+                                onChange={(e) => setCollaboratorSearchQuery(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), searchCollaboratorUsers())}
+                                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={searchCollaboratorUsers}
+                              disabled={isLoadingCollaboratorSearch}
+                              className="px-4 py-2.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg disabled:opacity-50"
+                            >
+                              {isLoadingCollaboratorSearch ? '조회 중...' : '조회'}
+                            </button>
+                          </div>
+                          <div
+                            ref={collaboratorUserListRef}
+                            onScroll={() => {
+                              const el = collaboratorUserListRef.current;
+                              if (!el || isLoadingMoreCollaborator || !searchHasNext) return;
+                              if (el.scrollTop + el.clientHeight >= el.scrollHeight - 24) {
+                                loadMoreCollaboratorUsers();
+                              }
+                            }}
+                            className="border border-gray-200 rounded-lg max-h-48 overflow-y-auto"
+                          >
+                            {isLoadingCollaboratorSearch && searchResults.length === 0 ? (
+                              <div className="p-6 text-center text-gray-500 text-sm">불러오는 중...</div>
+                            ) : searchResults.length === 0 ? (
+                              <div className="p-6 text-center text-gray-500 text-sm">
+                                검색어를 입력한 뒤 조회하면 유저 목록이 표시됩니다.
+                              </div>
+                            ) : (
+                              <ul className="divide-y divide-gray-100">
+                                {searchResults.map((user) => {
+                                  const added = editingTeam.some((m: any) => m.username === user.username);
+                                  return (
+                                    <li key={user.id}>
+                                      <button
+                                        type="button"
+                                        onClick={() => !added && addCollaborator(user)}
+                                        disabled={added}
+                                        className={`w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-gray-50 transition-colors ${added ? 'opacity-50 cursor-not-allowed bg-gray-50' : ''}`}
+                                      >
+                                        <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                                          {user.profileImageUrl ? (
+                                            <img src={user.profileImageUrl} alt="" className="w-full h-full object-cover" />
+                                          ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
+                                              {(user.realName || user.nickname || user.username || 'U').charAt(0).toUpperCase()}
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="font-medium text-gray-900 text-sm truncate">
+                                            {user.realName || user.nickname || user.email || user.username}
+                                          </p>
+                                          <p className="text-xs text-gray-500 truncate">@{user.username}</p>
+                                        </div>
+                                        {added && <span className="text-xs text-primary-600">추가됨</span>}
+                                      </button>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            )}
+                            {searchHasNext && searchResults.length > 0 && (
+                              <div className="py-2 text-center">
+                                <button
+                                  type="button"
+                                  onClick={loadMoreCollaboratorUsers}
+                                  disabled={isLoadingMoreCollaborator}
+                                  className="text-sm text-primary-600 hover:text-primary-700 disabled:opacity-50"
+                                >
+                                  {isLoadingMoreCollaborator ? '불러오는 중...' : '더 보기'}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-4 border-t border-gray-200 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={saveTeamEdit}
+                          disabled={isSavingCollaborators}
+                          className="flex-1 py-2.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg disabled:opacity-50"
+                        >
+                          {isSavingCollaborators ? '저장 중...' : '저장'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={closeCollaboratorModal}
+                          className="flex-1 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg"
+                        >
+                          취소
+                        </button>
+                      </div>
+                    </div>
+                  </div>,
+                  document.body
+                )}
 
                 {/* 📄 ENHANCED DOCUMENTS SECTION */}
                 <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
@@ -753,9 +1356,23 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                               href={`/projects/${projectId}/documents/${doc.id}`}
                               className="flex items-center gap-2 flex-1 min-w-0"
                             >
-                              <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                              </svg>
+                              {doc.thumbnailUrl ? (
+                                <div className="w-10 h-10 rounded overflow-hidden bg-gray-100 flex-shrink-0">
+                                  <ImageWithFallback
+                                    src={doc.thumbnailUrl}
+                                    fallbackSrc="/images/placeholder/document.png"
+                                    alt={doc.name || 'Document'}
+                                    type="article"
+                                    width={40}
+                                    height={40}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              ) : (
+                                <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                              )}
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm text-gray-900 truncate group-hover:text-primary-600 font-medium">
                                   {doc.name || 'Untitled Document'}
@@ -954,15 +1571,47 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600">
                     <div className="flex items-center gap-2">
                       <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200">
-                        <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
-                          {(project.author?.name || 'U').charAt(0).toUpperCase()}
-                        </div>
+                        {project.author?.avatar ? (
+                          <ImageWithFallback
+                            src={project.author.avatar}
+                            fallbackSrc="/images/placeholder/default-avatar.svg"
+                            alt={project.author.name || 'Author'}
+                            type="avatar"
+                            width={32}
+                            height={32}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
+                            {(project.author?.name || 'U').charAt(0).toUpperCase()}
+                          </div>
+                        )}
                       </div>
                       <span className="font-medium">{project.author?.name || 'Unknown'}</span>
                     </div>
                     <span>👁 {project.stats?.views || 0}</span>
                     <span>❤️ {project.stats?.likes || 0}</span>
                     <span>💬 {project.stats?.comments || 0}</span>
+                    {canEditProject && (
+                      <div className="flex items-center gap-2 ml-auto">
+                        <Link
+                          href={`/projects/${projectId}/edit`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors"
+                        >
+                          <Pencil className="w-4 h-4" />
+                          수정
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={handleDeleteProject}
+                          disabled={isDeletingProject}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          {isDeletingProject ? '삭제 중...' : '삭제'}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </header>
 
@@ -1125,25 +1774,48 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {comments.map((comment) => (
-                        <div key={`comment-${comment.id}`} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                          <div className="flex gap-4">
-                            <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                              <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-500">
-                                {comment.username.charAt(0).toUpperCase()}
+                      {comments.map((comment) => {
+                        const getDisplayName = (user?: { nickname?: string; realName?: string }): string => {
+                          if (!user || (!user.nickname && !user.realName)) {
+                            return '탈퇴한 유저';
+                          }
+                          return user.nickname || user.realName || '탈퇴한 유저';
+                        };
+                        const displayName = comment.user ? getDisplayName(comment.user) : comment.username;
+                        const profileImageUrl = comment.user?.profileImageUrl;
+                        const initial = displayName.charAt(0).toUpperCase();
+
+                        return (
+                          <div key={`comment-${comment.id}`} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <div className="flex gap-4">
+                              <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                                {profileImageUrl ? (
+                                  <ImageWithFallback
+                                    src={profileImageUrl}
+                                    fallbackSrc="/images/placeholder/default-avatar.svg"
+                                    alt={displayName}
+                                    type="avatar"
+                                    width={40}
+                                    height={40}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-500">
+                                    {initial}
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium text-gray-900">{comment.username}</span>
-                                  <span className="text-sm text-gray-500">{formatDate(comment.createdAt)}</span>
-                                  {comment.updatedAt !== comment.createdAt && (
-                                    <span className="text-xs text-gray-400">(수정됨)</span>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Menu as="div" className="relative">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium text-gray-900">{displayName}</span>
+                                    <span className="text-sm text-gray-500">{formatDate(comment.createdAt)}</span>
+                                    {comment.updatedAt !== comment.createdAt && (
+                                      <span className="text-xs text-gray-400">(수정됨)</span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Menu as="div" className="relative">
                                     <Menu.Button className="p-1 hover:bg-gray-200 rounded-full">
                                       <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
@@ -1284,105 +1956,123 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                   {/* Replies */}
                                   {expandedReplies.has(comment.id) && replies[comment.id] && (
                                     <div className="mt-4 space-y-3 pl-4 border-l-2 border-gray-200">
-                                      {replies[comment.id].map((reply) => (
-                                        <div key={`reply-${comment.id}-${reply.id}`} className="bg-white rounded-lg p-3 border border-gray-200">
-                                          <div className="flex gap-3">
-                                            <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                                              <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
-                                                {reply.username.charAt(0).toUpperCase()}
-                                              </div>
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                              <div className="flex items-center justify-between mb-1">
-                                                <div className="flex items-center gap-2">
-                                                  <span className="text-sm font-medium text-gray-900">{reply.username}</span>
-                                                  <span className="text-xs text-gray-500">{formatDate(reply.createdAt)}</span>
-                                                  {reply.updatedAt !== reply.createdAt && (
-                                                    <span className="text-xs text-gray-400">(수정됨)</span>
-                                                  )}
-                                                </div>
-                                                <Menu as="div" className="relative">
-                                                  <Menu.Button className="p-1 hover:bg-gray-200 rounded-full">
-                                                    <svg className="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                                                    </svg>
-                                                  </Menu.Button>
-                                                  <Transition
-                                                    as={Fragment}
-                                                    enter="transition ease-out duration-100"
-                                                    enterFrom="transform opacity-0 scale-95"
-                                                    enterTo="transform opacity-100 scale-100"
-                                                    leave="transition ease-in duration-75"
-                                                    leaveFrom="transform opacity-100 scale-100"
-                                                    leaveTo="transform opacity-0 scale-95"
-                                                  >
-                                                    <Menu.Items className="absolute right-0 mt-2 w-32 origin-top-right bg-white divide-y divide-gray-100 rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
-                                                      <div className="p-1">
-                                                        <Menu.Item>
-                                                          {({ active }: { active: boolean }) => (
-                                                            <button
-                                                              onClick={() => {
-                                                                setEditingCommentId(reply.id);
-                                                                setEditContent(reply.content);
-                                                              }}
-                                                              className={`${
-                                                                active ? 'bg-gray-100' : ''
-                                                              } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-700`}
-                                                            >
-                                                              편집
-                                                            </button>
-                                                          )}
-                                                        </Menu.Item>
-                                                        <Menu.Item>
-                                                          {({ active }: { active: boolean }) => (
-                                                            <button
-                                                              onClick={() => handleDeleteComment(reply.id)}
-                                                              className={`${
-                                                                active ? 'bg-red-50' : ''
-                                                              } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-red-600`}
-                                                            >
-                                                              삭제
-                                                            </button>
-                                                          )}
-                                                        </Menu.Item>
-                                                      </div>
-                                                    </Menu.Items>
-                                                  </Transition>
-                                                </Menu>
-                                              </div>
-                                              {editingCommentId === reply.id ? (
-                                                <div className="space-y-2">
-                                                  <textarea
-                                                    value={editContent}
-                                                    onChange={(e) => setEditContent(e.target.value)}
-                                                    className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
-                                                    rows={2}
+                                      {replies[comment.id].map((reply) => {
+                                        const replyDisplayName = reply.user ? getDisplayName(reply.user) : reply.username;
+                                        const replyProfileImageUrl = reply.user?.profileImageUrl;
+                                        const replyInitial = replyDisplayName.charAt(0).toUpperCase();
+
+                                        return (
+                                          <div key={`reply-${comment.id}-${reply.id}`} className="bg-white rounded-lg p-3 border border-gray-200">
+                                            <div className="flex gap-3">
+                                              <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                                                {replyProfileImageUrl ? (
+                                                  <ImageWithFallback
+                                                    src={replyProfileImageUrl}
+                                                    fallbackSrc="/images/placeholder/default-avatar.svg"
+                                                    alt={replyDisplayName}
+                                                    type="avatar"
+                                                    width={32}
+                                                    height={32}
+                                                    className="w-full h-full object-cover"
                                                   />
-                                                  <div className="flex gap-2">
-                                                    <button
-                                                      onClick={() => handleEditComment(reply.id)}
-                                                      className="px-3 py-1 bg-primary-600 text-white rounded-lg text-xs hover:bg-primary-700"
-                                                    >
-                                                      저장
-                                                    </button>
-                                                    <button
-                                                      onClick={() => {
-                                                        setEditingCommentId(null);
-                                                        setEditContent('');
-                                                      }}
-                                                      className="px-3 py-1 bg-gray-200 text-gray-700 rounded-lg text-xs hover:bg-gray-300"
-                                                    >
-                                                      취소
-                                                    </button>
+                                                ) : (
+                                                  <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
+                                                    {replyInitial}
                                                   </div>
+                                                )}
+                                              </div>
+                                              <div className="flex-1 min-w-0">
+                                                <div className="flex items-center justify-between mb-1">
+                                                  <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-medium text-gray-900">{replyDisplayName}</span>
+                                                    <span className="text-xs text-gray-500">{formatDate(reply.createdAt)}</span>
+                                                    {reply.updatedAt !== reply.createdAt && (
+                                                      <span className="text-xs text-gray-400">(수정됨)</span>
+                                                    )}
+                                                  </div>
+                                                  <Menu as="div" className="relative">
+                                                    <Menu.Button className="p-1 hover:bg-gray-200 rounded-full">
+                                                      <svg className="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                                      </svg>
+                                                    </Menu.Button>
+                                                    <Transition
+                                                      as={Fragment}
+                                                      enter="transition ease-out duration-100"
+                                                      enterFrom="transform opacity-0 scale-95"
+                                                      enterTo="transform opacity-100 scale-100"
+                                                      leave="transition ease-in duration-75"
+                                                      leaveFrom="transform opacity-100 scale-100"
+                                                      leaveTo="transform opacity-0 scale-95"
+                                                    >
+                                                      <Menu.Items className="absolute right-0 mt-2 w-32 origin-top-right bg-white divide-y divide-gray-100 rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+                                                        <div className="p-1">
+                                                          <Menu.Item>
+                                                            {({ active }: { active: boolean }) => (
+                                                              <button
+                                                                onClick={() => {
+                                                                  setEditingCommentId(reply.id);
+                                                                  setEditContent(reply.content);
+                                                                }}
+                                                                className={`${
+                                                                  active ? 'bg-gray-100' : ''
+                                                                } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-700`}
+                                                              >
+                                                                편집
+                                                              </button>
+                                                            )}
+                                                          </Menu.Item>
+                                                          <Menu.Item>
+                                                            {({ active }: { active: boolean }) => (
+                                                              <button
+                                                                onClick={() => handleDeleteComment(reply.id)}
+                                                                className={`${
+                                                                  active ? 'bg-red-50' : ''
+                                                                } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-red-600`}
+                                                              >
+                                                                삭제
+                                                              </button>
+                                                            )}
+                                                          </Menu.Item>
+                                                        </div>
+                                                      </Menu.Items>
+                                                    </Transition>
+                                                  </Menu>
                                                 </div>
-                                              ) : (
-                                                <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">{reply.content}</p>
-                                              )}
+                                                {editingCommentId === reply.id ? (
+                                                  <div className="space-y-2 mt-2">
+                                                    <textarea
+                                                      value={editContent}
+                                                      onChange={(e) => setEditContent(e.target.value)}
+                                                      className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                                                      rows={2}
+                                                    />
+                                                    <div className="flex gap-2">
+                                                      <button
+                                                        onClick={() => handleEditComment(reply.id)}
+                                                        className="px-3 py-1 bg-primary-600 text-white rounded-lg text-xs hover:bg-primary-700"
+                                                      >
+                                                        저장
+                                                      </button>
+                                                      <button
+                                                        onClick={() => {
+                                                          setEditingCommentId(null);
+                                                          setEditContent('');
+                                                        }}
+                                                        className="px-3 py-1 bg-gray-200 text-gray-700 rounded-lg text-xs hover:bg-gray-300"
+                                                      >
+                                                        취소
+                                                      </button>
+                                                    </div>
+                                                  </div>
+                                                ) : (
+                                                  <p className="text-sm text-gray-700 whitespace-pre-wrap break-words mt-1">{reply.content}</p>
+                                                )}
+                                              </div>
                                             </div>
                                           </div>
-                                        </div>
-                                      ))}
+                                        );
+                                      })}
                                     </div>
                                   )}
                                 </>
@@ -1390,7 +2080,8 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                             </div>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                       
                       {/* Load More Button */}
                       {hasNextComments && (

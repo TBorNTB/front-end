@@ -14,7 +14,7 @@ const getPageTitle = (pathname: string) => {
   const titles: Record<string, string> = {
     '/admin/dashboard': '관리자 대시보드',
     '/admin/members': '회원 관리',
-    '/admin/content': '콘텐츠 관리',
+    '/admin/content': '카테고리 관리',
     '/admin/community': '커뮤니티 관리',
     '/admin/settings': '설정',
   };
@@ -26,7 +26,7 @@ const getPageDescription = (pathname: string) => {
   const descriptions: Record<string, string> = {
     '/admin/dashboard': 'SSG Hub 관리자 대시보드의 모든 활동 한눈에보기',
     '/admin/members': '회원 정보, 권한, 등급 및 활동 내역 관리',
-    '/admin/content': '아티클, 프로젝트, 카테고리 등 콘텐츠 관리',
+    '/admin/content': '프로젝트, CS지식, 뉴스, 카테고리 등 콘텐츠 관리',
     '/admin/community': '커뮤니티 활동, 뱃지 시스템, 상호작용 관리',
     '/admin/settings': '시스템 설정과 구성을 관리',
   };

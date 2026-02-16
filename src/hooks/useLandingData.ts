@@ -14,8 +14,8 @@ type Project = {
   updatedAt: string;
   likeCount: number;
   viewCount: number;
-  owner?: { username?: string; nickname?: string; realname?: string; avatarUrl?: string } | null;
-  collaborators?: Array<{ username?: string; nickname?: string; realname?: string; avatarUrl?: string }>;
+  owner?: { username?: string; nickname?: string; realname?: string; profileImageUrl?: string } | null;
+  collaborators?: Array<{ username?: string; nickname?: string; realname?: string; profileImageUrl?: string }>;
 };
 
 type Article = {
@@ -29,6 +29,12 @@ type Article = {
   };
   thumbnailUrl: string;
   writerId: string;
+  writer?: {
+    username?: string;
+    nickname?: string;
+    realname?: string;
+    profileImageUrl?: string;
+  };
   participantIds: string[];
   tags: string[];
   createdAt: string;
@@ -110,10 +116,10 @@ const fetchLatestProjects = async (): Promise<Project[]> => {
   }
 };
 
-// Fetch latest news/articles from API
-const fetchLatestNews = async (): Promise<Article[]> => {
+// Fetch latest CS knowledge articles from API
+const fetchLatestArticles = async (): Promise<Article[]> => {
   try {
-    const response = await fetch('/api/news/search?postSortType=LATEST&page=0&size=10', {
+    const response = await fetch('/api/articles/search?sortType=LATEST&page=0&size=10', {
       method: 'GET',
       headers: {
         'accept': 'application/json',
@@ -121,33 +127,39 @@ const fetchLatestNews = async (): Promise<Article[]> => {
     });
 
     if (!response.ok) {
-      console.error('Failed to fetch latest news:', response.status);
+      console.error('Failed to fetch latest articles:', response.status);
       return [];
     }
 
     const data = await response.json();
-    // Transform API response to Article format
-    // News API returns items with content object containing title, summary, content, category
+    // Transform CS Knowledge API response to Article format
+    // CS Knowledge API returns items with title, content, category, writer, etc.
     return (data.content || []).map((item: any) => ({
-      topicSlug: (item.content?.category || item.category || '').toLowerCase().replace('_', '-'),
+      topicSlug: (item.category || '').toLowerCase().replace('_', '-'),
       id: String(item.id),
       content: {
-        title: item.content?.title || item.title || '',
-        summary: item.content?.summary || item.summary || '',
-        content: typeof item.content?.content === 'string' ? item.content.content : (typeof item.content === 'string' ? item.content : ''),
-        category: item.content?.category || item.category || '',
+        title: item.title || '',
+        summary: item.description || item.content?.substring(0, 150) || item.content || '', // 요약: description 우선
+        content: item.content || '',
+        category: item.category || '',
       },
       thumbnailUrl: item.thumbnailUrl || '',
-      writerId: item.writer?.username || item.writer?.nickname || item.writerId || '',
-      participantIds: item.participantIds || [],
-      tags: item.tags || [],
+      writerId: item.writer?.username || item.writer?.nickname || '',
+      writer: item.writer ? {
+        username: item.writer.username,
+        nickname: item.writer.nickname,
+        realname: item.writer.realname,
+        profileImageUrl: item.writer.profileImageUrl,
+      } : undefined,
+      participantIds: [],
+      tags: [],
       createdAt: item.createdAt || new Date().toISOString(),
-      updatedAt: item.updatedAt || new Date().toISOString(),
+      updatedAt: item.updatedAt || item.createdAt || new Date().toISOString(),
       likeCount: item.likeCount || 0,
       viewCount: item.viewCount || 0,
     }));
   } catch (error) {
-    console.error('Error fetching latest news:', error);
+    console.error('Error fetching latest articles:', error);
     return [];
   }
 };
@@ -192,7 +204,7 @@ export const useLandingData = (): LandingDataState => {
         console.log('useLandingData: Starting load...');
         const [projectsRes, articlesRes, topicsRes] = await Promise.all([
           fetchLatestProjects(),
-          fetchLatestNews(),
+          fetchLatestArticles(),
           fetchCategoriesForTopics(),
         ]);
 

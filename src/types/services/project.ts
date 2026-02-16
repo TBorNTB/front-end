@@ -286,11 +286,23 @@ export interface TechStackDto {
   name: string;
 }
 
-export interface CollaboratorDto {
-  id: number;
+export interface OwnerProfile {
   username: string;
   nickname: string;
-  realname: string;
+  realName: string;
+  profileImageUrl: string;
+}
+
+export interface CollaboratorProfile {
+  username: string;
+  nickname: string;
+  realName: string;
+  profileImageUrl: string;
+}
+
+export interface CollaboratorDto {
+  id: number;
+  profile: CollaboratorProfile;
 }
 
 export interface DocumentDto {
@@ -308,9 +320,7 @@ export interface ProjectDetailResponse {
   id: number;
   title: string;
   description: string;
-  username: string;
-  ownerNickname: string;
-  ownerRealname: string;
+  ownerProfile: OwnerProfile;
   projectStatus: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED';
   createdAt: string;
   updatedAt: string;
