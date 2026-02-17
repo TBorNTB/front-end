@@ -19,6 +19,7 @@ import {
   ChevronRight,
   Newspaper
 } from 'lucide-react';
+import { profileService } from '@/lib/api/services/user-services';
 import { Badge } from '@/components/ui/badge';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -181,6 +182,12 @@ export default function ActivityContent() {
     like: 0,
     comment: 0,
   });
+  const [activityStats, setActivityStats] = useState<{
+    totalPostCount: number;
+    totalViewCount: number;
+    totalLikeCount: number;
+    totalCommentCount: number;
+  } | null>(null);
 
   // Format date
   const formatDate = (dateString: string): string => {
@@ -631,11 +638,20 @@ export default function ActivityContent() {
     loadActivities();
   }, [user, userLoading, activeTab, currentPage]);
 
-  // Fetch tab counts when user is loaded
+  // Fetch tab counts and activity stats when user is loaded
   useEffect(() => {
-    if (user?.username && !userLoading) {
-      fetchTabCounts(user.username);
-    }
+    if (!user?.username || userLoading) return;
+
+    const load = async () => {
+      await fetchTabCounts(user.username);
+      try {
+        const stats = await profileService.getActivityStats();
+        setActivityStats(stats);
+      } catch (err) {
+        console.warn('Failed to load activity stats:', err);
+      }
+    };
+    load();
   }, [user, userLoading]);
 
   // Reset page when tab changes
@@ -793,12 +809,64 @@ export default function ActivityContent() {
     );
   }
 
+  const summaryStats = [
+    {
+      label: '작성한 글',
+      value: activityStats?.totalPostCount ?? 0,
+      icon: BookOpen,
+      colorClass: 'bg-primary-500/10 text-primary-600 border-primary-200',
+    },
+    {
+      label: '총 조회수',
+      value: activityStats?.totalViewCount ?? 0,
+      icon: Eye,
+      colorClass: 'bg-blue-500/10 text-blue-600 border-blue-200',
+    },
+    {
+      label: '받은 좋아요',
+      value: activityStats?.totalLikeCount ?? 0,
+      icon: ThumbsUp,
+      colorClass: 'bg-red-500/10 text-red-600 border-red-200',
+    },
+    {
+      label: '받은 댓글',
+      value: activityStats?.totalCommentCount ?? 0,
+      icon: MessageCircle,
+      colorClass: 'bg-amber-500/10 text-amber-600 border-amber-200',
+    },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-primary-700 mb-2">나의 활동</h1>
         <p className="text-gray-600">참여한 프로젝트와 작성한 콘텐츠를 확인하세요</p>
+      </div>
+
+      {/* 활동 요약 카드 - 작성한 글, 조회수, 좋아요, 댓글 */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {summaryStats.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <div
+              key={stat.label}
+              className={`rounded-xl border p-4 transition-all duration-200 hover:shadow-md ${stat.colorClass}`}
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/60">
+                  <Icon className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-2xl font-bold tabular-nums">
+                    {typeof stat.value === 'number' ? stat.value.toLocaleString() : '-'}
+                  </p>
+                  <p className="text-sm font-medium opacity-90">{stat.label}</p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Activity Tabs */}

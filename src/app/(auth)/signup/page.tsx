@@ -55,6 +55,7 @@ export default function SignupPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [profileImagePreview, setProfileImagePreview] = useState<string>("");
+  const [emailVerified, setEmailVerified] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<SignupFormData>({
@@ -274,7 +275,11 @@ export default function SignupPage() {
                               {...field}
                             />
                           </div>
-                          <EmailVerification email={field.value || ""} disabled={isLoading} />
+                          <EmailVerification
+                            email={field.value || ""}
+                            disabled={isLoading}
+                            onVerifiedChange={setEmailVerified}
+                          />
                         </div>
                       </div>
                     </FormControl>
@@ -455,11 +460,16 @@ export default function SignupPage() {
                 />
               </div>
 
-              {/* Submit Button */}
+              {/* Submit Button: 이메일 인증 완료 시에만 제출 가능 */}
+              {!emailVerified && (
+                <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2">
+                  이메일 인증을 완료한 후 회원가입할 수 있습니다.
+                </p>
+              )}
               <button
                 type="submit"
                 className="btn btn-primary btn-lg w-full"
-                disabled={isLoading}
+                disabled={isLoading || !emailVerified}
               >
                 {isLoading ? "회원가입 중..." : "회원가입"}
               </button>

@@ -95,13 +95,6 @@ export default function MyPageLayout({
   const displayRole = profile?.role || 'Member';
   const displayAvatar = isValidImageUrl(profile?.profileImageUrl) || '/images/placeholder/default-avatar.svg';
 
-  // 통계 정보는 API 응답에 없으므로 -1로 표시
-  const stats = {
-    projects: -1,
-    articles: -1,
-    badges: -1,
-  };
-
   return (
     <div className="min-h-screen bg-background text-foreground">      
       {/* Background Effects using SSG Theme Colors */}
@@ -181,33 +174,6 @@ export default function MyPageLayout({
                       })}
                     </div>
                   </nav>
-
-                  {/* Activity Stats Section */}
-                  <div className="p-4 bg-gray-50 border-t border-gray-200">
-                    <div className="text-center">
-                      <p className="text-sm font-medium text-gray-700 mb-3">나의 활동</p>
-                      <div className="flex justify-around">
-                        <div className="text-center">
-                          <div className="text-xl font-bold text-primary-700">
-                            {stats.projects === -1 ? '-' : stats.projects}
-                          </div>
-                          <div className="text-xs text-gray-600">프로젝트</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-xl font-bold text-secondary-700">
-                            {stats.articles === -1 ? '-' : stats.articles}
-                          </div>
-                          <div className="text-xs text-gray-600">CS지식 글</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-xl font-bold text-warning">
-                            {stats.badges === -1 ? '-' : stats.badges}
-                          </div>
-                          <div className="text-xs text-gray-600">획득 배지</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </aside>
 

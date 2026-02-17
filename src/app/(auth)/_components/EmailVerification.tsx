@@ -24,9 +24,11 @@ function formatSeconds(totalSeconds: number) {
 interface EmailVerificationProps {
   email: string;
   disabled?: boolean;
+  /** 부모에서 인증 완료 여부를 받을 때 사용 (예: 회원가입 시 제출 방지) */
+  onVerifiedChange?: (verified: boolean) => void;
 }
 
-export default function EmailVerification({ email, disabled = false }: EmailVerificationProps) {
+export default function EmailVerification({ email, disabled = false, onVerifiedChange }: EmailVerificationProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [status, setStatus] = useState<VerificationStatus>("idle");
   const [otp, setOtp] = useState("");
@@ -47,7 +49,8 @@ export default function EmailVerification({ email, disabled = false }: EmailVeri
     setSentToEmail("");
     setTimeLeftSec(0);
     setIsOpen(false);
-  }, [email, sentToEmail]);
+    onVerifiedChange?.(false);
+  }, [email, sentToEmail, onVerifiedChange]);
 
   // Countdown timer (UI-only)
   useEffect(() => {
@@ -136,6 +139,7 @@ export default function EmailVerification({ email, disabled = false }: EmailVeri
       const res = await newsletterService.verifyEmail({ email: email.trim(), code: otp });
       setStatus("verified");
       setIsOpen(false);
+      onVerifiedChange?.(true);
       toast.success(res.message || "이메일 인증 성공!");
     } catch (e: any) {
       setStatus("sent");
