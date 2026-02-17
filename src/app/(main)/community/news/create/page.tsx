@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import TipTapEditor from '@/components/editor/TipTapEditor';
 import Image from 'next/image';
 import { fetchCategories } from '@/lib/api/services/project-services';
+import toast from 'react-hot-toast';
 import { createNews } from '@/lib/api/services/news-services';
 import { memberService, CursorUserResponse } from '@/lib/api/services/user-services';
 import { s3Service } from '@/lib/api/services/s3-services';
@@ -192,6 +193,17 @@ export default function NewNewsForm() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const FORM_FIELD_ORDER = ['title', 'category', 'summary', 'content'] as const;
+
+  const scrollToFirstError = (errorKeys: string[]) => {
+    const first = FORM_FIELD_ORDER.find((k) => errorKeys.includes(k));
+    if (first) {
+      requestAnimationFrame(() => {
+        document.getElementById(`form-field-${first}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    }
+  };
+
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
@@ -212,6 +224,9 @@ export default function NewNewsForm() {
     }
 
     setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      scrollToFirstError(Object.keys(newErrors));
+    }
     return Object.keys(newErrors).length === 0;
   };
 
@@ -286,6 +301,12 @@ export default function NewNewsForm() {
   };
 
   const addParticipant = (user: CursorUserResponse) => {
+    // 만드는 사람(본인)은 참여자에 넣지 않음
+    if (currentUser && user.username === currentUser.username) {
+      toast.error('본인은 참여자로 넣을 수 없습니다.');
+      return;
+    }
+
     const isAlreadyAdded = formData.participantIds.includes(user.username);
 
     if (!isAlreadyAdded) {
@@ -341,7 +362,7 @@ export default function NewNewsForm() {
         summary: formData.summary,
         content: formData.content,
         category: formData.category,
-        participantIds: formData.participantIds,
+        participantIds: formData.participantIds.filter((id) => id !== currentUser?.username),
         tags: formData.tags,
         ...(uploadedThumbnailKey && { thumbnailKey: uploadedThumbnailKey }),
         ...(contentImageKeys.length > 0 && { contentImageKeys }),
@@ -399,7 +420,7 @@ export default function NewNewsForm() {
               <h2 className="text-xl font-semibold text-gray-900">기본 정보</h2>
 
               {/* Title */}
-              <div>
+              <div id="form-field-title">
                 <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
                   제목 <span className="text-red-500">*</span>
                 </label>
@@ -415,7 +436,7 @@ export default function NewNewsForm() {
               </div>
 
               {/* Category */}
-              <div>
+              <div id="form-field-category">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   카테고리 <span className="text-red-500">*</span>
                 </label>
@@ -458,7 +479,7 @@ export default function NewNewsForm() {
               </div>
 
               {/* Summary */}
-              <div>
+              <div id="form-field-summary">
                 <label htmlFor="summary" className="block text-sm font-medium text-gray-700 mb-2">
                   요약 <span className="text-red-500">*</span>
                 </label>
@@ -511,7 +532,7 @@ export default function NewNewsForm() {
             </div>
 
             {/* Content Editor */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+            <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4" id="form-field-content">
               <h2 className="text-xl font-semibold text-gray-900">내용 <span className="text-red-500">*</span></h2>
 
               <div>

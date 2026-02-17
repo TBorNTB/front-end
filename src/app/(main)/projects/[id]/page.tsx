@@ -6,6 +6,7 @@ import { ArrowLeft, X, UserPlus, Search, Pencil, Trash2, Plus } from 'lucide-rea
 import { useState, useEffect, Fragment, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Menu, Transition } from '@headlessui/react';
+import toast from 'react-hot-toast';
 import DocumentModal from '../_components/DocumentModal';
 import { fetchProjectDetail, deleteDocument, updateCollaborators, deleteProject, fetchSubgoals, checkSubgoal, deleteSubgoal, createSubgoal } from '@/lib/api/services/project-services';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
@@ -606,6 +607,10 @@ export default function ProjectPage({ params }: ProjectPageProps) {
 
   // 협력자 추가 (검색 결과에서 선택)
   const addCollaborator = (user: CursorUserResponse) => {
+    if (currentUser && user.username === currentUser.username) {
+      toast.error('본인은 협력자로 넣을 수 없습니다.');
+      return;
+    }
     const name = (user.realName || user.nickname || user.email || '').trim() || user.username;
     const exists = editingTeam.some(m => m.username === user.username);
     if (exists) return;

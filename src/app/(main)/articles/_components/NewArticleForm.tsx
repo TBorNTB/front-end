@@ -69,6 +69,17 @@ export default function NewArticleForm() {
     loadCategories();
   }, []);
 
+  const FORM_FIELD_ORDER = ['title', 'category', 'excerpt', 'content', 'tags'] as const;
+
+  const scrollToFirstError = (errorKeys: string[]) => {
+    const first = FORM_FIELD_ORDER.find((k) => errorKeys.includes(k));
+    if (first) {
+      requestAnimationFrame(() => {
+        document.getElementById(`form-field-${first}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    }
+  };
+
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
@@ -93,6 +104,9 @@ export default function NewArticleForm() {
     }
 
     setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      scrollToFirstError(Object.keys(newErrors));
+    }
     return Object.keys(newErrors).length === 0;
   };
 
@@ -264,7 +278,7 @@ export default function NewArticleForm() {
               </h2>
 
               {/* Title */}
-              <div>
+              <div id="form-field-title">
                 <label htmlFor="title" className="block text-sm font-semibold text-gray-900 mb-2">
                   제목 <span className="text-red-500">*</span>
                 </label>
@@ -288,7 +302,7 @@ export default function NewArticleForm() {
               {/* Category and Excerpt Row */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Category */}
-                <div>
+                <div id="form-field-category">
                   <label className="block text-sm font-semibold text-gray-900 mb-2">
                     카테고리 <span className="text-red-500">*</span>
                   </label>
@@ -396,7 +410,7 @@ export default function NewArticleForm() {
                 </div>
 
                 {/* Excerpt */}
-                <div>
+                <div id="form-field-excerpt">
                   <label htmlFor="excerpt" className="block text-sm font-semibold text-gray-900 mb-2">
                     아티클 요약 <span className="text-red-500">*</span>
                   </label>
@@ -473,7 +487,7 @@ export default function NewArticleForm() {
             </div>
 
             {/* Tags Section */}
-            <div className="space-y-4">
+            <div className="space-y-4" id="form-field-tags">
               <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                 <div className="w-1 h-8 bg-primary-600 rounded"></div>
                 태그 <span className="text-red-500">*</span>
@@ -524,7 +538,7 @@ export default function NewArticleForm() {
             </div>
 
             {/* Content Editor Section */}
-            <div className="space-y-4">
+            <div className="space-y-4" id="form-field-content">
               <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                 <div className="w-1 h-8 bg-primary-600 rounded"></div>
                 내용 <span className="text-red-500">*</span>

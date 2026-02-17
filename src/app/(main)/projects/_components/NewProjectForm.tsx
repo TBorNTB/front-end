@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import TipTapEditor from '@/components/editor/TipTapEditor';
 import Image from 'next/image';
+import toast from 'react-hot-toast';
 import { fetchCategories, createProject } from '@/lib/api/services/project-services';
 import { memberService, CursorUserResponse } from '@/lib/api/services/user-services';
 import { s3Service } from '@/lib/api/services/s3-services';
@@ -260,6 +261,17 @@ export default function NewProjectForm() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const FORM_FIELD_ORDER = ['title', 'categories', 'description', 'tags', 'projectUrl', 'repositoryUrl'] as const;
+
+  const scrollToFirstError = (errorKeys: string[]) => {
+    const first = FORM_FIELD_ORDER.find((k) => errorKeys.includes(k));
+    if (first) {
+      requestAnimationFrame(() => {
+        document.getElementById(`form-field-${first}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    }
+  };
+
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
@@ -288,6 +300,9 @@ export default function NewProjectForm() {
     }
 
     setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      scrollToFirstError(Object.keys(newErrors));
+    }
     return Object.keys(newErrors).length === 0;
   };
 
@@ -408,6 +423,12 @@ export default function NewProjectForm() {
   };
 
   const addCollaborator = (user: CursorUserResponse) => {
+    // 만드는 사람(본인)은 협력자에 넣지 않음
+    if (currentUser && user.username === currentUser.username) {
+      toast.error('본인은 협력자로 넣을 수 없습니다.');
+      return;
+    }
+
     // Check if user is already added
     const isAlreadyAdded = formData.collaborators.some(
       (collab) => collab.email === user.username || collab.name === (user.realName || user.nickname || user.email)
@@ -488,7 +509,9 @@ export default function NewProjectForm() {
         content: formData.details || '',
         projectStatus: formData.status,
         categories: formData.categories,
-        collaborators: formData.collaborators.map((collab) => collab.email),
+        collaborators: formData.collaborators
+          .map((collab) => collab.email)
+          .filter((email) => email !== currentUser?.username),
         techStacks: formData.tags,
         subGoals: formData.subGoals,
         startedAt: formData.startDate ? new Date(formData.startDate).toISOString() : new Date().toISOString(),
@@ -553,7 +576,7 @@ export default function NewProjectForm() {
           <h2 className="text-xl font-semibold text-gray-900">기본 정보</h2>
 
           {/* Project Name */}
-          <div>
+          <div id="form-field-title">
             <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
               프로젝트 이름 <span className="text-red-500">*</span>
             </label>
@@ -569,7 +592,7 @@ export default function NewProjectForm() {
           </div>
 
           {/* Categories */}
-          <div>
+          <div id="form-field-categories">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               카테고리 <span className="text-red-500">*</span>
             </label>
@@ -725,7 +748,7 @@ export default function NewProjectForm() {
         <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
           <h2 className="text-xl font-semibold text-gray-900">설명</h2>
 
-          <div>
+          <div id="form-field-description">
             <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
               한 줄 설명 <span className="text-red-500">*</span>
             </label>
@@ -760,7 +783,7 @@ export default function NewProjectForm() {
         <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
           <h2 className="text-xl font-semibold text-gray-900">태그</h2>
 
-          <div>
+          <div id="form-field-tags">
             <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-2">
               기술 스택 / 태그 <span className="text-red-500">*</span>
             </label>
@@ -1180,7 +1203,7 @@ export default function NewProjectForm() {
         <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
           <h2 className="text-xl font-semibold text-gray-900">링크</h2>
 
-          <div>
+          <div id="form-field-repositoryUrl">
             <label htmlFor="repositoryUrl" className="block text-sm font-medium text-gray-700 mb-2">
               리포지토리 URL
             </label>
@@ -1198,7 +1221,7 @@ export default function NewProjectForm() {
             )}
           </div>
 
-          <div>
+          <div id="form-field-projectUrl">
             <label htmlFor="projectUrl" className="block text-sm font-medium text-gray-700 mb-2">
               프로젝트 URL (데모)
             </label>

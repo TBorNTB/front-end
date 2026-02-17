@@ -134,6 +134,15 @@ export default function CreateQuestionPage() {
     }
 
     setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      const order = ['title', 'content', 'tags'] as const;
+      const first = order.find((k) => newErrors[k]);
+      if (first) {
+        requestAnimationFrame(() => {
+          document.getElementById(`form-field-${first}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+      }
+    }
     return Object.keys(newErrors).length === 0;
   };
 
@@ -199,7 +208,7 @@ export default function CreateQuestionPage() {
           </div>
 
           {/* Title */}
-          <div className="mb-6">
+          <div className="mb-6" id="form-field-title">
             <label className="block text-sm font-semibold text-gray-900 mb-2">
               제목 <span className="text-red-500">*</span>
             </label>
@@ -223,7 +232,7 @@ export default function CreateQuestionPage() {
           </div>
 
           {/* Tech Tags */}
-          <div className="mb-6">
+          <div className="mb-6" id="form-field-tags">
             <label className="block text-sm font-semibold text-gray-900 mb-2">
               기술 태그 <span className="text-red-500">*</span>
             </label>
@@ -296,7 +305,7 @@ export default function CreateQuestionPage() {
           </div>
 
           {/* Content */}
-          <div className="mb-6">
+          <div className="mb-6" id="form-field-content">
             <label className="block text-sm font-semibold text-gray-900 mb-2">
               내용 <span className="text-red-500">*</span>
             </label>
