@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
-import { ChevronDown, ChevronLeft, ChevronRight, CheckCircle, X } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
 
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -33,7 +33,7 @@ export default function Home() {
     console.log('Topics length:', topics?.length);
   }, [topics]);
 
-  // OAuth 콜백 처리: 신규/기존 계정 모두 한 번에 로그인 완료되도록 재시도
+  // OAuth 콜백 처리: 한 번만 유저 확인
   useEffect(() => {
     const handleOAuthCallback = async () => {
       if (oauthProcessedRef.current) return;
@@ -73,19 +73,11 @@ export default function Home() {
       };
 
       try {
+        // 한 번만 요청 (재시도 없음)
         if (await checkUser()) return;
 
-        // 신규 가입 시 백엔드 등록 지연 대비: 최대 6초간 1초 간격 재시도
-        const maxAttempts = 6;
-        const delayMs = 1000;
-        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-          console.warn(`⚠️ OAuth user not ready yet, retry ${attempt}/${maxAttempts} in ${delayMs}ms...`);
-          await new Promise((r) => setTimeout(r, delayMs));
-          if (await checkUser()) return;
-        }
-
         // 백엔드에 계정이 없었던 경우: 회원가입만 완료되고 세션이 없어 로그인 안 됨 → 안내 표시
-        console.warn('⚠️ OAuth: user not available after retries (likely new signup only)');
+        console.warn('⚠️ OAuth: user not available (likely new signup only)');
         sessionStorage.removeItem('oauth_redirecting');
         if (typeof window !== 'undefined' && window.location.search) {
           const url = new URL(window.location.href);
@@ -329,34 +321,11 @@ export default function Home() {
   return (
     <>
       <div className="min-h-screen bg-background">
-        {/* OAuth 신규 가입 완료 안내: 백엔드에 계정이 없어 회원가입만 되고 홈으로 온 경우 */}
+        {/* OAuth 신규 가입 완료 안내: 화면 중앙에 잠시 표시 */}
         {oauthSignupComplete && (
-          <div className="bg-primary-50 border-b border-primary-200 text-primary-900">
-            <div className="container flex items-center justify-between gap-4 py-3 px-4">
-              <div className="flex items-center gap-2 min-w-0">
-                <CheckCircle className="w-5 h-5 text-primary-600 flex-shrink-0" />
-                <p className="text-sm font-medium">
-                  회원가입이 정상적으로 완료되었습니다. 로그인 후 이용해 주세요.
-                </p>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <Link
-                  href="/login"
-                  className="btn btn-primary btn-sm"
-                >
-                  다시 로그인
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => setOauthSignupComplete(false)}
-                  className="p-1 rounded hover:bg-primary-100 text-primary-700"
-                  aria-label="닫기"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          </div>
+          <OAuthSignupCompleteModal
+            onClose={() => setOauthSignupComplete(false)}
+          />
         )}
         <Header />
 
@@ -616,6 +585,45 @@ export default function Home() {
 }
 
 // Sub-sections for readability
+
+function OAuthSignupCompleteModal({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 5000);
+    return () => clearTimeout(t);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-8 text-center animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex justify-center mb-4">
+          <div className="rounded-full bg-primary-100 p-4">
+            <CheckCircle className="w-12 h-12 text-primary-600" />
+          </div>
+        </div>
+        <h3 className="text-xl font-bold text-gray-900 mb-2">
+          회원가입이 완료되었습니다
+        </h3>
+        <p className="text-gray-600 mb-6">
+          정상적으로 가입되었습니다. 로그인 후 서비스를 이용해 주세요.
+        </p>
+        <Link
+          href="/login"
+          onClick={onClose}
+          className="inline-block w-full py-3 px-4 rounded-lg bg-primary-600 text-white font-medium hover:bg-primary-700 transition-colors"
+        >
+          다시 로그인
+        </Link>
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-3 text-sm text-gray-500 hover:text-gray-700"
+        >
+          닫기
+        </button>
+      </div>
+    </div>
+  );
+}
 
 interface ProjectsSectionProps {
   loading: boolean;
