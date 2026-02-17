@@ -32,92 +32,62 @@ export default function Home() {
     console.log('Topics length:', topics?.length);
   }, [topics]);
 
-  // OAuth 콜백 처리: 2번 API 호출로 회원가입 및 로그인 처리
+  // OAuth 콜백 처리: 신규/기존 계정 모두 한 번에 로그인 완료되도록 재시도
   useEffect(() => {
     const handleOAuthCallback = async () => {
-      // 이미 처리했으면 스킵
       if (oauthProcessedRef.current) return;
-      
-      // OAuth 콜백인지 확인 (URL 파라미터나 세션 스토리지)
+
       const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-      const hasOAuthCode = urlParams?.get('code'); // OAuth code 파라미터
-      const isOAuthRedirecting = sessionStorage.getItem('oauth_redirecting') === 'true'; // OAuth 리다이렉트 플래그
-      
+      const hasOAuthCode = urlParams?.get('code');
+      const isOAuthRedirecting = sessionStorage.getItem('oauth_redirecting') === 'true';
       const isOAuthCallback = hasOAuthCode || isOAuthRedirecting;
-      
+
       if (!isOAuthCallback) return;
-      
+
       console.log('🔐 OAuth callback detected, processing login...');
       oauthProcessedRef.current = true;
-      
+
+      const finishLogin = (authUser: ReturnType<typeof mapUserToAuthUser>) => {
+        login(authUser, true);
+        sessionStorage.removeItem('oauth_redirecting');
+        if (typeof window !== 'undefined' && window.location.search) {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('code');
+          url.searchParams.delete('state');
+          window.history.replaceState({}, '', url.pathname);
+        }
+      };
+
+      const checkUser = async (): Promise<boolean> => {
+        const res = await fetchWithRefresh('/api/auth/user', { method: 'GET', cache: 'no-store' });
+        if (!res.ok) return false;
+        const data = await res.json();
+        if (data.authenticated && data.user) {
+          const authUser = mapUserToAuthUser(data.user);
+          finishLogin(authUser);
+          console.log('✅ OAuth login successful:', authUser);
+          return true;
+        }
+        return false;
+      };
+
       try {
-        // 첫 번째 API: 사용자 정보 확인 (백엔드가 쿠키를 설정했는지 확인)
-        console.log('📞 Step 1: Checking user authentication...');
-        const userResponse = await fetchWithRefresh('/api/auth/user', {
-          method: 'GET',
-          cache: 'no-store',
-        });
+        if (await checkUser()) return;
 
-        if (!userResponse.ok) {
-          console.warn('⚠️ User not authenticated yet, waiting for backend...');
-          // 백엔드가 아직 처리 중일 수 있으므로 잠시 대기 후 재시도
-          setTimeout(async () => {
-            const retryResponse = await fetchWithRefresh('/api/auth/user', {
-              method: 'GET',
-              cache: 'no-store',
-            });
-            
-            if (retryResponse.ok) {
-              const retryData = await retryResponse.json();
-              if (retryData.authenticated && retryData.user) {
-                const authUser = mapUserToAuthUser(retryData.user);
-                login(authUser, true);
-                console.log('✅ OAuth login successful after retry:', authUser);
-              }
-            }
-          }, 1000);
-          return;
+        // 신규 가입 시 백엔드 등록 지연 대비: 최대 6초간 1초 간격 재시도
+        const maxAttempts = 6;
+        const delayMs = 1000;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          console.warn(`⚠️ OAuth user not ready yet, retry ${attempt}/${maxAttempts} in ${delayMs}ms...`);
+          await new Promise((r) => setTimeout(r, delayMs));
+          if (await checkUser()) return;
         }
 
-        const userData = await userResponse.json();
-        console.log('📦 Step 1 response:', userData);
-
-        if (userData.authenticated && userData.user) {
-          // 두 번째 API: 사용자 정보 새로고침 (최신 정보 가져오기)
-          console.log('📞 Step 2: Refreshing user data...');
-          
-          // loadUser를 사용하여 최신 사용자 정보 가져오기
-          await loadUser();
-          
-          // 또는 직접 API 호출
-          const refreshResponse = await fetchWithRefresh('/api/auth/user', {
-            method: 'GET',
-            cache: 'no-store',
-          });
-
-          if (refreshResponse.ok) {
-            const refreshData = await refreshResponse.json();
-            if (refreshData.authenticated && refreshData.user) {
-              const authUser = mapUserToAuthUser(refreshData.user);
-              login(authUser, true);
-              console.log('✅ OAuth login successful:', authUser);
-              
-              // OAuth 리다이렉트 플래그 제거
-              sessionStorage.removeItem('oauth_redirecting');
-              
-              // URL에서 OAuth 파라미터 제거 (깔끔한 URL 유지)
-              if (typeof window !== 'undefined' && window.location.search) {
-                const url = new URL(window.location.href);
-                url.searchParams.delete('code');
-                url.searchParams.delete('state');
-                window.history.replaceState({}, '', url.pathname);
-              }
-            }
-          }
-        }
+        console.error('❌ OAuth login: user still not available after retries');
+        oauthProcessedRef.current = false;
       } catch (error) {
         console.error('❌ OAuth callback processing error:', error);
-        oauthProcessedRef.current = false; // 에러 시 재시도 가능하도록
+        oauthProcessedRef.current = false;
       }
     };
 
