@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
-import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, CheckCircle, X } from 'lucide-react';
 
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -25,6 +25,7 @@ export default function Home() {
   const { projects, articles, topics, loading: landingLoading, error: landingError } = useLandingData();
   const { login, loadUser } = useAuth();
   const oauthProcessedRef = useRef(false);
+  const [oauthSignupComplete, setOauthSignupComplete] = useState(false);
 
   // Debug log
   useEffect(() => {
@@ -83,8 +84,16 @@ export default function Home() {
           if (await checkUser()) return;
         }
 
-        console.error('❌ OAuth login: user still not available after retries');
-        oauthProcessedRef.current = false;
+        // 백엔드에 계정이 없었던 경우: 회원가입만 완료되고 세션이 없어 로그인 안 됨 → 안내 표시
+        console.warn('⚠️ OAuth: user not available after retries (likely new signup only)');
+        sessionStorage.removeItem('oauth_redirecting');
+        if (typeof window !== 'undefined' && window.location.search) {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('code');
+          url.searchParams.delete('state');
+          window.history.replaceState({}, '', url.pathname);
+        }
+        setOauthSignupComplete(true);
       } catch (error) {
         console.error('❌ OAuth callback processing error:', error);
         oauthProcessedRef.current = false;
@@ -320,6 +329,35 @@ export default function Home() {
   return (
     <>
       <div className="min-h-screen bg-background">
+        {/* OAuth 신규 가입 완료 안내: 백엔드에 계정이 없어 회원가입만 되고 홈으로 온 경우 */}
+        {oauthSignupComplete && (
+          <div className="bg-primary-50 border-b border-primary-200 text-primary-900">
+            <div className="container flex items-center justify-between gap-4 py-3 px-4">
+              <div className="flex items-center gap-2 min-w-0">
+                <CheckCircle className="w-5 h-5 text-primary-600 flex-shrink-0" />
+                <p className="text-sm font-medium">
+                  회원가입이 정상적으로 완료되었습니다. 로그인 후 이용해 주세요.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Link
+                  href="/login"
+                  className="btn btn-primary btn-sm"
+                >
+                  다시 로그인
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setOauthSignupComplete(false)}
+                  className="p-1 rounded hover:bg-primary-100 text-primary-700"
+                  aria-label="닫기"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <Header />
 
         {/* Hero */}
