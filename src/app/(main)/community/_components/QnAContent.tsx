@@ -304,7 +304,7 @@ export default function QnAContent() {
                       <Icon className="w-4 h-4" />
                       <span>{status.label}</span>
                     </div>
-                    <span className={`text-xs ${isActive ? 'text-primary-100' : 'text-gray-400'}`}>
+                    <span className={`text-xs ${isActive ? 'text-primary-100' : 'text-gray-700'}`}>
                       {count}
                     </span>
                   </button>
@@ -329,7 +329,7 @@ export default function QnAContent() {
         <div className="flex-1">
           {/* Results Info */}
           <div className="flex items-center justify-between mb-6">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-700">
               현재 <span className="font-semibold text-primary-600">{filteredQuestions.length}</span>개의 질문
               {totalPage > 0 && ` (페이지: ${page + 1}/${totalPage})`}
               {debouncedKeyword && ` (검색어: "${debouncedKeyword}")`}
@@ -340,14 +340,14 @@ export default function QnAContent() {
           {errorMessage ? (
             <div className="text-center py-20">
               <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 text-lg mb-2">불러오기에 실패했습니다</p>
-              <p className="text-gray-400 text-sm">{errorMessage}</p>
+              <p className="text-gray-700 text-lg mb-2">불러오기에 실패했습니다</p>
+              <p className="text-gray-700 text-sm">{errorMessage}</p>
             </div>
           ) : filteredQuestions.length === 0 ? (
             <div className="text-center py-20">
               <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 text-lg mb-2">질문이 없습니다</p>
-              <p className="text-gray-400 text-sm">첫 번째 질문을 작성해보세요!</p>
+              <p className="text-gray-700 text-lg mb-2">질문이 없습니다</p>
+              <p className="text-gray-700 text-sm">첫 번째 질문을 작성해보세요!</p>
             </div>
           ) : (
             <div className={viewMode === 'grid' ? 'grid grid-cols-1 gap-4' : 'space-y-4'}>

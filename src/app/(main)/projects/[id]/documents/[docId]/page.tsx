@@ -70,7 +70,7 @@ export default function DocumentViewer({ params }: DocumentViewerProps) {
           <div className="flex items-center justify-between">
             <Link
               href={`/projects/${projectId}`}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -103,7 +103,7 @@ export default function DocumentViewer({ params }: DocumentViewerProps) {
             </h1>
 
             {/* Metadata */}
-            <div className="flex items-center gap-4 text-sm text-gray-500 mb-8 pb-8 border-b border-gray-200">
+            <div className="flex items-center gap-4 text-sm text-gray-700 mb-8 pb-8 border-b border-gray-200">
               <span>생성일: {new Date(document.createdAt).toLocaleDateString('ko-KR')}</span>
               {document.updatedAt !== document.createdAt && (
                 <>

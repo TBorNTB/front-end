@@ -86,7 +86,7 @@ export default function CreateQuestionPage() {
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
               권한이 필요합니다
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-700 mb-6">
               질문을 작성하려면 정회원으로 로그인해야 합니다.
             </p>
             <button
@@ -204,7 +204,7 @@ export default function CreateQuestionPage() {
               placeholder="질문 요약(선택)"
               className="w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 border-gray-300 focus:ring-primary-500"
             />
-            <p className="mt-1 text-xs text-gray-500">비워두면 제목을 기반으로 자동 생성됩니다.</p>
+            <p className="mt-1 text-xs text-gray-700">비워두면 제목을 기반으로 자동 생성됩니다.</p>
           </div>
 
           {/* Title */}
@@ -240,7 +240,7 @@ export default function CreateQuestionPage() {
             {/* Selected Tags */}
             <div className="flex flex-wrap gap-2 mb-3 min-h-[40px] p-2 border border-gray-300 rounded-lg">
               {selectedTags.length === 0 ? (
-                <span className="text-sm text-gray-400 self-center">
+                <span className="text-sm text-gray-700 self-center">
                   기술 태그를 선택해주세요
                 </span>
               ) : (
@@ -294,7 +294,7 @@ export default function CreateQuestionPage() {
                   })}
                 </div>
                 {availableTechTags.length === 0 && (
-                  <p className="mt-2 text-sm text-gray-500">카테고리를 불러오는 중이거나, 카테고리가 없습니다.</p>
+                  <p className="mt-2 text-sm text-gray-700">카테고리를 불러오는 중이거나, 카테고리가 없습니다.</p>
                 )}
               </div>
             )}
@@ -325,7 +325,7 @@ export default function CreateQuestionPage() {
             {errors.content && (
               <p className="mt-1 text-sm text-red-600">{errors.content}</p>
             )}
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-gray-700">
               마크다운 형식을 지원합니다. 코드 블록은 ```언어 로 작성하세요.
             </p>
           </div>

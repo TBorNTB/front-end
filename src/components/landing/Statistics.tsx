@@ -60,7 +60,7 @@ const StatisticItem = ({ number, label, description, delay = 0 }: StatisticItemP
         {label}
       </div>
       <div 
-        className={`text-sm text-gray-500 transition-all duration-1000 ease-out ${
+        className={`text-sm text-gray-700 transition-all duration-1000 ease-out ${
           isVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-4'
         }`}
         style={{ transitionDelay: `${delay + 400}ms` }}

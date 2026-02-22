@@ -170,7 +170,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     <div className="relative overflow-hidden w-full h-full">
       {shouldShowLoading && showPlaceholder && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100 animate-pulse z-10">
-          <div className="text-gray-400">
+          <div className="text-gray-700">
             <svg
               className="h-8 w-8"
               fill="none"

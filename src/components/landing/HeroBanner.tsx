@@ -45,11 +45,11 @@ export default function HeroBanner() {
           <span className="font-semibold text-secondary-300 drop-shadow-[0_0_8px_rgba(58,77,161,0.6)]">
             SSG HUB(허브)
           </span>
-          <span className="text-gray-400"> 모든 보안관련 지식, 세종대학교 정보보안 동아리인! </span>
+          <span className="text-gray-700"> 모든 보안관련 지식, 세종대학교 정보보안 동아리인! </span>
           <span className="font-semibold text-secondary-300 drop-shadow-[0_0_8px_rgba(58,77,161,0.6)]">
             Sejong Security Group(SSG)
           </span>
-          <span className="text-gray-400">에서의 공식 허브 사이트입니다. 정보보안 학습자료, 프로젝트, 아티클을 공유하며 함께 성장하는 공간입니다.</span>
+          <span className="text-gray-700">에서의 공식 허브 사이트입니다. 정보보안 학습자료, 프로젝트, 아티클을 공유하며 함께 성장하는 공간입니다.</span>
         </p>
 
         {/* CTA Buttons */}

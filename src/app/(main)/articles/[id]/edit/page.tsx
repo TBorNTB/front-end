@@ -290,7 +290,7 @@ export default function EditArticlePage({ params }: EditPageProps) {
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
-            <p className="text-gray-600">데이터 불러오는 중...</p>
+            <p className="text-gray-700">데이터 불러오는 중...</p>
           </div>
         </div>
       )}
@@ -299,7 +299,7 @@ export default function EditArticlePage({ params }: EditPageProps) {
       {!userLoading && !currentUser && (
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <p className="text-gray-600 mb-4">글을 수정하려면 먼저 로그인해주세요.</p>
+            <p className="text-gray-700 mb-4">글을 수정하려면 먼저 로그인해주세요.</p>
             <Link href="/login">
               <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                 로그인
@@ -315,12 +315,12 @@ export default function EditArticlePage({ params }: EditPageProps) {
           {/* Header */}
           <div className="mb-8 pb-6 border-b border-gray-200">
             <div className="flex items-center gap-4 mb-2">
-              <Link href={`/articles/${articleId}`} className="inline-flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-gray-900 transition-colors">
+              <Link href={`/articles/${articleId}`} className="inline-flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 text-gray-700 hover:text-gray-900 transition-colors">
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <h1 className="text-4xl font-bold text-gray-900">글 수정하기</h1>
             </div>
-            <p className="text-lg text-gray-600 ml-14">내용을 수정하고 업데이트해주세요</p>
+            <p className="text-lg text-gray-700 ml-14">내용을 수정하고 업데이트해주세요</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
@@ -346,7 +346,7 @@ export default function EditArticlePage({ params }: EditPageProps) {
                     maxLength={50}
                     className={`py-3 pr-16 bg-white ${errors.title ? 'border-red-500 focus:ring-red-500' : 'focus:ring-primary-500'}`}
                   />
-                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-500 pointer-events-none font-medium">
+                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-700 pointer-events-none font-medium">
                     {formData.title.length}/50
                   </span>
                 </div>
@@ -361,14 +361,14 @@ export default function EditArticlePage({ params }: EditPageProps) {
                     카테고리 <span className="text-red-500">*</span>
                   </label>
                   {isLoadingCategories ? (
-                    <div className="w-full py-2 px-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                    <div className="w-full py-2 px-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
                       로딩 중...
                     </div>
                   ) : (
                     <>
                       {/* Search Bar */}
                       <div className="relative mb-3">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-700" />
                         <input
                           type="text"
                           value={categorySearch}
@@ -388,7 +388,7 @@ export default function EditArticlePage({ params }: EditPageProps) {
                           
                           if (filteredCategories.length === 0) {
                             return (
-                              <p className="text-gray-500 text-sm">
+                              <p className="text-gray-700 text-sm">
                                 {categorySearch ? '검색 결과가 없습니다' : '카테고리가 없습니다'}
                               </p>
                             );
@@ -425,7 +425,7 @@ export default function EditArticlePage({ params }: EditPageProps) {
                                     <div className="flex-1">
                                       <span className="text-sm font-medium text-gray-900">{cat.name}</span>
                                       {cat.description && (
-                                        <p className="text-xs text-gray-500 mt-0.5">{cat.description}</p>
+                                        <p className="text-xs text-gray-700 mt-0.5">{cat.description}</p>
                                       )}
                                     </div>
                                   </label>
@@ -438,7 +438,7 @@ export default function EditArticlePage({ params }: EditPageProps) {
                       {/* Selected Category Display */}
                       {formData.category && (
                         <div className="mt-3">
-                          <p className="text-xs text-gray-600 mb-2">선택된 카테고리:</p>
+                          <p className="text-xs text-gray-700 mb-2">선택된 카테고리:</p>
                           <div className="flex flex-wrap gap-2">
                             <span className="inline-flex items-center gap-2 bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium">
                               {formData.category}
@@ -482,7 +482,7 @@ export default function EditArticlePage({ params }: EditPageProps) {
                           : 'focus-visible:ring-primary-500'
                       } min-h-24 pr-14`}
                     />
-                    <span className="absolute right-3 bottom-2 text-xs text-gray-500 pointer-events-none font-medium">
+                    <span className="absolute right-3 bottom-2 text-xs text-gray-700 pointer-events-none font-medium">
                       {formData.excerpt.length}/100
                     </span>
                   </div>
@@ -533,7 +533,7 @@ export default function EditArticlePage({ params }: EditPageProps) {
                     </div>
                     <div className="text-center">
                       <p className="font-semibold text-gray-900">클릭하여 이미지 업로드</p>
-                      <p className="text-sm text-gray-600 mt-1">또는 드래그 앤 드롭</p>
+                      <p className="text-sm text-gray-700 mt-1">또는 드래그 앤 드롭</p>
                     </div>
                   </label>
                 </div>

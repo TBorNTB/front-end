@@ -244,7 +244,7 @@ const AvatarStack = ({
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-1.5">
           <Crown size={14} className="text-yellow-500" />
-          <span className="text-xs font-medium text-gray-600">소유자</span>
+          <span className="text-xs font-medium text-gray-700">소유자</span>
         </div>
         <div className="flex items-center gap-2">
           <div 
@@ -275,7 +275,7 @@ const AvatarStack = ({
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-1.5">
           <Users size={14} className="text-blue-500" />
-          <span className="text-xs font-medium text-gray-600">협력자</span>
+          <span className="text-xs font-medium text-gray-700">협력자</span>
         </div>
         <div className="flex items-center gap-1.5">
           {contributors.length > 0 ? (
@@ -304,16 +304,16 @@ const AvatarStack = ({
                     className="w-6 h-6 rounded-full border-2 border-white bg-gray-300 flex items-center justify-center relative"
                     title={`+${remainingCount} more contributors`}
                   >
-                    <span className="text-xs font-medium text-gray-600">+{remainingCount}</span>
+                    <span className="text-xs font-medium text-gray-700">+{remainingCount}</span>
                   </div>
                 )}
               </div>
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-gray-700">
                 {contributors.length}명
               </span>
             </>
           ) : (
-            <span className="text-xs text-gray-400">없음</span>
+            <span className="text-xs text-gray-700">없음</span>
           )}
         </div>
       </div>
@@ -663,7 +663,7 @@ export default function ProjectsContent() {
           <div className="flex-1">
             {/* Sort and Results */}
             <div className="flex items-center justify-between mb-6">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-700">
                 <span className="font-semibold text-primary">{totalElements}</span>개의 프로젝트
                 {searchTerm && ` (검색어: "${searchTerm}")`}
                 {currentTopicName && ` (주제: ${currentTopicName})`}
@@ -674,7 +674,7 @@ export default function ProjectsContent() {
             {isLoading && (
               <div className="text-center py-12">
                 <div className="inline-block w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                <p className="mt-4 text-gray-500">프로젝트를 불러오는 중...</p>
+                <p className="mt-4 text-gray-700">프로젝트를 불러오는 중...</p>
               </div>
             )}
 
@@ -718,7 +718,7 @@ export default function ProjectsContent() {
                         }`}>
                           {project.title}
                         </h3>
-                        <p className={`text-gray-600 mb-3 leading-relaxed ${
+                        <p className={`text-gray-700 mb-3 leading-relaxed ${
                           viewMode === 'list' ? 'line-clamp-2' : 'line-clamp-3 text-sm'
                         }`}>
                           {project.description}
@@ -736,7 +736,7 @@ export default function ProjectsContent() {
                               </span>
                             ))}
                             {project.tags.length > 5 && (
-                              <span className="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded-md border border-gray-200">
+                              <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md border border-gray-200">
                                 +{project.tags.length - 5}
                               </span>
                             )}
@@ -769,7 +769,7 @@ export default function ProjectsContent() {
                             {project.github && (
                               <a
                                 href={project.github}
-                                className="text-gray-400 hover:text-primary transition-colors"
+                                className="text-gray-700 hover:text-primary transition-colors"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 title="GitHub"
@@ -780,7 +780,7 @@ export default function ProjectsContent() {
                             {project.demo && (
                               <a
                                 href={project.demo}
-                                className="text-gray-400 hover:text-primary transition-colors"
+                                className="text-gray-700 hover:text-primary transition-colors"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 title="Demo"
@@ -807,7 +807,7 @@ export default function ProjectsContent() {
             {/* No Results */}
             {!isLoading && projects.length === 0 && (
               <div className="text-center py-12">
-                <p className="text-gray-500 text-lg mb-4">검색 조건에 맞는 프로젝트가 없습니다.</p>
+                <p className="text-gray-700 text-lg mb-4">검색 조건에 맞는 프로젝트가 없습니다.</p>
                 <button
                   onClick={clearAllFilters}
                   className="text-primary hover:underline"
@@ -825,7 +825,7 @@ export default function ProjectsContent() {
                   disabled={currentPage === 0}
                   className={`p-2 rounded-lg border transition-colors ${
                     currentPage === 0
-                      ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                      ? 'border-gray-200 text-gray-700 cursor-not-allowed'
                       : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                   }`}
                 >
@@ -866,14 +866,14 @@ export default function ProjectsContent() {
                   disabled={currentPage >= totalPages - 1}
                   className={`p-2 rounded-lg border transition-colors ${
                     currentPage >= totalPages - 1
-                      ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                      ? 'border-gray-200 text-gray-700 cursor-not-allowed'
                       : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                   }`}
                 >
                   <ChevronRight size={20} />
                 </button>
 
-                <span className="ml-4 text-sm text-gray-500">
+                <span className="ml-4 text-sm text-gray-700">
                   {currentPage + 1} / {totalPages} 페이지
                 </span>
               </div>

@@ -587,7 +587,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
       <div className="flex items-center justify-center min-h-[40vh]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
-          <p className="text-gray-600 text-sm">로딩 중...</p>
+          <p className="text-gray-700 text-sm">로딩 중...</p>
         </div>
       </div>
     );
@@ -601,7 +601,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
           <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm">
             <div className="mb-4">
               <svg
-                className="w-16 h-16 mx-auto text-gray-400"
+                className="w-16 h-16 mx-auto text-gray-700"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -615,7 +615,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
               </svg>
             </div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">해당 게시글은 삭제 된 게시글입니다</h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-700 mb-6">
               요청하신 게시글을 찾을 수 없습니다. 삭제되었거나 존재하지 않는 게시글일 수 있습니다.
             </p>
             <Link
@@ -837,7 +837,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
               {/* Back Navigation */}
               <Link
                 href="/articles"
-                className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors group mb-6"
+                className="inline-flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors group mb-6"
               >
                 <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                 <span className="text-sm font-medium">목록으로 돌아가기</span>
@@ -850,7 +850,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                 </h1>
 
                 {/* Author, Date, Time, Category in one line */}
-                <div className="flex flex-wrap items-center gap-3 mb-4 text-sm text-gray-600">
+                <div className="flex flex-wrap items-center gap-3 mb-4 text-sm text-gray-700">
                   <div className="flex items-center gap-2">
                     <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200">
                       {displayPost.author.avatar ? (
@@ -864,7 +864,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
+                        <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-700">
                           {(displayPost.author.name || 'U').charAt(0).toUpperCase()}
                         </div>
                       )}
@@ -872,8 +872,8 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                     <span className="font-medium text-gray-900">{displayPost.author.name}</span>
                   </div>
                   
-                  <div className="flex items-center gap-1.5 text-gray-600">
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-center gap-1.5 text-gray-700">
+                    <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                     <span>
@@ -886,8 +886,8 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                   </div>
 
                   {displayPost.readTime && (
-                    <div className="flex items-center gap-1.5 text-gray-600">
-                      <Clock className="w-4 h-4 text-gray-400" />
+                    <div className="flex items-center gap-1.5 text-gray-700">
+                      <Clock className="w-4 h-4 text-gray-700" />
                       <span>{displayPost.readTime}</span>
                     </div>
                   )}
@@ -913,7 +913,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
                 {/* 요약 (description) */}
                 {displayPost.description && displayPost.description.trim() && (
-                  <p className="text-gray-600 text-base leading-relaxed mb-6 border-l-4 border-primary-200 pl-4 py-2 bg-gray-50/50 rounded-r">
+                  <p className="text-gray-700 text-base leading-relaxed mb-6 border-l-4 border-primary-200 pl-4 py-2 bg-gray-50/50 rounded-r">
                     {displayPost.description}
                   </p>
                 )}
@@ -943,13 +943,13 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
               {/* Stats Bar with Action Buttons */}
               <div className="flex items-center justify-between py-5 border-y border-gray-200 mb-8">
                 <div className="flex items-center gap-6">
-                  <div className="flex items-center gap-2 text-gray-600">
+                  <div className="flex items-center gap-2 text-gray-700">
                     <Eye className="w-5 h-5" />
                     <span className="text-base font-medium">
                       {displayPost.stats.views.toLocaleString()}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-gray-600">
+                  <div className="flex items-center gap-2 text-gray-700">
                     <svg 
                       className={`w-5 h-5 ${isLiked ? 'fill-secondary-500 text-secondary-500' : ''}`} 
                       fill={isLiked ? 'currentColor' : 'none'} 
@@ -962,7 +962,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                       {displayPost.stats.likes}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-gray-600">
+                  <div className="flex items-center gap-2 text-gray-700">
                     <MessageCircle className="w-5 h-5" />
                     <span className="text-base font-medium">
                       {displayPost.stats.comments}
@@ -1007,7 +1007,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                     className={`w-8 h-8 transition-colors ${
                       isLiked 
                         ? 'text-secondary-500 fill-secondary-500' 
-                        : 'text-gray-400 group-hover:text-primary-600'
+                        : 'text-gray-700 group-hover:text-primary-600'
                     }`} 
                     fill={isLiked ? 'currentColor' : 'none'} 
                     stroke="currentColor" 
@@ -1023,7 +1023,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                     {displayPost.stats.likes}
                   </span>
                   {isTogglingLike && (
-                    <span className="text-xs text-gray-500">처리 중...</span>
+                    <span className="text-xs text-gray-700">처리 중...</span>
                   )}
                 </button>
               </section>
@@ -1087,10 +1087,10 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                 {isLoadingComments ? (
                   <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="text-gray-500 mt-2 text-sm">댓글을 불러오는 중...</p>
+                    <p className="text-gray-700 mt-2 text-sm">댓글을 불러오는 중...</p>
                   </div>
                 ) : displayedComments.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-gray-700">
                     아직 댓글이 없습니다. 첫 댓글을 작성해보세요!
                   </div>
                 ) : (
@@ -1121,7 +1121,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                                   className="w-full h-full object-cover"
                                 />
                               ) : (
-                                <div className="w-full h-full flex items-center justify-center text-sm font-semibold text-gray-600">
+                                <div className="w-full h-full flex items-center justify-center text-sm font-semibold text-gray-700">
                                   {initial}
                                 </div>
                               )}
@@ -1130,7 +1130,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                               <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2">
                                   <span className="font-semibold text-gray-900">{displayName}</span>
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-gray-700">
                                   {new Date(comment.createdAt).toLocaleDateString('ko-KR', {
                                     year: 'numeric',
                                     month: 'long',
@@ -1152,7 +1152,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                                         setEditingCommentId(null);
                                         setEditContent('');
                                       }}
-                                      className="text-xs text-gray-500 hover:text-gray-700"
+                                      className="text-xs text-gray-700 hover:text-gray-800"
                                     >
                                       취소
                                     </button>
@@ -1164,7 +1164,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                                         setEditingCommentId(comment.id);
                                         setEditContent(comment.content);
                                       }}
-                                      className="text-xs text-gray-500 hover:text-gray-700"
+                                      className="text-xs text-gray-700 hover:text-gray-800"
                                     >
                                       수정
                                     </button>
@@ -1252,7 +1252,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                                             className="w-full h-full object-cover"
                                           />
                                         ) : (
-                                          <div className="w-full h-full flex items-center justify-center text-xs font-semibold text-gray-600">
+                                          <div className="w-full h-full flex items-center justify-center text-xs font-semibold text-gray-700">
                                             {replyInitial}
                                           </div>
                                         )}
@@ -1260,7 +1260,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                                       <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-1">
                                           <span className="font-medium text-gray-900 text-sm">{replyDisplayName}</span>
-                                        <span className="text-xs text-gray-500">
+                                        <span className="text-xs text-gray-700">
                                           {new Date(reply.createdAt).toLocaleDateString('ko-KR')}
                                         </span>
                                       </div>
@@ -1319,7 +1319,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                             className={`text-sm block py-2 px-3 rounded-lg transition-all text-left w-full ${
                               activeSection === `heading-${index}`
                                 ? 'text-primary-700 bg-primary-50 font-semibold shadow-sm border-l-2 border-primary-500'
-                                : 'text-gray-600 hover:text-primary-600 hover:bg-primary-50/50 active:bg-primary-100'
+                                : 'text-gray-700 hover:text-primary-600 hover:bg-primary-50/50 active:bg-primary-100'
                             }`}
                           >
                             {heading.level === 1 ? `${index + 1}. ` : ''}{heading.text}
@@ -1363,7 +1363,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                                 </span>
                                 {article.viewCount !== undefined && (
                                   <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
-                                    <Eye className="w-3.5 h-3.5 text-gray-600" />
+                                    <Eye className="w-3.5 h-3.5 text-gray-700" />
                                     <span className="text-gray-700">{article.viewCount}</span>
                                   </div>
                                 )}
@@ -1377,7 +1377,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                               <h4 className="text-sm font-bold text-gray-900 group-hover:text-purple-600 transition-colors mb-1.5 line-clamp-2 leading-snug">
                                 {article.title}
                               </h4>
-                              <div className="flex items-center gap-2 text-xs text-gray-500">
+                              <div className="flex items-center gap-2 text-xs text-gray-700">
                                 <span className="font-medium">{article.author}</span>
                                 {article.createdAt && (
                                   <>
@@ -1397,7 +1397,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                       );
                     })
                   ) : (
-                    <p className="text-sm text-gray-500 text-center py-4">관련 아티클이 없습니다.</p>
+                    <p className="text-sm text-gray-700 text-center py-4">관련 아티클이 없습니다.</p>
                   )}
                 </div>
               </div>

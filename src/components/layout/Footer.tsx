@@ -68,13 +68,13 @@ const Footer = () => {
                     </a>
                   </div>
                   <div className="flex space-x-4 pt-2">
-                    <a href="#" className="text-gray-400 hover:text-blue-400 transition duration-200 hover:scale-110">
+                    <a href="#" className="text-gray-700 hover:text-blue-400 transition duration-200 hover:scale-110">
                       <Github className="h-5 w-5" />
                     </a>
-                    <a href="#" className="text-gray-400 hover:text-blue-400 transition duration-200 hover:scale-110">
+                    <a href="#" className="text-gray-700 hover:text-blue-400 transition duration-200 hover:scale-110">
                       <Instagram className="h-5 w-5" />
                     </a>
-                    <a href="#" className="text-gray-400 hover:text-blue-400 transition duration-200 hover:scale-110">
+                    <a href="#" className="text-gray-700 hover:text-blue-400 transition duration-200 hover:scale-110">
                       <Youtube className="h-5 w-5" />
                     </a>
                   </div>

@@ -249,7 +249,7 @@ function LogInPageInner() {
           <button
             type="button"
             onClick={() => router.push("/")}
-            className="absolute top-4 right-4 text-gray-400 hover:text-primary-600 transition-colors"
+            className="absolute top-4 right-4 text-gray-700 hover:text-primary-600 transition-colors"
           >
             <X size={20} />
           </button>
@@ -267,7 +267,7 @@ function LogInPageInner() {
                     <FormLabel className="text-sm font-medium text-primary-600">이메일</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-700" />
                         <input
                           type="email"
                           placeholder="이메일을 입력하세요"
@@ -290,7 +290,7 @@ function LogInPageInner() {
                     <FormLabel className="text-sm font-medium text-primary-600">패스워드</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-700" />
                         <input
                           type={showPassword ? "text" : "password"}
                           placeholder="패스워드를 입력하세요"
@@ -300,7 +300,7 @@ function LogInPageInner() {
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-700 hover:text-gray-700 transition-colors"
                         >
                           {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
@@ -325,7 +325,7 @@ function LogInPageInner() {
                       }`}
                     />
                   </div>
-                  <span className="text-gray-600 select-none text-sm">로그인 상태 유지</span>
+                  <span className="text-gray-700 select-none text-sm">로그인 상태 유지</span>
                 </label>
                 <Link
                   href="/forgot-password"
@@ -368,7 +368,7 @@ function LogInPageInner() {
 
           <div className="my-5 flex items-center">
             <div className="flex-grow border-t border-gray-300"></div>
-            <span className="mx-4 flex-shrink text-gray-500 text-sm">OR</span>
+            <span className="mx-4 flex-shrink text-gray-700 text-sm">OR</span>
             <div className="flex-grow border-t border-gray-300"></div>
           </div>
 
@@ -396,7 +396,7 @@ export default function LogInPage() {
     <Suspense
       fallback={
         <div className="flex h-screen w-full items-center justify-center bg-authentication-background">
-          <div className="text-sm text-gray-600">로딩 중...</div>
+          <div className="text-sm text-gray-700">로딩 중...</div>
         </div>
       }
     >

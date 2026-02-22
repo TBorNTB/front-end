@@ -120,12 +120,12 @@ export default function ProfileEditModal({ open, profile, onClose, onUpdated }: 
         <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-gray-200 flex-shrink-0">
           <div>
             <h2 className="text-xl font-bold text-gray-900">프로필 편집</h2>
-            <p className="text-sm text-gray-600 mt-1">필요한 정보만 빠르게 수정할 수 있어요.</p>
+            <p className="text-sm text-gray-700 mt-1">필요한 정보만 빠르게 수정할 수 있어요.</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-700 transition-colors"
+            className="p-2 text-gray-700 hover:text-gray-700 transition-colors"
             aria-label="닫기"
           >
             <X className="h-5 w-5" />
@@ -152,7 +152,7 @@ export default function ProfileEditModal({ open, profile, onClose, onUpdated }: 
                 readOnly
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 cursor-not-allowed"
               />
-              <p className="text-xs text-gray-500 mt-2">한 번 설정된 이메일은 변경할 수 없습니다.</p>
+              <p className="text-xs text-gray-700 mt-2">한 번 설정된 이메일은 변경할 수 없습니다.</p>
             </div>
 
             <div>
@@ -174,7 +174,7 @@ export default function ProfileEditModal({ open, profile, onClose, onUpdated }: 
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <FileText className="inline h-4 w-4 mr-1 text-primary-600" />
                 자기소개
-                <span className="text-xs text-gray-500 font-normal ml-2">(선택)</span>
+                <span className="text-xs text-gray-700 font-normal ml-2">(선택)</span>
               </label>
               <textarea
                 value={form.description}

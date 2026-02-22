@@ -274,7 +274,7 @@ function InlineCategoryManagement() {
       {/* Categories Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {isLoading ? (
-          <div className="admin-card col-span-full py-10 text-center text-sm text-gray-500">
+          <div className="admin-card col-span-full py-10 text-center text-sm text-gray-700">
             불러오는 중...
           </div>
         ) : error ? (
@@ -282,7 +282,7 @@ function InlineCategoryManagement() {
             {error}
           </div>
         ) : categories.length === 0 ? (
-          <div className="admin-card col-span-full py-10 text-center text-sm text-gray-500">
+          <div className="admin-card col-span-full py-10 text-center text-sm text-gray-700">
             카테고리가 없습니다.
           </div>
         ) : (
@@ -306,13 +306,13 @@ function InlineCategoryManagement() {
                     </button>
                     <button
                       onClick={() => openEdit(category)}
-                      className="p-1 text-gray-400 hover:text-primary-600 transition-colors"
+                      className="p-1 text-gray-700 hover:text-primary-600 transition-colors"
                       title="편집"
                     >
                       <Edit className="w-4 h-4" />
                     </button>
                     <button
-                      className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                      className="p-1 text-gray-700 hover:text-red-600 transition-colors"
                       title="삭제"
                       onClick={() => setDeleteTarget(category)}
                     >
@@ -322,7 +322,7 @@ function InlineCategoryManagement() {
                 </div>
 
                 <div className="space-y-2 text-sm">
-                  <div className="text-gray-600 line-clamp-2">
+                  <div className="text-gray-700 line-clamp-2">
                     {category.description || "(요약 없음)"}
                   </div>
                 </div>
@@ -336,8 +336,8 @@ function InlineCategoryManagement() {
           onClick={() => setIsCreating(true)}
           className="admin-card border-2 border-dashed border-gray-300 hover:border-primary-400 cursor-pointer flex flex-col items-center justify-center py-8 transition-colors"
         >
-          <Plus className="w-8 h-8 text-gray-400 mb-2" />
-          <span className="text-gray-600 font-medium">새 카테고리 추가</span>
+          <Plus className="w-8 h-8 text-gray-700 mb-2" />
+          <span className="text-gray-700 font-medium">새 카테고리 추가</span>
         </div>
       </div>
 
@@ -579,11 +579,11 @@ function RAGLearningManagement() {
             id="rag-pdf-input"
           />
           <label htmlFor="rag-pdf-input" className="cursor-pointer block">
-            <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-gray-600 font-medium">
+            <Upload className="w-12 h-12 text-gray-700 mx-auto mb-3" />
+            <p className="text-gray-700 font-medium">
               PDF 파일을 여기에 끌어다 놓거나 클릭하여 선택하세요
             </p>
-            <p className="text-sm text-gray-500 mt-1">*.pdf 만 지원 · 한 번에 1개만 선택</p>
+            <p className="text-sm text-gray-700 mt-1">*.pdf 만 지원 · 한 번에 1개만 선택</p>
           </label>
         </div>
 
@@ -593,7 +593,7 @@ function RAGLearningManagement() {
               <FileText className="w-8 h-8 text-red-500 flex-shrink-0" />
               <div>
                 <p className="font-medium text-gray-900">{selectedFile.name}</p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-700">
                   {(selectedFile.size / 1024).toFixed(1)} KB
                 </p>
               </div>
@@ -818,7 +818,7 @@ export default function AdminContent() {
                 activeTab === tab.id ? 'active' : ''
               }`}
             >
-              <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? tab.color : 'text-gray-400'}`} />
+              <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? tab.color : 'text-gray-700'}`} />
               <span>{tab.label}</span>
             </button>
           ))}

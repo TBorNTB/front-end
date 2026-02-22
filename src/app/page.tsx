@@ -345,7 +345,7 @@ export default function Home() {
             {landingLoading || projectError ? (
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
-                <p className="mt-4 text-gray-600">프로젝트를 불러오는 중...</p>
+                <p className="mt-4 text-gray-700">프로젝트를 불러오는 중...</p>
               </div>
             ) : projectError ? (
               <div className="text-center py-12">
@@ -360,7 +360,7 @@ export default function Home() {
                       LATEST<br />
                       PROJECT
                     </h2>
-                    <p className="text-gray-600 text-lg mb-6">
+                    <p className="text-gray-700 text-lg mb-6">
                       최신의 보안 기술과 오픈소스를 활용한<br />
                       실무에 적용 가능한 솔루션입니다.
                     </p>
@@ -425,7 +425,7 @@ export default function Home() {
                           }`}
                           aria-label="이전"
                         >
-                          <ChevronLeft className={`w-5 h-5 ${canGoPrevProjects ? 'text-primary-600' : 'text-gray-400'}`} />
+                          <ChevronLeft className={`w-5 h-5 ${canGoPrevProjects ? 'text-primary-600' : 'text-gray-700'}`} />
                         </button>
                         
                         <div className="flex gap-2">
@@ -453,7 +453,7 @@ export default function Home() {
                           }`}
                           aria-label="다음"
                         >
-                          <ChevronRight className={`w-5 h-5 ${canGoNextProjects || currentProjectIndex > 0 ? 'text-primary-600' : 'text-gray-400'}`} />
+                          <ChevronRight className={`w-5 h-5 ${canGoNextProjects || currentProjectIndex > 0 ? 'text-primary-600' : 'text-gray-700'}`} />
                         </button>
                       </div>
                     )}
@@ -468,12 +468,12 @@ export default function Home() {
         <section className="section bg-background">
           <div className="container">
             <h2 className="text-3xl font-bold text-gray-900 mb-8">Latest Articles</h2>
-            <p className="text-gray-600 mb-12">Stay informed with expert insights</p>
+            <p className="text-gray-700 mb-12">Stay informed with expert insights</p>
             
             {articlesLoading ? (
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
-                <p className="mt-4 text-gray-600">아티클을 불러오는 중...</p>
+                <p className="mt-4 text-gray-700">아티클을 불러오는 중...</p>
               </div>
             ) : articlesError ? (
               <div className="text-center py-12">
@@ -526,7 +526,7 @@ export default function Home() {
                       }`}
                       aria-label="이전"
                     >
-                      <ChevronLeft className={`w-5 h-5 ${canGoPrevArticles ? 'text-primary-600' : 'text-gray-400'}`} />
+                      <ChevronLeft className={`w-5 h-5 ${canGoPrevArticles ? 'text-primary-600' : 'text-gray-700'}`} />
                     </button>
                     
                     <div className="flex gap-2">
@@ -554,14 +554,14 @@ export default function Home() {
                       }`}
                       aria-label="다음"
                     >
-                      <ChevronRight className={`w-5 h-5 ${canGoNextArticles || articleIndex > 0 ? 'text-primary-600' : 'text-gray-400'}`} />
+                      <ChevronRight className={`w-5 h-5 ${canGoNextArticles || articleIndex > 0 ? 'text-primary-600' : 'text-gray-700'}`} />
                     </button>
                   </div>
                 )}
               </div>
             ) : (
               <div className="text-center py-12">
-                <p className="text-gray-500">표시할 아티클이 없습니다.</p>
+                <p className="text-gray-700">표시할 아티클이 없습니다.</p>
               </div>
             )}
           </div>
@@ -603,7 +603,7 @@ function OAuthSignupCompleteModal({ onClose }: { onClose: () => void }) {
         <h3 className="text-xl font-bold text-gray-900 mb-2">
           회원가입이 완료되었습니다
         </h3>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-700 mb-6">
           정상적으로 가입되었습니다. 로그인 후 서비스를 이용해 주세요.
         </p>
         <Link
@@ -616,7 +616,7 @@ function OAuthSignupCompleteModal({ onClose }: { onClose: () => void }) {
         <button
           type="button"
           onClick={onClose}
-          className="mt-3 text-sm text-gray-500 hover:text-gray-700"
+          className="mt-3 text-sm text-gray-700 hover:text-gray-700"
         >
           닫기
         </button>
@@ -657,7 +657,7 @@ function ProjectsSection({
       <section className="section bg-gray-50">
         <div className="container text-center py-12">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500" />
-          <p className="mt-4 text-gray-600">프로젝트를 불러오는 중...</p>
+          <p className="mt-4 text-gray-700">프로젝트를 불러오는 중...</p>
         </div>
       </section>
     );
@@ -689,7 +689,7 @@ function ProjectsSection({
               LATEST<br />
               PROJECT
             </h2>
-            <p className="text-gray-600 text-lg mb-6">
+            <p className="text-gray-700 text-lg mb-6">
               최신의 보안 기술과 오픈소스를 활용한<br />
               실무에 적용 가능한 솔루션입니다.
             </p>
@@ -747,7 +747,7 @@ function ProjectsSection({
                 >
                   <ChevronLeft
                     className={`w-5 h-5 ${
-                      canGoPrev ? 'text-primary-600' : 'text-gray-400'
+                      canGoPrev ? 'text-primary-600' : 'text-gray-700'
                     }`}
                   />
                 </button>
@@ -781,7 +781,7 @@ function ProjectsSection({
                     className={`w-5 h-5 ${
                       canGoNext || currentIndex > 0
                         ? 'text-primary-600'
-                        : 'text-gray-400'
+                        : 'text-gray-700'
                     }`}
                   />
                 </button>
@@ -822,7 +822,7 @@ function ArticlesSection({
       <section className="section bg-background">
         <div className="container text-center py-12">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500" />
-          <p className="mt-4 text-gray-600">아티클을 불러오는 중...</p>
+          <p className="mt-4 text-gray-700">아티클을 불러오는 중...</p>
         </div>
       </section>
     );
@@ -833,10 +833,10 @@ function ArticlesSection({
       <section className="section bg-background">
         <div className="container text-center py-12">
           <h2 className="text-3xl font-bold text-gray-900 mb-8">Latest Articles</h2>
-          <p className="text-gray-600 mb-12">
+          <p className="text-gray-700 mb-12">
             Stay informed with expert insights
           </p>
-          <p className="text-gray-500">표시할 아티클이 없습니다.</p>
+          <p className="text-gray-700">표시할 아티클이 없습니다.</p>
         </div>
       </section>
     );
@@ -849,7 +849,7 @@ function ArticlesSection({
     <section className="section bg-background">
       <div className="container">
         <h2 className="text-3xl font-bold text-gray-900 mb-8">Latest Articles</h2>
-        <p className="text-gray-600 mb-12">Stay informed with expert insights</p>
+        <p className="text-gray-700 mb-12">Stay informed with expert insights</p>
 
         <div className="relative px-12 lg:px-16">
             {totalArticles > 3 && (
@@ -893,7 +893,7 @@ function ArticlesSection({
             >
               <ChevronLeft
                 className={`w-5 h-5 ${
-                  canGoPrev ? 'text-primary-600' : 'text-gray-400'
+                  canGoPrev ? 'text-primary-600' : 'text-gray-700'
                 }`}
               />
             </button>
@@ -927,7 +927,7 @@ function ArticlesSection({
                 className={`w-5 h-5 ${
                   canGoNext || currentIndex > 0
                     ? 'text-primary-600'
-                    : 'text-gray-400'
+                    : 'text-gray-700'
                 }`}
               />
             </button>

@@ -126,7 +126,7 @@ export default function ProjectEditPage() {
       <div className="max-w-4xl mx-auto flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4" />
-          <p className="text-gray-600">불러오는 중...</p>
+          <p className="text-gray-700">불러오는 중...</p>
         </div>
       </div>
     );
@@ -136,12 +136,12 @@ export default function ProjectEditPage() {
     <div className="max-w-4xl mx-auto">
       {/* Header - 프로젝트 생성과 동일한 톤 */}
       <div className="flex items-center gap-4 mb-8">
-        <Link href={`/projects/${projectId}`} className="text-gray-600 hover:text-gray-900">
+        <Link href={`/projects/${projectId}`} className="text-gray-700 hover:text-gray-900">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
           <h1 className="text-3xl font-bold text-gray-900">프로젝트 수정</h1>
-          <p className="text-gray-600 mt-1">프로젝트 정보를 수정하고 저장하세요.</p>
+          <p className="text-gray-700 mt-1">프로젝트 정보를 수정하고 저장하세요.</p>
         </div>
       </div>
 
@@ -252,7 +252,7 @@ export default function ProjectEditPage() {
                 placeholder="프로젝트에 대해 자세히 설명해주세요..."
               />
             </div>
-            <p className="text-gray-500 text-sm mt-1">리치 텍스트 에디터를 사용하여 작성해주세요.</p>
+            <p className="text-gray-700 text-sm mt-1">리치 텍스트 에디터를 사용하여 작성해주세요.</p>
           </div>
         </div>
 

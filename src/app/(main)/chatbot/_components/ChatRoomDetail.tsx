@@ -551,7 +551,7 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
                   className="w-8 h-8 rounded-full object-cover border border-gray-200"
                 />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-xs text-gray-500">
+                <div className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-xs text-gray-700">
                   {initial}
                 </div>
               )
@@ -563,7 +563,7 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
 
         <div className={`flex flex-col max-w-[70%] ${isOwn ? "items-end" : "items-start"}`}>
           {!isOwn && showAvatar && (
-            <div className="text-xs text-gray-500 mb-1 px-1">
+            <div className="text-xs text-gray-700 mb-1 px-1">
               {message.senderName}
             </div>
           )}
@@ -577,7 +577,7 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
             >
               <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
             </div>
-            <div className={`text-xs text-gray-500 ${isOwn ? "text-right" : "text-left"}`}>
+            <div className={`text-xs text-gray-700 ${isOwn ? "text-right" : "text-left"}`}>
               {formatTime(message.timestamp)}
             </div>
           </div>
@@ -635,7 +635,7 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
                             <div
                               key={m.username}
                               title={m.realName}
-                              className="w-6 h-6 rounded-full border-2 border-white bg-white overflow-hidden flex items-center justify-center text-xs text-gray-600"
+                              className="w-6 h-6 rounded-full border-2 border-white bg-white overflow-hidden flex items-center justify-center text-xs text-gray-700"
                             >
                               {showThumb ? (
                                 <img src={thumb} alt={m.nickname} className="w-full h-full object-cover" />
@@ -745,7 +745,7 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
         )}
         {isHistoryLoading && messages.length > 0 && (
           <div className="flex justify-center py-2">
-            <div className="text-xs text-gray-500 bg-white/80 border border-gray-200 rounded-full px-3 py-1">
+            <div className="text-xs text-gray-700 bg-white/80 border border-gray-200 rounded-full px-3 py-1">
               이전 메시지 불러오는 중...
             </div>
           </div>
@@ -763,21 +763,21 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
               aria-label="Add attachment"
               title="첨부"
             >
-              <Plus className="w-5 h-5 text-gray-600" />
+              <Plus className="w-5 h-5 text-gray-700" />
             </button>
             <button
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               aria-label="Emoji"
               title="이모지"
             >
-              <Smile className="w-5 h-5 text-gray-600" />
+              <Smile className="w-5 h-5 text-gray-700" />
             </button>
             <button
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               aria-label="Attach file"
               title="파일 첨부"
             >
-              <Paperclip className="w-5 h-5 text-gray-600" />
+              <Paperclip className="w-5 h-5 text-gray-700" />
             </button>
           </div>
           <div className="flex-1 relative">

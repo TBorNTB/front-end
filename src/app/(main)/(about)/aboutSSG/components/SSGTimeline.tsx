@@ -147,7 +147,7 @@ export default function SSGTimeline() {
           <h2 className="text-3xl md:text-4xl font-bold mb-4 text-primary-700">
             SSG TIMELINE
           </h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <p className="text-gray-700 max-w-2xl mx-auto">
             2000년 창설부터 현재까지, SSG가 걸어온 25년의 혁신과 성장의 역사를 만나보세요
           </p>
         </div>
@@ -221,7 +221,7 @@ export default function SSGTimeline() {
                             <h4 className="font-semibold text-primary-700 mb-2">[translate:주요 성과]</h4>
                             <ul className="space-y-1">
                             {event.details.map((detail, index) => (
-                                <li key={index} className="flex items-center gap-2 text-gray-600">
+                                <li key={index} className="flex items-center gap-2 text-gray-700">
                                 <div className="w-1.5 h-1.5 rounded-full bg-primary-700"></div>
                                 {detail}
                                 </li>

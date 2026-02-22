@@ -326,7 +326,7 @@ export function LearningTopics() {
                 </h3>
               </div>
               
-              <p className="text-sm text-gray-600 leading-relaxed mb-6">
+              <p className="text-sm text-gray-700 leading-relaxed mb-6">
                 {category.description || '설명이 없습니다.'}
               </p>
               
@@ -334,14 +334,14 @@ export function LearningTopics() {
                 <div className="flex items-center space-x-4 text-sm">
                   <div className="flex items-center space-x-1">
                     <div className="w-2 h-2 rounded-full bg-primary-500"></div>
-                    <span className="text-gray-600">{category.projects}개 프로젝트</span>
+                    <span className="text-gray-700">{category.projects}개 프로젝트</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <div className="w-2 h-2 rounded-full bg-secondary-500"></div>
-                    <span className="text-gray-600">{category.articles}개 CS지식</span>
+                    <span className="text-gray-700">{category.articles}개 CS지식</span>
                   </div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-primary-600 group-hover:translate-x-1 transition-all duration-300" />
+                <ArrowRight className="w-4 h-4 text-gray-700 group-hover:text-primary-600 group-hover:translate-x-1 transition-all duration-300" />
               </div>
             </div>
           );
@@ -392,7 +392,7 @@ export function LearningTopics() {
             </div>
             <div className="relative z-10 flex items-start space-x-4">
               <div className="w-16 h-16 rounded-xl bg-gray-700 flex items-center justify-center flex-shrink-0">
-                <Shield className="w-8 h-8 text-gray-400" />
+                <Shield className="w-8 h-8 text-gray-700" />
               </div>
               <div className="flex-1">
                 <h1 className="text-3xl font-bold text-white mb-2">카테고리를 찾을 수 없습니다</h1>
@@ -448,7 +448,7 @@ export function LearningTopics() {
                     {loadingProjects ? (
                       <div className="bg-gray-50 rounded-lg p-8 text-center border border-gray-200">
                         <div className="inline-block w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                        <p className="text-gray-600 mt-2">프로젝트를 불러오는 중...</p>
+                        <p className="text-gray-700 mt-2">프로젝트를 불러오는 중...</p>
                       </div>
                     ) : filteredProjects.length > 0 ? (
                       filteredProjects.map((project) => (
@@ -459,7 +459,7 @@ export function LearningTopics() {
                               {getStatusText(project.status)}
                             </span>
                           </div>
-                          <p className="text-gray-600 text-sm mb-4">{project.description}</p>
+                          <p className="text-gray-700 text-sm mb-4">{project.description}</p>
                           <div className="flex items-center space-x-2 mb-4">
                             {project.tags && project.tags.length > 0 ? (
                               project.tags.slice(0, 3).map((tag: string, index: number) => (
@@ -470,7 +470,7 @@ export function LearningTopics() {
                             ) : null}
                           </div>
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3 text-xs text-gray-500">
+                            <div className="flex items-center space-x-3 text-xs text-gray-700">
                               <div className="flex items-center space-x-1">
                                 <Star size={12} />
                                 <span>{project.stars}</span>
@@ -491,7 +491,7 @@ export function LearningTopics() {
                       ))
                     ) : (
                       <div className="bg-gray-50 rounded-lg p-8 text-center border border-gray-200">
-                        <p className="text-gray-600">이 카테고리에 등록된 프로젝트가 없습니다.</p>
+                        <p className="text-gray-700">이 카테고리에 등록된 프로젝트가 없습니다.</p>
                       </div>
                     )}
                   </div>
@@ -520,19 +520,19 @@ export function LearningTopics() {
                     {loadingArticles ? (
                       <div className="bg-gray-50 rounded-lg p-8 text-center border border-gray-200">
                         <div className="inline-block w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                        <p className="text-gray-600 mt-2">아티클을 불러오는 중...</p>
+                        <p className="text-gray-700 mt-2">아티클을 불러오는 중...</p>
                       </div>
                     ) : filteredArticles.length > 0 ? (
                       filteredArticles.map((article) => (
                         <div key={article.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-200">
                           <h3 className="text-base font-bold text-foreground mb-2">{article.title}</h3>
-                          <p className="text-gray-600 text-sm mb-4">{article.description}</p>
-                          <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                          <p className="text-gray-700 text-sm mb-4">{article.description}</p>
+                          <div className="flex items-center justify-between text-xs text-gray-700 mb-3">
                             <span>by {article.author}</span>
                             <span>{article.publishDate}</span>
                           </div>
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4 text-xs text-gray-500">
+                            <div className="flex items-center space-x-4 text-xs text-gray-700">
                               <div className="flex items-center space-x-1">
                                 <Globe size={12} />
                                 <span>{article.views}</span>
@@ -553,7 +553,7 @@ export function LearningTopics() {
                       ))
                     ) : (
                       <div className="bg-gray-50 rounded-lg p-8 text-center border border-gray-200">
-                        <p className="text-gray-600">이 카테고리에 등록된 CS지식이 없습니다.</p>
+                        <p className="text-gray-700">이 카테고리에 등록된 CS지식이 없습니다.</p>
                       </div>
                     )}
                   </div>

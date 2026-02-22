@@ -56,7 +56,7 @@ const AvatarStack = ({
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-1.5">
           <Crown size={14} className="text-yellow-500" />
-          <span className="text-xs font-medium text-gray-600">소유자</span>
+          <span className="text-xs font-medium text-gray-700">소유자</span>
         </div>
         <div className="flex items-center gap-2">
           <div 
@@ -85,7 +85,7 @@ const AvatarStack = ({
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5">
             <Users size={14} className="text-blue-500" />
-            <span className="text-xs font-medium text-gray-600">협력자</span>
+            <span className="text-xs font-medium text-gray-700">협력자</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="flex -space-x-2">
@@ -109,11 +109,11 @@ const AvatarStack = ({
                   className="w-6 h-6 rounded-full border-2 border-white bg-gray-300 flex items-center justify-center relative"
                   title={`+${remainingCount} more participants`}
                 >
-                  <span className="text-xs font-medium text-gray-600">+{remainingCount}</span>
+                  <span className="text-xs font-medium text-gray-700">+{remainingCount}</span>
                 </div>
               )}
             </div>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-gray-700">
               {participants.length}명
             </span>
           </div>
@@ -172,7 +172,7 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
               {news.title}
             </h3>
             
-            <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+            <p className="text-sm text-gray-700 mb-3 line-clamp-2">
               {news.summary || news.content?.substring(0, 150) || ''}
             </p>
           </div>
@@ -183,7 +183,7 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
           </div>
 
           {/* Meta Info */}
-          <div className="flex items-center justify-between text-xs text-gray-500">
+          <div className="flex items-center justify-between text-xs text-gray-700">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1">
                 <Calendar className="h-3.5 w-3.5" />
@@ -235,7 +235,7 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
             {news.title}
           </h3>
           
-          <p className="text-sm text-gray-600 line-clamp-3">
+          <p className="text-sm text-gray-700 line-clamp-3">
             {news.summary || news.content?.substring(0, 150) || ''}
           </p>
         </div>
@@ -244,7 +244,7 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
         {news.tags && news.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-4">
             {news.tags.slice(0, 2).map((tag, index) => (
-              <span key={index} className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">
+              <span key={index} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
                 #{tag}
               </span>
             ))}
@@ -257,7 +257,7 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
         </div>
 
         {/* Meta Info */}
-        <div className="border-t border-gray-100 pt-3 flex items-center justify-between text-xs text-gray-500">
+        <div className="border-t border-gray-100 pt-3 flex items-center justify-between text-xs text-gray-700">
           <div className="flex items-center gap-2">
             <Calendar className="h-3.5 w-3.5" />
             <span>{formatDate(news.createdAt)}</span>

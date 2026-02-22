@@ -273,7 +273,7 @@ export default function AlarmPopup({ isOpen, onClose, onRefreshUnread }: AlarmPo
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1 text-gray-400 hover:text-gray-600 rounded hover:bg-gray-100"
+                className="p-1 text-gray-700 hover:text-gray-700 rounded hover:bg-gray-100"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -293,7 +293,7 @@ export default function AlarmPopup({ isOpen, onClose, onRefreshUnread }: AlarmPo
                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                   seenFilter === filter
                     ? 'bg-primary-100 text-primary-700'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
                 {SEEN_FILTER_LABELS[filter]}
@@ -308,7 +308,7 @@ export default function AlarmPopup({ isOpen, onClose, onRefreshUnread }: AlarmPo
                 ? {
                     label: '전체',
                     icon: Bell,
-                    color: 'text-gray-600',
+                    color: 'text-gray-700',
                     activeColor: 'text-primary-600',
                     bgColor: 'bg-gray-50',
                     activeBgColor: 'bg-primary-50',
@@ -341,7 +341,7 @@ export default function AlarmPopup({ isOpen, onClose, onRefreshUnread }: AlarmPo
           <div className="flex-1 overflow-y-auto">
             {isLoading ? (
               <div className="p-12 text-center">
-                <Loader2 className="w-8 h-8 text-gray-400 mx-auto mb-4 animate-spin" />
+                <Loader2 className="w-8 h-8 text-gray-700 mx-auto mb-4 animate-spin" />
                 <p className="text-gray-700 font-medium">알림을 불러오는 중...</p>
               </div>
             ) : error ? (
@@ -363,7 +363,7 @@ export default function AlarmPopup({ isOpen, onClose, onRefreshUnread }: AlarmPo
                       checked={alarms.length > 0 && selectedIds.size === alarms.length}
                       onCheckedChange={toggleSelectAll}
                     />
-                    <span className="text-xs font-medium text-gray-600">전체 선택</span>
+                    <span className="text-xs font-medium text-gray-700">전체 선택</span>
                   </label>
                   {selectedIds.size > 0 && (
                     <button
@@ -412,7 +412,7 @@ export default function AlarmPopup({ isOpen, onClose, onRefreshUnread }: AlarmPo
                               </div>
                             ) : (
                               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${alarm.isRead ? 'bg-gray-100' : config.iconBgColor}`}>
-                                <Icon className={`w-5 h-5 ${alarm.isRead ? 'text-gray-400' : config.iconColor}`} />
+                                <Icon className={`w-5 h-5 ${alarm.isRead ? 'text-gray-700' : config.iconColor}`} />
                               </div>
                             )}
                           </div>
@@ -437,7 +437,7 @@ export default function AlarmPopup({ isOpen, onClose, onRefreshUnread }: AlarmPo
                               )}
                             </div>
 
-                            <div className="flex items-center space-x-2 text-xs text-gray-600">
+                            <div className="flex items-center space-x-2 text-xs text-gray-700">
                               <Clock className="w-3 h-3" />
                               <span>{formatTimeAgo(alarm.createdAt)}</span>
                             </div>
@@ -459,7 +459,7 @@ export default function AlarmPopup({ isOpen, onClose, onRefreshUnread }: AlarmPo
                     >
                       이전
                     </button>
-                    <span className="px-2 text-xs text-gray-600">
+                    <span className="px-2 text-xs text-gray-700">
                       {page + 1} / {totalPage}
                     </span>
                     <button

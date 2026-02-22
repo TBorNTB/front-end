@@ -40,7 +40,7 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
           <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
             {message.content}
           </p>
-          <span className={`text-xs ${isUser ? "text-white/70" : "text-gray-400"}`}>
+          <span className={`text-xs ${isUser ? "text-white/70" : "text-gray-700"}`}>
             {message.timestamp.toLocaleTimeString("ko-KR", {
               hour: "2-digit",
               minute: "2-digit",

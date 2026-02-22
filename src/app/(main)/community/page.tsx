@@ -137,10 +137,10 @@ function TabButton({ icon: Icon, label, active, onClick }: TabButtonProps) {
         "flex-1 flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm sm:text-base font-medium transition-all",
         active
           ? "bg-primary-600 text-white shadow-sm"
-          : "text-gray-600 hover:text-primary-600 hover:bg-slate-50",
+          : "text-gray-700 hover:text-primary-600 hover:bg-slate-50",
       ].join(" ")}
     >
-      <Icon size={18} className={active ? "text-primary-50" : "text-gray-400"} />
+      <Icon size={18} className={active ? "text-primary-50" : "text-gray-700"} />
       <span>{label}</span>
     </button>
   );

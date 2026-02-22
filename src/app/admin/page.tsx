@@ -178,7 +178,7 @@ export default function AdminPage() {
           <button
             type="button"
             onClick={() => router.push("/")}
-            className="absolute top-4 right-4 text-gray-400 hover:text-primary-600 transition-colors"
+            className="absolute top-4 right-4 text-gray-700 hover:text-primary-600 transition-colors"
           >
             <X size={20} />
           </button>
@@ -195,7 +195,7 @@ export default function AdminPage() {
                     <FormLabel className="text-sm font-medium text-primary-600">관리자 이메일</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-700" />
                         <input
                           type="email"
                           placeholder="관리자 이메일을 입력하세요"
@@ -217,7 +217,7 @@ export default function AdminPage() {
                     <FormLabel className="text-sm font-medium text-primary-600">패스워드</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-700" />
                         <input
                           type={showPassword ? "text" : "password"}
                           placeholder="패스워드를 입력하세요"
@@ -227,7 +227,7 @@ export default function AdminPage() {
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-700 hover:text-gray-700 transition-colors"
                         >
                           {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
@@ -252,7 +252,7 @@ export default function AdminPage() {
                       }`}
                     />
                   </div>
-                  <span className="text-gray-600 select-none text-sm">로그인 상태 유지</span>
+                  <span className="text-gray-700 select-none text-sm">로그인 상태 유지</span>
                 </label>
                 <Link
                   href="/forgotPW"

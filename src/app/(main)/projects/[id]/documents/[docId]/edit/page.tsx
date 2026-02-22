@@ -27,7 +27,7 @@ export default function EditDocumentPage({ params }: EditDocumentPageProps) {
         <div className="flex items-center justify-center h-96">
           <div className="flex flex-col items-center gap-2">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
-            <p className="text-gray-500">에디터 로딩 중...</p>
+            <p className="text-gray-700">에디터 로딩 중...</p>
           </div>
         </div>
       )
@@ -122,7 +122,7 @@ export default function EditDocumentPage({ params }: EditDocumentPageProps) {
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex flex-col items-center gap-2">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600" />
-          <p className="text-gray-500">문서를 불러오는 중...</p>
+          <p className="text-gray-700">문서를 불러오는 중...</p>
         </div>
       </div>
     );
@@ -136,7 +136,7 @@ export default function EditDocumentPage({ params }: EditDocumentPageProps) {
           <div className="flex items-center justify-between">
             <button
               onClick={handleCancel}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -145,7 +145,7 @@ export default function EditDocumentPage({ params }: EditDocumentPageProps) {
             </button>
 
             {/* Auto-save Status */}
-            <div className="flex items-center gap-2 text-sm text-gray-500">
+            <div className="flex items-center gap-2 text-sm text-gray-700">
               {autoSaveStatus === 'saving' && (
                 <>
                   <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
@@ -169,7 +169,7 @@ export default function EditDocumentPage({ params }: EditDocumentPageProps) {
             <div className="flex items-center gap-3">
               <button
                 onClick={handleCancel}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 취소
               </button>
@@ -210,7 +210,7 @@ export default function EditDocumentPage({ params }: EditDocumentPageProps) {
               value={documentTitle}
               onChange={(e) => setDocumentTitle(e.target.value)}
               placeholder="문서 제목을 입력하세요..."
-              className="w-full text-4xl font-bold border-none outline-none focus:ring-0 mb-4 px-0 placeholder:text-gray-400"
+              className="w-full text-4xl font-bold border-none outline-none focus:ring-0 mb-4 px-0 placeholder:text-gray-700"
               autoFocus
             />
 
@@ -220,11 +220,11 @@ export default function EditDocumentPage({ params }: EditDocumentPageProps) {
               value={documentDescription}
               onChange={(e) => setDocumentDescription(e.target.value)}
               placeholder="문서 설명을 입력하세요 (선택사항)..."
-              className="w-full text-lg text-gray-600 border-none outline-none focus:ring-0 mb-8 px-0 placeholder:text-gray-400"
+              className="w-full text-lg text-gray-700 border-none outline-none focus:ring-0 mb-8 px-0 placeholder:text-gray-700"
             />
 
             {/* Metadata Info */}
-            <div className="flex items-center gap-4 text-sm text-gray-500 mb-8 pb-8 border-b border-gray-200">
+            <div className="flex items-center gap-4 text-sm text-gray-700 mb-8 pb-8 border-b border-gray-200">
               <span>편집 중</span>
             </div>
 
@@ -240,7 +240,7 @@ export default function EditDocumentPage({ params }: EditDocumentPageProps) {
           {/* Helper Shortcuts */}
           <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
             <h3 className="text-sm font-semibold text-gray-900 mb-2">⌨️ 키보드 단축키</h3>
-            <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+            <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
               <div><kbd className="px-2 py-1 bg-white rounded border">Ctrl + B</kbd> 굵게</div>
               <div><kbd className="px-2 py-1 bg-white rounded border">Ctrl + I</kbd> 기울임</div>
               <div><kbd className="px-2 py-1 bg-white rounded border">Ctrl + Z</kbd> 실행 취소</div>

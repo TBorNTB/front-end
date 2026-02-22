@@ -758,7 +758,7 @@ export default function AdminMembersContent() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-primary-900">회원 관리</h1>
-          <p className="text-gray-600 mt-1">SSG 회원들을 관리하고 등급 변경 요청을 처리합니다</p>
+          <p className="text-gray-700 mt-1">SSG 회원들을 관리하고 등급 변경 요청을 처리합니다</p>
         </div>
         <button
           onClick={handleRefresh}
@@ -777,13 +777,13 @@ export default function AdminMembersContent() {
             className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
               activeTab === "all"
                 ? "text-primary-600 bg-primary-50 border-b-2 border-primary-600"
-                : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                : "text-gray-700 hover:text-gray-700 hover:bg-gray-50"
             }`}
           >
             <div className="flex items-center justify-center space-x-2">
               <Users className="h-4 w-4" />
               <span>전체 회원</span>
-              <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+              <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full text-xs">
                 {totalElements}
               </span>
             </div>
@@ -793,14 +793,14 @@ export default function AdminMembersContent() {
             className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
               activeTab === "requests"
                 ? "text-primary-600 bg-primary-50 border-b-2 border-primary-600"
-                : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                : "text-gray-700 hover:text-gray-700 hover:bg-gray-50"
             }`}
           >
             <div className="flex items-center justify-center space-x-2">
               <Clock className="h-4 w-4" />
               <span>등급 변경 요청</span>
               {roleChangeLoading ? (
-                <Loader2 className="h-3 w-3 text-gray-400 animate-spin" />
+                <Loader2 className="h-3 w-3 text-gray-700 animate-spin" />
               ) : (
                 <span className="bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-xs">
                   {allRoleChangeRequests.length}
@@ -813,7 +813,7 @@ export default function AdminMembersContent() {
             className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
               activeTab === "grades"
                 ? "text-primary-600 bg-primary-50 border-b-2 border-primary-600"
-                : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                : "text-gray-700 hover:text-gray-700 hover:bg-gray-50"
             }`}
           >
             <div className="flex items-center justify-center space-x-2">
@@ -832,7 +832,7 @@ export default function AdminMembersContent() {
             <div className="flex flex-col sm:flex-row gap-4 justify-between">
               <div className="flex items-center space-x-4 flex-wrap">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-700 w-4 h-4" />
                   <input
                     type="text"
                     placeholder="닉네임 검색..."
@@ -842,7 +842,7 @@ export default function AdminMembersContent() {
                   />
                 </div>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-700 w-4 h-4" />
                   <input
                     type="text"
                     placeholder="실명 검색..."
@@ -887,7 +887,7 @@ export default function AdminMembersContent() {
                     </span>
                     <button
                       onClick={() => setSelectedMembers(new Set())}
-                      className="text-xs text-gray-600 hover:text-gray-800 underline"
+                      className="text-xs text-gray-700 hover:text-gray-800 underline"
                     >
                       선택 해제
                     </button>
@@ -904,7 +904,7 @@ export default function AdminMembersContent() {
                 className={`flex items-center space-x-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
                   selectedMembers.size > 0
                     ? 'bg-primary-600 text-white hover:bg-primary-700 shadow-md hover:shadow-lg transform hover:scale-105'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-200 text-gray-700 cursor-not-allowed'
                 }`}
               >
                 <Edit3 className="w-4 h-4" />
@@ -944,7 +944,7 @@ export default function AdminMembersContent() {
                     setRealNameSearch("");
                     setPage(0);
                   }}
-                  className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="px-4 py-2 text-sm text-gray-700 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   필터 초기화
                 </button>
@@ -960,7 +960,7 @@ export default function AdminMembersContent() {
           <div className="flex flex-col sm:flex-row gap-4 justify-between">
             <div className="flex items-center space-x-4 flex-wrap">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-700 w-4 h-4" />
                 <input
                   type="text"
                   placeholder="닉네임 검색..."
@@ -973,7 +973,7 @@ export default function AdminMembersContent() {
                 />
               </div>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-700 w-4 h-4" />
                 <input
                   type="text"
                   placeholder="실명 검색..."
@@ -1025,7 +1025,7 @@ export default function AdminMembersContent() {
                     setRoleChangeRealNameSearch("");
                     setRoleChangePage(0);
                   }}
-                  className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="px-4 py-2 text-sm text-gray-700 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   필터 초기화
                 </button>
@@ -1042,25 +1042,25 @@ export default function AdminMembersContent() {
           <div>
             <div className="border-b border-gray-200 pb-4 mb-6">
               <h3 className="text-lg font-semibold text-primary-900">전체 회원 목록</h3>
-              <p className="text-sm text-gray-600 mt-1">모든 등록된 회원들을 관리합니다</p>
+              <p className="text-sm text-gray-700 mt-1">모든 등록된 회원들을 관리합니다</p>
             </div>
             
             {/* Members Table */}
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
+                <Loader2 className="w-8 h-8 text-gray-700 animate-spin" />
               </div>
             ) : members.length === 0 ? (
               <div className="text-center py-12">
                 <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-sm text-gray-500">조회된 회원이 없습니다.</p>
+                <p className="text-sm text-gray-700">조회된 회원이 없습니다.</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200">
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                         <div className="flex items-center">
                           <input
                             type="checkbox"
@@ -1071,9 +1071,9 @@ export default function AdminMembersContent() {
                           <span className="ml-2">회원</span>
                         </div>
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">등급</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">가입일</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">관리</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">등급</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">가입일</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">관리</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -1109,9 +1109,9 @@ export default function AdminMembersContent() {
                               <div className="text-sm font-medium text-gray-900">
                                 {member.realName || member.nickname}
                               </div>
-                              <div className="text-sm text-gray-500">{member.email}</div>
+                              <div className="text-sm text-gray-700">{member.email}</div>
                               {member.nickname && member.realName && member.nickname !== member.realName && (
-                                <div className="text-xs text-gray-400">@{member.nickname}</div>
+                                <div className="text-xs text-gray-700">@{member.nickname}</div>
                               )}
                             </div>
                           </div>
@@ -1135,7 +1135,7 @@ export default function AdminMembersContent() {
                               </select>
                               <button
                                 onClick={() => setEditingMember(null)}
-                                className="text-gray-400 hover:text-gray-600"
+                                className="text-gray-700 hover:text-gray-700"
                                 disabled={singleRoleChangeLoading === member.username}
                               >
                                 <X className="w-3 h-3" />
@@ -1161,7 +1161,7 @@ export default function AdminMembersContent() {
                                 }
                               }}
                               disabled={singleRoleChangeLoading === member.username}
-                              className="text-gray-400 hover:text-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="text-gray-700 hover:text-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               title="역할 변경"
                             >
                               {singleRoleChangeLoading === member.username ? (
@@ -1182,7 +1182,7 @@ export default function AdminMembersContent() {
             {/* Pagination */}
             {totalPage > 1 && (
               <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-gray-700">
                   페이지 {page + 1} / {totalPage} (총 {totalElements}명)
                 </div>
                 <div className="flex items-center space-x-2">
@@ -1212,12 +1212,12 @@ export default function AdminMembersContent() {
                     <h3 className="text-lg font-semibold text-gray-900">일괄 역할 변경</h3>
                     <button
                       onClick={() => setShowBatchRoleChange(false)}
-                      className="text-gray-400 hover:text-gray-600"
+                      className="text-gray-700 hover:text-gray-700"
                     >
                       <X className="w-5 h-5" />
                     </button>
                   </div>
-                  <p className="text-sm text-gray-600 mb-4">
+                  <p className="text-sm text-gray-700 mb-4">
                     {selectedMembers.size}명의 회원 역할을 변경합니다.
                   </p>
                   <div className="space-y-4">
@@ -1275,17 +1275,17 @@ export default function AdminMembersContent() {
           <div>
             <div className="border-b border-gray-200 pb-4 mb-6">
               <h3 className="text-lg font-semibold text-primary-900">등급 변경 요청</h3>
-              <p className="text-sm text-gray-600 mt-1">회원들의 등급 변경 요청을 검토하고 승인합니다</p>
+              <p className="text-sm text-gray-700 mt-1">회원들의 등급 변경 요청을 검토하고 승인합니다</p>
             </div>
             
             {roleChangeLoading ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
+                <Loader2 className="w-8 h-8 text-gray-700 animate-spin" />
               </div>
             ) : filteredRoleChangeRequests.length === 0 ? (
               <div className="text-center py-12">
                 <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-700">
                   {allRoleChangeRequests.length === 0 
                     ? "대기 중인 등급 변경 요청이 없습니다."
                     : "검색 결과가 없습니다."}
@@ -1311,11 +1311,11 @@ export default function AdminMembersContent() {
                             </div>
                             <div>
                               <h4 className="font-semibold text-gray-900">{request.realName}</h4>
-                              <p className="text-sm text-gray-500 mb-1">{request.email}</p>
-                              <p className="text-sm text-gray-600 mb-2">
+                              <p className="text-sm text-gray-700 mb-1">{request.email}</p>
+                              <p className="text-sm text-gray-700 mb-2">
                                 <span className="font-medium">{previousRoleLabel}</span> → <span className="font-medium text-primary-600">{requestedRoleLabel}</span> 요청
                               </p>
-                              <p className="text-xs text-gray-400 mt-1">요청일: {formatRoleChangeDate(request.requestedAt)}</p>
+                              <p className="text-xs text-gray-700 mt-1">요청일: {formatRoleChangeDate(request.requestedAt)}</p>
                             </div>
                           </div>
                           <div className="flex space-x-2">
@@ -1357,7 +1357,7 @@ export default function AdminMembersContent() {
                 {/* 페이지네이션 */}
                 {roleChangeTotalPage > 1 && (
                   <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-gray-700">
                       페이지 {roleChangePage + 1} / {roleChangeTotalPage}
                     </div>
                     <div className="flex items-center space-x-2">
@@ -1388,7 +1388,7 @@ export default function AdminMembersContent() {
           <div>
             <div className="border-b border-gray-200 pb-4 mb-6">
               <h3 className="text-lg font-semibold text-primary-900">등급 관리</h3>
-              <p className="text-sm text-gray-600 mt-1">회원 등급 시스템을 관리합니다</p>
+              <p className="text-sm text-gray-700 mt-1">회원 등급 시스템을 관리합니다</p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1414,7 +1414,7 @@ export default function AdminMembersContent() {
                         'bg-orange-100'
                       }`}>
                         <span className={`text-sm font-bold ${
-                          getRoleColor(grade.role) === 'gray' ? 'text-gray-600' :
+                          getRoleColor(grade.role) === 'gray' ? 'text-gray-700' :
                           getRoleColor(grade.role) === 'blue' ? 'text-blue-600' :
                           getRoleColor(grade.role) === 'green' ? 'text-green-600' :
                           getRoleColor(grade.role) === 'purple' ? 'text-purple-600' :
@@ -1425,7 +1425,7 @@ export default function AdminMembersContent() {
                       </div>
                       <div>
                         <h4 className="font-bold text-gray-900 text-lg">{getRoleDisplayLabel(grade.role)}</h4>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-700">
                           {getRoleDescription(grade.role)}
                         </p>
                       </div>
@@ -1434,7 +1434,7 @@ export default function AdminMembersContent() {
                   <div className="flex items-center justify-between">
                     <span className="text-2xl font-bold text-gray-900">
                       {gradeStatsLoading ? (
-                        <span className="text-gray-400">로딩 중...</span>
+                        <span className="text-gray-700">로딩 중...</span>
                       ) : (
                         `총 ${grade.count}명`
                       )}
@@ -1452,14 +1452,14 @@ export default function AdminMembersContent() {
                     </div>
                     <div>
                       <h4 className="font-bold text-gray-900 text-lg">전체 회원</h4>
-                      <p className="text-sm text-gray-500">모든 등급을 포함한 총 회원</p>
+                      <p className="text-sm text-gray-700">모든 등급을 포함한 총 회원</p>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-2xl font-bold text-gray-900">
                     {gradeStatsLoading ? (
-                      <span className="text-gray-400">로딩 중...</span>
+                      <span className="text-gray-700">로딩 중...</span>
                     ) : (
                       `총 ${totalMemberCount}명`
                     )}

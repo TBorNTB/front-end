@@ -284,7 +284,7 @@ const Header = () => {
                         {userInitial}
                       </div>
                     )}
-                    <ChevronDownIcon className={`w-4 h-4 text-gray-400 transition-transform ${dropdowns.userProfile ? 'rotate-180' : ''}`} />
+                    <ChevronDownIcon className={`w-4 h-4 text-gray-700 transition-transform ${dropdowns.userProfile ? 'rotate-180' : ''}`} />
                   </button>
 
                   {dropdowns.userProfile && (
@@ -309,10 +309,10 @@ const Header = () => {
                           )}
                           <div className="min-w-0 flex-1">
                             <p className="font-medium text-gray-900 truncate">{displayName}</p>
-                            <p className="text-sm text-gray-600 truncate">{displayEmail}</p>
+                            <p className="text-sm text-gray-700 truncate">{displayEmail}</p>
                           </div>
                         </div>
-                        <div className="mt-2 text-xs text-gray-600">
+                        <div className="mt-2 text-xs text-gray-700">
                           권한: {displayRole}
                         </div>
                       </div>
@@ -380,7 +380,7 @@ const Header = () => {
                             <Link
                               key={item.slug}
                               href={item.href}
-                              className="block py-2 text-gray-600 hover:text-primary-600 cursor-pointer"
+                              className="block py-2 text-gray-700 hover:text-primary-600 cursor-pointer"
                               onClick={() => setIsMobileMenuOpen(false)}
                             >
                               {item.name}
@@ -432,7 +432,7 @@ const Header = () => {
                       )}
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-gray-900 truncate">{displayName}</p>
-                        <p className="text-sm text-gray-500">권한: {displayRole}</p>
+                        <p className="text-sm text-gray-700">권한: {displayRole}</p>
                       </div>
                     </div>
                     

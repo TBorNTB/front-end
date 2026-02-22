@@ -86,7 +86,7 @@ export default function QuestionCard({ question, onBookmark, viewMode }: Questio
                 ? 'text-green-700' 
                 : answersCount > 0 
                 ? 'text-blue-700' 
-                : 'text-gray-600'
+                : 'text-gray-700'
             }`}>
               {answersCount}
             </span>
@@ -95,7 +95,7 @@ export default function QuestionCard({ question, onBookmark, viewMode }: Questio
                 ? 'text-green-600' 
                 : answersCount > 0 
                 ? 'text-blue-600' 
-                : 'text-gray-500'
+                : 'text-gray-700'
             }`}>
               답변
             </span>
@@ -113,7 +113,7 @@ export default function QuestionCard({ question, onBookmark, viewMode }: Questio
             </h3>
           </Link>
           
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+          <p className="text-sm text-gray-700 mb-3 line-clamp-2">
             {question.content}
           </p>
 
@@ -130,7 +130,7 @@ export default function QuestionCard({ question, onBookmark, viewMode }: Questio
           </div>
 
           {/* Meta Info */}
-          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
+          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-700">
             <div className="flex items-center gap-1">
               <span className="font-medium text-gray-700">{question.author}</span>
               {getRoleBadge(question.authorRole)}
@@ -151,7 +151,7 @@ export default function QuestionCard({ question, onBookmark, viewMode }: Questio
           {question.isBookmarked ? (
             <BookmarkCheck className="w-5 h-5 text-primary-600 fill-primary-600" />
           ) : (
-            <Bookmark className="w-5 h-5 text-gray-400" />
+            <Bookmark className="w-5 h-5 text-gray-700" />
           )}
         </button>
       </div>

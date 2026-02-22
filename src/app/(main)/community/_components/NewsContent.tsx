@@ -672,7 +672,7 @@ export default function NewsContent({ createHref = '/community/news/create' }: N
         <div className="flex-1">
           {/* Results Count */}
           <div className="flex items-center justify-between mb-6">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-700">
               총 <span className="font-semibold text-primary">{totalElements}</span>개의 뉴스
               {activeSearchTerm && ` (검색어: "${activeSearchTerm}")`}
               {selectedCategory !== 'all' && ` (카테고리: ${newsCategories.find(c => c.value === selectedCategory)?.name})`}
@@ -683,7 +683,7 @@ export default function NewsContent({ createHref = '/community/news/create' }: N
         {loading ? (
           <div className="text-center py-20">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
-            <p className="mt-4 text-gray-600">뉴스를 불러오는 중...</p>
+            <p className="mt-4 text-gray-700">뉴스를 불러오는 중...</p>
           </div>
         ) : error ? (
           <div className="text-center py-20">
@@ -700,7 +700,7 @@ export default function NewsContent({ createHref = '/community/news/create' }: N
           </div>
         ) : transformedNews.length === 0 ? (
           <div className="text-center py-20">
-            <div className="text-gray-600 text-xl mb-4">검색 결과가 없습니다.</div>
+            <div className="text-gray-700 text-xl mb-4">검색 결과가 없습니다.</div>
             {activeSearchTerm && (
               <button 
                 onClick={clearFilters}
@@ -728,7 +728,7 @@ export default function NewsContent({ createHref = '/community/news/create' }: N
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 0}
-                  className="w-10 h-10 rounded border border-gray-300 flex items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-10 h-10 rounded border border-gray-300 flex items-center justify-center text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ChevronLeft size={16} />
                 </button>
@@ -763,7 +763,7 @@ export default function NewsContent({ createHref = '/community/news/create' }: N
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage >= totalPages - 1}
-                  className="w-10 h-10 rounded border border-gray-300 flex items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-10 h-10 rounded border border-gray-300 flex items-center justify-center text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ChevronRight size={16} />
                 </button>

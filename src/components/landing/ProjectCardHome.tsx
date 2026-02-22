@@ -56,7 +56,7 @@ const AvatarStack = ({
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5">
             <Crown size={14} className="text-yellow-500" />
-            <span className="text-xs font-medium text-gray-600">소유자</span>
+            <span className="text-xs font-medium text-gray-700">소유자</span>
           </div>
           <div className="flex items-center gap-2">
             <div 
@@ -87,7 +87,7 @@ const AvatarStack = ({
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5">
             <Users size={14} className="text-blue-500" />
-            <span className="text-xs font-medium text-gray-600">협력자</span>
+            <span className="text-xs font-medium text-gray-700">협력자</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="flex -space-x-2">
@@ -111,11 +111,11 @@ const AvatarStack = ({
                   className="w-6 h-6 rounded-full border-2 border-white bg-gray-300 flex items-center justify-center relative"
                   title={`+${remainingCount} more contributors`}
                 >
-                  <span className="text-xs font-medium text-gray-600">+{remainingCount}</span>
+                  <span className="text-xs font-medium text-gray-700">+{remainingCount}</span>
                 </div>
               )}
             </div>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-gray-700">
               {collaborators.length}명
             </span>
           </div>
@@ -156,7 +156,7 @@ export function ProjectCardHome({ project }: ProjectCardHomeProps) {
           <h3 className="font-semibold text-base text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
             {project.title}
           </h3>
-          <p className="text-gray-600 mb-3 leading-relaxed line-clamp-3 text-sm">
+          <p className="text-gray-700 mb-3 leading-relaxed line-clamp-3 text-sm">
             {project.description}
           </p>
 
@@ -172,7 +172,7 @@ export function ProjectCardHome({ project }: ProjectCardHomeProps) {
                 </span>
               ))}
               {project.techStacks.length > 5 && (
-                <span className="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded-md border border-gray-200">
+                <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md border border-gray-200">
                   +{project.techStacks.length - 5}
                 </span>
               )}

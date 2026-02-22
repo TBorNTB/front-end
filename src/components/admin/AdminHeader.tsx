@@ -93,7 +93,7 @@ export default function AdminHeader() {
           <h1 className="text-2xl font-bold text-gray-900">
             {pageTitle}
           </h1>
-          <p className="text-gray-600 text-sm mt-1">
+          <p className="text-gray-700 text-sm mt-1">
             {getPageDescription(pathname)}
           </p>
         </div>
@@ -105,7 +105,7 @@ export default function AdminHeader() {
           <button
             type="button"
             onClick={() => setIsAlarmPopupOpen(true)}
-            className="p-2.5 text-gray-400 hover:text-gray-600 relative rounded-lg hover:bg-gray-100 transition-colors"
+            className="p-2.5 text-gray-700 hover:text-gray-700 relative rounded-lg hover:bg-gray-100 transition-colors"
           >
             <Bell className="h-5.5 w-5.5" />
             {alarmUnreadCount > 0 && (
@@ -142,7 +142,7 @@ export default function AdminHeader() {
                 </div>
               )}
               <span className="hidden md:block text-sm font-medium text-gray-700">{displayName}</span>
-              <ChevronDown className="h-4 w-4 text-gray-400" />
+              <ChevronDown className="h-4 w-4 text-gray-700" />
             </button>
 
             {isUserMenuOpen && (
@@ -167,10 +167,10 @@ export default function AdminHeader() {
                     )}
                     <div>
                       <p className="font-medium text-gray-900">{displayName}</p>
-                      <p className="text-sm text-gray-600">{displayEmail}</p>
+                      <p className="text-sm text-gray-700">{displayEmail}</p>
                     </div>
                   </div>
-                  <div className="mt-2 text-xs text-gray-600">
+                  <div className="mt-2 text-xs text-gray-700">
                     권한: 운영진
                   </div>
                 </div>

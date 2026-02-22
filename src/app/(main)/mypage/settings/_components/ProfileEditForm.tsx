@@ -264,7 +264,7 @@ export default function ProfileEditForm() {
       <div className="flex items-center justify-center py-20">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary-600 mx-auto mb-4" />
-          <p className="text-gray-600">프로필 정보를 불러오는 중...</p>
+          <p className="text-gray-700">프로필 정보를 불러오는 중...</p>
         </div>
       </div>
     );
@@ -293,11 +293,11 @@ export default function ProfileEditForm() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">프로필 편집</h1>
-          <p className="text-gray-600 mt-2">프로필 정보를 수정할 수 있습니다.</p>
+          <p className="text-gray-700 mt-2">프로필 정보를 수정할 수 있습니다.</p>
         </div>
         <button
           onClick={handleCancel}
-          className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+          className="p-2 text-gray-700 hover:text-gray-700 transition-colors"
         >
           <X className="h-6 w-6" />
         </button>
@@ -401,11 +401,11 @@ export default function ProfileEditForm() {
                   )}
                 </div>
                 {selectedFile && (
-                  <p className="text-xs text-gray-500 mt-2">
+                  <p className="text-xs text-gray-700 mt-2">
                     선택된 파일: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
                   </p>
                 )}
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-gray-700 mt-2">
                   JPG, PNG, GIF 형식만 가능하며, 최대 5MB까지 업로드 가능합니다.
                 </p>
               </div>
@@ -421,7 +421,7 @@ export default function ProfileEditForm() {
                     onChange={handleInputChange}
                     readOnly
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg 
-                             bg-gray-50 text-gray-600 cursor-not-allowed"
+                             bg-gray-50 text-gray-700 cursor-not-allowed"
                   />
                 </div>
               )}
@@ -449,13 +449,13 @@ export default function ProfileEditForm() {
                 readOnly={isEmailLocked}
                 className={`w-full px-4 py-3 border border-gray-300 rounded-lg transition-all duration-300 ${
                   isEmailLocked
-                    ? 'bg-gray-50 text-gray-600 cursor-not-allowed'
+                    ? 'bg-gray-50 text-gray-700 cursor-not-allowed'
                     : 'focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200'
                 }`}
                 placeholder="이메일 주소를 입력하세요"
               />
               {isEmailLocked && (
-                <p className="text-xs text-gray-500 mt-2">이메일은 한 번 설정하면 변경할 수 없습니다.</p>
+                <p className="text-xs text-gray-700 mt-2">이메일은 한 번 설정하면 변경할 수 없습니다.</p>
               )}
             </div>
 
@@ -483,7 +483,7 @@ export default function ProfileEditForm() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <FileText className="inline h-4 w-4 mr-1 text-primary-600" />
                 자기소개
-                <span className="text-xs text-gray-500 font-normal ml-2">(선택사항)</span>
+                <span className="text-xs text-gray-700 font-normal ml-2">(선택사항)</span>
               </label>
               <textarea
                 name="description"
@@ -502,7 +502,7 @@ export default function ProfileEditForm() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Code className="inline h-4 w-4 mr-1 text-primary-600" />
                 기술스택
-                <span className="text-xs text-gray-500 font-normal ml-2">(Enter 또는 쉼표로 추가)</span>
+                <span className="text-xs text-gray-700 font-normal ml-2">(Enter 또는 쉼표로 추가)</span>
               </label>
               <TechStackInput
                 value={formData.techStack}
@@ -532,7 +532,7 @@ export default function ProfileEditForm() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Github className="inline h-4 w-4 mr-1 text-primary-600" />
                 GitHub URL
-                <span className="text-xs text-gray-500 font-normal ml-2">(선택사항)</span>
+                <span className="text-xs text-gray-700 font-normal ml-2">(선택사항)</span>
               </label>
               <input
                 type="url"
@@ -551,7 +551,7 @@ export default function ProfileEditForm() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Linkedin className="inline h-4 w-4 mr-1 text-primary-600" />
                 LinkedIn URL
-                <span className="text-xs text-gray-500 font-normal ml-2">(선택사항)</span>
+                <span className="text-xs text-gray-700 font-normal ml-2">(선택사항)</span>
               </label>
               <input
                 type="url"
@@ -570,7 +570,7 @@ export default function ProfileEditForm() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Globe className="inline h-4 w-4 mr-1 text-primary-600" />
                 블로그 URL
-                <span className="text-xs text-gray-500 font-normal ml-2">(선택사항)</span>
+                <span className="text-xs text-gray-700 font-normal ml-2">(선택사항)</span>
               </label>
               <input
                 type="url"

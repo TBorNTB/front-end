@@ -180,7 +180,7 @@ export default function MembersPage() {
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
               <Loader2 className="h-8 w-8 animate-spin text-primary-600 mx-auto mb-4" />
-              <p className="text-gray-600">멤버 정보를 불러오는 중...</p>
+              <p className="text-gray-700">멤버 정보를 불러오는 중...</p>
             </div>
           </div>
         </div>
@@ -238,7 +238,7 @@ export default function MembersPage() {
               {/* Search Row */}
               <div className="flex items-center gap-3 mb-4">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-700" />
                   <input
                     type="text"
                     placeholder="이름, 닉네임 검색..."
@@ -252,7 +252,7 @@ export default function MembersPage() {
                 {(selectedLevels.length > 0 || searchTerm) && (
                   <button
                     onClick={clearAllFilters}
-                    className="text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap"
+                    className="text-sm text-gray-700 hover:text-gray-700 whitespace-nowrap"
                   >
                     초기화
                   </button>
@@ -280,10 +280,10 @@ export default function MembersPage() {
 
             {/* Results Info */}
             <div className="flex items-center justify-between mb-6">
-              <p className="text-gray-600">
+              <p className="text-gray-700">
                 총 <span className="font-semibold text-primary-700">{members.length}</span>명의 멤버
                 {(selectedLevels.length > 0 || debouncedSearchTerm) && (
-                  <span className="ml-2 text-sm text-gray-500">
+                  <span className="ml-2 text-sm text-gray-700">
                     (필터 적용됨)
                   </span>
                 )}
@@ -293,8 +293,8 @@ export default function MembersPage() {
                 {/* Members Grid */}
                 {members.length === 0 ? (
                   <div className="text-center py-20">
-                    <div className="text-gray-500 text-lg mb-2">검색 결과가 없습니다</div>
-                    <p className="text-gray-400">다른 조건으로 검색해보세요</p>
+                    <div className="text-gray-700 text-lg mb-2">검색 결과가 없습니다</div>
+                    <p className="text-gray-700">다른 조건으로 검색해보세요</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -317,7 +317,7 @@ export default function MembersPage() {
                           <h3 className="font-bold text-lg text-foreground mt-3 group-hover:text-primary-700 transition-colors">
                             {getDisplayName(member)}
                           </h3>
-                          <p className="text-gray-600 text-sm">{member.email}</p>
+                          <p className="text-gray-700 text-sm">{member.email}</p>
                         </div>
 
                         {/* Member Info */}
@@ -329,10 +329,10 @@ export default function MembersPage() {
                           </div>
 
                           {member.description && (
-                            <p className="text-gray-600 text-sm line-clamp-2 text-center">{member.description}</p>
+                            <p className="text-gray-700 text-sm line-clamp-2 text-center">{member.description}</p>
                           )}
 
-                          <div className="flex items-center justify-center gap-1 text-sm text-gray-500">
+                          <div className="flex items-center justify-center gap-1 text-sm text-gray-700">
                             <Calendar className="h-3 w-3" />
                             <span>가입일: {formatDate(member.createdAt)}</span>
                           </div>
@@ -389,7 +389,7 @@ export default function MembersPage() {
                           page === currentPage + 3
                         ) {
                           return (
-                            <span key={page} className="px-2 text-gray-500">
+                            <span key={page} className="px-2 text-gray-700">
                               ...
                             </span>
                           );
@@ -430,7 +430,7 @@ export default function MembersPage() {
             <div className="flex items-start justify-between gap-4 border-b px-5 py-4">
               <div>
                 <h2 className="text-lg font-bold text-foreground">멤버 프로필</h2>
-                <p className="text-sm text-gray-500">@{profileUsername ?? '-'}</p>
+                <p className="text-sm text-gray-700">@{profileUsername ?? '-'}</p>
               </div>
               <button
                 type="button"
@@ -444,7 +444,7 @@ export default function MembersPage() {
 
             <div className="px-5 py-5">
               {profileLoading ? (
-                <div className="flex items-center justify-center py-10 text-gray-600">
+                <div className="flex items-center justify-center py-10 text-gray-700">
                   <Loader2 className="h-5 w-5 animate-spin mr-2" /> 로딩중...
                 </div>
               ) : profileError ? (
@@ -453,7 +453,7 @@ export default function MembersPage() {
                 </div>
               ) : !profile ? (
                 <div className="py-6">
-                  <p className="text-sm text-gray-600">프로필 정보를 찾을 수 없습니다.</p>
+                  <p className="text-sm text-gray-700">프로필 정보를 찾을 수 없습니다.</p>
                 </div>
               ) : (
                 <div className="flex flex-col sm:flex-row gap-5">
@@ -477,31 +477,31 @@ export default function MembersPage() {
                       </Badge>
                     </div>
 
-                    <div className="mt-2 text-sm text-gray-500">@{profile.username}</div>
+                    <div className="mt-2 text-sm text-gray-700">@{profile.username}</div>
 
                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                       <div className="rounded-lg border border-gray-200 px-3 py-2">
-                        <div className="text-xs text-gray-500 mb-0.5">ID</div>
+                        <div className="text-xs text-gray-700 mb-0.5">ID</div>
                         <div className="text-gray-900">{profile.id}</div>
                       </div>
                       <div className="rounded-lg border border-gray-200 px-3 py-2">
-                        <div className="text-xs text-gray-500 mb-0.5">이메일</div>
+                        <div className="text-xs text-gray-700 mb-0.5">이메일</div>
                         <div className="text-gray-900 break-all">{displayValue(profile.email)}</div>
                       </div>
                       <div className="rounded-lg border border-gray-200 px-3 py-2">
-                        <div className="text-xs text-gray-500 mb-0.5">닉네임</div>
+                        <div className="text-xs text-gray-700 mb-0.5">닉네임</div>
                         <div className="text-gray-900">{displayValue(profile.nickname)}</div>
                       </div>
                       <div className="rounded-lg border border-gray-200 px-3 py-2">
-                        <div className="text-xs text-gray-500 mb-0.5">실명</div>
+                        <div className="text-xs text-gray-700 mb-0.5">실명</div>
                         <div className="text-gray-900">{displayValue(profile.realName)}</div>
                       </div>
                       <div className="rounded-lg border border-gray-200 px-3 py-2">
-                        <div className="text-xs text-gray-500 mb-0.5">가입일</div>
+                        <div className="text-xs text-gray-700 mb-0.5">가입일</div>
                         <div className="text-gray-900">{isPlaceholder(profile.createdAt) ? '-' : formatDateTime(profile.createdAt)}</div>
                       </div>
                       <div className="rounded-lg border border-gray-200 px-3 py-2">
-                        <div className="text-xs text-gray-500 mb-0.5">수정일</div>
+                        <div className="text-xs text-gray-700 mb-0.5">수정일</div>
                         <div className="text-gray-900">{isPlaceholder(profile.updatedAt) ? '-' : formatDateTime(profile.updatedAt)}</div>
                       </div>
                     </div>
@@ -516,7 +516,7 @@ export default function MembersPage() {
                     <div className="mt-4">
                       <div className="text-sm font-medium text-foreground mb-2">기술스택:</div>
                       {parseTechStack(profile.techStack).length === 0 ? (
-                        <div className="text-sm text-gray-500">-</div>
+                        <div className="text-sm text-gray-700">-</div>
                       ) : (
                         <div className="flex flex-wrap gap-2">
                           {parseTechStack(profile.techStack).map((t) => (
@@ -530,42 +530,42 @@ export default function MembersPage() {
 
                     <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div className="rounded-lg border border-gray-200 px-3 py-2">
-                        <div className="text-xs text-gray-500 mb-0.5">GitHub</div>
+                        <div className="text-xs text-gray-700 mb-0.5">GitHub</div>
                         {isValidExternalLink(profile.githubUrl) ? (
                           <a className="text-sm text-primary-600 underline break-all" href={profile.githubUrl} target="_blank" rel="noreferrer">
                             {profile.githubUrl}
                           </a>
                         ) : (
-                          <div className="text-sm text-gray-500">-</div>
+                          <div className="text-sm text-gray-700">-</div>
                         )}
                       </div>
 
                       <div className="rounded-lg border border-gray-200 px-3 py-2">
-                        <div className="text-xs text-gray-500 mb-0.5">LinkedIn</div>
+                        <div className="text-xs text-gray-700 mb-0.5">LinkedIn</div>
                         {isValidExternalLink(profile.linkedinUrl) ? (
                           <a className="text-sm text-primary-600 underline break-all" href={profile.linkedinUrl} target="_blank" rel="noreferrer">
                             {profile.linkedinUrl}
                           </a>
                         ) : (
-                          <div className="text-sm text-gray-500">-</div>
+                          <div className="text-sm text-gray-700">-</div>
                         )}
                       </div>
 
                       <div className="rounded-lg border border-gray-200 px-3 py-2">
-                        <div className="text-xs text-gray-500 mb-0.5">Blog</div>
+                        <div className="text-xs text-gray-700 mb-0.5">Blog</div>
                         {isValidExternalLink(profile.blogUrl) ? (
                           <a className="text-sm text-primary-600 underline break-all" href={profile.blogUrl} target="_blank" rel="noreferrer">
                             {profile.blogUrl}
                           </a>
                         ) : (
-                          <div className="text-sm text-gray-500">-</div>
+                          <div className="text-sm text-gray-700">-</div>
                         )}
                       </div>
                     </div>
 
                     {!isPlaceholder(profile.profileImageUrl) && (
                       <div className="mt-4 text-sm">
-                        <div className="text-xs text-gray-500 mb-1">프로필 이미지 URL</div>
+                        <div className="text-xs text-gray-700 mb-1">프로필 이미지 URL</div>
                         <div className="break-all text-gray-700">{profile.profileImageUrl}</div>
                       </div>
                     )}

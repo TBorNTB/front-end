@@ -66,7 +66,7 @@ function NewsletterTabs() {
         {activeTab === 'subscribe' && (
           <div>
             <h3 className="text-2xl font-bold text-gray-900 mb-2">뉴스레터 구독</h3>
-            <p className="text-gray-600 mb-6">{tabs[0].description}</p>
+            <p className="text-gray-700 mb-6">{tabs[0].description}</p>
             <NewsletterSubscribe />
           </div>
         )}
@@ -74,7 +74,7 @@ function NewsletterTabs() {
         {activeTab === 'status' && (
           <div>
             <h3 className="text-2xl font-bold text-gray-900 mb-2">구독 상태 확인</h3>
-            <p className="text-gray-600 mb-6">{tabs[1].description}</p>
+            <p className="text-gray-700 mb-6">{tabs[1].description}</p>
             <NewsletterSubscriberStatus />
           </div>
         )}
@@ -82,7 +82,7 @@ function NewsletterTabs() {
         {activeTab === 'unsubscribe' && (
           <div>
             <h3 className="text-2xl font-bold text-gray-900 mb-2">구독 해제</h3>
-            <p className="text-gray-600 mb-6">{tabs[2].description}</p>
+            <p className="text-gray-700 mb-6">{tabs[2].description}</p>
             <NewsletterUnsubscribe />
           </div>
         )}
@@ -192,12 +192,12 @@ export default function SSGNewsletter() {
         
         {/* Enhanced description with glow effects */}
         <p className="max-w-4xl text-base md:text-lg text-gray-300 leading-relaxed mb-8">
-          <span className="text-gray-400">바쁜 보안 전문가와 학습자분들을 위해</span><br />
+          <span className="text-gray-700">바쁜 보안 전문가와 학습자분들을 위해</span><br />
           <span className="font-semibold text-secondary-300 drop-shadow-[0_0_8px_rgba(58,77,161,0.6)]">
             웹해킹, 리버싱, 포렌식, CTF
           </span>
-          <span className="text-gray-400"> 분야에 맞는</span><br />
-          <span className="text-gray-400">최신 보안 지식과 실습 문제를 직접 큐레이팅하여 보내드려요</span>
+          <span className="text-gray-700"> 분야에 맞는</span><br />
+          <span className="text-gray-700">최신 보안 지식과 실습 문제를 직접 큐레이팅하여 보내드려요</span>
         </p>
 
         {/* Glowing subscription CTA */}
@@ -212,7 +212,7 @@ export default function SSGNewsletter() {
         </div>
 
         {/* Additional CTA hint */}
-        <p className="text-gray-500 text-sm mt-6">
+        <p className="text-gray-700 text-sm mt-6">
           매일 아침 9시, 당신의 메일함에서 보안 지식을 만나보세요
         </p>
       </div>
@@ -247,8 +247,8 @@ export default function SSGNewsletter() {
                   지식 확인
                 </h3>
                 <p className="text-4xl font-bold text-primary-600 mb-2">매일 아침 9시</p>
-                <p className="text-gray-600 mb-4">메일함을 확인해보세요</p>
-                <p className="text-sm text-gray-600 leading-relaxed">
+                <p className="text-gray-700 mb-4">메일함을 확인해보세요</p>
+                <p className="text-sm text-gray-700 leading-relaxed">
                   내가 선택한 보안 분야의<br />
                   최신 보안 지식과 실습 문제를<br />
                   확인하고 스스로 학습해보세요
@@ -266,8 +266,8 @@ export default function SSGNewsletter() {
                   해설 자료
                 </h3>
                 <p className="text-4xl font-bold text-secondary-600 mb-2">상세한 설명도</p>
-                <p className="text-gray-600 mb-4">함께 보내드리고 있어요</p>
-                <p className="text-sm text-gray-600 leading-relaxed">
+                <p className="text-gray-700 mb-4">함께 보내드리고 있어요</p>
+                <p className="text-sm text-gray-700 leading-relaxed">
                   단순한 문제가 아닌<br />
                   실무에 적용할 수 있는<br />
                   상세한 해설과 참고 자료까지
@@ -285,8 +285,8 @@ export default function SSGNewsletter() {
                   지식 아카이브
                 </h3>
                 <p className="text-4xl font-bold text-green-600 mb-2">매일 쌓인 지식은</p>
-                <p className="text-gray-600 mb-4">따로 정리해놨어요</p>
-                <p className="text-sm text-gray-600 leading-relaxed">
+                <p className="text-gray-700 mb-4">따로 정리해놨어요</p>
+                <p className="text-sm text-gray-700 leading-relaxed">
                   웹사이트에서 지금까지 받은<br />
                   모든 보안 지식과 문제들을<br />
                   체계적으로 정리해서 제공
@@ -310,7 +310,7 @@ export default function SSGNewsletter() {
                 <Clock className="w-6 h-6 text-primary-600" />
               </div>
               <h3 className="text-lg font-semibold mb-3">매일 한 문제씩</h3>
-              <p className="text-gray-600 text-sm">꾸준한 보안 학습 루틴 형성</p>
+              <p className="text-gray-700 text-sm">꾸준한 보안 학습 루틴 형성</p>
             </div>
 
             <div className="card p-8">
@@ -318,7 +318,7 @@ export default function SSGNewsletter() {
                 <Mail className="w-6 h-6 text-secondary-600" />
               </div>
               <h3 className="text-lg font-semibold mb-3">이메일 기반으로</h3>
-              <p className="text-gray-600 text-sm">푸시 피로감 없이 루틴화</p>
+              <p className="text-gray-700 text-sm">푸시 피로감 없이 루틴화</p>
             </div>
 
             <div className="card p-8">
@@ -326,7 +326,7 @@ export default function SSGNewsletter() {
                 <Shield className="w-6 h-6 text-green-600" />
               </div>
               <h3 className="text-lg font-semibold mb-3">실제 보안 업무와 유사한 톤으로</h3>
-              <p className="text-gray-600 text-sm">실전 대비에 최적인 콘텐츠 구성</p>
+              <p className="text-gray-700 text-sm">실전 대비에 최적인 콘텐츠 구성</p>
             </div>
           </div>
         </div>
@@ -357,7 +357,7 @@ export default function SSGNewsletter() {
 
                     <div>
                       <div className="font-semibold text-primary-700">{testimonial.name}</div>
-                      <div className="text-sm text-gray-500">{testimonial.role}</div>
+                      <div className="text-sm text-gray-700">{testimonial.role}</div>
                     </div>
                   </div>
                 </div>

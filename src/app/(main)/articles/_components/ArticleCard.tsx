@@ -75,12 +75,12 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
           <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
             {article.title}
           </h3>
-          <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+          <p className="text-sm text-gray-700 mb-4 line-clamp-2">
             {article.excerpt}
           </p>
 
           {/* 통계 + 작성자 한 줄 (좌측 작성자, 우측 통계) */}
-          <div className="flex items-center justify-between gap-3 text-sm text-gray-600 mb-3 pt-3 border-t border-gray-200">
+          <div className="flex items-center justify-between gap-3 text-sm text-gray-700 mb-3 pt-3 border-t border-gray-200">
             <div className="flex items-center gap-2 flex-shrink-0">
               <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
                 {article.author.avatarUrl ? (
@@ -101,16 +101,16 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <Eye className="w-4 h-4 text-gray-500" />
-                <span className="font-medium text-gray-500">{article.views || 0}</span>
+                <Eye className="w-4 h-4 text-gray-700" />
+                <span className="font-medium text-gray-700">{article.views || 0}</span>
               </div>
               <div className="flex items-center gap-2">
-                <ThumbsUp className="w-4 h-4 text-gray-500" />
-                <span className="font-medium text-gray-500">{article.likes || 0}</span>
+                <ThumbsUp className="w-4 h-4 text-gray-700" />
+                <span className="font-medium text-gray-700">{article.likes || 0}</span>
               </div>
               <div className="flex items-center gap-2">
-                <MessageCircle className="w-4 h-4 text-gray-500" />
-                <span className="font-medium text-gray-500">{article.comments || 0}</span>
+                <MessageCircle className="w-4 h-4 text-gray-700" />
+                <span className="font-medium text-gray-700">{article.comments || 0}</span>
               </div>
             </div>
           </div>
@@ -121,7 +121,7 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
               {article.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs hover:bg-gray-200 transition-colors"
+                  className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-xs hover:bg-gray-200 transition-colors"
                 >
                   #{tag}
                 </span>
@@ -130,7 +130,7 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
           )}
 
           {/* 하단 메타 */}
-          <div className="mt-auto flex items-center justify-between text-xs text-gray-500 pt-3 border-t border-gray-100">
+          <div className="mt-auto flex items-center justify-between text-xs text-gray-700 pt-3 border-t border-gray-100">
             <div className="flex items-center gap-2">
               <span>{article.date}</span>
               <span>· {article.readTime}</span>

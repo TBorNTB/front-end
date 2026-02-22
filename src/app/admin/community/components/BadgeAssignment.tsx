@@ -105,7 +105,7 @@ export default function BadgeAssignment() {
                         </div>
                         <button
                           onClick={() => handleRemoveMember(memberId)}
-                          className="text-gray-400 hover:text-red-600 transition-colors"
+                          className="text-gray-700 hover:text-red-600 transition-colors"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -123,7 +123,7 @@ export default function BadgeAssignment() {
             disabled={selectedMembers.length === 0}
             className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
               selectedMembers.length === 0
-                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                ? "bg-gray-300 text-gray-700 cursor-not-allowed"
                 : "bg-purple-600 text-white hover:bg-purple-700"
             }`}
           >
@@ -135,7 +135,7 @@ export default function BadgeAssignment() {
         <div>
           <div className="mb-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-700" />
               <input
                 type="text"
                 placeholder="이름으로 검색..."

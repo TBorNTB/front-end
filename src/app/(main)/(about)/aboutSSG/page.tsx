@@ -60,17 +60,17 @@ export default function AboutSSGPage() {
                 <span className="font-semibold text-secondary-300 drop-shadow-[0_0_8px_rgba(58,77,161,0.6)]">
                   SSG(Sejong Security Group)
                 </span>
-                <span className="text-gray-400">는 2000년 4월에 창설된 동아리로, 정보 보안과 소프트웨어 개발에 
+                <span className="text-gray-700">는 2000년 4월에 창설된 동아리로, 정보 보안과 소프트웨어 개발에 
                 관심이 많은 학부생들로 구성된 동아리입니다. 부원들은 각자의 관심분야에서 학술연구 활동을 
                 꾸준히 하며 다수의 프로젝트와 연구 결과를 구성원끼리 공유하는 학술 문화를 가지고 있습니다.</span>
               </p>
-              <p className="text-gray-400">
+              <p className="text-gray-700">
                 이를 통해 한국과 해외의 무대에서 
                 <span className="font-semibold text-secondary-300 drop-shadow-[0_0_8px_rgba(58,77,161,0.6)]">
                   컨퍼런스 발표, 대회 수상(장관상 3회), 소프트웨어 취약점 제보, 
                   논문 및 학회 발표
                 </span>
-                <span className="text-gray-400"> 등 다양한 역량을 이끌어내고 있습니다.</span>
+                <span className="text-gray-700"> 등 다양한 역량을 이끌어내고 있습니다.</span>
               </p>
             </div>
             
@@ -78,19 +78,19 @@ export default function AboutSSGPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
               <div className="bg-black/50 backdrop-blur-sm border border-primary-500/30 rounded-lg p-6 text-center hover:border-primary-500/60 transition-all duration-300 hover:bg-black/70">
                 <div className="text-4xl md:text-5xl font-bold mb-2 text-secondary-300 drop-shadow-[0_0_8px_rgba(108,170,239,0.6)]">47</div>
-                <div className="text-gray-400 text-sm md:text-base">국내/외 컨퍼런스 발표</div>
+                <div className="text-gray-700 text-sm md:text-base">국내/외 컨퍼런스 발표</div>
               </div>
               <div className="bg-black/50 backdrop-blur-sm border border-primary-500/30 rounded-lg p-6 text-center hover:border-primary-500/60 transition-all duration-300 hover:bg-black/70">
                 <div className="text-4xl md:text-5xl font-bold mb-2 text-primary-400 drop-shadow-[0_0_8px_rgba(58,77,161,0.6)]">71</div>
-                <div className="text-gray-400 text-sm md:text-base">국내/외 대회 수상</div>
+                <div className="text-gray-700 text-sm md:text-base">국내/외 대회 수상</div>
               </div>
               <div className="bg-black/50 backdrop-blur-sm border border-primary-500/30 rounded-lg p-6 text-center hover:border-primary-500/60 transition-all duration-300 hover:bg-black/70">
                 <div className="text-4xl md:text-5xl font-bold mb-2 text-secondary-300 drop-shadow-[0_0_8px_rgba(108,170,239,0.6)]">140</div>
-                <div className="text-gray-400 text-sm md:text-base">국내/외 소프트웨어 취약점 제보</div>
+                <div className="text-gray-700 text-sm md:text-base">국내/외 소프트웨어 취약점 제보</div>
               </div>
               <div className="bg-black/50 backdrop-blur-sm border border-primary-500/30 rounded-lg p-6 text-center hover:border-primary-500/60 transition-all duration-300 hover:bg-black/70">
                 <div className="text-4xl md:text-5xl font-bold mb-2 text-primary-400 drop-shadow-[0_0_8px_rgba(58,77,161,0.6)]">28</div>
-                <div className="text-gray-400 text-sm md:text-base">국내/외 논문 및 학회 발표</div>
+                <div className="text-gray-700 text-sm md:text-base">국내/외 논문 및 학회 발표</div>
               </div>
             </div>
           </div>
@@ -125,21 +125,21 @@ export default function AboutSSGPage() {
                     <Shield className="h-6 w-6 text-primary-600 mt-1 flex-shrink-0" />
                     <div>
                       <h3 className="font-semibold text-primary-700 mb-1">보안 연구</h3>
-                      <p className="text-gray-600">최신 보안 위협과 대응 기술에 대한 심도있는 연구</p>
+                      <p className="text-gray-700">최신 보안 위협과 대응 기술에 대한 심도있는 연구</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <Users className="h-6 w-6 text-primary-600 mt-1 flex-shrink-0" />
                     <div>
                       <h3 className="font-semibold text-primary-700 mb-1">인재 양성</h3>
-                      <p className="text-gray-600">실무 중심의 교육과 멘토링을 통한 전문가 육성</p>
+                      <p className="text-gray-700">실무 중심의 교육과 멘토링을 통한 전문가 육성</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <Network className="h-6 w-6 text-primary-600 mt-1 flex-shrink-0" />
                     <div>
                       <h3 className="font-semibold text-primary-700 mb-1">지식 공유</h3>
-                      <p className="text-gray-600">연구 결과와 경험을 커뮤니티와 적극적으로 공유</p>
+                      <p className="text-gray-700">연구 결과와 경험을 커뮤니티와 적극적으로 공유</p>
                     </div>
                   </div>
                 </div>
@@ -186,7 +186,7 @@ export default function AboutSSGPage() {
               <h2 className="text-2xl md:text-3xl font-bold mb-3 text-white">
                 외부 지원 및 연구 환경
               </h2>
-              <p className="text-gray-400 text-sm max-w-xl mx-auto">
+              <p className="text-gray-700 text-sm max-w-xl mx-auto">
                 최첨단 연구 장비와 인프라를 통해 실무 중심의 학습 환경을 제공합니다
               </p>
             </div>
@@ -206,12 +206,12 @@ export default function AboutSSGPage() {
                   <div className="flex items-center gap-2 p-2 bg-black/30 rounded">
                     <Cpu className="h-4 w-4 text-secondary-400 flex-shrink-0" />
                     <span>150+ vCPU</span>
-                    <span className="text-xs text-gray-500 ml-auto">고성능</span>
+                    <span className="text-xs text-gray-700 ml-auto">고성능</span>
                   </div>
                   <div className="flex items-center gap-2 p-2 bg-black/30 rounded">
                     <HardDrive className="h-4 w-4 text-secondary-400 flex-shrink-0" />
                     <span>300+ GB RAM</span>
-                    <span className="text-xs text-gray-500 ml-auto">대용량</span>
+                    <span className="text-xs text-gray-700 ml-auto">대용량</span>
                   </div>
                 </div>
               </div>
@@ -282,7 +282,7 @@ export default function AboutSSGPage() {
                   <div className="flex items-center gap-2 p-2 bg-black/30 rounded">
                     <Monitor className="h-4 w-4 text-secondary-400 flex-shrink-0" />
                     <span className="truncate">RTX 2080 Ti</span>
-                    <span className="text-xs text-gray-500 ml-auto">GPU</span>
+                    <span className="text-xs text-gray-700 ml-auto">GPU</span>
                   </div>
                   <div className="flex items-center gap-2 p-2 bg-black/30 rounded">
                     <Server className="h-4 w-4 text-secondary-400 flex-shrink-0" />

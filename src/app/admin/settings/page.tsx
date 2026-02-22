@@ -26,7 +26,7 @@ export default function AdminSettings() {
             className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === "general"
                 ? "border-primary-500 text-primary-600"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                : "border-transparent text-gray-700 hover:text-gray-700 hover:border-gray-300"
             }`}
           >
             일반 설정
@@ -36,7 +36,7 @@ export default function AdminSettings() {
             className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === "security"
                 ? "border-primary-500 text-primary-600"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                : "border-transparent text-gray-700 hover:text-gray-700 hover:border-gray-300"
             }`}
           >
             보안 설정
@@ -46,7 +46,7 @@ export default function AdminSettings() {
             className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === "notifications"
                 ? "border-primary-500 text-primary-600"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                : "border-transparent text-gray-700 hover:text-gray-700 hover:border-gray-300"
             }`}
           >
             알림 설정
@@ -60,7 +60,7 @@ export default function AdminSettings() {
           <div>
             <div className="border-b border-gray-200 pb-4 mb-6">
               <h3 className="text-lg font-semibold text-gray-900">일반 설정</h3>
-              <p className="text-sm text-gray-600 mt-1">사이트의 기본 설정을 관리합니다</p>
+              <p className="text-sm text-gray-700 mt-1">사이트의 기본 설정을 관리합니다</p>
             </div>
             
             <div className="space-y-6">
@@ -126,7 +126,7 @@ export default function AdminSettings() {
           <div>
             <div className="border-b border-gray-200 pb-4 mb-6">
               <h3 className="text-lg font-semibold text-gray-900">보안 설정</h3>
-              <p className="text-sm text-gray-600 mt-1">시스템 보안 설정을 관리합니다</p>
+              <p className="text-sm text-gray-700 mt-1">시스템 보안 설정을 관리합니다</p>
             </div>
             
             <div className="space-y-6">
@@ -135,7 +135,7 @@ export default function AdminSettings() {
                   <Shield className="w-5 h-5 text-green-600 mr-3" />
                   <div>
                     <h4 className="font-medium text-gray-900">SSL 인증서</h4>
-                    <p className="text-sm text-gray-600">HTTPS 연결이 활성화되어 있습니다</p>
+                    <p className="text-sm text-gray-700">HTTPS 연결이 활성화되어 있습니다</p>
                   </div>
                 </div>
                 <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">활성</span>
@@ -162,7 +162,7 @@ export default function AdminSettings() {
           <div>
             <div className="border-b border-gray-200 pb-4 mb-6">
               <h3 className="text-lg font-semibold text-gray-900">알림 설정</h3>
-              <p className="text-sm text-gray-600 mt-1">시스템 알림 설정을 관리합니다</p>
+              <p className="text-sm text-gray-700 mt-1">시스템 알림 설정을 관리합니다</p>
             </div>
             
             <div className="space-y-6">

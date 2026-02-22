@@ -59,7 +59,7 @@ export default function TableOfContents({
       </div>
 
       {computedHeadings.length === 0 ? (
-        <p className="text-sm text-gray-500">{emptyText}</p>
+        <p className="text-sm text-gray-700">{emptyText}</p>
       ) : (
         <ul className="space-y-2 text-base text-gray-900">
           {computedHeadings.map((h, idx) => (

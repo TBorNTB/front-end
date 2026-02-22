@@ -144,17 +144,17 @@ export default function BadgesList() {
         <div className="card text-center">
           <Trophy className="h-8 w-8 text-warning mx-auto mb-3" />
           <div className="text-2xl font-bold text-foreground mb-1">{earnedBadges.length}</div>
-          <div className="text-gray-600 text-sm">획득한 배지</div>
+          <div className="text-gray-700 text-sm">획득한 배지</div>
         </div>
         <div className="card text-center">
           <Target className="h-8 w-8 text-primary-600 mx-auto mb-3" />
           <div className="text-2xl font-bold text-foreground mb-1">{totalBadges - earnedBadges.length}</div>
-          <div className="text-gray-600 text-sm">진행 중인 배지</div>
+          <div className="text-gray-700 text-sm">진행 중인 배지</div>
         </div>
         <div className="card text-center">
           <Star className="h-8 w-8 text-secondary-600 mx-auto mb-3" />
           <div className="text-2xl font-bold text-foreground mb-1">{Math.round((earnedBadges.length / totalBadges) * 100)}%</div>
-          <div className="text-gray-600 text-sm">달성률</div>
+          <div className="text-gray-700 text-sm">달성률</div>
         </div>
       </div>
 
@@ -187,7 +187,7 @@ export default function BadgesList() {
                 }`}
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div className={`p-3 rounded-full ${badge.earned ? badge.color.replace('/20', '/30') : 'bg-gray-200 text-gray-500'}`}>
+                  <div className={`p-3 rounded-full ${badge.earned ? badge.color.replace('/20', '/30') : 'bg-gray-200 text-gray-700'}`}>
                     <IconComponent className="h-6 w-6" />
                   </div>
                   {getRarityBadge(badge.rarity)}
@@ -203,13 +203,13 @@ export default function BadgesList() {
                     )}
                   </div>
                   
-                  <p className="text-gray-600 text-sm mb-3">{badge.description}</p>
+                  <p className="text-gray-700 text-sm mb-3">{badge.description}</p>
                   
                   {badge.earned ? (
-                    <p className="text-xs text-gray-500">획득일: {badge.earnedDate}</p>
+                    <p className="text-xs text-gray-700">획득일: {badge.earnedDate}</p>
                   ) : (
                     <div>
-                      <div className="flex justify-between text-xs text-gray-600 mb-2">
+                      <div className="flex justify-between text-xs text-gray-700 mb-2">
                         <span>진행률</span>
                         <span>{badge.progress}/{badge.total}</span>
                       </div>
@@ -219,7 +219,7 @@ export default function BadgesList() {
                           style={{ width: `${(badge.progress! / badge.total!) * 100}%` }}
                         ></div>
                       </div>
-                      <p className="text-xs text-gray-500 mt-2">
+                      <p className="text-xs text-gray-700 mt-2">
                         {badge.total! - badge.progress!}개 더 필요
                       </p>
                     </div>
@@ -237,19 +237,19 @@ export default function BadgesList() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-4 bg-primary-50 rounded-lg">
             <h4 className="font-medium text-primary-700 mb-2">글쓰기 배지</h4>
-            <p className="text-sm text-gray-600">꾸준히 양질의 보안 관련 글을 작성하여 글쓰기 배지를 획득하세요.</p>
+            <p className="text-sm text-gray-700">꾸준히 양질의 보안 관련 글을 작성하여 글쓰기 배지를 획득하세요.</p>
           </div>
           <div className="p-4 bg-secondary-50 rounded-lg">
             <h4 className="font-medium text-secondary-700 mb-2">커뮤니티 배지</h4>
-            <p className="text-sm text-gray-600">다른 회원들과 활발히 소통하며 커뮤니티 배지를 모아보세요.</p>
+            <p className="text-sm text-gray-700">다른 회원들과 활발히 소통하며 커뮤니티 배지를 모아보세요.</p>
           </div>
           <div className="p-4 bg-warning/10 rounded-lg">
             <h4 className="font-medium text-warning mb-2">성취 배지</h4>
-            <p className="text-sm text-gray-600">다양한 활동과 도전을 통해 특별한 성취 배지를 획득하세요.</p>
+            <p className="text-sm text-gray-700">다양한 활동과 도전을 통해 특별한 성취 배지를 획득하세요.</p>
           </div>
           <div className="p-4 bg-purple-50 rounded-lg">
             <h4 className="font-medium text-purple-700 mb-2">특별 배지</h4>
-            <p className="text-sm text-gray-600">이벤트 참여나 특별한 기여를 통해 희귀한 배지를 얻을 수 있습니다.</p>
+            <p className="text-sm text-gray-700">이벤트 참여나 특별한 기여를 통해 희귀한 배지를 얻을 수 있습니다.</p>
           </div>
         </div>
       </div>

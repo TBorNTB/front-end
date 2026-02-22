@@ -112,7 +112,7 @@ export default function ChattingRoom({
                 }`}
               >
                 {!message.isOwn && (
-                  <span className="text-xs text-gray-500 mb-1 px-2">
+                  <span className="text-xs text-gray-700 mb-1 px-2">
                     {message.author}
                   </span>
                 )}
@@ -125,7 +125,7 @@ export default function ChattingRoom({
                 >
                   <p className="text-sm leading-relaxed">{message.content}</p>
                 </div>
-                <span className="text-xs text-gray-400 mt-1 px-2">
+                <span className="text-xs text-gray-700 mt-1 px-2">
                   {message.timestamp.toLocaleTimeString("ko-KR", {
                     hour: "2-digit",
                     minute: "2-digit",

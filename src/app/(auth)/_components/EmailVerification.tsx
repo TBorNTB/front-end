@@ -191,14 +191,14 @@ export default function EmailVerification({ email, disabled = false, onVerifiedC
             인증된 이메일이에요
           </span>
         ) : status === "sent" ? (
-          <span className="text-xs text-gray-600">
+          <span className="text-xs text-gray-700">
             남은 시간 <span className="font-semibold text-gray-900">{formatSeconds(timeLeftSec)}</span>
           </span>
         ) : null}
       </div>
 
       {status !== "idle" && status !== "verified" && sentToEmail ? (
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-gray-700">
           <span className="font-medium">{sentToEmail}</span> 으로 인증번호를 보낼 거예요.
         </p>
       ) : null}
@@ -236,14 +236,14 @@ export default function EmailVerification({ email, disabled = false, onVerifiedC
                       </div>
                       <div>
                         <Dialog.Title className="text-base font-bold text-gray-900">이메일 인증</Dialog.Title>
-                        <p className="text-xs text-gray-600 mt-0.5">인증번호(6자리)를 입력해주세요.</p>
+                        <p className="text-xs text-gray-700 mt-0.5">인증번호(6자리)를 입력해주세요.</p>
                       </div>
                     </div>
 
                     <button
                       type="button"
                       onClick={closeModal}
-                      className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-white/60"
+                      className="text-gray-700 hover:text-gray-700 p-1 rounded-full hover:bg-white/60"
                       aria-label="닫기"
                     >
                       <X className="w-5 h-5" />
@@ -259,7 +259,7 @@ export default function EmailVerification({ email, disabled = false, onVerifiedC
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <p className="text-xs text-gray-600">
+                      <p className="text-xs text-gray-700">
                         남은 시간 <span className="font-semibold text-gray-900">{formatSeconds(timeLeftSec)}</span>
                       </p>
                       <Button

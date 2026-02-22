@@ -104,7 +104,7 @@ export default function NewsletterUnsubscribe({ className = '' }: NewsletterUnsu
             <ShieldOff className="w-8 h-8 text-primary-600" />
           </div>
           <h2 className="text-2xl font-bold text-primary-800 mb-2">구독 해제</h2>
-          <p className="text-gray-600">
+          <p className="text-gray-700">
             {step === 'request' ? '해제 전 이메일 인증이 필요해요' : '이메일로 받은 인증 코드를 입력해주세요'}
           </p>
         </div>
@@ -173,7 +173,7 @@ export default function NewsletterUnsubscribe({ className = '' }: NewsletterUnsu
                 disabled={loading}
                 className="w-full text-center text-xl tracking-widest font-mono"
               />
-              <p className="text-xs text-gray-500 mt-2 text-center">{email}로 전송된 인증 코드를 입력해주세요</p>
+              <p className="text-xs text-gray-700 mt-2 text-center">{email}로 전송된 인증 코드를 입력해주세요</p>
             </div>
 
             <div className="flex gap-3">
@@ -209,7 +209,7 @@ export default function NewsletterUnsubscribe({ className = '' }: NewsletterUnsu
               </Button>
             </div>
 
-            <p className="text-xs text-gray-500 text-center">
+            <p className="text-xs text-gray-700 text-center">
               해제 후에도 언제든지 다시 구독할 수 있어요.
             </p>
           </div>

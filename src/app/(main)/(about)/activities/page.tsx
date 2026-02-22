@@ -23,7 +23,7 @@ export default function Activities() {
           <div className="container">
             <div className="text-center mb-12">
               <h2 className="text-4xl font-bold text-primary-700 mb-4">주요 활동</h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              <p className="text-xl text-gray-700 max-w-3xl mx-auto">
                 SSG는 다양한 학술 활동과 실무 경험을 통해 회원들의 역량을 개발합니다
               </p>
             </div>
@@ -34,7 +34,7 @@ export default function Activities() {
                   <Trophy className="h-8 w-8 text-primary-600" />
                 </div>
                 <h3 className="text-xl font-semibold text-primary-700 mb-3">경진대회 참가</h3>
-                <p className="text-gray-600">
+                <p className="text-gray-700">
                   국내외 보안 경진대회 및 해커톤에 적극 참여하여 실력을 검증받고 있습니다.
                 </p>
               </div>
@@ -44,7 +44,7 @@ export default function Activities() {
                   <BookOpen className="h-8 w-8 text-secondary-600" />
                 </div>
                 <h3 className="text-xl font-semibold text-primary-700 mb-3">연구 발표</h3>
-                <p className="text-gray-600">
+                <p className="text-gray-700">
                   보안 컨퍼런스에서 연구 결과를 발표하고 보안 커뮤니티와 지식을 공유합니다.
                 </p>
               </div>
@@ -54,7 +54,7 @@ export default function Activities() {
                   <Award className="h-8 w-8 text-warning" />
                 </div>
                 <h3 className="text-xl font-semibold text-primary-700 mb-3">취약점 제보</h3>
-                <p className="text-gray-600">
+                <p className="text-gray-700">
                   소프트웨어 취약점을 발견하고 제보하여 보안 생태계 발전에 기여하고 있습니다.
                 </p>
               </div>

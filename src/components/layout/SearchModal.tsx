@@ -142,7 +142,7 @@ export default function SearchModal({
           {/* Search Input */}
           <div className="border-b border-gray-200 p-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-700" />
               <input
                 type="text"
                 value={searchQuery}
@@ -154,7 +154,7 @@ export default function SearchModal({
               {searchQuery && (
                 <button
                   onClick={() => onSearchChange("")}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-700 hover:text-gray-700"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -165,12 +165,12 @@ export default function SearchModal({
           {/* Results */}
           <div className="max-h-96 overflow-y-auto">
             {searchQuery.trim() === "" ? (
-              <div className="p-8 text-center text-gray-500">
+              <div className="p-8 text-center text-gray-700">
                 <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
                 <p>검색어를 입력하여 결과를 확인하세요.</p>
               </div>
             ) : results.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
+              <div className="p-8 text-center text-gray-700">
                 <p className="font-medium">"{searchQuery}"에 대한 결과가 없습니다.</p>
                 <p className="text-sm mt-2">다른 검색어를 시도해보세요.</p>
               </div>
@@ -189,7 +189,7 @@ export default function SearchModal({
                         <h3 className="font-medium text-gray-900 truncate">
                           {result.title}
                         </h3>
-                        <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                        <p className="text-sm text-gray-700 mt-1 line-clamp-2">
                           {result.description}
                         </p>
                         <span className="inline-block mt-2 text-xs font-medium px-2 py-1 rounded-full bg-gray-100 text-gray-700">

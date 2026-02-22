@@ -199,7 +199,7 @@ export default function SignupPage() {
         <div className="w-2/3 p-8 overflow-y-auto">
           <div className="mb-6">
             <h2 className="text-3xl font-bold text-primary-600">회원가입</h2>
-            <p className="text-gray-600 mt-2 text-sm">SSG에 참여하여 사이버보안 여정을 시작하세요.</p>
+            <p className="text-gray-700 mt-2 text-sm">SSG에 참여하여 사이버보안 여정을 시작하세요.</p>
           </div>
           
           <Form {...form}>
@@ -217,7 +217,7 @@ export default function SignupPage() {
                       </FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-700" />
                           <Input
                             placeholder="유저네임을 입력하세요"
                             className={getIconInputClassName(!!fieldState.error)}
@@ -240,7 +240,7 @@ export default function SignupPage() {
                       </FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <BookUser className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                          <BookUser className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-700" />
                           <Input
                             placeholder="성명을 입력하세요"
                             className={getIconInputClassName(!!fieldState.error)}
@@ -267,7 +267,7 @@ export default function SignupPage() {
                       <div className="space-y-2">
                         <div className="flex gap-2 items-start">
                           <div className="relative flex-1">
-                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-700" />
                             <Input
                               type="email"
                               placeholder="이메일을 입력하세요"
@@ -300,7 +300,7 @@ export default function SignupPage() {
                       </FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-700" />
                           <Input
                             type={showPassword ? "text" : "password"}
                             placeholder="패스워드 (최소 6자)"
@@ -310,7 +310,7 @@ export default function SignupPage() {
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-700 hover:text-gray-700"
                           >
                             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                           </button>
@@ -331,7 +331,7 @@ export default function SignupPage() {
                       </FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-700" />
                           <Input
                             type={showConfirmPassword ? "text" : "password"}
                             placeholder="패스워드 다시 입력"
@@ -341,7 +341,7 @@ export default function SignupPage() {
                           <button
                             type="button"
                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-700 hover:text-gray-700"
                           >
                             {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                           </button>
@@ -355,7 +355,7 @@ export default function SignupPage() {
 
               {/* Optional Information Header */}
               <div className="flex items-center gap-2 pt-2">
-                <User className="w-4 h-4 text-gray-500" />
+                <User className="w-4 h-4 text-gray-700" />
                 <h3 className="text-base font-medium text-gray-700">선택 정보</h3>
               </div>
 

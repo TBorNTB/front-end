@@ -80,7 +80,7 @@ export default function RoleRequestForm() {
       <div className="flex items-center justify-center py-20">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary-600 mx-auto mb-4" />
-          <p className="text-gray-600">계정 정보를 불러오는 중...</p>
+          <p className="text-gray-700">계정 정보를 불러오는 중...</p>
         </div>
       </div>
     );
@@ -105,7 +105,7 @@ export default function RoleRequestForm() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">권한 요청</h1>
-          <p className="text-gray-600 mt-2">원하는 사용자 권한을 요청할 수 있습니다.</p>
+          <p className="text-gray-700 mt-2">원하는 사용자 권한을 요청할 수 있습니다.</p>
         </div>
       </div>
 
@@ -124,7 +124,7 @@ export default function RoleRequestForm() {
 
         <div className="space-y-4">
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <div className="text-sm text-gray-600">현재 권한</div>
+            <div className="text-sm text-gray-700">현재 권한</div>
             <div className="text-base font-semibold text-gray-900 mt-1">{UserRoleDisplay[currentRole] || currentRole}</div>
           </div>
 
@@ -149,7 +149,7 @@ export default function RoleRequestForm() {
                 ))
               )}
             </select>
-            <p className="text-xs text-gray-500 mt-2">{UserRoleDescription[selectedRole] || ''}</p>
+            <p className="text-xs text-gray-700 mt-2">{UserRoleDescription[selectedRole] || ''}</p>
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-2">
@@ -175,7 +175,7 @@ export default function RoleRequestForm() {
             </button>
           </div>
 
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-700">
             권한 요청은 운영진 승인 절차가 필요할 수 있습니다.
           </p>
         </div>

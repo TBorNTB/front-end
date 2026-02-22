@@ -415,17 +415,17 @@ export default function StatsCards() {
             {/* Header with Icon */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex-1">
-                <h3 className="text-sm font-medium text-gray-600 mb-1">
+                <h3 className="text-sm font-medium text-gray-700 mb-1">
                   {stat.title}
                 </h3>
                 {stat.dateRange && (
-                  <p className="text-xs text-gray-400 mb-1">
+                  <p className="text-xs text-gray-700 mb-1">
                     {stat.dateRange}
                   </p>
                 )}
                 <div className="flex items-baseline space-x-2">
                   {stat.loading ? (
-                    <Loader2 className="h-6 w-6 text-gray-400 animate-spin" />
+                    <Loader2 className="h-6 w-6 text-gray-700 animate-spin" />
                   ) : (
                     <>
                       <span className={`text-2xl font-bold ${
@@ -433,7 +433,7 @@ export default function StatsCards() {
                       }`}>
                         {stat.value}
                       </span>
-                      <span className="text-sm font-medium text-gray-500">
+                      <span className="text-sm font-medium text-gray-700">
                         {stat.unit}
                       </span>
                     </>
@@ -462,7 +462,7 @@ export default function StatsCards() {
                   {stat.trend !== "stable" && <TrendIcon className="h-3 w-3 mr-1" />}
                   {stat.change}
                 </div>
-                <span className="text-xs text-gray-500 font-medium">
+                <span className="text-xs text-gray-700 font-medium">
                   {stat.changeLabel}
                 </span>
               </div>

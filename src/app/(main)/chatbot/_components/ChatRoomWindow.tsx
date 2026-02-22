@@ -403,7 +403,7 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
           className={`flex-1 px-4 py-3 text-sm font-medium transition-all duration-200 ${
             activeTab === "users"
               ? "text-secondary-600 border-b-2 border-secondary-600 bg-white"
-              : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
           }`}
         >
           <div className="flex items-center justify-center gap-2">
@@ -419,7 +419,7 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
           className={`flex-1 px-4 py-3 text-sm font-medium transition-all duration-200 ${
             activeTab === "rooms"
               ? "text-secondary-600 border-b-2 border-secondary-600 bg-white"
-              : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
           }`}
         >
           <div className="flex items-center justify-center gap-2">
@@ -432,7 +432,7 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
       {/* Search Bar & Create Button */}
       <div className="px-4 py-3 border-b border-gray-200 bg-white space-y-2">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-700" />
           <input
             type="text"
             placeholder={activeTab === "users" ? "사용자 검색..." : "채팅방 검색..."}
@@ -462,13 +462,13 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
         {activeTab === "users" ? (
           <div className="p-4 space-y-2">
             {isLoadingUsers && users.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
+              <div className="text-center py-12 text-gray-700">
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-secondary-600 mb-3"></div>
                 <p className="text-sm">사용자 목록을 불러오는 중...</p>
               </div>
             ) : filteredUsers.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                <User className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+              <div className="text-center py-12 text-gray-700">
+                <User className="w-12 h-12 mx-auto mb-3 text-gray-700" />
                 <p className="text-sm">{searchQuery ? "검색 결과가 없습니다" : "사용자가 없습니다"}</p>
               </div>
             ) : (
@@ -496,7 +496,7 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                       <h4 className="font-semibold text-gray-900 group-hover:text-secondary-600 transition-colors">
                         {user.nickname || user.name || "이름 없음"}
                       </h4>
-                      <p className="text-xs text-gray-500 mt-0.5">{user.realName || user.name || ""}</p>
+                      <p className="text-xs text-gray-700 mt-0.5">{user.realName || user.name || ""}</p>
                     </div>
                   </button>
                 ))}
@@ -527,13 +527,13 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
         ) : (
           <div className="p-4 space-y-2">
             {isLoadingRooms ? (
-              <div className="text-center py-12 text-gray-500">
+              <div className="text-center py-12 text-gray-700">
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-secondary-600 mb-3"></div>
                 <p className="text-sm">채팅방 목록을 불러오는 중...</p>
               </div>
             ) : filteredChatRooms.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                <MessageSquare className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+              <div className="text-center py-12 text-gray-700">
+                <MessageSquare className="w-12 h-12 mx-auto mb-3 text-gray-700" />
                 <p className="text-sm">채팅방이 없습니다</p>
               </div>
             ) : (
@@ -575,19 +575,19 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                           {room.name}
                         </h4>
                         {room.lastMessageTime && (
-                          <span className="text-xs text-gray-500 flex-shrink-0">
+                          <span className="text-xs text-gray-700 flex-shrink-0">
                             {room.lastMessageTime}
                           </span>
                         )}
                       </div>
                       <div className="flex items-center justify-between gap-2 mt-1">
                         {room.lastMessage ? (
-                          <p className="text-xs text-gray-600 truncate">
+                          <p className="text-xs text-gray-700 truncate">
                             {room.lastSenderNickname ? `${room.lastSenderNickname}: ` : ""}
                             {room.lastMessage}
                           </p>
                         ) : (
-                          <p className="text-xs text-gray-400">메시지 없음</p>
+                          <p className="text-xs text-gray-700">메시지 없음</p>
                         )}
                         {room.unreadCount && room.unreadCount > 0 && (
                           <span className="flex-shrink-0 bg-secondary-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
@@ -597,8 +597,8 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                       </div>
                       {room.memberCount !== undefined && (
                         <div className="flex items-center gap-1 mt-1">
-                          <Users className="w-3 h-3 text-gray-400" />
-                          <span className="text-xs text-gray-500">{room.memberCount}명</span>
+                          <Users className="w-3 h-3 text-gray-700" />
+                          <span className="text-xs text-gray-700">{room.memberCount}명</span>
                         </div>
                       )}
 
@@ -613,7 +613,7 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                               <span
                                 key={m.username}
                                 title={m.realName}
-                                className="inline-flex items-center gap-1 text-[11px] text-gray-600 bg-gray-100 border border-gray-200 rounded-full pl-1 pr-2 py-0.5"
+                                className="inline-flex items-center gap-1 text-[11px] text-gray-700 bg-gray-100 border border-gray-200 rounded-full pl-1 pr-2 py-0.5"
                               >
                                 {showThumb ? (
                                   <img
@@ -622,7 +622,7 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                                     className="w-4 h-4 rounded-full object-cover border border-gray-200"
                                   />
                                 ) : (
-                                  <div className="w-4 h-4 rounded-full bg-white border border-gray-200 flex items-center justify-center text-[10px] text-gray-500">
+                                  <div className="w-4 h-4 rounded-full bg-white border border-gray-200 flex items-center justify-center text-[10px] text-gray-700">
                                     {initial}
                                   </div>
                                 )}
@@ -677,7 +677,7 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                 }}
                 className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X className="w-5 h-5 text-gray-700" />
               </button>
             </div>
 
@@ -757,7 +757,7 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                         </div>
                         <div className="flex-1 text-left">
                           <h4 className="font-medium text-gray-900">{user.nickname || user.realName || user.name}</h4>
-                          <p className="text-xs text-gray-500">{user.realName || user.name || ""}</p>
+                          <p className="text-xs text-gray-700">{user.realName || user.name || ""}</p>
                         </div>
                         {isSelected && (
                           <div className="w-5 h-5 bg-secondary-600 rounded-full flex items-center justify-center">

@@ -127,7 +127,7 @@ export function TechStackInput({
 
       {/* Hidden input value guide (optional) */}
       {maxLength ? (
-        <div className="text-xs text-gray-500">
+        <div className="text-xs text-gray-700">
           {value.length}/{maxLength}
         </div>
       ) : null}

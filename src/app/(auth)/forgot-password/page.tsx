@@ -224,7 +224,7 @@ export default function ForgotPasswordPage() {
           <button
             type="button"
             onClick={() => router.push("/")}
-            className="absolute top-4 right-4 text-gray-400 hover:text-primary-600 transition-colors"
+            className="absolute top-4 right-4 text-gray-700 hover:text-primary-600 transition-colors"
           >
             <X size={20} />
           </button>
@@ -241,7 +241,7 @@ export default function ForgotPasswordPage() {
                     <FormLabel className="text-sm font-medium text-primary-600">이메일 주소</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-700" />
                         <input
                           id="email"
                           type="email"
@@ -260,7 +260,7 @@ export default function ForgotPasswordPage() {
                 <button
                   type="button"
                   onClick={() => router.push('/login')}
-                  className="text-gray-500 text-sm hover:text-gray-700 flex items-center"
+                  className="text-gray-700 text-sm hover:text-gray-700 flex items-center"
                 >
                   <ArrowLeft size={16} className="mr-1" />
                   로그인으로 돌아가기
@@ -310,7 +310,7 @@ export default function ForgotPasswordPage() {
           <button
             type="button"
             onClick={() => setCurrentStep('email')}
-            className="absolute top-4 right-4 text-gray-400 hover:text-primary-600 transition-colors"
+            className="absolute top-4 right-4 text-gray-700 hover:text-primary-600 transition-colors"
           >
             <ArrowLeft size={20} />
           </button>
@@ -347,12 +347,12 @@ export default function ForgotPasswordPage() {
 
               {/* Timer and Resend */}
               <div className="text-center space-y-3">
-                <p className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+                <p className="text-sm text-gray-700 bg-blue-50 p-3 rounded-lg">
                   📧 인증코드를 <span className="font-semibold">{email}</span>로 발송했습니다.
                   <br />스팸 폴더도 확인해주세요.
                 </p>
                 {timeLeft > 0 ? (
-                  <p className="text-sm text-gray-500 flex items-center justify-center gap-1">
+                  <p className="text-sm text-gray-700 flex items-center justify-center gap-1">
                     <Timer size={14} />
                     {formatTime(timeLeft)} 후 재발송 가능
                   </p>
@@ -377,7 +377,7 @@ export default function ForgotPasswordPage() {
                     <FormLabel className="text-sm font-medium text-primary-600">새 비밀번호</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-700" />
                         <input
                           id="newPassword"
                           type={showPassword ? "text" : "password"}
@@ -388,7 +388,7 @@ export default function ForgotPasswordPage() {
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-700 hover:text-gray-700"
                         >
                           {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
@@ -408,7 +408,7 @@ export default function ForgotPasswordPage() {
                     <FormLabel className="text-sm font-medium text-primary-600">비밀번호 확인</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-700" />
                         <input
                           id="confirmPassword"
                           type={showConfirmPassword ? "text" : "password"}
@@ -419,7 +419,7 @@ export default function ForgotPasswordPage() {
                         <button
                           type="button"
                           onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-700 hover:text-gray-700"
                         >
                           {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
@@ -474,7 +474,7 @@ export default function ForgotPasswordPage() {
             <p className="text-lg text-gray-700">
               비밀번호가 성공적으로 변경되었습니다.
             </p>
-            <p className="text-gray-600">
+            <p className="text-gray-700">
               새로운 비밀번호로 로그인해 주세요.
             </p>
             

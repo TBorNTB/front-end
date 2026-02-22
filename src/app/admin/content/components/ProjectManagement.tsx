@@ -284,7 +284,7 @@ export default function ProjectManagement() {
       {/* 검색 및 필터 컨트롤 */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-700" />
           <input
             type="text"
             placeholder="제목으로 검색..."
@@ -312,9 +312,9 @@ export default function ProjectManagement() {
               className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden"
             >
               {isLoadingSuggestions ? (
-                <div className="px-3 py-2 text-sm text-gray-500">검색어 제안 불러오는 중...</div>
+                <div className="px-3 py-2 text-sm text-gray-700">검색어 제안 불러오는 중...</div>
               ) : suggestions.length === 0 ? (
-                <div className="px-3 py-2 text-sm text-gray-500">검색어 제안이 없습니다.</div>
+                <div className="px-3 py-2 text-sm text-gray-700">검색어 제안이 없습니다.</div>
               ) : (
                 suggestions.map((s) => (
                   <button
@@ -352,7 +352,7 @@ export default function ProjectManagement() {
                 </option>
               ))}
             </select>
-            <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-700" />
           </div>
           
           {sortOptions.map((option) => (
@@ -374,7 +374,7 @@ export default function ProjectManagement() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between mb-4 text-sm text-gray-600">
+      <div className="flex items-center justify-between mb-4 text-sm text-gray-700">
         <span>
           총 <span className="font-semibold text-gray-900">{totalElements.toLocaleString()}</span>개
         </span>
@@ -415,7 +415,7 @@ export default function ProjectManagement() {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={6} className="py-10 px-4 text-center text-sm text-gray-500">
+                <td colSpan={6} className="py-10 px-4 text-center text-sm text-gray-700">
                   불러오는 중...
                 </td>
               </tr>
@@ -427,7 +427,7 @@ export default function ProjectManagement() {
               </tr>
             ) : sortedProjects.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-10 px-4 text-center text-sm text-gray-500">
+                <td colSpan={6} className="py-10 px-4 text-center text-sm text-gray-700">
                   조건에 맞는 프로젝트가 없습니다.
                 </td>
               </tr>

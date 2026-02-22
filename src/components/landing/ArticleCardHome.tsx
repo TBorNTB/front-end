@@ -66,7 +66,7 @@ export function ArticleCardHome({ article }: ArticleCardHomeProps) {
               {article.title}
             </h3>
             
-            <p className="text-sm text-gray-600 line-clamp-3">
+            <p className="text-sm text-gray-700 line-clamp-3">
               {article.excerpt || article.description || ''}
             </p>
           </div>
@@ -75,7 +75,7 @@ export function ArticleCardHome({ article }: ArticleCardHomeProps) {
           {article.tags && article.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-4">
               {article.tags.slice(0, 2).map((tag, index) => (
-                <span key={index} className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">
+                <span key={index} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
                   #{tag}
                 </span>
               ))}
@@ -102,7 +102,7 @@ export function ArticleCardHome({ article }: ArticleCardHomeProps) {
           </div>
 
           {/* Meta Info */}
-          <div className="border-t border-gray-100 pt-3 flex items-center justify-between text-xs text-gray-500">
+          <div className="border-t border-gray-100 pt-3 flex items-center justify-between text-xs text-gray-700">
             <div className="flex items-center gap-2">
               <Calendar className="h-3.5 w-3.5" />
               <span>{formatDate(article.createdAt)}</span>

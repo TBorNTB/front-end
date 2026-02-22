@@ -537,7 +537,7 @@ export default function NewProjectForm() {
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-            <p className="text-gray-600">로딩 중...</p>
+            <p className="text-gray-700">로딩 중...</p>
           </div>
         </div>
       )}
@@ -546,7 +546,7 @@ export default function NewProjectForm() {
       {!userLoading && !currentUser && (
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <p className="text-gray-600 mb-4">프로젝트를 생성하려면 먼저 로그인해주세요.</p>
+            <p className="text-gray-700 mb-4">프로젝트를 생성하려면 먼저 로그인해주세요.</p>
             <Link href="/login">
               <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                 로그인
@@ -561,12 +561,12 @@ export default function NewProjectForm() {
         <>
           {/* Header */}
           <div className="flex items-center gap-4 mb-8">
-            <Link href="/projects" className="text-gray-600 hover:text-gray-900">
+            <Link href="/projects" className="text-gray-700 hover:text-gray-900">
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">새 프로젝트 만들기</h1>
-              <p className="text-gray-600 mt-1">새로운 프로젝트를 등록하고 협력자들과 함께 작업하세요.</p>
+              <p className="text-gray-700 mt-1">새로운 프로젝트를 등록하고 협력자들과 함께 작업하세요.</p>
             </div>
           </div>
 
@@ -598,7 +598,7 @@ export default function NewProjectForm() {
             </label>
             {isLoadingCategories ? (
               <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50">
-                <span className="text-gray-500">카테고리 로딩 중...</span>
+                <span className="text-gray-700">카테고리 로딩 중...</span>
               </div>
             ) : (
               <>
@@ -606,7 +606,7 @@ export default function NewProjectForm() {
                   errors.categories ? 'border-red-500' : 'border-gray-300'
                 }`}>
                   {categories.length === 0 ? (
-                    <p className="text-gray-500 text-sm">카테고리가 없습니다</p>
+                    <p className="text-gray-700 text-sm">카테고리가 없습니다</p>
                   ) : (
                     <div className="space-y-2">
                       {categories.map((cat) => {
@@ -625,7 +625,7 @@ export default function NewProjectForm() {
                             <div className="flex-1">
                               <span className="text-sm font-medium text-gray-900">{cat.name}</span>
                               {cat.description && (
-                                <p className="text-xs text-gray-500 mt-0.5">{cat.description}</p>
+                                <p className="text-xs text-gray-700 mt-0.5">{cat.description}</p>
                               )}
                             </div>
                           </label>
@@ -637,7 +637,7 @@ export default function NewProjectForm() {
                 {/* Selected Categories Display */}
                 {formData.categories.length > 0 && (
                   <div className="mt-3">
-                    <p className="text-xs text-gray-600 mb-2">선택된 카테고리:</p>
+                    <p className="text-xs text-gray-700 mb-2">선택된 카테고리:</p>
                     <div className="flex flex-wrap gap-2">
                       {formData.categories.map((categoryName) => (
                         <span
@@ -775,7 +775,7 @@ export default function NewProjectForm() {
                 placeholder="프로젝트에 대해 자세히 설명해주세요..."
               />
             </div>
-            <p className="text-gray-500 text-sm mt-1">리치 텍스트 에디터를 사용하여 작성해주세요.</p>
+            <p className="text-gray-700 text-sm mt-1">리치 텍스트 에디터를 사용하여 작성해주세요.</p>
           </div>
         </div>
 
@@ -1013,12 +1013,12 @@ export default function NewProjectForm() {
                 }}
               >
                 {isLoadingUsers ? (
-                  <div className="p-8 text-center text-gray-500">
+                  <div className="p-8 text-center text-gray-700">
                     <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mb-2"></div>
                     <p>{isSearching ? '검색 중...' : '사용자 목록을 불러오는 중...'}</p>
                   </div>
                 ) : filteredUsers.length === 0 ? (
-                  <div className="p-8 text-center text-gray-500">
+                  <div className="p-8 text-center text-gray-700">
                     {isSearchMode ? '검색 결과가 없습니다.' : '사용자가 없습니다.'}
                   </div>
                 ) : (
@@ -1060,9 +1060,9 @@ export default function NewProjectForm() {
                               </p>
                               <div className="flex items-center gap-2 mt-0.5">
                                 {user.nickname && user.nickname !== (user.realName || user.email) && (
-                                  <p className="text-sm text-gray-500 truncate">{user.nickname}</p>
+                                  <p className="text-sm text-gray-700 truncate">{user.nickname}</p>
                                 )}
-                                <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                                <p className="text-xs text-gray-700 truncate">{user.email}</p>
                               </div>
                             </div>
                             {isAlreadyAdded && (
@@ -1078,7 +1078,7 @@ export default function NewProjectForm() {
                     </div>
                     {/* Loading more indicator */}
                     {isLoadingMore && (
-                      <div className="p-4 text-center text-gray-500">
+                      <div className="p-4 text-center text-gray-700">
                         <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mb-2"></div>
                         <p className="text-sm">
                           {isSearchMode ? '더 많은 검색 결과를 불러오는 중...' : '더 많은 사용자를 불러오는 중...'}
@@ -1086,7 +1086,7 @@ export default function NewProjectForm() {
                       </div>
                     )}
                     {!isLoadingMore && filteredUsers.length > 0 && (
-                      <div className="p-4 text-center text-gray-400 text-sm">
+                      <div className="p-4 text-center text-gray-700 text-sm">
                         {isSearchMode 
                           ? (!searchHasNext ? '모든 검색 결과를 불러왔습니다.' : '')
                           : (!hasNext ? '모든 사용자를 불러왔습니다.' : '')
@@ -1127,7 +1127,7 @@ export default function NewProjectForm() {
                         </div>
                         <div>
                           <p className="font-medium text-gray-900">{collaborator.name}</p>
-                          <p className="text-sm text-gray-500">@{user?.username || collaborator.email}</p>
+                          <p className="text-sm text-gray-700">@{user?.username || collaborator.email}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -1182,9 +1182,9 @@ export default function NewProjectForm() {
                   className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200"
                 >
                   <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-gray-500" />
+                    <FileText className="w-4 h-4 text-gray-700" />
                     <span className="text-sm text-gray-700">{doc.name}</span>
-                    <span className="text-xs text-gray-500">({(doc.size / 1024).toFixed(1)} KB)</span>
+                    <span className="text-xs text-gray-700">({(doc.size / 1024).toFixed(1)} KB)</span>
                   </div>
                   <button
                     type="button"

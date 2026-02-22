@@ -121,12 +121,12 @@ export default function PopularPosts() {
       
       {loading ? (
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
+          <Loader2 className="w-6 h-6 text-gray-700 animate-spin" />
         </div>
       ) : error ? (
         <div className="text-center py-8 text-sm text-red-600">{error}</div>
       ) : posts.length === 0 ? (
-        <div className="text-center py-8 text-sm text-gray-500">인기 게시물이 없습니다.</div>
+        <div className="text-center py-8 text-sm text-gray-700">인기 게시물이 없습니다.</div>
       ) : (
         <>
           <div className="space-y-4">
@@ -148,7 +148,7 @@ export default function PopularPosts() {
                     <h4 className="text-sm font-medium text-gray-900 truncate">
                       {post.title}
                     </h4>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                    <div className="flex items-center gap-3 mt-1 text-xs text-gray-700">
                       <span>조회수 {post.viewCount.toLocaleString()}</span>
                       <span>좋아요 {post.likeCount.toLocaleString()}</span>
                     </div>

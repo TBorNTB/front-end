@@ -761,7 +761,7 @@ export default function ActivityContent() {
       <div className="flex items-center justify-center py-20">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary-600 mx-auto mb-4" />
-          <p className="text-gray-600">사용자 정보를 불러오는 중...</p>
+          <p className="text-gray-700">사용자 정보를 불러오는 중...</p>
         </div>
       </div>
     );
@@ -783,7 +783,7 @@ export default function ActivityContent() {
       <div className="flex items-center justify-center py-20">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary-600 mx-auto mb-4" />
-          <p className="text-gray-600">활동 내역을 불러오는 중...</p>
+          <p className="text-gray-700">활동 내역을 불러오는 중...</p>
         </div>
       </div>
     );
@@ -841,7 +841,7 @@ export default function ActivityContent() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-primary-700 mb-2">나의 활동</h1>
-        <p className="text-gray-600">참여한 프로젝트와 작성한 콘텐츠를 확인하세요</p>
+        <p className="text-gray-700">참여한 프로젝트와 작성한 콘텐츠를 확인하세요</p>
       </div>
 
       {/* 활동 요약 카드 - 작성한 글, 조회수, 좋아요, 댓글 */}
@@ -879,14 +879,14 @@ export default function ActivityContent() {
               className={`py-3 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors duration-300 ${
                 activeTab === tab.key
                   ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-700 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
               {tab.label}
               <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
                 activeTab === tab.key
                   ? 'bg-primary-100 text-primary-600'
-                  : 'bg-gray-100 text-gray-600'
+                  : 'bg-gray-100 text-gray-700'
               }`}>
                 {tabCounts[tab.key as keyof typeof tabCounts]}
               </span>
@@ -900,7 +900,7 @@ export default function ActivityContent() {
         <div className="flex items-center gap-4">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-700" />
             <input
               type="text"
               placeholder="활동 검색..."
@@ -920,7 +920,7 @@ export default function ActivityContent() {
             className={`p-2 rounded-md transition-colors duration-200 ${
               viewMode === 'grid'
                 ? 'bg-white text-primary-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                : 'text-gray-700 hover:text-gray-900'
             }`}
           >
             <Grid className="h-4 w-4" />
@@ -930,7 +930,7 @@ export default function ActivityContent() {
             className={`p-2 rounded-md transition-colors duration-200 ${
               viewMode === 'list'
                 ? 'bg-white text-primary-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                : 'text-gray-700 hover:text-gray-900'
             }`}
           >
             <List className="h-4 w-4" />
@@ -941,8 +941,8 @@ export default function ActivityContent() {
       {/* Activities Content */}
       {filteredActivities.length === 0 ? (
         <div className="text-center py-20">
-          <div className="text-gray-500 text-lg mb-2">활동 내역이 없습니다</div>
-          <p className="text-gray-400">새로운 프로젝트에 참여하거나 글을 작성해보세요!</p>
+          <div className="text-gray-700 text-lg mb-2">활동 내역이 없습니다</div>
+          <p className="text-gray-700">새로운 프로젝트에 참여하거나 글을 작성해보세요!</p>
         </div>
       ) : (
         <>
@@ -998,12 +998,12 @@ export default function ActivityContent() {
                       </div>
                       
                       {activity.description && (
-                        <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">
+                        <p className="text-gray-700 text-sm mb-4 line-clamp-2 leading-relaxed">
                           {activity.description}
                         </p>
                       )}
                       
-                      <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
+                      <div className="flex items-center justify-between text-xs text-gray-700 mb-4">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
                           <span>{activity.date}</span>
@@ -1017,7 +1017,7 @@ export default function ActivityContent() {
                       </div>
                       
                       {(activity.views !== undefined || activity.likes !== undefined) && (
-                        <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
+                        <div className="flex items-center gap-4 text-xs text-gray-700 mb-4">
                           {activity.views !== undefined && (
                             <div className="flex items-center gap-1">
                               <Eye className="h-3 w-3" />
@@ -1068,7 +1068,7 @@ export default function ActivityContent() {
                       </div>
                       
                       {activity.description && (
-                        <p className="text-gray-600 text-sm mb-2 line-clamp-1">{activity.description}</p>
+                        <p className="text-gray-700 text-sm mb-2 line-clamp-1">{activity.description}</p>
                       )}
                       
                       {activity.tags && activity.tags.length > 0 && (
@@ -1082,7 +1082,7 @@ export default function ActivityContent() {
                       )}
                     </div>
                     
-                    <div className="text-right text-sm text-gray-500 flex-shrink-0">
+                    <div className="text-right text-sm text-gray-700 flex-shrink-0">
                       <div className="flex items-center gap-1 mb-1">
                         <Calendar className="h-3 w-3" />
                         <span>{activity.date}</span>
@@ -1118,7 +1118,7 @@ export default function ActivityContent() {
                 disabled={currentPage === 0}
                 className={`p-2 rounded-lg border transition-colors ${
                   currentPage === 0
-                    ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                    ? 'border-gray-200 text-gray-700 cursor-not-allowed'
                     : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                 }`}
               >
@@ -1159,7 +1159,7 @@ export default function ActivityContent() {
                 disabled={currentPage >= totalPages - 1}
                 className={`p-2 rounded-lg border transition-colors ${
                   currentPage >= totalPages - 1
-                    ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                    ? 'border-gray-200 text-gray-700 cursor-not-allowed'
                     : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                 }`}
               >

@@ -451,7 +451,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">뉴스를 불러오는 중...</p>
+          <p className="text-gray-700">뉴스를 불러오는 중...</p>
         </div>
       </div>
     );
@@ -465,7 +465,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
           <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm">
             <div className="mb-4">
               <svg
-                className="w-16 h-16 mx-auto text-gray-400"
+                className="w-16 h-16 mx-auto text-gray-700"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -479,7 +479,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
               </svg>
             </div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">해당 게시글은 삭제 된 게시글입니다</h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-700 mb-6">
               요청하신 게시글을 찾을 수 없습니다. 삭제되었거나 존재하지 않는 게시글일 수 있습니다.
             </p>
             <Link
@@ -506,7 +506,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
         <div className="container py-4">
           <Link
             href="/community"
-            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors group"
+            className="inline-flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors group"
           >
             <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
             <span className="text-sm font-medium">목록으로 돌아가기</span>
@@ -528,7 +528,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                 >
                   <span className="font-bold text-gray-900">뉴스 정보</span>
                   <ChevronDown
-                    className={`w-5 h-5 text-gray-600 transition-transform ${
+                    className={`w-5 h-5 text-gray-700 transition-transform ${
                       openSections.info ? 'rotate-180' : ''
                     }`}
                   />
@@ -537,21 +537,21 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                 {openSections.info && (
                   <div className="p-4 space-y-3 text-sm">
                     <div>
-                      <p className="text-gray-600 mb-1">카테고리</p>
+                      <p className="text-gray-700 mb-1 font-medium">카테고리</p>
                       <span className="px-2 py-1 rounded text-xs bg-primary-100 text-primary-700">
                         {item.category}
                       </span>
                     </div>
                     <div>
-                      <p className="text-gray-600 mb-1">작성일</p>
+                      <p className="text-gray-700 mb-1 font-medium">작성일</p>
                       <p className="text-gray-900">{formatDate(item.createdAt)}</p>
                     </div>
                     <div>
-                      <p className="text-gray-600 mb-1">수정일</p>
+                      <p className="text-gray-700 mb-1 font-medium">수정일</p>
                       <p className="text-gray-900">{formatDate(item.updatedAt)}</p>
                     </div>
                     <div>
-                      <p className="text-gray-600 mb-1">읽기 시간</p>
+                      <p className="text-gray-700 mb-1 font-medium">읽기 시간</p>
                       <p className="text-gray-900">{readTime}분</p>
                     </div>
                   </div>
@@ -567,7 +567,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                   >
                     <span className="font-bold text-gray-900">참여자 ({item.participantProfiles.length})</span>
                     <ChevronDown
-                      className={`w-5 h-5 text-gray-600 transition-transform ${
+                      className={`w-5 h-5 text-gray-700 transition-transform ${
                         openSections.participants ? 'rotate-180' : ''
                       }`}
                     />
@@ -617,7 +617,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                 >
                   <span className="font-bold text-gray-900">관련 뉴스 ({relatedNews.length})</span>
                   <ChevronDown
-                    className={`w-5 h-5 text-gray-600 transition-transform ${
+                    className={`w-5 h-5 text-gray-700 transition-transform ${
                       openSections.related ? 'rotate-180' : ''
                     }`}
                   />
@@ -628,7 +628,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                     {isLoadingRelatedNews ? (
                       <div className="text-center py-4">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mx-auto"></div>
-                        <p className="text-xs text-gray-500 mt-2">로딩 중...</p>
+                        <p className="text-xs text-gray-700 mt-2">로딩 중...</p>
                       </div>
                     ) : relatedNews.length > 0 ? (
                       <div className="space-y-3">
@@ -658,11 +658,11 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                                     {item.title}
                                   </h4>
                                   {item.summary && (
-                                    <p className="text-xs text-gray-600 line-clamp-1 mb-2">
+                                    <p className="text-xs text-gray-700 line-clamp-1 mb-2">
                                       {item.summary}
                                     </p>
                                   )}
-                                  <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+                                  <div className="flex items-center gap-2 text-xs text-gray-700 mb-1">
                                     {item.writerNickname && <span>{item.writerNickname}</span>}
                                     {item.writerNickname && <span>·</span>}
                                     <span>·</span>
@@ -682,7 +682,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                                       })()}
                                     </span>
                                   </div>
-                                  <div className="flex items-center gap-3 text-xs text-gray-500">
+                                  <div className="flex items-center gap-3 text-xs text-gray-700">
                                     <div className="flex items-center gap-1">
                                       <Eye className="w-3 h-3" />
                                       <span>{item.viewCount.toLocaleString()}</span>
@@ -699,7 +699,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                         })}
                       </div>
                     ) : (
-                      <p className="text-sm text-gray-500 text-center py-4">
+                      <p className="text-sm text-gray-700 text-center py-4">
                         관련 뉴스가 없습니다
                       </p>
                     )}
@@ -730,7 +730,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
 
                 {/* Summary */}
                 {item.summary && (
-                  <p className="text-lg text-gray-600 mb-6 leading-relaxed">
+                  <p className="text-lg text-gray-700 mb-6 leading-relaxed">
                     {item.summary}
                   </p>
                 )}
@@ -749,7 +749,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-lg font-bold text-gray-500">
+                      <div className="w-full h-full flex items-center justify-center text-lg font-bold text-gray-700">
                         {getDisplayName(item.writerProfile?.nickname, item.writerProfile?.realName).charAt(0).toUpperCase()}
                       </div>
                     )}
@@ -763,15 +763,15 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                       </p>
                     </div>
                     <div className="flex items-center gap-3 mt-1">
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-gray-700">
                         {new Date(item.createdAt).toLocaleDateString('ko-KR', {
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric',
                         })}
                       </p>
-                      <span className="text-gray-300">·</span>
-                      <div className="flex items-center gap-1 text-sm text-gray-500">
+                      <span className="text-gray-700">·</span>
+                      <div className="flex items-center gap-1 text-sm text-gray-700">
                         <Clock className="w-3.5 h-3.5" />
                         <span>{readTime}분</span>
                       </div>
@@ -782,15 +782,15 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                 {/* Stats Bar */}
                 <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
                   <div className="flex items-center gap-8">
-                    <div className="flex items-center gap-2 text-gray-600">
+                    <div className="flex items-center gap-2 text-gray-700">
                       <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
                       <span className="text-sm font-semibold">{likeCount}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-gray-600">
+                    <div className="flex items-center gap-2 text-gray-700">
                       <Eye className="w-5 h-5" />
                       <span className="text-sm font-semibold">{viewCount.toLocaleString()}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-gray-600">
+                    <div className="flex items-center gap-2 text-gray-700">
                       <MessageCircle className="w-5 h-5" />
                       <span className="text-sm font-semibold">{comments.length}{hasNextComments ? '+' : ''}</span>
                     </div>
@@ -973,7 +973,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                         }}
                       />
                     ) : (
-                      <p className="text-gray-500 italic">내용이 없습니다.</p>
+                      <p className="text-gray-700 italic">내용이 없습니다.</p>
                     )}
                   </div>
                 </div>
@@ -982,8 +982,8 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                 {item.tags && item.tags.length > 0 && (
                   <div className="mt-8 pt-8 border-t border-gray-200">
                     <div className="flex items-center gap-2 mb-4">
-                      <Tag className="w-5 h-5 text-gray-400" />
-                      <h3 className="text-sm font-semibold text-gray-700">태그</h3>
+                      <Tag className="w-5 h-5 text-gray-700" />
+                      <h3 className="text-sm font-semibold text-gray-800">태그</h3>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {item.tags.map((tag, index) => (
@@ -1013,7 +1013,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                       className={`w-8 h-8 transition-colors ${
                         isLiked
                           ? 'text-red-500 fill-red-500'
-                          : 'text-gray-400 group-hover:text-primary-600'
+                          : 'text-gray-700 group-hover:text-primary-600'
                       }`}
                       fill={isLiked ? 'currentColor' : 'none'}
                       stroke="currentColor"
@@ -1034,7 +1034,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                       {likeCount}
                     </span>
                     {isTogglingLike && (
-                      <span className="text-xs text-gray-500">처리 중...</span>
+                      <span className="text-xs text-gray-700">처리 중...</span>
                     )}
                   </button>
                 </div>
@@ -1052,7 +1052,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                       className={`px-3 py-1 text-sm rounded-lg transition-colors ${
                         commentSortDirection === 'DESC'
                           ? 'bg-primary-100 text-primary-700 font-medium'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
                       최신순
@@ -1062,7 +1062,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                       className={`px-3 py-1 text-sm rounded-lg transition-colors ${
                         commentSortDirection === 'ASC'
                           ? 'bg-primary-100 text-primary-700 font-medium'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
                       오래된순
@@ -1093,10 +1093,10 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                 {isLoadingComments ? (
                   <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
-                    <p className="text-gray-500 mt-2">댓글을 불러오는 중...</p>
+                    <p className="text-gray-700 mt-2">댓글을 불러오는 중...</p>
                   </div>
                 ) : comments.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-gray-700">
                     아직 댓글이 없습니다. 첫 댓글을 작성해보세요!
                   </div>
                 ) : (
@@ -1127,7 +1127,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                                   className="w-full h-full object-cover"
                                 />
                               ) : (
-                                <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-500">
+                                <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-700">
                                   {initial}
                                 </div>
                               )}
@@ -1136,15 +1136,15 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                               <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2">
                                   <span className="font-medium text-gray-900">{displayName}</span>
-                                <span className="text-sm text-gray-500">{formatDate(comment.createdAt)}</span>
+                                <span className="text-sm text-gray-700">{formatDate(comment.createdAt)}</span>
                                 {comment.updatedAt !== comment.createdAt && (
-                                  <span className="text-xs text-gray-400">(수정됨)</span>
+                                  <span className="text-xs text-gray-700">(수정됨)</span>
                                 )}
                               </div>
                               <div className="flex items-center gap-2">
                                 <Menu as="div" className="relative">
                                   <Menu.Button className="p-1 hover:bg-gray-200 rounded-full">
-                                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                                     </svg>
                                   </Menu.Button>
@@ -1235,7 +1235,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                                         setReplyContent('');
                                       }
                                     }}
-                                    className="text-sm text-gray-600 hover:text-primary-600"
+                                    className="text-sm text-gray-700 hover:text-primary-600"
                                   >
                                     답글
                                   </button>
@@ -1303,7 +1303,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                                                   className="w-full h-full object-cover"
                                                 />
                                               ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
+                                                <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-700">
                                                   {replyInitial}
                                                 </div>
                                               )}
@@ -1312,14 +1312,14 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                                               <div className="flex items-center justify-between mb-1">
                                                 <div className="flex items-center gap-2">
                                                   <span className="text-sm font-medium text-gray-900">{replyDisplayName}</span>
-                                                <span className="text-xs text-gray-500">{formatDate(reply.createdAt)}</span>
+                                                <span className="text-xs text-gray-700">{formatDate(reply.createdAt)}</span>
                                                 {reply.updatedAt !== reply.createdAt && (
-                                                  <span className="text-xs text-gray-400">(수정됨)</span>
+                                                  <span className="text-xs text-gray-700">(수정됨)</span>
                                                 )}
                                               </div>
                                               <Menu as="div" className="relative">
                                                 <Menu.Button className="p-1 hover:bg-gray-200 rounded-full">
-                                                  <svg className="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <svg className="w-3 h-3 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                                                   </svg>
                                                 </Menu.Button>

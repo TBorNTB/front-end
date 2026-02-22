@@ -160,7 +160,7 @@ export default function MyPageLayout({
                             }`}
                           >
                             <IconComponent className={`h-5 w-5 mt-0.5 flex-shrink-0 ${
-                              isActive ? 'text-primary-600' : 'text-gray-400 group-hover:text-primary-500'
+                              isActive ? 'text-primary-600' : 'text-gray-700 group-hover:text-primary-500'
                             }`} />
                             <div className="flex-1 min-w-0">
                               <p className={`font-semibold ${

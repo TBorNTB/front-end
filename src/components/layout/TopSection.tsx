@@ -106,7 +106,7 @@ export default function ContentFilterBar({
         <div className="flex-1 relative w-full">
           <div className="relative flex gap-2">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-700" />
               <input
                 ref={searchInputRef}
                 type="text"
@@ -141,7 +141,7 @@ export default function ContentFilterBar({
               className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto"
             >
               {isLoadingSuggestions ? (
-                <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                <div className="px-4 py-3 text-sm text-gray-700 text-center">
                   검색 중...
                 </div>
               ) : suggestions.length > 0 ? (
@@ -153,14 +153,14 @@ export default function ContentFilterBar({
                       className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
                     >
                       <div className="flex items-center gap-2">
-                        <Search className="w-4 h-4 text-gray-400" />
+                        <Search className="w-4 h-4 text-gray-700" />
                         <span>{suggestion}</span>
                       </div>
                     </button>
                   ))}
                 </div>
               ) : (
-                <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                <div className="px-4 py-3 text-sm text-gray-700 text-center">
                   검색 결과가 없습니다
                 </div>
               )}

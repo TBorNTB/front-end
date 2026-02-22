@@ -224,7 +224,7 @@ export default function NewsletterSubscriberStatus({ className = '' }: Newslette
             <Search className="w-8 h-8 text-primary-600" />
           </div>
           <h2 className="text-2xl font-bold text-primary-800 mb-2">구독 상태 확인</h2>
-          <p className="text-gray-600">이메일이 구독되어 있는지 확인할 수 있어요</p>
+          <p className="text-gray-700">이메일이 구독되어 있는지 확인할 수 있어요</p>
         </div>
 
         {error && (
@@ -286,7 +286,7 @@ export default function NewsletterSubscriberStatus({ className = '' }: Newslette
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm text-gray-600">이메일</p>
+                  <p className="text-sm text-gray-700">이메일</p>
                   <p className="text-base font-semibold text-gray-900 break-all">{data.email}</p>
                 </div>
                 <div className="mt-1 flex items-center gap-2">
@@ -306,28 +306,28 @@ export default function NewsletterSubscriberStatus({ className = '' }: Newslette
 
               <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="rounded-md bg-white border border-gray-200 p-3">
-                  <p className="text-xs font-semibold text-gray-500">수신 빈도</p>
+                  <p className="text-xs font-semibold text-gray-700">수신 빈도</p>
                   <p className="text-sm font-medium text-gray-900 mt-1">
                     {data.emailFrequency ?? '-'}
                   </p>
                 </div>
 
                 <div className="rounded-md bg-white border border-gray-200 p-3">
-                  <p className="text-xs font-semibold text-gray-500">활성 상태</p>
+                  <p className="text-xs font-semibold text-gray-700">활성 상태</p>
                   <p className="text-sm font-medium text-gray-900 mt-1">
                     {data.registered ? (data.active ? 'ACTIVE' : 'INACTIVE') : '-'}
                   </p>
                 </div>
 
                 <div className="rounded-md bg-white border border-gray-200 p-3">
-                  <p className="text-xs font-semibold text-gray-500">인기 콘텐츠 추적</p>
+                  <p className="text-xs font-semibold text-gray-700">인기 콘텐츠 추적</p>
                   <p className="text-sm font-medium text-gray-900 mt-1">
                     {data.registered ? (data.chasingPopularity ? 'ON' : 'OFF') : '-'}
                   </p>
                 </div>
 
                 <div className="rounded-md bg-white border border-gray-200 p-3 md:col-span-2">
-                  <p className="text-xs font-semibold text-gray-500">선택 카테고리</p>
+                  <p className="text-xs font-semibold text-gray-700">선택 카테고리</p>
                   {categories.length === 0 ? (
                     <p className="text-sm text-gray-700 mt-1">-</p>
                   ) : (
@@ -345,7 +345,7 @@ export default function NewsletterSubscriberStatus({ className = '' }: Newslette
                 </div>
 
                 <div className="rounded-md bg-white border border-gray-200 p-3 md:col-span-2">
-                  <p className="text-xs font-semibold text-gray-500">메시지</p>
+                  <p className="text-xs font-semibold text-gray-700">메시지</p>
                   <p className="text-sm text-gray-800 mt-1">{data.message || '-'}</p>
                 </div>
               </div>
@@ -361,7 +361,7 @@ export default function NewsletterSubscriberStatus({ className = '' }: Newslette
                   <div className="flex items-center justify-between gap-3 mb-4">
                     <div>
                       <p className="text-sm font-semibold text-gray-900">구독 선호도 수정</p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-700">
                         수정하려면 이메일로 받은 인증 코드가 필요합니다
                       </p>
                     </div>
@@ -460,7 +460,7 @@ export default function NewsletterSubscriberStatus({ className = '' }: Newslette
                       />
                       <div>
                         <p className="text-sm text-gray-800 font-medium">인기 콘텐츠를 우선 추천받기</p>
-                        <p className="text-xs text-gray-500">트렌딩/인기 주제를 우선적으로 받아볼 수 있어요</p>
+                        <p className="text-xs text-gray-700">트렌딩/인기 주제를 우선적으로 받아볼 수 있어요</p>
                       </div>
                     </label>
                   </div>
@@ -503,7 +503,7 @@ export default function NewsletterSubscriberStatus({ className = '' }: Newslette
                             if (e.key === 'Enter') verifyAndUpdatePreferences();
                           }}
                         />
-                        <p className="text-xs text-gray-500 mt-2 text-center">
+                        <p className="text-xs text-gray-700 mt-2 text-center">
                           {data.email}로 전송된 인증 코드를 입력해주세요
                         </p>
                       </div>

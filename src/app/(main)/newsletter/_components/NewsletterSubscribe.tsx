@@ -139,7 +139,7 @@ export default function NewsletterSubscribe({ className = "" }: NewsletterSubscr
           <h2 className="text-2xl font-bold text-primary-800 mb-2">
             {step === 'subscribe' ? '뉴스레터 구독' : '인증 코드 확인'}
           </h2>
-          <p className="text-gray-600">
+          <p className="text-gray-700">
             {step === 'subscribe' 
               ? '보안 학습 콘텐츠를 이메일로 받아보세요'
               : '이메일로 전송된 인증 코드를 입력해주세요'}
@@ -260,7 +260,7 @@ export default function NewsletterSubscribe({ className = "" }: NewsletterSubscr
                 />
                 <div>
                   <span className="text-sm font-medium text-gray-700">인기 콘텐츠 추적</span>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-700 mt-1">
                     인기 있는 프로젝트와 아티클을 우선적으로 받아보기
                   </p>
                 </div>
@@ -308,7 +308,7 @@ export default function NewsletterSubscribe({ className = "" }: NewsletterSubscr
                 className="w-full text-center text-2xl tracking-widest font-mono"
                 maxLength={6}
               />
-              <p className="text-xs text-gray-500 mt-2 text-center">
+              <p className="text-xs text-gray-700 mt-2 text-center">
                 {email}로 전송된 인증 코드를 입력해주세요
               </p>
             </div>

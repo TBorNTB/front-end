@@ -104,14 +104,14 @@ export default function WeeklyVisitorsChart() {
         <div>
           <h3 className="text-lg font-semibold text-gray-900">주간 방문자 수</h3>
           {lastWeekRange && (
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-700 mt-1">
               지난주 ({formatDate(lastWeekRange.start)} ~ {formatDate(lastWeekRange.end)})
             </p>
           )}
         </div>
         <div className="flex items-center space-x-2">
           {loading ? (
-            <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+            <Loader2 className="w-5 h-5 text-gray-700 animate-spin" />
           ) : (
             <>
               {trend === 'up' && (
@@ -136,7 +136,7 @@ export default function WeeklyVisitorsChart() {
         {loading ? (
           <div className="w-full h-full flex items-center justify-center">
             <div className="text-center">
-              <Loader2 className="w-8 h-8 text-gray-400 animate-spin mx-auto mb-4" />
+              <Loader2 className="w-8 h-8 text-gray-700 animate-spin mx-auto mb-4" />
               <p className="text-gray-700 text-sm">차트 데이터를 불러오는 중...</p>
             </div>
           </div>
@@ -165,7 +165,7 @@ export default function WeeklyVisitorsChart() {
                     )}
                   </div>
                   {/* 요일 라벨 */}
-                  <span className="text-xs text-gray-600 mt-2 font-medium">{days[index]}</span>
+                  <span className="text-xs text-gray-700 mt-2 font-medium">{days[index]}</span>
                 </div>
               );
             })}
@@ -176,11 +176,11 @@ export default function WeeklyVisitorsChart() {
       {/* 통계 정보 */}
       {!loading && !error && (
         <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between">
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-700">
             <span className="font-medium">총 방문자:</span>{' '}
             <span className="text-gray-900 font-semibold">{totalVisitors.toLocaleString()}명</span>
           </div>
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-700">
             <span className="font-medium">일평균:</span>{' '}
             <span className="text-gray-900 font-semibold">
               {Math.round(totalVisitors / 7).toLocaleString()}명

@@ -401,7 +401,7 @@ function ArticlesContent() {
       />
       <main className="w-full px-3 sm:px-4 lg:px-10 py-10">
         {articlesLoading && (
-          <div className="text-center py-8 text-gray-600">아티클을 불러오는 중...</div>
+          <div className="text-center py-8 text-gray-700">아티클을 불러오는 중...</div>
         )}
         {articlesError && !articlesLoading && (
           <div className="text-center py-8 text-red-500">{articlesError}</div>
@@ -438,7 +438,7 @@ function ArticlesContent() {
           <aside className="w-64 flex-shrink-0 hidden md:block">
             {categoriesLoading ? (
               <div className="bg-white rounded-2xl border border-gray-200 p-4">
-                <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                <div className="px-3 py-2 text-sm text-gray-700 text-center">
                   로딩 중...
                 </div>
               </div>
@@ -469,7 +469,7 @@ function ArticlesContent() {
             {/* 결과 수 + 필터 (같은 라인) */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-700">
                   총{' '}
                   <span className="font-semibold text-primary-600">
                     {totalArticles}
@@ -479,7 +479,7 @@ function ArticlesContent() {
                   {currentTopicName && ` (주제: ${currentTopicName})`}
                 </p>
                 {isSearching && (
-                  <span className="text-xs text-gray-400">검색 중...</span>
+                  <span className="text-xs text-gray-700">검색 중...</span>
                 )}
                 {searchError && (
                   <span className="text-xs text-red-500">{searchError}</span>
@@ -490,7 +490,7 @@ function ArticlesContent() {
             {/* 검색 중 로딩 */}
             {isSearching && (
               <div className="text-center py-12">
-                <p className="text-gray-500">검색 중...</p>
+                <p className="text-gray-700">검색 중...</p>
               </div>
             )}
 
@@ -522,7 +522,7 @@ function ArticlesContent() {
                   이전
                 </button>
 
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-700">
                   {safePage} / {totalPages} 페이지
                 </span>
 
@@ -539,7 +539,7 @@ function ArticlesContent() {
             {/* 결과 없음 */}
             {totalArticles === 0 && (
               <div className="text-center py-12">
-                <p className="text-gray-500 text-lg mb-4">
+                <p className="text-gray-700 text-lg mb-4">
                   검색 조건에 맞는 글이 없습니다.
                 </p>
                 <button

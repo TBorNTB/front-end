@@ -230,7 +230,7 @@ export default function AdminDashboardPage() {
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center space-y-4">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-          <p className="text-sm text-gray-500">대시보드를 로딩 중입니다...</p>
+          <p className="text-sm text-gray-700">대시보드를 로딩 중입니다...</p>
         </div>
       </div>
     );
@@ -276,7 +276,7 @@ export default function AdminDashboardPage() {
               <h3 className="text-lg font-semibold text-primary-900">등급 변경 요청</h3>
               <div className="flex items-center space-x-2">
                 {roleChangeLoading ? (
-                  <Loader2 className="h-4 w-4 text-gray-400 animate-spin" />
+                  <Loader2 className="h-4 w-4 text-gray-700 animate-spin" />
                 ) : (
                   <>
                     <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium">
@@ -290,14 +290,14 @@ export default function AdminDashboardPage() {
             
             {roleChangeLoading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
+                <Loader2 className="w-6 h-6 text-gray-700 animate-spin" />
               </div>
             ) : roleChangeError ? (
               <div className="text-center py-8 text-sm text-red-600">{roleChangeError}</div>
             ) : roleChangeRequests.length === 0 ? (
               <div className="text-center py-8">
                 <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-sm text-gray-500">대기 중인 등급 변경 요청이 없습니다.</p>
+                <p className="text-sm text-gray-700">대기 중인 등급 변경 요청이 없습니다.</p>
               </div>
             ) : (
               <>
@@ -318,7 +318,7 @@ export default function AdminDashboardPage() {
                           </div>
                           <div>
                             <p className="text-sm font-medium text-gray-900">{request.realName}</p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-700">
                               {previousRoleLabel} → {requestedRoleLabel} 요청
                             </p>
                           </div>
@@ -361,7 +361,7 @@ export default function AdminDashboardPage() {
                 {/* 페이지네이션 */}
                 {Math.ceil(allRoleChangeRequests.length / 5) > 1 && (
                   <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-gray-700">
                       {roleChangePage + 1} / {Math.ceil(allRoleChangeRequests.length / 5)}
                     </div>
                     <div className="flex items-center space-x-2">

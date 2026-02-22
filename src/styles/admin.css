@@ -130,7 +130,7 @@
   }
 
   .admin-card-description {
-    @apply text-sm text-gray-600 mt-1;
+    @apply text-sm text-gray-700 mt-1;
   }
 
   /* Admin Stats Cards */
@@ -143,7 +143,7 @@
   }
 
   .admin-stat-label {
-    @apply text-sm text-gray-600 font-medium;
+    @apply text-sm text-gray-700 font-medium;
   }
 
   .admin-stat-change {
@@ -181,7 +181,7 @@
   }
 
   .admin-page-subtitle {
-    @apply mt-2 text-gray-600;
+    @apply mt-2 text-gray-700;
   }
 
   /* Admin Navigation Tabs */
@@ -190,7 +190,7 @@
   }
 
   .admin-tab:not(.active) {
-    @apply border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300;
+    @apply border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300;
   }
 
   .admin-tab.active {

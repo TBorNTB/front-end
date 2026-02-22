@@ -762,7 +762,7 @@ export default function QuestionDetailPage() {
 
       <main className="max-w-5xl mx-auto px-4 py-10">
         {isLoading && (
-          <div className="bg-white border border-gray-200 rounded-xl p-8 mb-6 text-center text-gray-500">
+          <div className="bg-white border border-gray-200 rounded-xl p-8 mb-6 text-center text-gray-700">
             불러오는 중...
           </div>
         )}
@@ -788,7 +788,7 @@ export default function QuestionDetailPage() {
               <h1 className="text-3xl font-bold text-gray-900 mb-4">{question.title}</h1>
               
               {/* Meta Info */}
-              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-4">
+              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-700 mb-4">
                 <div className="flex items-center gap-2">
                   {question.profileImageUrl && (
                     <div className="relative w-6 h-6 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
@@ -845,7 +845,7 @@ export default function QuestionDetailPage() {
                     className="p-3 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
                     title="수정"
                   >
-                    <Edit className="w-6 h-6 text-gray-500" />
+                    <Edit className="w-6 h-6 text-gray-700" />
                   </button>
                   <button
                     onClick={handleDeleteQuestion}
@@ -853,7 +853,7 @@ export default function QuestionDetailPage() {
                     className="p-3 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
                     title="삭제"
                   >
-                    <Trash2 className="w-6 h-6 text-gray-500" />
+                    <Trash2 className="w-6 h-6 text-gray-700" />
                   </button>
                 </>
               )}
@@ -868,7 +868,7 @@ export default function QuestionDetailPage() {
                   className={
                     question.hasUpvoted
                       ? 'w-5 h-5 text-primary-600 fill-primary-600'
-                      : 'w-5 h-5 text-gray-500'
+                      : 'w-5 h-5 text-gray-700'
                   }
                 />
                 <span className="text-sm text-gray-700">{question.upvotes}</span>
@@ -882,7 +882,7 @@ export default function QuestionDetailPage() {
                 {question.isBookmarked ? (
                   <BookmarkCheck className="w-6 h-6 text-primary-600 fill-primary-600" />
                 ) : (
-                  <Bookmark className="w-6 h-6 text-gray-400" />
+                  <Bookmark className="w-6 h-6 text-gray-700" />
                 )}
               </button>
             </div>
@@ -969,9 +969,9 @@ export default function QuestionDetailPage() {
                       )}
                       <span className="text-sm font-medium text-gray-900">{comment.author}</span>
                       {getRoleBadge(comment.authorRole)}
-                      <span className="text-xs text-gray-500">{formatDate(comment.createdAt)}</span>
+                      <span className="text-xs text-gray-700">{formatDate(comment.createdAt)}</span>
                       {comment.updatedAt && comment.updatedAt !== comment.createdAt && (
-                        <span className="text-xs text-gray-400">(수정됨)</span>
+                        <span className="text-xs text-gray-700">(수정됨)</span>
                       )}
                     </div>
                   </div>
@@ -985,7 +985,7 @@ export default function QuestionDetailPage() {
                         if (!parentId) return;
                         handleToggleReplyInput({ postId: questionId, postType: 'QNA_QUESTION', parentId });
                       }}
-                      className="text-sm text-gray-600 hover:text-primary-600"
+                      className="text-sm text-gray-700 hover:text-primary-600"
                     >
                       답글
                     </button>
@@ -1076,9 +1076,9 @@ export default function QuestionDetailPage() {
                               )}
                               <span className="text-sm font-medium text-gray-900">{reply.author}</span>
                               {getRoleBadge(reply.authorRole)}
-                              <span className="text-xs text-gray-500">{formatDate(reply.createdAt)}</span>
+                              <span className="text-xs text-gray-700">{formatDate(reply.createdAt)}</span>
                               {reply.updatedAt && reply.updatedAt !== reply.createdAt && (
-                                <span className="text-xs text-gray-400">(수정됨)</span>
+                                <span className="text-xs text-gray-700">(수정됨)</span>
                               )}
                             </div>
                             <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">{reply.content}</p>
@@ -1184,7 +1184,7 @@ export default function QuestionDetailPage() {
                       <span className="font-medium text-gray-900">{answer.author}</span>
                       {getRoleBadge(answer.authorRole)}
                     </div>
-                    <span className="text-sm text-gray-500">{formatDate(answer.createdAt)}</span>
+                    <span className="text-sm text-gray-700">{formatDate(answer.createdAt)}</span>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -1221,7 +1221,7 @@ export default function QuestionDetailPage() {
                           className="p-2 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
                           title="답변 수정"
                         >
-                          <Edit className="w-5 h-5 text-gray-500" />
+                          <Edit className="w-5 h-5 text-gray-700" />
                         </button>
                         <button
                           onClick={() => handleDeleteAnswer(answer.id)}
@@ -1229,7 +1229,7 @@ export default function QuestionDetailPage() {
                           className="p-2 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
                           title="답변 삭제"
                         >
-                          <Trash2 className="w-5 h-5 text-gray-500" />
+                          <Trash2 className="w-5 h-5 text-gray-700" />
                         </button>
                       </>
                     )}
@@ -1315,9 +1315,9 @@ export default function QuestionDetailPage() {
                           )}
                           <span className="text-sm font-medium text-gray-900">{comment.author}</span>
                           {getRoleBadge(comment.authorRole)}
-                          <span className="text-xs text-gray-500">{formatDate(comment.createdAt)}</span>
+                          <span className="text-xs text-gray-700">{formatDate(comment.createdAt)}</span>
                           {comment.updatedAt && comment.updatedAt !== comment.createdAt && (
-                            <span className="text-xs text-gray-400">(수정됨)</span>
+                            <span className="text-xs text-gray-700">(수정됨)</span>
                           )}
                         </div>
                         <p className="text-sm text-gray-700">{comment.content}</p>
@@ -1330,7 +1330,7 @@ export default function QuestionDetailPage() {
                               if (!parentId) return;
                               handleToggleReplyInput({ postId: answer.id, postType: 'QNA_ANSWER', parentId });
                             }}
-                            className="text-sm text-gray-600 hover:text-primary-600"
+                            className="text-sm text-gray-700 hover:text-primary-600"
                           >
                             답글
                           </button>
@@ -1421,9 +1421,9 @@ export default function QuestionDetailPage() {
                                     )}
                                     <span className="text-sm font-medium text-gray-900">{reply.author}</span>
                                     {getRoleBadge(reply.authorRole)}
-                                    <span className="text-xs text-gray-500">{formatDate(reply.createdAt)}</span>
+                                    <span className="text-xs text-gray-700">{formatDate(reply.createdAt)}</span>
                                     {reply.updatedAt && reply.updatedAt !== reply.createdAt && (
-                                      <span className="text-xs text-gray-400">(수정됨)</span>
+                                      <span className="text-xs text-gray-700">(수정됨)</span>
                                     )}
                                   </div>
                                   <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">{reply.content}</p>
@@ -1473,7 +1473,7 @@ export default function QuestionDetailPage() {
                 >
                   이전
                 </button>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-700">
                   {answersPage + 1} / {answersTotalPage}
                 </span>
                 <button

@@ -384,7 +384,7 @@ export default function NewNewsForm() {
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-            <p className="text-gray-600">로딩 중...</p>
+            <p className="text-gray-700">로딩 중...</p>
           </div>
         </div>
       )}
@@ -392,7 +392,7 @@ export default function NewNewsForm() {
       {!userLoading && !currentUser && (
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <p className="text-gray-600 mb-4">뉴스를 작성하려면 먼저 로그인해주세요.</p>
+            <p className="text-gray-700 mb-4">뉴스를 작성하려면 먼저 로그인해주세요.</p>
             <Link href="/login">
               <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                 로그인
@@ -405,12 +405,12 @@ export default function NewNewsForm() {
       {!userLoading && currentUser && (
         <>
           <div className="flex items-center gap-4 mb-8">
-            <Link href="/community" className="text-gray-600 hover:text-gray-900">
+            <Link href="/community" className="text-gray-700 hover:text-gray-900">
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">새 뉴스 작성</h1>
-              <p className="text-gray-600 mt-1">동아리 소식을 공유해주세요.</p>
+              <p className="text-gray-700 mt-1">동아리 소식을 공유해주세요.</p>
             </div>
           </div>
 
@@ -555,7 +555,7 @@ export default function NewNewsForm() {
               <div className="relative" ref={userSearchRef}>
                 <div className="flex gap-2 mb-3">
                   <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-700 w-4 h-4" />
                     <Input
                       value={nicknameSearch}
                       onChange={(e) => {
@@ -572,7 +572,7 @@ export default function NewNewsForm() {
                     />
                   </div>
                   <div className="flex-1 relative">
-                    <AtSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <AtSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-700 w-4 h-4" />
                     <Input
                       value={realNameSearch}
                       onChange={(e) => {
@@ -593,12 +593,12 @@ export default function NewNewsForm() {
                 {showUserDropdown && (
                   <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto" ref={userListRef}>
                     {isLoadingUsers ? (
-                      <div className="p-8 text-center text-gray-500">
+                      <div className="p-8 text-center text-gray-700">
                         <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mb-2"></div>
                         <p>{isSearching ? '검색 중...' : '사용자 목록을 불러오는 중...'}</p>
                       </div>
                     ) : filteredUsers.length === 0 ? (
-                      <div className="p-8 text-center text-gray-500">
+                      <div className="p-8 text-center text-gray-700">
                         {isSearchMode ? '검색 결과가 없습니다.' : '사용자가 없습니다.'}
                       </div>
                     ) : (
@@ -615,12 +615,12 @@ export default function NewNewsForm() {
                               onClick={() => !isAlreadyAdded && addParticipant(user)}
                             >
                               <div className="flex items-center gap-3">
-                                <UserCircle className="w-8 h-8 text-gray-400" />
+                                <UserCircle className="w-8 h-8 text-gray-700" />
                                 <div className="flex-1">
                                   <p className="text-sm font-medium text-gray-900">
                                     {user.realName || user.nickname || user.email}
                                   </p>
-                                  <p className="text-xs text-gray-500">{user.username}</p>
+                                  <p className="text-xs text-gray-700">{user.username}</p>
                                 </div>
                                 {isAlreadyAdded && (
                                   <span className="text-xs text-blue-600">추가됨</span>
