@@ -9,6 +9,7 @@ import toast from "react-hot-toast";
 import AlarmPopup from "./AlarmPopup";
 import SearchModal from "./SearchModal";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useAlarmUnreadCount } from "@/hooks/useAlarmUnreadCount";
 import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 import { getRoleDisplayLabel, hasAdminAccess } from "@/lib/role-utils";
 import { useChatRoom } from "@/context/ChatContext";
@@ -40,8 +41,9 @@ const Header = () => {
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAlarmPopupOpen, setIsAlarmPopupOpen] = useState(false);
-  const { user:profileData } = useCurrentUser();
+  const { user: profileData } = useCurrentUser();
   const { toggleChatRoom } = useChatRoom();
+  const { count: alarmUnreadCount, refresh: refreshAlarmUnread } = useAlarmUnreadCount();
   
   const dropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -236,13 +238,16 @@ const Header = () => {
                   className="relative p-2.5 rounded-lg bg-primary-50 hover:bg-primary-100 transition-all duration-200 group cursor-pointer"
                 >
                   <BellIcon className="w-5 h-5 text-primary-600 group-hover:text-primary-700 transition-colors" />
-                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center animate-pulse">
-                    <span className="w-1.5 h-1.5 bg-white rounded-full"></span>
-                  </span>
+                  {alarmUnreadCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[1rem] h-4 px-1 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white">
+                      {alarmUnreadCount > 99 ? '99+' : alarmUnreadCount}
+                    </span>
+                  )}
                 </button>
                 <AlarmPopup 
                   isOpen={isAlarmPopupOpen} 
-                  onClose={() => setIsAlarmPopupOpen(false)} 
+                  onClose={() => setIsAlarmPopupOpen(false)}
+                  onRefreshUnread={refreshAlarmUnread}
                 />
               </>
             )}

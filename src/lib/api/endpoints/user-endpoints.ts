@@ -50,10 +50,17 @@ export const USER_ENDPOINTS = {
     PRESIGNED_URL: '/user-service/api/s3/presigned-url',
   },
 
-  // Alarm endpoints
+  // Alarm endpoints (user-service 기준, 가이드 명세)
   ALARM: {
+    RECEIVED_PAGE: '/user-service/alarm/received/page',
     RECEIVED: '/user-service/alarm/received',
+    UNREAD_COUNT: '/user-service/alarm/unread-count',
     MARK_AS_SEEN: '/user-service/alarm/{alarmId}/seen',
+    SEEN_BULK: '/user-service/alarm/seen/bulk',
+    SEEN_ALL: '/user-service/alarm/seen/all',
+    DELETE_ONE: '/user-service/alarm/{alarmId}',
+    DELETE_BULK: '/user-service/alarm/bulk',
+    DELETE_READ: '/user-service/alarm/read',
   },
 
   // View & Like endpoints

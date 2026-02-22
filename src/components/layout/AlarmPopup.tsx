@@ -1,67 +1,17 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { Alarm, AlarmType, AlarmCategory } from '@/types/services/alarm';
-import { Bell, MessageSquare, Reply, Heart, UserPlus, X, Clock, Trash2, ChevronRight, Loader2 } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Alarm, AlarmType } from '@/types/services/alarm';
+import { Bell, MessageSquare, Reply, Heart, UserPlus, X, Clock, ChevronRight, Loader2, Trash2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { UserRole } from '@/types/core';
 import Link from 'next/link';
-import { alarmService, AlarmResponse } from '@/lib/api/services/alarm-services';
+import { alarmService, mapAlarmApiToAlarm } from '@/lib/api/services/alarm-services';
+import { Checkbox } from '@/components/ui/checkbox';
 
-// domainType과 domainId를 기반으로 URL 생성
-const generateAlarmLink = (domainType?: string, domainId?: string | number, link?: string): string => {
-  // link가 있으면 우선 사용
-  if (link) return link;
-  
-  // domainType과 domainId가 없으면 기본값
-  if (!domainType || !domainId) return '#';
-  
-  const id = String(domainId);
-  
-  // domainType에 따라 URL 생성
-  switch (domainType.toUpperCase()) {
-    case 'PROJECT':
-      return `/projects/${id}`;
-    case 'ARTICLE':
-    case 'CSKNOWLEDGE':
-      return `/community/news/${id}`;
-    case 'NEWS':
-      return `/community/news/${id}`;
-    default:
-      return '#';
-  }
-};
-
-// API 응답을 Alarm 인터페이스로 변환
-const mapAlarmResponseToAlarm = (response: AlarmResponse): Alarm => {
-  return {
-    id: response.id,
-    type: response.alarmType,
-    title: response.title,
-    // message가 있으면 message를 우선 사용, 없으면 content 사용
-    content: response.message || response.content || '',
-    isRead: response.isRead,
-    createdAt: response.createdAt,
-    link: generateAlarmLink(response.domainType, response.domainId, response.link),
-    domainType: response.domainType,
-    domainId: response.domainId,
-    relatedUser: response.relatedUser,
-    relatedPost: response.relatedPost,
-  };
-};
+const POPUP_PAGE_SIZE = 5;
 
 const categoryConfig = {
-  all: {
-    label: '전체',
-    icon: Bell,
-    color: 'text-gray-600',
-    activeColor: 'text-primary-600',
-    bgColor: 'bg-gray-100',
-    activeBgColor: 'bg-primary-50',
-    borderColor: 'border-primary-500',
-    iconBgColor: 'bg-blue-100',
-    iconColor: 'text-blue-600',
-  },
   [AlarmType.COMMENT_ADDED]: {
     label: '댓글',
     icon: MessageSquare,
@@ -117,95 +67,67 @@ function formatTimeAgo(dateString: string): string {
   if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}분 전`;
   if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}시간 전`;
   if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}일 전`;
-  
+
   return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 interface AlarmPopupProps {
   isOpen: boolean;
   onClose: () => void;
+  /** 읽음/삭제 후 헤더 뱃지 갱신용 */
+  onRefreshUnread?: () => void;
 }
 
-export default function AlarmPopup({ isOpen, onClose }: AlarmPopupProps) {
+export default function AlarmPopup({ isOpen, onClose, onRefreshUnread }: AlarmPopupProps) {
   const { user } = useAuth();
-  const [selectedCategory, setSelectedCategory] = useState<AlarmType>(AlarmType.COMMENT_ADDED);
+  const [selectedCategory, setSelectedCategory] = useState<AlarmType | 'all'>('all');
   const [alarms, setAlarms] = useState<Alarm[]>([]);
-  const [allAlarms, setAllAlarms] = useState<Alarm[]>([]); // 전체 알람 (읽지 않은 개수 계산용)
+  const [page, setPage] = useState(0);
+  const [totalPage, setTotalPage] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [actionLoading, setActionLoading] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
 
   const isAdmin = user?.role === UserRole.ADMIN;
 
-  // 전체 알람 로드 (읽지 않은 개수 계산용)
-  useEffect(() => {
+  const availableCategories: (AlarmType | 'all')[] = isAdmin
+    ? ['all', AlarmType.COMMENT_ADDED, AlarmType.COMMENT_REPLY_ADDED, AlarmType.POST_LIKED, AlarmType.SIGNUP]
+    : ['all', AlarmType.COMMENT_ADDED, AlarmType.COMMENT_REPLY_ADDED, AlarmType.POST_LIKED];
+
+  const loadAlarms = useCallback(async (p: number) => {
     if (!isOpen) return;
-
-    const loadAllAlarms = async () => {
-      try {
-        // 각 카테고리별로 알람을 로드하여 읽지 않은 개수 계산
-        const categories: AlarmType[] = isAdmin
-          ? [AlarmType.COMMENT_ADDED, AlarmType.COMMENT_REPLY_ADDED, AlarmType.POST_LIKED, AlarmType.SIGNUP]
-          : [AlarmType.COMMENT_ADDED, AlarmType.COMMENT_REPLY_ADDED, AlarmType.POST_LIKED];
-        
-        const allAlarmsPromises = categories.map(category => 
-          alarmService.getReceivedAlarms(category).then(response => 
-            response.map(mapAlarmResponseToAlarm)
-          )
-        );
-        
-        const allAlarmsArrays = await Promise.all(allAlarmsPromises);
-        const flattened = allAlarmsArrays.flat();
-        setAllAlarms(flattened);
-      } catch (err) {
-        console.error('Failed to load all alarms for counts:', err);
-      }
-    };
-
-    loadAllAlarms();
-  }, [isOpen, isAdmin]);
-
-  // 선택된 카테고리의 알람 데이터 로드
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const loadAlarms = async () => {
-      setIsLoading(true);
-      setError(null);
-      
-      try {
-        const response = await alarmService.getReceivedAlarms(selectedCategory);
-        const mappedAlarms = response.map(mapAlarmResponseToAlarm);
-        setAlarms(mappedAlarms);
-      } catch (err) {
-        console.error('Failed to load alarms:', err);
-        setError('알람을 불러오는데 실패했습니다.');
-        setAlarms([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadAlarms();
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await alarmService.getReceivedAlarmsPage({
+        page: p,
+        size: POPUP_PAGE_SIZE,
+        alarmType: selectedCategory === 'all' ? undefined : selectedCategory,
+      });
+      setAlarms(res.data.map(mapAlarmApiToAlarm));
+      setTotalPage(res.totalPage);
+    } catch (err) {
+      console.error('Failed to load alarms:', err);
+      setError('알람을 불러오는데 실패했습니다.');
+      setAlarms([]);
+      setTotalPage(0);
+    } finally {
+      setIsLoading(false);
+    }
   }, [isOpen, selectedCategory]);
 
-  // 카테고리별 알람 필터링 (API에서 이미 필터링된 데이터를 받음)
-  const filteredAlarms = alarms;
+  useEffect(() => {
+    setPage(0);
+    setSelectedIds(new Set());
+  }, [selectedCategory]);
 
-  // 읽지 않은 알람 개수 (전체 알람 기준)
-  const unreadCounts = {
-    [AlarmType.COMMENT_ADDED]: allAlarms.filter(a => a.type === AlarmType.COMMENT_ADDED && !a.isRead).length,
-    [AlarmType.COMMENT_REPLY_ADDED]: allAlarms.filter(a => a.type === AlarmType.COMMENT_REPLY_ADDED && !a.isRead).length,
-    [AlarmType.POST_LIKED]: allAlarms.filter(a => a.type === AlarmType.POST_LIKED && !a.isRead).length,
-    [AlarmType.SIGNUP]: allAlarms.filter(a => a.type === AlarmType.SIGNUP && !a.isRead).length,
-  };
+  useEffect(() => {
+    if (isOpen) loadAlarms(page);
+  }, [isOpen, selectedCategory, page, loadAlarms]);
 
-  // 사용 가능한 카테고리 목록 (전체 제거)
-  const availableCategories: AlarmType[] = isAdmin
-    ? [AlarmType.COMMENT_ADDED, AlarmType.COMMENT_REPLY_ADDED, AlarmType.POST_LIKED, AlarmType.SIGNUP]
-    : [AlarmType.COMMENT_ADDED, AlarmType.COMMENT_REPLY_ADDED, AlarmType.POST_LIKED];
 
-  // 외부 클릭 시 닫기
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
@@ -215,8 +137,6 @@ export default function AlarmPopup({ isOpen, onClose }: AlarmPopupProps) {
 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      
-      // Prevent layout shift by adding padding when scrollbar disappears
       const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
       document.body.style.overflow = 'hidden';
       document.body.style.paddingRight = `${scrollbarWidth}px`;
@@ -229,21 +149,98 @@ export default function AlarmPopup({ isOpen, onClose }: AlarmPopupProps) {
     };
   }, [isOpen, onClose]);
 
+  const handleAlarmClick = async (alarm: Alarm) => {
+    if (!alarm.isRead) {
+      try {
+        await alarmService.markAsSeen(Number(alarm.id));
+        setAlarms(prev => prev.map(a => (a.id === alarm.id ? { ...a, isRead: true } : a)));
+        onRefreshUnread?.();
+      } catch (e) {
+        console.error('Failed to mark alarm as seen:', e);
+      }
+    }
+    if (alarm.link && alarm.link !== '#') {
+      window.location.href = alarm.link;
+    }
+    onClose();
+  };
+
+  const handleDeleteRead = async () => {
+    setActionLoading(true);
+    try {
+      await alarmService.deleteReadAlarms();
+      await loadAlarms(page);
+      onRefreshUnread?.();
+    } catch (e) {
+      console.error('Failed to delete read alarms:', e);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    if (!confirm('모든 알림을 삭제할까요? 되돌릴 수 없습니다.')) return;
+    setActionLoading(true);
+    try {
+      await alarmService.deleteAllAlarms();
+      setPage(0);
+      await loadAlarms(0);
+      setSelectedIds(new Set());
+      onRefreshUnread?.();
+    } catch (e) {
+      console.error('Failed to delete all alarms:', e);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!selectedIds.size) return;
+    setActionLoading(true);
+    try {
+      await alarmService.deleteAlarmsBulk(Array.from(selectedIds).map(Number));
+      await loadAlarms(page);
+      setSelectedIds(new Set());
+      onRefreshUnread?.();
+    } catch (e) {
+      console.error('Failed to delete selected:', e);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === alarms.length) setSelectedIds(new Set());
+    else setSelectedIds(new Set(alarms.map(a => a.id)));
+  };
+
+  const goToPage = (p: number) => {
+    if (p < 0 || p >= totalPage) return;
+    setPage(p);
+    setSelectedIds(new Set());
+  };
+
   if (!isOpen) return null;
 
   return (
     <>
-      {/* Backdrop */}
       <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
-      
-      {/* Modal */}
-      <div 
+
+      <div
         ref={popupRef}
         className="fixed top-16 right-4 z-50 w-[480px] max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-2xl border border-gray-200 max-h-[calc(100vh-5rem)] flex flex-col md:top-20 md:right-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex flex-col h-full">
-          {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-primary-50 to-secondary-50">
             <div className="flex items-center space-x-2">
               <div className="p-2 bg-primary-500 rounded-lg">
@@ -251,17 +248,25 @@ export default function AlarmPopup({ isOpen, onClose }: AlarmPopupProps) {
               </div>
               <h2 className="text-lg font-bold text-gray-900">알림</h2>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 flex-wrap justify-end">
               <button
-                onClick={() => {
-                  // 삭제 기능 구현
-                  console.log('Delete all');
-                }}
-                className="text-sm text-gray-700 hover:text-gray-900 px-2 py-1 rounded hover:bg-gray-100 font-medium"
+                type="button"
+                onClick={handleDeleteRead}
+                disabled={actionLoading}
+                className="text-sm text-gray-700 hover:text-gray-900 px-2 py-1 rounded hover:bg-gray-100 font-medium disabled:opacity-50"
               >
-                삭제하기
+                읽은 알림 삭제
               </button>
               <button
+                type="button"
+                onClick={handleDeleteAll}
+                disabled={actionLoading}
+                className="text-sm text-red-600 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 font-medium disabled:opacity-50"
+              >
+                알림 전체 삭제
+              </button>
+              <button
+                type="button"
                 onClick={onClose}
                 className="p-1 text-gray-400 hover:text-gray-600 rounded hover:bg-gray-100"
               >
@@ -270,17 +275,29 @@ export default function AlarmPopup({ isOpen, onClose }: AlarmPopupProps) {
             </div>
           </div>
 
-          {/* Tabs */}
           <div className="flex items-center border-b border-gray-200 px-4 overflow-x-auto">
             {availableCategories.map((category) => {
-              const config = categoryConfig[category];
+              const isAll = category === 'all';
+              const config = isAll
+                ? {
+                    label: '전체',
+                    icon: Bell,
+                    color: 'text-gray-600',
+                    activeColor: 'text-primary-600',
+                    bgColor: 'bg-gray-50',
+                    activeBgColor: 'bg-primary-50',
+                    borderColor: 'border-primary-500',
+                    iconBgColor: 'bg-blue-100',
+                    iconColor: 'text-blue-600',
+                  }
+                : categoryConfig[category];
               const Icon = config.icon;
               const isActive = selectedCategory === category;
-              const unreadCount = unreadCounts[category];
 
               return (
                 <button
-                  key={category}
+                  key={isAll ? 'all' : category}
+                  type="button"
                   onClick={() => setSelectedCategory(category)}
                   className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-all whitespace-nowrap ${
                     isActive
@@ -290,19 +307,11 @@ export default function AlarmPopup({ isOpen, onClose }: AlarmPopupProps) {
                 >
                   <Icon className={`w-4 h-4 ${isActive ? config.activeColor : config.color}`} />
                   <span className="text-sm">{config.label}</span>
-                  {unreadCount > 0 && (
-                    <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${
-                      isActive ? 'bg-white text-red-600' : 'bg-red-500 text-white'
-                    }`}>
-                      {unreadCount}
-                    </span>
-                  )}
                 </button>
               );
             })}
           </div>
 
-          {/* Alarm List */}
           <div className="flex-1 overflow-y-auto">
             {isLoading ? (
               <div className="p-12 text-center">
@@ -315,121 +324,133 @@ export default function AlarmPopup({ isOpen, onClose }: AlarmPopupProps) {
                 <p className="text-red-600 mb-2 font-semibold">{error}</p>
                 <p className="text-gray-700 text-sm font-medium">알림을 불러오는데 실패했습니다.</p>
               </div>
-            ) : filteredAlarms.length === 0 ? (
+            ) : alarms.length === 0 ? (
               <div className="p-12 text-center">
                 <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                 <p className="text-gray-700 font-medium">알림이 없습니다</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-100">
-                {filteredAlarms.map((alarm) => {
-                  const config = categoryConfig[alarm.type];
-                  const Icon = config.icon;
-
-                  const handleAlarmClick = async (e: React.MouseEvent) => {
-                    e.preventDefault();
-                    // 읽지 않은 알람만 읽음 처리
-                    if (!alarm.isRead) {
-                      try {
-                        await alarmService.markAsSeen(alarm.id);
-                        // 로컬 상태 업데이트
-                        setAlarms(prevAlarms => 
-                          prevAlarms.map(a => 
-                            a.id === alarm.id ? { ...a, isRead: true } : a
-                          )
-                        );
-                        setAllAlarms(prevAlarms => 
-                          prevAlarms.map(a => 
-                            a.id === alarm.id ? { ...a, isRead: true } : a
-                          )
-                        );
-                      } catch (error) {
-                        console.error('Failed to mark alarm as seen:', error);
-                      }
-                    }
-                    // 링크로 이동
-                    if (alarm.link && alarm.link !== '#') {
-                      window.location.href = alarm.link;
-                    }
-                    onClose();
-                  };
-
-                  return (
-                    <Link
-                      key={alarm.id}
-                      href={alarm.link || '#'}
-                      onClick={handleAlarmClick}
-                      className={`block p-4 transition-all ${
-                        !alarm.isRead 
-                          ? `${config.bgColor} hover:${config.activeBgColor} border-l-4 ${config.borderColor}` 
-                          : 'bg-white hover:bg-gray-50'
-                      }`}
+              <>
+                <div className="px-3 py-2 border-b border-gray-100 flex items-center justify-between gap-2 flex-wrap">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                      checked={alarms.length > 0 && selectedIds.size === alarms.length}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                    <span className="text-xs font-medium text-gray-600">전체 선택</span>
+                  </label>
+                  {selectedIds.size > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleBulkDelete}
+                      disabled={actionLoading}
+                      className="inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-700 disabled:opacity-50"
                     >
-                      <div className="flex items-start space-x-3">
-                        {/* Profile Picture or Icon */}
-                        <div className="flex-shrink-0">
-                          {alarm.relatedUser ? (
-                            <div className={`w-10 h-10 ${config.iconBgColor} rounded-full flex items-center justify-center text-white text-sm font-medium`}>
-                              {alarm.relatedUser.nickname.charAt(0)}
-                            </div>
-                          ) : (
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              alarm.isRead ? 'bg-gray-100' : config.iconBgColor
-                            }`}>
-                              <Icon className={`w-5 h-5 ${
-                                alarm.isRead ? 'text-gray-400' : config.iconColor
-                              }`} />
-                            </div>
-                          )}
-                        </div>
+                      <Trash2 className="w-3.5 h-3.5" />
+                      일괄삭제 ({selectedIds.size})
+                    </button>
+                  )}
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {alarms.map((alarm) => {
+                    const config = categoryConfig[alarm.type] ?? categoryConfig[AlarmType.COMMENT_ADDED];
+                    const Icon = config.icon;
 
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between mb-1">
-                            <h4 className={`text-sm font-semibold ${
-                              alarm.isRead ? 'text-gray-800' : 'text-gray-900'
-                            }`}>
-                              {alarm.title}
-                            </h4>
-                            {!alarm.isRead && (
-                              <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1.5 ml-2 animate-pulse ${
-                                alarm.type === AlarmType.COMMENT_ADDED ? 'bg-blue-500' :
-                                alarm.type === AlarmType.COMMENT_REPLY_ADDED ? 'bg-purple-500' :
-                                alarm.type === AlarmType.POST_LIKED ? 'bg-red-500' :
-                                'bg-green-500'
-                              }`}></span>
+                    return (
+                      <div
+                        key={alarm.id}
+                        className={`flex items-start gap-2 p-4 transition-all ${
+                          !alarm.isRead
+                            ? `${config.bgColor} hover:${config.activeBgColor} border-l-4 ${config.borderColor}`
+                            : 'bg-white hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex-shrink-0 pt-0.5" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedIds.has(alarm.id)}
+                            onCheckedChange={() => toggleSelect(alarm.id)}
+                          />
+                        </div>
+                        <Link
+                          href={alarm.link || '#'}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleAlarmClick(alarm);
+                          }}
+                          className="flex-1 min-w-0 flex items-start space-x-3"
+                        >
+                          <div className="flex-shrink-0">
+                            {alarm.relatedUser ? (
+                              <div className={`w-10 h-10 ${config.iconBgColor} rounded-full flex items-center justify-center text-white text-sm font-medium`}>
+                                {alarm.relatedUser.nickname.charAt(0)}
+                              </div>
+                            ) : (
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${alarm.isRead ? 'bg-gray-100' : config.iconBgColor}`}>
+                                <Icon className={`w-5 h-5 ${alarm.isRead ? 'text-gray-400' : config.iconColor}`} />
+                              </div>
                             )}
                           </div>
-                          
-                          <p className={`text-sm mb-2 line-clamp-2 font-medium ${
-                            alarm.isRead ? 'text-gray-700' : 'text-gray-900'
-                          }`}>
-                            {alarm.content}
-                          </p>
 
-                          {alarm.relatedPost && (
-                            <p className="text-xs text-gray-700 mb-2 font-medium">
-                              {alarm.relatedPost.title}
-                            </p>
-                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between mb-1">
+                              <h4 className={`text-sm font-semibold ${alarm.isRead ? 'text-gray-800' : 'text-gray-900'}`}>
+                                {alarm.content}
+                              </h4>
+                              {!alarm.isRead && (
+                                <span
+                                  className={`w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1.5 ml-2 animate-pulse ${
+                                    alarm.type === AlarmType.COMMENT_ADDED
+                                      ? 'bg-blue-500'
+                                      : alarm.type === AlarmType.COMMENT_REPLY_ADDED
+                                        ? 'bg-purple-500'
+                                        : alarm.type === AlarmType.POST_LIKED
+                                          ? 'bg-red-500'
+                                          : 'bg-green-500'
+                                  }`}
+                                />
+                              )}
+                            </div>
 
-                          <div className="flex items-center space-x-2 text-xs text-gray-600">
-                            <Clock className="w-3 h-3" />
-                            <span>{formatTimeAgo(alarm.createdAt)}</span>
+                            <div className="flex items-center space-x-2 text-xs text-gray-600">
+                              <Clock className="w-3 h-3" />
+                              <span>{formatTimeAgo(alarm.createdAt)}</span>
+                            </div>
                           </div>
-                        </div>
 
-                        <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0 mt-1" />
+                          <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0 mt-1" />
+                        </Link>
                       </div>
-                    </Link>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+                {totalPage > 1 && (
+                  <div className="p-3 border-t border-gray-200 flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => goToPage(page - 1)}
+                      disabled={page <= 0 || actionLoading}
+                      className="px-2 py-1.5 text-xs font-medium border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      이전
+                    </button>
+                    <span className="px-2 text-xs text-gray-600">
+                      {page + 1} / {totalPage}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => goToPage(page + 1)}
+                      disabled={page >= totalPage - 1 || actionLoading}
+                      className="px-2 py-1.5 text-xs font-medium border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      다음
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
-          {/* Footer - 전체 보기 링크 */}
-          <div className="p-4 border-t border-gray-200 text-center">
+          <div className="p-4 border-t border-gray-200 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
             <Link
               href="/mypage/alarms"
               onClick={onClose}
@@ -438,9 +459,8 @@ export default function AlarmPopup({ isOpen, onClose }: AlarmPopupProps) {
               전체 알림 보기
             </Link>
           </div>
-          </div>
         </div>
+      </div>
     </>
   );
 }
-
