@@ -11,6 +11,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 
 const POPUP_PAGE_SIZE = 5;
 
+type SeenFilter = 'read' | 'unread' | 'all';
+const SEEN_FILTER_LABELS: Record<SeenFilter, string> = {
+  read: '읽은 알림',
+  unread: '미확인',
+  all: '전체',
+};
+
 const categoryConfig = {
   [AlarmType.COMMENT_ADDED]: {
     label: '댓글',
@@ -80,6 +87,7 @@ interface AlarmPopupProps {
 
 export default function AlarmPopup({ isOpen, onClose, onRefreshUnread }: AlarmPopupProps) {
   const { user } = useAuth();
+  const [seenFilter, setSeenFilter] = useState<SeenFilter>('all');
   const [selectedCategory, setSelectedCategory] = useState<AlarmType | 'all'>('all');
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const [page, setPage] = useState(0);
@@ -101,10 +109,12 @@ export default function AlarmPopup({ isOpen, onClose, onRefreshUnread }: AlarmPo
     setIsLoading(true);
     setError(null);
     try {
+      const seen = seenFilter === 'read' ? true : seenFilter === 'unread' ? false : undefined;
       const res = await alarmService.getReceivedAlarmsPage({
         page: p,
         size: POPUP_PAGE_SIZE,
         alarmType: selectedCategory === 'all' ? undefined : selectedCategory,
+        seen,
       });
       setAlarms(res.data.map(mapAlarmApiToAlarm));
       setTotalPage(res.totalPage);
@@ -116,16 +126,16 @@ export default function AlarmPopup({ isOpen, onClose, onRefreshUnread }: AlarmPo
     } finally {
       setIsLoading(false);
     }
-  }, [isOpen, selectedCategory]);
+  }, [isOpen, selectedCategory, seenFilter]);
 
   useEffect(() => {
     setPage(0);
     setSelectedIds(new Set());
-  }, [selectedCategory]);
+  }, [selectedCategory, seenFilter]);
 
   useEffect(() => {
     if (isOpen) loadAlarms(page);
-  }, [isOpen, selectedCategory, page, loadAlarms]);
+  }, [isOpen, selectedCategory, seenFilter, page, loadAlarms]);
 
 
   useEffect(() => {
@@ -273,6 +283,27 @@ export default function AlarmPopup({ isOpen, onClose, onRefreshUnread }: AlarmPo
                 <X className="w-5 h-5" />
               </button>
             </div>
+          </div>
+
+          <div className="flex items-center gap-1 px-4 py-2 border-b border-gray-100 bg-gray-50/50">
+            {(['all', 'unread', 'read'] as const).map((filter) => (
+              <button
+                key={filter}
+                type="button"
+                onClick={() => {
+                  setSeenFilter(filter);
+                  setPage(0);
+                  setSelectedIds(new Set());
+                }}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  seenFilter === filter
+                    ? 'bg-primary-100 text-primary-700'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {SEEN_FILTER_LABELS[filter]}
+              </button>
+            ))}
           </div>
 
           <div className="flex items-center border-b border-gray-200 px-4 overflow-x-auto">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Alarm, AlarmType } from '@/types/services/alarm';
 import { Bell, MessageSquare, Reply, Heart, UserPlus, ChevronRight, Clock, Loader2, CheckCheck, Trash2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -11,6 +12,13 @@ import { useAlarmUnreadCount } from '@/hooks/useAlarmUnreadCount';
 import { Checkbox } from '@/components/ui/checkbox';
 
 const PAGE_SIZE = 5;
+
+type SeenFilter = 'read' | 'unread' | 'all';
+const SEEN_FILTER_LABELS: Record<SeenFilter, string> = {
+  read: '읽은 알림',
+  unread: '미확인 알림',
+  all: '전체',
+};
 
 const categoryConfig = {
   [AlarmType.COMMENT_ADDED]: {
@@ -57,8 +65,10 @@ function formatTimeAgo(dateString: string): string {
 }
 
 export default function AlarmsPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const { count: unreadCount, refresh: refreshUnreadCount } = useAlarmUnreadCount();
+  const [seenFilter, setSeenFilter] = useState<SeenFilter>('all');
   const [selectedCategory, setSelectedCategory] = useState<AlarmType | 'all'>('all');
   const [selectedAlarm, setSelectedAlarm] = useState<Alarm | null>(null);
   const [alarms, setAlarms] = useState<Alarm[]>([]);
@@ -75,14 +85,16 @@ export default function AlarmsPage() {
     ? ['all', AlarmType.COMMENT_ADDED, AlarmType.COMMENT_REPLY_ADDED, AlarmType.POST_LIKED, AlarmType.SIGNUP]
     : ['all', AlarmType.COMMENT_ADDED, AlarmType.COMMENT_REPLY_ADDED, AlarmType.POST_LIKED];
 
-  const loadAlarms = useCallback(async (p: number, category: AlarmType | 'all') => {
+  const loadAlarms = useCallback(async (p: number, category: AlarmType | 'all', filter: SeenFilter) => {
     setIsLoading(true);
     setError(null);
     try {
+      const seen = filter === 'read' ? true : filter === 'unread' ? false : undefined;
       const res = await alarmService.getReceivedAlarmsPage({
         page: p,
         size: PAGE_SIZE,
         alarmType: category === 'all' ? undefined : category,
+        seen,
       });
       setAlarms(res.data.map(mapAlarmApiToAlarm));
       setTotalPage(res.totalPage);
@@ -97,27 +109,32 @@ export default function AlarmsPage() {
   }, []);
 
   useEffect(() => {
-    loadAlarms(0, selectedCategory);
+    loadAlarms(0, selectedCategory, seenFilter);
     setPage(0);
     setSelectedIds(new Set());
-  }, [selectedCategory, loadAlarms]);
+  }, [selectedCategory, seenFilter, loadAlarms]);
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
-    loadAlarms(newPage, selectedCategory);
+    loadAlarms(newPage, selectedCategory, seenFilter);
     setSelectedIds(new Set());
   };
 
-  const handleAlarmClick = async (alarm: Alarm) => {
+  const handleAlarmClick = async (alarm: Alarm, e: React.MouseEvent) => {
+    e.preventDefault();
+    const hasLink = alarm.link && alarm.link !== '#';
     if (!alarm.isRead) {
       try {
         await alarmService.markAsSeen(Number(alarm.id));
         setAlarms(prev => prev.map(a => (a.id === alarm.id ? { ...a, isRead: true } : a)));
-        setSelectedAlarm((s) => (s?.id === alarm.id ? { ...alarm, isRead: true } : s));
         refreshUnreadCount();
-      } catch (e) {
-        console.error('Failed to mark alarm as seen:', e);
+      } catch (err) {
+        console.error('Failed to mark alarm as seen:', err);
       }
+    }
+    if (hasLink) {
+      router.push(alarm.link!);
+      return;
     }
     setSelectedAlarm(alarm);
   };
@@ -128,7 +145,7 @@ export default function AlarmsPage() {
     setActionLoading(true);
     try {
       await alarmService.markAllAsSeen();
-      await loadAlarms(page, selectedCategory);
+      await loadAlarms(page, selectedCategory, seenFilter);
       refreshUnreadCount();
     } catch (e) {
       console.error('Failed to mark all as seen:', e);
@@ -142,7 +159,7 @@ export default function AlarmsPage() {
     setActionLoading(true);
     try {
       await alarmService.markAsSeenBulk(Array.from(selectedIds).map(Number));
-      await loadAlarms(page, selectedCategory);
+      await loadAlarms(page, selectedCategory, seenFilter);
       setSelectedIds(new Set());
       refreshUnreadCount();
     } catch (e) {
@@ -157,7 +174,7 @@ export default function AlarmsPage() {
     setActionLoading(true);
     try {
       await alarmService.deleteAlarmsBulk(Array.from(selectedIds).map(Number));
-      await loadAlarms(page, selectedCategory);
+      await loadAlarms(page, selectedCategory, seenFilter);
       setSelectedIds(new Set());
       setSelectedAlarm(null);
       refreshUnreadCount();
@@ -172,7 +189,7 @@ export default function AlarmsPage() {
     setActionLoading(true);
     try {
       await alarmService.deleteReadAlarms();
-      await loadAlarms(page, selectedCategory);
+      await loadAlarms(page, selectedCategory, seenFilter);
       refreshUnreadCount();
     } catch (e) {
       console.error('Failed to delete read alarms:', e);
@@ -187,7 +204,7 @@ export default function AlarmsPage() {
     try {
       await alarmService.deleteAllAlarms();
       setPage(0);
-      await loadAlarms(0, selectedCategory);
+      await loadAlarms(0, selectedCategory, seenFilter);
       setSelectedAlarm(null);
       setSelectedIds(new Set());
       refreshUnreadCount();
@@ -253,6 +270,28 @@ export default function AlarmsPage() {
             알림 전체 삭제
           </button>
         </div>
+      </div>
+
+      <div className="mb-4 flex flex-wrap gap-2">
+        {(['all', 'unread', 'read'] as const).map((filter) => (
+          <button
+            key={filter}
+            type="button"
+            onClick={() => {
+              setSeenFilter(filter);
+              setPage(0);
+              setSelectedAlarm(null);
+              setSelectedIds(new Set());
+            }}
+            className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
+              seenFilter === filter
+                ? 'bg-primary-50 border-primary-500 text-primary-700'
+                : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            {SEEN_FILTER_LABELS[filter]}
+          </button>
+        ))}
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
@@ -397,12 +436,6 @@ export default function AlarmsPage() {
                       const config = categoryConfig[alarm.type] ?? { icon: Bell, bgColor: 'bg-gray-50', color: 'text-gray-600' };
                       const Icon = config.icon;
 
-                      const handleClick = async (e: React.MouseEvent) => {
-                        e.preventDefault();
-                        await handleAlarmClick(alarm);
-                        if (alarm.link && alarm.link !== '#') window.location.href = alarm.link;
-                      };
-
                       return (
                         <div
                           key={alarm.id}
@@ -421,7 +454,7 @@ export default function AlarmsPage() {
                           </div>
                           <Link
                             href={alarm.link || '#'}
-                            onClick={handleClick}
+                            onClick={(e) => handleAlarmClick(alarm, e)}
                             className="flex-1 min-w-0 flex items-start gap-4"
                           >
                             <div className={`p-2 rounded-lg flex-shrink-0 ${alarm.isRead ? 'bg-gray-100' : config.bgColor}`}>
