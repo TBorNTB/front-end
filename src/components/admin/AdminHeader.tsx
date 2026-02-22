@@ -8,6 +8,8 @@ import toast from "react-hot-toast";
 import { useEffect, useRef, useState } from "react";
 import AlarmPopup from "@/components/layout/AlarmPopup";
 import { useAlarmUnreadCount } from "@/hooks/useAlarmUnreadCount";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 
 
 // Page title mapping
@@ -35,14 +37,29 @@ const getPageDescription = (pathname: string) => {
   return descriptions[pathname] || '';
 };
 
+const isValidImageUrl = (url: string | null | undefined): string | null => {
+  if (!url || typeof url !== "string") return null;
+  if (url.trim() === "" || url === "string" || url === "null" || url === "undefined") return null;
+  if (url.startsWith("/")) return url;
+  try {
+    new URL(url);
+    return url;
+  } catch {
+    return null;
+  }
+};
+
 export default function AdminHeader() {
   const pathname = usePathname();
   const pageTitle = getPageTitle(pathname);
   const { user, logout } = useAuth();
+  const { user: profileData } = useCurrentUser();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isAlarmPopupOpen, setIsAlarmPopupOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const { count: alarmUnreadCount, refresh: refreshAlarmUnread } = useAlarmUnreadCount();
+
+  const profileImageUrl = isValidImageUrl(profileData?.profileImageUrl) ?? isValidImageUrl((user as { profile_image?: string })?.profile_image) ?? null;
 
   const handleLogout = async () => {
     console.log(" logout clicked");
@@ -62,8 +79,8 @@ export default function AdminHeader() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const displayName = user?.nickname || user?.full_name || "관리자";
-  const displayEmail = user?.email || "admin@ssg.kr";
+  const displayName = profileData?.realName || profileData?.nickname || user?.nickname || user?.full_name || "관리자";
+  const displayEmail = profileData?.email || user?.email || "admin@ssg.kr";
   const userInitial = displayName?.charAt(0)?.toUpperCase() || "A";
 
   return (
@@ -108,9 +125,22 @@ export default function AdminHeader() {
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
               className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
             >
-              <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                {userInitial}
-              </div>
+              {profileImageUrl ? (
+                <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-primary-200 flex-shrink-0">
+                  <ImageWithFallback
+                    src={profileImageUrl}
+                    alt={displayName}
+                    width={32}
+                    height={32}
+                    className="w-full h-full object-cover"
+                    showPlaceholder={false}
+                  />
+                </div>
+              ) : (
+                <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                  {userInitial}
+                </div>
+              )}
               <span className="hidden md:block text-sm font-medium text-gray-700">{displayName}</span>
               <ChevronDown className="h-4 w-4 text-gray-400" />
             </button>
@@ -119,9 +149,22 @@ export default function AdminHeader() {
               <div className="absolute top-full right-0 mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                 <div className="px-4 py-3 border-b border-gray-100">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-medium">
-                      {userInitial}
-                    </div>
+                    {profileImageUrl ? (
+                      <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-200 flex-shrink-0">
+                        <ImageWithFallback
+                          src={profileImageUrl}
+                          alt={displayName}
+                          width={40}
+                          height={40}
+                          className="w-full h-full object-cover"
+                          showPlaceholder={false}
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-medium">
+                        {userInitial}
+                      </div>
+                    )}
                     <div>
                       <p className="font-medium text-gray-900">{displayName}</p>
                       <p className="text-sm text-gray-600">{displayEmail}</p>

@@ -273,9 +273,7 @@ export function LearningTopics() {
           const transformedArticles = (articleData.content || []).map((item: any) => ({
             id: String(item.id),
             title: item.title || '제목 없음',
-            description: typeof item.content === 'string' 
-              ? item.content.substring(0, 150) 
-              : '',
+            description: item.description ?? '',
             category: item.category || currentCategory.name,
             author: item.writer?.nickname || item.writer?.realname || '작성자',
             publishDate: item.createdAt ? new Date(item.createdAt).toLocaleDateString('ko-KR') : '',
