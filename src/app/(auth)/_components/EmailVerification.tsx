@@ -243,7 +243,7 @@ export default function EmailVerification({ email, disabled = false, onVerifiedC
                     <button
                       type="button"
                       onClick={closeModal}
-                      className="text-gray-700 hover:text-gray-700 p-1 rounded-full hover:bg-white/60"
+                      className="text-gray-700 p-1 rounded-full hover:bg-white/80 hover:text-gray-900 transition-colors"
                       aria-label="닫기"
                     >
                       <X className="w-5 h-5" />

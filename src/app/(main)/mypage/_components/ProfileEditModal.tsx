@@ -125,7 +125,7 @@ export default function ProfileEditModal({ open, profile, onClose, onUpdated }: 
           <button
             type="button"
             onClick={onClose}
-            className="p-2 text-gray-700 hover:text-gray-700 transition-colors"
+            className="p-2 text-gray-700 rounded hover:bg-gray-200 hover:text-gray-900 transition-colors"
             aria-label="닫기"
           >
             <X className="h-5 w-5" />

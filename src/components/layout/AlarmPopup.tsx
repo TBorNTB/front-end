@@ -273,7 +273,7 @@ export default function AlarmPopup({ isOpen, onClose, onRefreshUnread }: AlarmPo
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1 text-gray-700 hover:text-gray-700 rounded hover:bg-gray-100"
+                className="p-1 text-gray-700 rounded hover:bg-gray-200 hover:text-gray-900 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -370,7 +370,7 @@ export default function AlarmPopup({ isOpen, onClose, onRefreshUnread }: AlarmPo
                       type="button"
                       onClick={handleBulkDelete}
                       disabled={actionLoading}
-                      className="inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-700 disabled:opacity-50"
+                      className="inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded disabled:opacity-50 transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       일괄삭제 ({selectedIds.size})

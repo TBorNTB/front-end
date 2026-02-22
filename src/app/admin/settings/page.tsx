@@ -26,7 +26,7 @@ export default function AdminSettings() {
             className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === "general"
                 ? "border-primary-500 text-primary-600"
-                : "border-transparent text-gray-700 hover:text-gray-700 hover:border-gray-300"
+                : "border-transparent text-gray-700 hover:text-primary-600 hover:border-primary-300"
             }`}
           >
             일반 설정
@@ -36,7 +36,7 @@ export default function AdminSettings() {
             className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === "security"
                 ? "border-primary-500 text-primary-600"
-                : "border-transparent text-gray-700 hover:text-gray-700 hover:border-gray-300"
+                : "border-transparent text-gray-700 hover:text-primary-600 hover:border-primary-300"
             }`}
           >
             보안 설정
@@ -46,7 +46,7 @@ export default function AdminSettings() {
             className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === "notifications"
                 ? "border-primary-500 text-primary-600"
-                : "border-transparent text-gray-700 hover:text-gray-700 hover:border-gray-300"
+                : "border-transparent text-gray-700 hover:text-primary-600 hover:border-primary-300"
             }`}
           >
             알림 설정

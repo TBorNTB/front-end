@@ -84,7 +84,7 @@ const Footer = () => {
               {/* Back to Top Button */}
               <button
                 onClick={scrollToTop}
-                className="p-2 rounded-lg transition duration-200 hover:cursor-pointer"
+                className="p-2 rounded-lg transition duration-200 hover:bg-white/10 hover:opacity-90 active:opacity-95"
                 aria-label="Back to top"
               >
                 <Image

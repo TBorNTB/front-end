@@ -18,7 +18,7 @@ export default function AdminCommunity() {
             className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === "badges"
                 ? "border-primary-500 text-primary-600"
-                : "border-transparent text-gray-700 hover:text-gray-700 hover:border-gray-300"
+                : "border-transparent text-gray-700 hover:text-primary-600 hover:border-primary-300"
             }`}
           >
             뱃지 관리
@@ -28,7 +28,7 @@ export default function AdminCommunity() {
             className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === "assignment"
                 ? "border-primary-500 text-primary-600"
-                : "border-transparent text-gray-700 hover:text-gray-700 hover:border-gray-300"
+                : "border-transparent text-gray-700 hover:text-primary-600 hover:border-primary-300"
             }`}
           >
             뱃지 부여

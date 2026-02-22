@@ -252,7 +252,7 @@ export default function MembersPage() {
                 {(selectedLevels.length > 0 || searchTerm) && (
                   <button
                     onClick={clearAllFilters}
-                    className="text-sm text-gray-700 hover:text-gray-700 whitespace-nowrap"
+                    className="text-sm text-gray-700 hover:text-primary-600 whitespace-nowrap transition-colors"
                   >
                     초기화
                   </button>

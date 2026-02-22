@@ -310,7 +310,7 @@ export default function SignupPage() {
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-700 hover:text-gray-700"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
                           >
                             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                           </button>
@@ -341,7 +341,7 @@ export default function SignupPage() {
                           <button
                             type="button"
                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-700 hover:text-gray-700"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
                           >
                             {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                           </button>

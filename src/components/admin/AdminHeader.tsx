@@ -105,7 +105,7 @@ export default function AdminHeader() {
           <button
             type="button"
             onClick={() => setIsAlarmPopupOpen(true)}
-            className="p-2.5 text-gray-700 hover:text-gray-700 relative rounded-lg hover:bg-gray-100 transition-colors"
+            className="p-2.5 text-gray-700 relative rounded-lg hover:bg-gray-200 hover:text-gray-900 transition-colors"
           >
             <Bell className="h-5.5 w-5.5" />
             {alarmUnreadCount > 0 && (

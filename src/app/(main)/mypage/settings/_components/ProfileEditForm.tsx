@@ -297,7 +297,7 @@ export default function ProfileEditForm() {
         </div>
         <button
           onClick={handleCancel}
-          className="p-2 text-gray-700 hover:text-gray-700 transition-colors"
+          className="p-2 text-gray-700 rounded hover:bg-gray-200 hover:text-gray-900 transition-colors"
         >
           <X className="h-6 w-6" />
         </button>

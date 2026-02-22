@@ -227,7 +227,7 @@ export default function AdminPage() {
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-700 hover:text-gray-700 transition-colors"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
                         >
                           {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>

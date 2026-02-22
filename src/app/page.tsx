@@ -616,7 +616,7 @@ function OAuthSignupCompleteModal({ onClose }: { onClose: () => void }) {
         <button
           type="button"
           onClick={onClose}
-          className="mt-3 text-sm text-gray-700 hover:text-gray-700"
+          className="mt-3 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 px-2 py-1 rounded transition-colors"
         >
           닫기
         </button>

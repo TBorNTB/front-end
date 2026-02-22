@@ -879,7 +879,7 @@ export default function ActivityContent() {
               className={`py-3 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors duration-300 ${
                 activeTab === tab.key
                   ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-700 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-700 hover:text-primary-600 hover:border-primary-300'
               }`}
             >
               {tab.label}

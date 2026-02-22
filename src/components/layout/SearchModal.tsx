@@ -154,7 +154,7 @@ export default function SearchModal({
               {searchQuery && (
                 <button
                   onClick={() => onSearchChange("")}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-700 hover:text-gray-700"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>

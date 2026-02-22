@@ -482,7 +482,7 @@ export function LearningTopics() {
                             </div>
                             <button 
                               onClick={() => router.push(`/projects/${project.id}`)}
-                              className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                              className="text-primary-600 hover:text-primary-700 text-sm font-medium transition-colors hover:underline"
                             >
                               자세히 보기 →
                             </button>
@@ -499,7 +499,7 @@ export function LearningTopics() {
                   <div className="text-center">
                     <button
                       onClick={() => router.push(`/projects?topic=${cat?.slug}`)}
-                      className="text-primary-600 hover:text-primary-700 font-medium flex items-center space-x-2 mx-auto text-sm"
+                      className="text-primary-600 hover:text-primary-700 font-medium flex items-center space-x-2 mx-auto text-sm transition-colors hover:underline"
                     >
                       <span>모든 프로젝트 보기</span>
                       <ArrowRight size={16} />
@@ -544,7 +544,7 @@ export function LearningTopics() {
                             </div>
                             <button 
                               onClick={() => router.push(`/community/news/${article.id}`)}
-                              className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                              className="text-primary-600 hover:text-primary-700 text-sm font-medium transition-colors hover:underline"
                             >
                               읽어보기 →
                             </button>
@@ -561,7 +561,7 @@ export function LearningTopics() {
                   <div className="text-center">
                     <button
                       onClick={() => router.push(`/articles?topic=${cat?.slug}`)}
-                      className="text-green-600 hover:text-green-700 font-medium flex items-center space-x-2 mx-auto text-sm"
+                      className="text-green-600 hover:text-green-700 font-medium flex items-center space-x-2 mx-auto text-sm transition-colors hover:underline"
                     >
                       <span>모든 CS지식 보기</span>
                       <ArrowRight size={16} />

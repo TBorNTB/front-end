@@ -777,7 +777,7 @@ export default function AdminMembersContent() {
             className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
               activeTab === "all"
                 ? "text-primary-600 bg-primary-50 border-b-2 border-primary-600"
-                : "text-gray-700 hover:text-gray-700 hover:bg-gray-50"
+                : "text-gray-700 hover:text-primary-600 hover:bg-gray-50"
             }`}
           >
             <div className="flex items-center justify-center space-x-2">
@@ -793,7 +793,7 @@ export default function AdminMembersContent() {
             className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
               activeTab === "requests"
                 ? "text-primary-600 bg-primary-50 border-b-2 border-primary-600"
-                : "text-gray-700 hover:text-gray-700 hover:bg-gray-50"
+                : "text-gray-700 hover:text-primary-600 hover:bg-gray-50"
             }`}
           >
             <div className="flex items-center justify-center space-x-2">
@@ -813,7 +813,7 @@ export default function AdminMembersContent() {
             className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
               activeTab === "grades"
                 ? "text-primary-600 bg-primary-50 border-b-2 border-primary-600"
-                : "text-gray-700 hover:text-gray-700 hover:bg-gray-50"
+                : "text-gray-700 hover:text-primary-600 hover:bg-gray-50"
             }`}
           >
             <div className="flex items-center justify-center space-x-2">
@@ -1135,7 +1135,7 @@ export default function AdminMembersContent() {
                               </select>
                               <button
                                 onClick={() => setEditingMember(null)}
-                                className="text-gray-700 hover:text-gray-700"
+                                className="p-1 rounded text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors disabled:opacity-50"
                                 disabled={singleRoleChangeLoading === member.username}
                               >
                                 <X className="w-3 h-3" />
@@ -1212,7 +1212,7 @@ export default function AdminMembersContent() {
                     <h3 className="text-lg font-semibold text-gray-900">일괄 역할 변경</h3>
                     <button
                       onClick={() => setShowBatchRoleChange(false)}
-                      className="text-gray-700 hover:text-gray-700"
+                      className="p-1 rounded text-gray-700 hover:bg-gray-200 hover:text-gray-900 transition-colors"
                     >
                       <X className="w-5 h-5" />
                     </button>

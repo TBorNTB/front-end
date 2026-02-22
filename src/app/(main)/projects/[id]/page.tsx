@@ -1166,7 +1166,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                         <button
                           type="button"
                           onClick={closeCollaboratorModal}
-                          className="p-2 text-gray-700 hover:text-gray-700 rounded-lg hover:bg-gray-100"
+                          className="p-2 text-gray-700 rounded-lg hover:bg-gray-200 hover:text-gray-900 transition-colors"
                         >
                           <X className="w-5 h-5" />
                         </button>
