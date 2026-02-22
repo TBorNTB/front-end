@@ -278,6 +278,10 @@ export default function NewsManagement() {
     }
   };
 
+  const handleView = (id: number) => {
+    window.open(`/community/news/${id}`, "_blank", "noopener,noreferrer");
+  };
+
   return (
     <>
       <div className="admin-card">
@@ -469,13 +473,21 @@ export default function NewsManagement() {
                       {item.likes.toLocaleString()}
                     </td>
                     <td className="py-3 px-4">
-                      <button
-                        onClick={() => setDeleteTarget(item)}
-                        className="inline-flex items-center gap-1 text-red-600 hover:text-red-700 font-medium text-sm"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        삭제
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => handleView(item.id)}
+                          className="text-blue-600 hover:text-blue-800 font-medium text-sm"
+                        >
+                          보기
+                        </button>
+                        <button
+                          onClick={() => setDeleteTarget(item)}
+                          className="inline-flex items-center gap-1 text-red-600 hover:text-red-700 font-medium text-sm"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          삭제
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
