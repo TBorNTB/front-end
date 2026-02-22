@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { Alarm, AlarmType } from '@/types/services/alarm';
 import { Bell, MessageSquare, Reply, Heart, UserPlus, ChevronRight, Clock, Loader2, CheckCheck, Trash2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { UserRole } from '@/types/core';
 import { alarmService, mapAlarmApiToAlarm } from '@/lib/api/services/alarm-services';
 import { useAlarmUnreadCount } from '@/hooks/useAlarmUnreadCount';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -79,11 +78,7 @@ export default function AlarmsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [actionLoading, setActionLoading] = useState(false);
 
-  const isAdmin = user?.role === UserRole.ADMIN;
-
-  const availableCategories: (AlarmType | 'all')[] = isAdmin
-    ? ['all', AlarmType.COMMENT_ADDED, AlarmType.COMMENT_REPLY_ADDED, AlarmType.POST_LIKED, AlarmType.SIGNUP]
-    : ['all', AlarmType.COMMENT_ADDED, AlarmType.COMMENT_REPLY_ADDED, AlarmType.POST_LIKED];
+  const availableCategories: (AlarmType | 'all')[] = ['all', AlarmType.COMMENT_ADDED, AlarmType.COMMENT_REPLY_ADDED, AlarmType.POST_LIKED];
 
   const loadAlarms = useCallback(async (p: number, category: AlarmType | 'all', filter: SeenFilter) => {
     setIsLoading(true);

@@ -4,7 +4,6 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Alarm, AlarmType } from '@/types/services/alarm';
 import { Bell, MessageSquare, Reply, Heart, UserPlus, X, Clock, ChevronRight, Loader2, Trash2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { UserRole } from '@/types/core';
 import Link from 'next/link';
 import { alarmService, mapAlarmApiToAlarm } from '@/lib/api/services/alarm-services';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -98,11 +97,7 @@ export default function AlarmPopup({ isOpen, onClose, onRefreshUnread }: AlarmPo
   const [actionLoading, setActionLoading] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
 
-  const isAdmin = user?.role === UserRole.ADMIN;
-
-  const availableCategories: (AlarmType | 'all')[] = isAdmin
-    ? ['all', AlarmType.COMMENT_ADDED, AlarmType.COMMENT_REPLY_ADDED, AlarmType.POST_LIKED, AlarmType.SIGNUP]
-    : ['all', AlarmType.COMMENT_ADDED, AlarmType.COMMENT_REPLY_ADDED, AlarmType.POST_LIKED];
+  const availableCategories: (AlarmType | 'all')[] = ['all', AlarmType.COMMENT_ADDED, AlarmType.COMMENT_REPLY_ADDED, AlarmType.POST_LIKED];
 
   const loadAlarms = useCallback(async (p: number) => {
     if (!isOpen) return;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { getApiUrl } from "@/lib/api/config";
 import { ELASTIC_ENDPOINTS } from "@/lib/api/endpoints/elastic-endpoints";
@@ -46,7 +47,23 @@ const getContentTypeColor = (contentType: string): string => {
   return colorMap[contentType] || 'bg-gray-100 text-gray-800';
 };
 
+// contentType + id로 게시물 상세 URL 생성
+const getPostLink = (contentType: string, id: string): string => {
+  const type = (contentType || '').toUpperCase();
+  switch (type) {
+    case 'PROJECT':
+      return `/projects/${id}`;
+    case 'NEWS':
+    case 'CS':
+    case 'CSKNOWLEDGE':
+      return `/community/news/${id}`;
+    default:
+      return `/community/news/${id}`;
+  }
+};
+
 export default function PopularPosts() {
+  const router = useRouter();
   const [posts, setPosts] = useState<PopularContent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -113,25 +130,32 @@ export default function PopularPosts() {
       ) : (
         <>
           <div className="space-y-4">
-            {displayedPosts.map((post, index) => (
-              <div 
-                key={`${post.contentType}-${post.id}-${index}`} 
-                className="flex items-start space-x-4 p-4 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer"
-              >
-                <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getContentTypeColor(post.contentType)}`}>
-                  {getContentTypeLabel(post.contentType)}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-medium text-gray-900 truncate">
-                    {post.title}
-                  </h4>
-                  <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                    <span>조회수 {post.viewCount.toLocaleString()}</span>
-                    <span>좋아요 {post.likeCount.toLocaleString()}</span>
+            {displayedPosts.map((post, index) => {
+              const href = getPostLink(post.contentType, post.id);
+              return (
+                <div
+                  key={`${post.contentType}-${post.id}-${index}`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => router.push(href)}
+                  onKeyDown={(e) => e.key === 'Enter' && router.push(href)}
+                  className="flex items-start space-x-4 p-4 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer"
+                >
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getContentTypeColor(post.contentType)}`}>
+                    {getContentTypeLabel(post.contentType)}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-medium text-gray-900 truncate">
+                      {post.title}
+                    </h4>
+                    <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                      <span>조회수 {post.viewCount.toLocaleString()}</span>
+                      <span>좋아요 {post.likeCount.toLocaleString()}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* 더보기/접기 버튼 */}

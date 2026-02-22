@@ -4,9 +4,10 @@
 import { useAuth } from "@/context/AuthContext";
 import { Bell, ChevronDown, LogOut } from "lucide-react";
 import { usePathname } from "next/navigation";
-
 import toast from "react-hot-toast";
 import { useEffect, useRef, useState } from "react";
+import AlarmPopup from "@/components/layout/AlarmPopup";
+import { useAlarmUnreadCount } from "@/hooks/useAlarmUnreadCount";
 
 
 // Page title mapping
@@ -39,7 +40,9 @@ export default function AdminHeader() {
   const pageTitle = getPageTitle(pathname);
   const { user, logout } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isAlarmPopupOpen, setIsAlarmPopupOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const { count: alarmUnreadCount, refresh: refreshAlarmUnread } = useAlarmUnreadCount();
 
   const handleLogout = async () => {
     console.log(" logout clicked");
@@ -82,12 +85,23 @@ export default function AdminHeader() {
         {/* Right: Notifications & User Menu */}
         <div className="flex items-center space-x-5">
           {/* Notifications */}
-          <button className="p-2.5 text-gray-400 hover:text-gray-600 relative rounded-lg hover:bg-gray-100 transition-colors">
+          <button
+            type="button"
+            onClick={() => setIsAlarmPopupOpen(true)}
+            className="p-2.5 text-gray-400 hover:text-gray-600 relative rounded-lg hover:bg-gray-100 transition-colors"
+          >
             <Bell className="h-5.5 w-5.5" />
-            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
-              <span className="w-2 h-2 bg-white rounded-full"></span>
-            </span>
+            {alarmUnreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[1.25rem] h-5 px-1 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center">
+                {alarmUnreadCount > 99 ? '99+' : alarmUnreadCount}
+              </span>
+            )}
           </button>
+          <AlarmPopup
+            isOpen={isAlarmPopupOpen}
+            onClose={() => setIsAlarmPopupOpen(false)}
+            onRefreshUnread={refreshAlarmUnread}
+          />
          {/* User Menu */}
           <div className="relative" ref={userMenuRef}>
             <button
