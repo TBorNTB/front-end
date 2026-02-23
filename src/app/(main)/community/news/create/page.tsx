@@ -29,7 +29,16 @@ interface FormErrors {
   [key: string]: string;
 }
 
-const NEWS_CATEGORIES = ['MT', 'ST', 'ET', 'CT', 'OT'];
+// 백엔드 enum과 동일: MT, OT, STUDY, SEMINAR, UNITED_SEMINAR, CONFERENCE, CTF
+const NEWS_CATEGORIES: { label: string; value: string }[] = [
+  { label: 'MT', value: 'MT' },
+  { label: 'OT', value: 'OT' },
+  { label: '스터디', value: 'STUDY' },
+  { label: '세미나', value: 'SEMINAR' },
+  { label: '연합 세미나', value: 'UNITED_SEMINAR' },
+  { label: '컨퍼런스', value: 'CONFERENCE' },
+  { label: 'CTF', value: 'CTF' },
+];
 
 export default function NewNewsForm() {
   const router = useRouter();
@@ -443,10 +452,10 @@ export default function NewNewsForm() {
                 <div className={`border rounded-lg p-3 ${errors.category ? 'border-red-500' : 'border-gray-300'}`}>
                   <div className="grid grid-cols-2 gap-2">
                     {NEWS_CATEGORIES.map((cat) => {
-                      const isSelected = formData.category === cat;
+                      const isSelected = formData.category === cat.value;
                       return (
                         <label
-                          key={cat}
+                          key={cat.value}
                           className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer ${
                             isSelected ? 'bg-blue-50 border border-blue-500' : 'hover:bg-gray-50'
                           }`}
@@ -458,7 +467,7 @@ export default function NewNewsForm() {
                             onChange={() => {
                               setFormData((prev) => ({
                                 ...prev,
-                                category: cat,
+                                category: cat.value,
                               }));
                               if (errors.category) {
                                 setErrors((prev) => ({
@@ -469,7 +478,7 @@ export default function NewNewsForm() {
                             }}
                             className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                           />
-                          <span className="text-sm font-medium text-gray-900">{cat}</span>
+                          <span className="text-sm font-medium text-gray-900">{cat.label}</span>
                         </label>
                       );
                     })}
