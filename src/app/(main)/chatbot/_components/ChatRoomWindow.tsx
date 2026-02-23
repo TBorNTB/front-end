@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { X, Minimize2, Users, MessageSquare, User, Search, Plus, ChevronDown } from "lucide-react";
 import toast from "react-hot-toast";
 import { getChatRooms, createGroupChat, ChatRoomResponse } from "@/lib/api/services/chat-services";
-import { fetchUsers, UserListResponse } from "@/lib/api/services/user-services";
+import { memberService } from "@/lib/api/services/user-services";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useAuth } from "@/context/AuthContext";
 import { UserRole } from "@/types/core";
@@ -138,14 +138,21 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
     }
   }, [activeTab]);
 
+  // 채팅 초대 가능 역할만 요청 (GUEST 제외)
+  const CHAT_INVITE_ROLES = ["ASSOCIATE_MEMBER", "FULL_MEMBER", "SENIOR", "ADMIN"] as const;
+
   const fetchUsersList = async (page: number = 0) => {
     setIsLoadingUsers(true);
     try {
-      const response: UserListResponse = await fetchUsers(page, 5, 'ASC', 'createdAt');
-      
-      // Transform API response to User format
+      const response = await memberService.getMembers({
+        page,
+        size: 20,
+        roles: [...CHAT_INVITE_ROLES],
+      });
+
+      // Transform API response to User format (서버에서 이미 GUEST 제외됨)
       const transformedUsers: User[] = response.data.map((user) => ({
-        id: user.id.toString(),
+        id: String(user.id),
         username: user.username,
         name: user.realName || user.nickname || user.username,
         nickname: user.nickname,
@@ -153,13 +160,13 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
         avatar: user.profileImageUrl,
         profileImageUrl: user.profileImageUrl,
       }));
-      
+
       if (page === 0) {
         setUsers(transformedUsers);
       } else {
-        setUsers(prev => [...prev, ...transformedUsers]);
+        setUsers((prev) => [...prev, ...transformedUsers]);
       }
-      
+
       setCurrentPage(response.page);
       setTotalPages(response.totalPage);
       setHasMoreUsers(response.page < response.totalPage - 1);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X, Minimize2, Search, Phone, Monitor, MoreVertical, ArrowLeft, Plus, Smile, Paperclip, Send } from "lucide-react";
+import { X, Minimize2, MoreVertical, ArrowLeft, Send } from "lucide-react";
 import toast from "react-hot-toast";
 import ChatInput from "./ChatInput";
 import { useChatWebSocket, WebSocketServerMessage } from "@/hooks/useChatWebSocket";
@@ -664,27 +664,6 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
         <div className="flex items-center gap-1 flex-shrink-0" ref={menuRef}>
           <button
             className="p-2 hover:bg-white/20 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95"
-            aria-label="Search"
-            title="검색"
-          >
-            <Search className="w-4 h-4" />
-          </button>
-          <button
-            className="p-2 hover:bg-white/20 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95"
-            aria-label="Call"
-            title="전화"
-          >
-            <Phone className="w-4 h-4" />
-          </button>
-          <button
-            className="p-2 hover:bg-white/20 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95"
-            aria-label="Screen share"
-            title="화면 공유"
-          >
-            <Monitor className="w-4 h-4" />
-          </button>
-          <button
-            className="p-2 hover:bg-white/20 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95"
             aria-label="More options"
             title="더보기"
             onClick={() => setIsMenuOpen((v) => !v)}
@@ -757,29 +736,6 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
       {/* Input Area */}
       <div className="border-t border-gray-200 bg-white/80 backdrop-blur-sm p-4 shadow-sm">
         <div className="flex items-end gap-2">
-          <div className="flex items-center gap-1">
-            <button
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              aria-label="Add attachment"
-              title="첨부"
-            >
-              <Plus className="w-5 h-5 text-gray-700" />
-            </button>
-            <button
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              aria-label="Emoji"
-              title="이모지"
-            >
-              <Smile className="w-5 h-5 text-gray-700" />
-            </button>
-            <button
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              aria-label="Attach file"
-              title="파일 첨부"
-            >
-              <Paperclip className="w-5 h-5 text-gray-700" />
-            </button>
-          </div>
           <div className="flex-1 relative">
             <textarea
               value={inputValue}

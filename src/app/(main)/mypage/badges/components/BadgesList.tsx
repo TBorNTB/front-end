@@ -2,19 +2,22 @@
 'use client';
 
 import { Badge } from '@/components/ui/badge';
-import { 
-  BookOpen, 
-  TrendingUp, 
-  MessageCircle, 
-  Shield, 
-  Target, 
-  Zap, 
+import {
+  BookOpen,
+  TrendingUp,
+  MessageCircle,
+  Shield,
+  Target,
+  Zap,
   Trophy,
   Award,
   Star,
   Users
 } from 'lucide-react';
 import { useState } from 'react';
+import toast from 'react-hot-toast';
+
+const UNDER_DEV_TOAST = '현재 추후 개발 예정입니다. 화면에 표시된 데이터는 목데이터입니다.';
 
 const badgeCategories = [
   { value: 'all', label: '전체' },
@@ -110,6 +113,8 @@ const userBadges = [
 export default function BadgesList() {
   const [selectedCategory, setSelectedCategory] = useState('all');
 
+  const showUnderDev = () => toast(UNDER_DEV_TOAST, { duration: 2000 });
+
   const filteredBadges = userBadges.filter(badge => 
     selectedCategory === 'all' || badge.category === selectedCategory
   );
@@ -134,9 +139,19 @@ export default function BadgesList() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-3 mb-8">
+      <div className="flex items-center gap-3 mb-4">
         <Award className="h-8 w-8 text-primary-600" />
         <h1 className="text-3xl font-bold text-foreground">활동 배지</h1>
+      </div>
+
+      {/* 미개발 안내 */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex flex-wrap items-center gap-2 mb-6">
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-200 text-amber-900">
+          미개발
+        </span>
+        <span className="text-sm text-amber-900">
+          뱃지 기능은 현재 미개발이며, 화면에 표시된 데이터는 <strong>목데이터</strong>입니다. 추후 개발 예정입니다.
+        </span>
       </div>
 
       {/* Stats Overview */}
@@ -164,7 +179,10 @@ export default function BadgesList() {
           <h2 className="text-2xl font-semibold text-foreground">배지 컬렉션</h2>
           <select
             value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
+            onChange={(e) => {
+              setSelectedCategory(e.target.value);
+              showUnderDev();
+            }}
             className="border border-gray-300 rounded-lg px-4 py-2
                      focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
           >
@@ -178,11 +196,13 @@ export default function BadgesList() {
           {filteredBadges.map((badge) => {
             const IconComponent = badge.icon;
             return (
-              <div
+              <button
+                type="button"
                 key={badge.id}
-                className={`p-6 rounded-xl border-2 transition-all duration-300 ${
-                  badge.earned 
-                    ? `${badge.color} shadow-md` 
+                onClick={showUnderDev}
+                className={`w-full text-left p-6 rounded-xl border-2 transition-all duration-300 hover:ring-2 hover:ring-primary-200 ${
+                  badge.earned
+                    ? `${badge.color} shadow-md`
                     : 'border-gray-200 bg-gray-50 opacity-75'
                 }`}
               >
@@ -225,7 +245,7 @@ export default function BadgesList() {
                     </div>
                   )}
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>

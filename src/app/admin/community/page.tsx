@@ -3,12 +3,27 @@
 
 import { useState } from "react";
 import { Award, Users, Star, Plus } from "lucide-react";
+import toast from "react-hot-toast";
+
+const UNDER_DEV_TOAST = "현재 추후 개발 예정입니다. 화면에 표시된 데이터는 목데이터입니다.";
 
 export default function AdminCommunity() {
   const [activeTab, setActiveTab] = useState("badges");
 
+  const showUnderDev = () => toast(UNDER_DEV_TOAST, { duration: 2000 });
+
   return (
     <div className="space-y-6">
+
+      {/* 미개발 안내 */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex flex-wrap items-center gap-2">
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-200 text-amber-900">
+          미개발
+        </span>
+        <span className="text-sm text-amber-900">
+          커뮤니티 관리 기능은 현재 미개발이며, 화면에 표시된 데이터는 <strong>목데이터</strong>입니다. 추후 개발 예정입니다.
+        </span>
+      </div>
 
       {/* Tab Navigation */}
       <div>
@@ -46,7 +61,11 @@ export default function AdminCommunity() {
                   <h3 className="text-lg font-semibold text-gray-900">뱃지 관리</h3>
                   <p className="text-sm text-gray-700 mt-1">커뮤니티 뱃지를 생성하고 관리합니다</p>
                 </div>
-                <button className="flex items-center px-4 py-2 bg-primary-600 text-white shadow-sm hover:bg-primary-500 rounded-lg font-medium transition-all duration-200">
+                <button
+                  type="button"
+                  onClick={showUnderDev}
+                  className="flex items-center px-4 py-2 bg-primary-600 text-white shadow-sm hover:bg-primary-500 rounded-lg font-medium transition-all duration-200"
+                >
                   <Award className="w-4 h-4 mr-2" />
                   새 뱃지 생성
                 </button>
@@ -54,8 +73,8 @@ export default function AdminCommunity() {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Badge Cards */}
-              <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-200 rounded-lg p-6 text-center">
+              {/* Badge Cards (목데이터) */}
+              <button type="button" onClick={showUnderDev} className="bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-200 rounded-lg p-6 text-center hover:ring-2 hover:ring-primary-200 transition-all w-full">
                 <Award className="w-12 h-12 text-yellow-600 mx-auto mb-4" />
                 <h4 className="font-semibold text-gray-900 mb-2">첫 번째 프로젝트</h4>
                 <p className="text-sm text-gray-700 mb-4">첫 프로젝트를 등록한 회원에게 부여</p>
@@ -63,9 +82,9 @@ export default function AdminCommunity() {
                   <span className="px-2 py-1 bg-yellow-200 text-yellow-800 rounded-full text-xs">활성</span>
                   <span className="px-2 py-1 bg-gray-200 text-gray-700 rounded-full text-xs">12명 보유</span>
                 </div>
-              </div>
+              </button>
 
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-6 text-center">
+              <button type="button" onClick={showUnderDev} className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-6 text-center hover:ring-2 hover:ring-primary-200 transition-all w-full">
                 <Users className="w-12 h-12 text-blue-600 mx-auto mb-4" />
                 <h4 className="font-semibold text-gray-900 mb-2">활발한 참여자</h4>
                 <p className="text-sm text-gray-700 mb-4">커뮤니티에 활발히 참여하는 회원</p>
@@ -73,9 +92,9 @@ export default function AdminCommunity() {
                   <span className="px-2 py-1 bg-blue-200 text-blue-800 rounded-full text-xs">활성</span>
                   <span className="px-2 py-1 bg-gray-200 text-gray-700 rounded-full text-xs">8명 보유</span>
                 </div>
-              </div>
+              </button>
 
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-lg p-6 text-center">
+              <button type="button" onClick={showUnderDev} className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-lg p-6 text-center hover:ring-2 hover:ring-primary-200 transition-all w-full">
                 <Star className="w-12 h-12 text-purple-600 mx-auto mb-4" />
                 <h4 className="font-semibold text-gray-900 mb-2">우수 멘토</h4>
                 <p className="text-sm text-gray-700 mb-4">후배들을 잘 도와준 선배 회원</p>
@@ -83,14 +102,18 @@ export default function AdminCommunity() {
                   <span className="px-2 py-1 bg-purple-200 text-purple-800 rounded-full text-xs">활성</span>
                   <span className="px-2 py-1 bg-gray-200 text-gray-700 rounded-full text-xs">3명 보유</span>
                 </div>
-              </div>
+              </button>
 
               {/* Add New Badge Card */}
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-400 hover:bg-primary-50 transition-colors cursor-pointer">
+              <button
+                type="button"
+                onClick={showUnderDev}
+                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-400 hover:bg-primary-50 transition-colors cursor-pointer w-full"
+              >
                 <Plus className="w-12 h-12 text-gray-700 mx-auto mb-4" />
                 <h4 className="font-medium text-gray-700 mb-2">새 뱃지 추가</h4>
                 <p className="text-sm text-gray-700">커뮤니티 뱃지를 만들어보세요</p>
-              </div>
+              </button>
             </div>
           </div>
         )}
@@ -117,7 +140,11 @@ export default function AdminCommunity() {
                   <option>활발한 참여자</option>
                   <option>우수 멘토</option>
                 </select>
-                <button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium">
+                <button
+                  type="button"
+                  onClick={showUnderDev}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium"
+                >
                   부여
                 </button>
               </div>
