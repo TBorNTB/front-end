@@ -44,15 +44,8 @@ interface QuestionCardProps {
 export default function QuestionCard({ question, onBookmark, viewMode }: QuestionCardProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-    if (diffInSeconds < 60) return '방금 전';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}분 전`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}시간 전`;
-    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}일 전`;
-    
-    return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+    if (Number.isNaN(date.getTime())) return '-';
+    return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
   };
 
   const getRoleBadge = (role: 'member' | 'admin' | 'guest') => {
