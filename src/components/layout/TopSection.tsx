@@ -41,7 +41,7 @@ export default function ContentFilterBar({
   viewMode = 'grid',
   onViewModeChange,
   sortBy = '최신순',
-  sortOptions = ['최신순', '인기순', '조회순'],
+  sortOptions = ['최신순', '인기순'],
   onSortChange,
   showViewMode = true,
   showSort = true,

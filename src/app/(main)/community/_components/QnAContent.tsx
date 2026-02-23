@@ -249,7 +249,7 @@ export default function QnAContent() {
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         sortBy={sortBy}
-        sortOptions={['최신순', '인기순', '답변순']}
+        sortOptions={['최신순', '답변순']}
         onSortChange={setSortBy}
         showViewMode={true}
         showSort={true}

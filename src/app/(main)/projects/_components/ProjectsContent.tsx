@@ -166,7 +166,6 @@ const statusMap: Record<string, string> = {
 const sortMap: Record<string, string> = {
   '최신순': 'LATEST',
   '인기순': 'POPULAR',
-  '이름순': 'NAME'
 };
 
 const statusToEnglish = (status: string) => statusMap[status] || '';
@@ -326,7 +325,7 @@ const AvatarStack = ({
 // ============================================================================
 
 const statuses = ['전체', '진행중', '완료', '계획중'];
-const sortOptions = ['최신순', '인기순', '이름순'];
+const sortOptions = ['최신순', '인기순'];
 
 export default function ProjectsContent() {
   const searchParams = useSearchParams();

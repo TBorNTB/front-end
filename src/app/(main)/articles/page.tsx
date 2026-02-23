@@ -114,7 +114,7 @@ function ArticlesContent() {
   const suggestionsRef = useRef<HTMLDivElement | null>(null);
 
   const currentUser: 'guest' | 'member' | 'admin' | null = 'member';
-  const sortOptions = ['최신순', '인기순', '조회순'];
+  const sortOptions = ['최신순', '인기순'];
 
   // 카테고리 목록 API 호출
   useEffect(() => {
@@ -150,12 +150,10 @@ function ArticlesContent() {
   }, []);
 
   // 정렬 옵션을 API 형식으로 변환
-  const convertSortToApiType = (sortBy: string): 'LATEST' | 'POPULAR' | 'VIEWS' => {
+  const convertSortToApiType = (sortBy: string): 'LATEST' | 'POPULAR' => {
     switch (sortBy) {
       case '인기순':
         return 'POPULAR';
-      case '조회순':
-        return 'VIEWS';
       case '최신순':
       default:
         return 'LATEST';
@@ -214,8 +212,6 @@ function ArticlesContent() {
     switch (sortBy) {
       case '인기순':
         return (b.likeCount || 0) - (a.likeCount || 0);
-      case '조회순':
-        return (b.viewCount || 0) - (a.viewCount || 0);
       case '최신순':
       default:
         return 0;
@@ -422,7 +418,7 @@ function ArticlesContent() {
           viewMode={viewMode as 'grid' | 'list'}
           onViewModeChange={(mode) => setViewMode(mode)}
           sortBy={sortBy}
-          sortOptions={['최신순', '인기순', '조회순']}
+          sortOptions={['최신순', '인기순']}
           onSortChange={setSortBy}
           showViewMode={true}
           showSort={true}

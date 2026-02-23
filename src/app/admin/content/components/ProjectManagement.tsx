@@ -43,7 +43,6 @@ const PAGE_SIZE = 20;
 const sortMap: Record<string, string> = {
   "최신순": "LATEST",
   "인기순": "POPULAR",
-  "이름순": "NAME",
 };
 
 const formatDate = (iso?: string): string => {
@@ -78,7 +77,7 @@ const categoryOptions: Array<{ label: string; value: "ALL" | CategoryType }> = [
   })),
 ];
 
-const sortOptions = ["최신순", "인기순", "이름순"] as const;
+const sortOptions = ["최신순", "인기순"] as const;
 type SortOption = (typeof sortOptions)[number];
 
 export default function ProjectManagement() {

@@ -141,7 +141,7 @@ const fetchElasticSearchSuggestions = async (query: string): Promise<string[]> =
 // 페이지 크기 설정
 const PAGE_SIZE = 6;
 
-const sortOptions = ['최신순', '인기순', '조회순'];
+const sortOptions = ['최신순', '인기순'];
 
 // 정렬 옵션을 API 형식으로 변환
 const convertSortToApiType = (sortBy: string): string => {
@@ -150,8 +150,6 @@ const convertSortToApiType = (sortBy: string): string => {
       return 'LATEST';
     case '인기순':
       return 'POPULAR';
-    case '조회순':
-      return 'VIEWS';
     default:
       return 'LATEST';
   }

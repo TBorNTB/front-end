@@ -429,7 +429,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-700">프로젝트를 불러오는 중...</p>
+          <p className="text-gray-800">프로젝트를 불러오는 중...</p>
         </div>
       </div>
     );
@@ -443,7 +443,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
           <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm">
             <div className="mb-4">
               <svg
-                className="w-16 h-16 mx-auto text-gray-700"
+                className="w-16 h-16 mx-auto text-gray-800"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -457,7 +457,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
               </svg>
             </div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">해당 게시글은 삭제 된 게시글입니다</h2>
-            <p className="text-gray-700 mb-6">
+            <p className="text-gray-800 mb-6">
               요청하신 게시글을 찾을 수 없습니다. 삭제되었거나 존재하지 않는 게시글일 수 있습니다.
             </p>
             <Link
@@ -862,7 +862,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
           <div className="container py-6">
             <Link
               href="/projects"
-              className="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-2 text-gray-800 hover:text-gray-900 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -886,7 +886,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   >
                     <span className="font-bold text-gray-900">프로젝트 정보</span>
                     <svg
-                      className={`w-5 h-5 text-gray-700 transition-transform ${
+                      className={`w-5 h-5 text-gray-800 transition-transform ${
                         openSections.info ? 'rotate-180' : ''
                       }`}
                       fill="none"
@@ -900,38 +900,38 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   {openSections.info && (
                     <div className="p-4 space-y-3 text-sm">
                       <div>
-                        <p className="text-gray-700 mb-1">상태</p>
+                        <p className="text-gray-800 mb-1">상태</p>
                         <span className={`px-2 py-1 rounded text-xs ${
                           project.projectStatus === '진행중' 
                             ? 'bg-green-100 text-green-700'
                             : project.projectStatus === '완료'
                             ? 'bg-blue-100 text-blue-700'
-                            : 'bg-gray-100 text-gray-700'
+                            : 'bg-gray-100 text-gray-800'
                         }`}>
                           {project.projectStatus}
                         </span>
                       </div>
                       <div>
-                        <p className="text-gray-700 mb-1">기간</p>
+                        <p className="text-gray-800 mb-1">기간</p>
                         <p className="text-gray-900">{project.period}</p>
                       </div>
                       <div>
-                        <p className="text-gray-700 mb-1">사용 기술</p>
+                        <p className="text-gray-800 mb-1">사용 기술</p>
                         <div className="flex flex-wrap gap-1">
                           {(project.technologies || []).length > 0 ? (
                             (project.technologies || []).map((tech: string, idx: number) => (
-                              <span key={idx} className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-700">
+                              <span key={idx} className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-800">
                                 {tech}
                               </span>
                             ))
                           ) : (
-                            <span className="text-xs text-gray-700">기술 스택 정보가 없습니다</span>
+                            <span className="text-xs text-gray-800">기술 스택 정보가 없습니다</span>
                           )}
                         </div>
                       </div>
                       {project.github && (
                         <div>
-                          <p className="text-gray-700 mb-1">링크</p>
+                          <p className="text-gray-800 mb-1">링크</p>
                           <a
                             href={project.github}
                             target="_blank"
@@ -959,7 +959,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                       하위 목표 ({(project.subGoals || []).length})
                     </span>
                     <svg
-                      className={`w-5 h-5 text-gray-700 transition-transform ${
+                      className={`w-5 h-5 text-gray-800 transition-transform ${
                         openSections.subgoals ? 'rotate-180' : ''
                       }`}
                       fill="none"
@@ -972,11 +972,11 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   {openSections.subgoals && (
                     <div className="p-4">
                       {(project.subGoals || []).length === 0 && !canEditProject ? (
-                        <p className="text-sm text-gray-700 py-2">등록된 하위 목표가 없습니다.</p>
+                        <p className="text-sm text-gray-800 py-2">등록된 하위 목표가 없습니다.</p>
                       ) : (
                         <>
                           <div className="flex items-center gap-2 mb-3">
-                            <span className="text-xs font-medium text-gray-700">
+                            <span className="text-xs font-medium text-gray-800">
                               {(project.subGoals || []).filter((sg: any) => sg.completed).length} / {(project.subGoals || []).length} 완료
                             </span>
                             <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -1028,7 +1028,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                 )}
                                 <span
                                   className={`text-sm flex-1 min-w-0 ${
-                                    sg.completed ? 'text-gray-700 line-through' : 'text-gray-900'
+                                    sg.completed ? 'text-gray-800 line-through' : 'text-gray-900'
                                   }`}
                                 >
                                   {sg.content || '(제목 없음)'}
@@ -1038,7 +1038,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                     type="button"
                                     onClick={() => handleSubgoalDelete(sg.id)}
                                     disabled={subgoalDeletingId === sg.id}
-                                    className="p-1 text-gray-700 hover:text-red-600 rounded opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                                    className="p-1 text-gray-800 hover:text-red-600 rounded opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
                                     title="삭제"
                                   >
                                     <X className="w-4 h-4" />
@@ -1083,7 +1083,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     >
                       <span className="font-bold text-gray-900">팀원 ({(project.team || []).length})</span>
                       <svg
-                        className={`w-5 h-5 text-gray-700 transition-transform flex-shrink-0 ml-2 ${
+                        className={`w-5 h-5 text-gray-800 transition-transform flex-shrink-0 ml-2 ${
                           openSections.team ? 'rotate-180' : ''
                         }`}
                         fill="none"
@@ -1123,7 +1123,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-700">
+                              <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-800">
                                 {(member.name || 'U').charAt(0).toUpperCase()}
                               </div>
                             )}
@@ -1132,7 +1132,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                             <p className="font-medium text-gray-900 text-sm truncate">
                               {member.name || 'Unknown'}
                             </p>
-                            <p className="text-xs text-gray-700 truncate">
+                            <p className="text-xs text-gray-800 truncate">
                               {member.role || 'Member'}
                             </p>
                           </div>
@@ -1157,7 +1157,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                         <button
                           type="button"
                           onClick={closeCollaboratorModal}
-                          className="p-2 text-gray-700 rounded-lg hover:bg-gray-200 hover:text-gray-900 transition-colors"
+                          className="p-2 text-gray-800 rounded-lg hover:bg-gray-200 hover:text-gray-900 transition-colors"
                         >
                           <X className="w-5 h-5" />
                         </button>
@@ -1165,7 +1165,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                       <div className="flex-1 overflow-y-auto p-4 space-y-4">
                         {/* 현재 협력자 목록 (제거 가능, Owner 제외) */}
                         <div>
-                          <h4 className="text-sm font-medium text-gray-700 mb-2">현재 협력자</h4>
+                          <h4 className="text-sm font-medium text-gray-800 mb-2">현재 협력자</h4>
                           <div className="space-y-2">
                             {editingTeam.filter((m: any) => m && m.name).map((member: any, idx: number) => (
                               <div key={member.username ?? idx} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50">
@@ -1181,20 +1181,20 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                       className="w-full h-full object-cover"
                                     />
                                   ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-700">
+                                    <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-800">
                                       {(member.name || 'U').charAt(0).toUpperCase()}
                                     </div>
                                   )}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="font-medium text-gray-900 text-sm truncate">{member.name}</p>
-                                  <p className="text-xs text-gray-700 truncate">{member.role}</p>
+                                  <p className="text-xs text-gray-800 truncate">{member.role}</p>
                                 </div>
                                 {member.role !== 'Owner' && (
                                   <button
                                     type="button"
                                     onClick={() => removeCollaborator(idx)}
-                                    className="p-1.5 text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-full"
+                                    className="p-1.5 text-gray-800 hover:text-red-600 hover:bg-red-50 rounded-full"
                                     title="제거"
                                   >
                                     <X className="w-4 h-4" />
@@ -1206,10 +1206,10 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                         </div>
                         {/* 유저 검색 및 추가 */}
                         <div>
-                          <h4 className="text-sm font-medium text-gray-700 mb-2">협력자 추가</h4>
+                          <h4 className="text-sm font-medium text-gray-800 mb-2">협력자 추가</h4>
                           <div className="flex gap-2 mb-3">
                             <div className="relative flex-1">
-                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-700" />
+                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-800" />
                               <input
                                 type="text"
                                 placeholder="닉네임 또는 실명으로 검색..."
@@ -1240,9 +1240,9 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                             className="border border-gray-200 rounded-lg max-h-48 overflow-y-auto"
                           >
                             {isLoadingCollaboratorSearch && searchResults.length === 0 ? (
-                              <div className="p-6 text-center text-gray-700 text-sm">불러오는 중...</div>
+                              <div className="p-6 text-center text-gray-800 text-sm">불러오는 중...</div>
                             ) : searchResults.length === 0 ? (
-                              <div className="p-6 text-center text-gray-700 text-sm">
+                              <div className="p-6 text-center text-gray-800 text-sm">
                                 검색어를 입력한 뒤 조회하면 유저 목록이 표시됩니다.
                               </div>
                             ) : (
@@ -1261,7 +1261,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                           {user.profileImageUrl ? (
                                             <img src={user.profileImageUrl} alt="" className="w-full h-full object-cover" />
                                           ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-700">
+                                            <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-800">
                                               {(user.realName || user.nickname || user.username || 'U').charAt(0).toUpperCase()}
                                             </div>
                                           )}
@@ -1270,7 +1270,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                           <p className="font-medium text-gray-900 text-sm truncate">
                                             {user.realName || user.nickname || user.email || user.username}
                                           </p>
-                                          <p className="text-xs text-gray-700 truncate">@{user.username}</p>
+                                          <p className="text-xs text-gray-800 truncate">@{user.username}</p>
                                         </div>
                                         {added && <span className="text-xs text-primary-600">추가됨</span>}
                                       </button>
@@ -1306,7 +1306,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                         <button
                           type="button"
                           onClick={closeCollaboratorModal}
-                          className="flex-1 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg"
+                          className="flex-1 py-2.5 text-sm font-medium text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-lg"
                         >
                           취소
                         </button>
@@ -1324,7 +1324,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   >
                     <span className="font-bold text-gray-900">도큐먼트 ({(project.documents || []).length})</span>
                     <svg
-                      className={`w-5 h-5 text-gray-700 transition-transform ${
+                      className={`w-5 h-5 text-gray-800 transition-transform ${
                         openSections.documents ? 'rotate-180' : ''
                       }`}
                       fill="none"
@@ -1365,7 +1365,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                   />
                                 </div>
                               ) : (
-                                <svg className="w-4 h-4 text-gray-700 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-4 h-4 text-gray-800 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                                 </svg>
                               )}
@@ -1373,7 +1373,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                 <p className="text-sm text-gray-900 truncate group-hover:text-primary-600 font-medium">
                                   {doc.name || 'Untitled Document'}
                                 </p>
-                                <p className="text-xs text-gray-700">
+                                <p className="text-xs text-gray-800">
                                   {doc.uploadedAt || 'Unknown'} · {doc.createdBy || 'Unknown'}
                                 </p>
                               </div>
@@ -1382,7 +1382,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                             {/* Action Menu (visible on hover) */}
                             <Menu as="div" className="relative opacity-0 group-hover:opacity-100 transition-opacity">
                               <Menu.Button className="p-1 hover:bg-gray-200 rounded-full">
-                                <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-4 h-4 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                                 </svg>
                               </Menu.Button>
@@ -1403,7 +1403,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                           onClick={() => router.push(`/projects/${projectId}/documents/${doc.id}`)}
                                           className={`${
                                             active ? 'bg-gray-100' : ''
-                                          } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-700`}
+                                          } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-800`}
                                         >
                                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -1419,7 +1419,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                           onClick={() => handleDocumentAction(doc.id, 'edit')}
                                           className={`${
                                             active ? 'bg-gray-100' : ''
-                                          } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-700`}
+                                          } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-800`}
                                         >
                                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -1434,7 +1434,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                           onClick={() => handleDocumentAction(doc.id, 'share')}
                                           className={`${
                                             active ? 'bg-gray-100' : ''
-                                          } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-700`}
+                                          } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-800`}
                                         >
                                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
@@ -1449,7 +1449,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                           onClick={() => handleDocumentAction(doc.id, 'download')}
                                           className={`${
                                             active ? 'bg-gray-100' : ''
-                                          } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-700`}
+                                          } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-800`}
                                         >
                                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -1482,7 +1482,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           </div>
                           ))
                         ) : (
-                          <p className="text-sm text-gray-700 text-center py-4">
+                          <p className="text-sm text-gray-800 text-center py-4">
                             문서가 없습니다
                           </p>
                         )}
@@ -1512,7 +1512,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   >
                     <span className="font-bold text-gray-900">연관 프로젝트</span>
                     <svg
-                      className={`w-5 h-5 text-gray-700 transition-transform ${
+                      className={`w-5 h-5 text-gray-800 transition-transform ${
                         openSections.related ? 'rotate-180' : ''
                       }`}
                       fill="none"
@@ -1535,13 +1535,13 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                             <p className="text-sm font-medium text-gray-900 mb-1">
                               {related.title}
                             </p>
-                            <p className="text-xs text-gray-700">
+                            <p className="text-xs text-gray-800">
                               {related.version}
                             </p>
                           </Link>
                         ))
                       ) : (
-                        <p className="text-sm text-gray-700 text-center py-4">
+                        <p className="text-sm text-gray-800 text-center py-4">
                           연관 프로젝트가 없습니다
                         </p>
                       )}
@@ -1559,12 +1559,12 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   <h1 className="text-4xl font-bold text-foreground mb-3">
                     {project.title}
                   </h1>
-                  <p className="text-lg text-gray-700 mb-4">
+                  <p className="text-lg text-gray-800 mb-4">
                     {project.subtitle}
                   </p>
 
                   {/* Author & Stats */}
-                  <div className="flex flex-wrap items-center gap-6 text-sm text-gray-700">
+                  <div className="flex flex-wrap items-center gap-6 text-sm text-gray-800">
                     <div className="flex items-center gap-2">
                       <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200">
                         {project.author?.avatar ? (
@@ -1578,7 +1578,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-700">
+                          <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-800">
                             {(project.author?.name || 'U').charAt(0).toUpperCase()}
                           </div>
                         )}
@@ -1625,11 +1625,11 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   <div className="relative w-full h-96 mb-8 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-300">
                     <div className="text-center">
                       <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-200 flex items-center justify-center">
-                        <svg className="w-8 h-8 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-8 h-8 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                       </div>
-                      <p className="text-gray-700">프로젝트 스크린샷</p>
+                      <p className="text-gray-800">프로젝트 스크린샷</p>
                     </div>
                   </div>
                 )}
@@ -1639,7 +1639,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   <section className="mb-12">
                     <h2 className="text-2xl font-bold text-foreground mb-4">프로젝트 개요</h2>
                     <div className="prose prose-lg max-w-none">
-                      <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                      <p className="text-gray-800 leading-relaxed whitespace-pre-line">
                         {project.description}
                       </p>
                     </div>
@@ -1651,7 +1651,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   <section className="mb-12">
                     <h2 className="text-2xl font-bold text-foreground mb-4">상세 내용</h2>
                     <div 
-                      className="prose prose-lg max-w-none prose-headings:text-foreground prose-p:text-gray-700 prose-a:text-primary-600 prose-strong:text-foreground prose-code:text-primary-600"
+                      className="prose prose-lg max-w-none prose-headings:text-foreground prose-p:text-gray-800 prose-a:text-primary-600 prose-strong:text-foreground prose-code:text-primary-600"
                       dangerouslySetInnerHTML={{ __html: project.content }}
                     />
                   </section>
@@ -1664,7 +1664,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                       {(project.tags || []).map((tag: string, index: number) => (
                         <span
                           key={index}
-                          className="px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors cursor-pointer"
+                          className="px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-800 hover:bg-gray-200 transition-colors cursor-pointer"
                         >
                           #{tag}
                         </span>
@@ -1688,7 +1688,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                       className={`w-8 h-8 transition-colors ${
                         isLiked 
                           ? 'text-red-500 fill-red-500' 
-                          : 'text-gray-700 group-hover:text-primary-600'
+                          : 'text-gray-800 group-hover:text-primary-600'
                       }`} 
                       fill={isLiked ? 'currentColor' : 'none'} 
                       stroke="currentColor" 
@@ -1704,7 +1704,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                       {project.stats?.likes || 0}
                     </span>
                     {isTogglingLike && (
-                      <span className="text-xs text-gray-700">처리 중...</span>
+                      <span className="text-xs text-gray-800">처리 중...</span>
                     )}
                   </button>
                 </section>
@@ -1721,7 +1721,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                         className={`px-3 py-1 text-sm rounded-lg transition-colors ${
                           commentSortDirection === 'DESC'
                             ? 'bg-primary-100 text-primary-700 font-medium'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                         }`}
                       >
                         최신순
@@ -1731,7 +1731,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                         className={`px-3 py-1 text-sm rounded-lg transition-colors ${
                           commentSortDirection === 'ASC'
                             ? 'bg-primary-100 text-primary-700 font-medium'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                         }`}
                       >
                         오래된순
@@ -1762,10 +1762,10 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   {isLoadingComments ? (
                     <div className="text-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
-                      <p className="text-gray-700 mt-2">댓글을 불러오는 중...</p>
+                      <p className="text-gray-800 mt-2">댓글을 불러오는 중...</p>
                     </div>
                   ) : comments.length === 0 ? (
-                    <div className="text-center py-8 text-gray-700">
+                    <div className="text-center py-8 text-gray-800">
                       아직 댓글이 없습니다. 첫 댓글을 작성해보세요!
                     </div>
                   ) : (
@@ -1796,7 +1796,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                     className="w-full h-full object-cover"
                                   />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-700">
+                                  <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-800">
                                     {initial}
                                   </div>
                                 )}
@@ -1805,15 +1805,15 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                 <div className="flex items-center justify-between mb-2">
                                   <div className="flex items-center gap-2">
                                     <span className="font-medium text-gray-900">{displayName}</span>
-                                    <span className="text-sm text-gray-700">{formatDate(comment.createdAt)}</span>
+                                    <span className="text-sm text-gray-800">{formatDate(comment.createdAt)}</span>
                                     {comment.updatedAt !== comment.createdAt && (
-                                      <span className="text-xs text-gray-700">(수정됨)</span>
+                                      <span className="text-xs text-gray-800">(수정됨)</span>
                                     )}
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <Menu as="div" className="relative">
                                     <Menu.Button className="p-1 hover:bg-gray-200 rounded-full">
-                                      <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <svg className="w-4 h-4 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                                       </svg>
                                     </Menu.Button>
@@ -1837,7 +1837,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                                 }}
                                                 className={`${
                                                   active ? 'bg-gray-100' : ''
-                                                } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-700`}
+                                                } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-800`}
                                               >
                                                 편집
                                               </button>
@@ -1882,7 +1882,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                         setEditingCommentId(null);
                                         setEditContent('');
                                       }}
-                                      className="px-4 py-1.5 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300"
+                                      className="px-4 py-1.5 bg-gray-200 text-gray-800 rounded-lg text-sm hover:bg-gray-300"
                                     >
                                       취소
                                     </button>
@@ -1890,7 +1890,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                 </div>
                               ) : (
                                 <>
-                                  <p className="text-gray-700 whitespace-pre-wrap break-words">{comment.content}</p>
+                                  <p className="text-gray-800 whitespace-pre-wrap break-words">{comment.content}</p>
                                   
                                   {/* Reply button */}
                                   <div className="mt-3 flex items-center gap-4">
@@ -1904,7 +1904,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                           setReplyContent('');
                                         }
                                       }}
-                                      className="text-sm text-gray-700 hover:text-primary-600"
+                                      className="text-sm text-gray-800 hover:text-primary-600"
                                     >
                                       답글
                                     </button>
@@ -1941,7 +1941,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                             setReplyingToId(null);
                                             setReplyContent('');
                                           }}
-                                          className="px-4 py-1.5 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300"
+                                          className="px-4 py-1.5 bg-gray-200 text-gray-800 rounded-lg text-sm hover:bg-gray-300"
                                         >
                                           취소
                                         </button>
@@ -1972,7 +1972,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                                     className="w-full h-full object-cover"
                                                   />
                                                 ) : (
-                                                  <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-700">
+                                                  <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-800">
                                                     {replyInitial}
                                                   </div>
                                                 )}
@@ -1981,14 +1981,14 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                                 <div className="flex items-center justify-between mb-1">
                                                   <div className="flex items-center gap-2">
                                                     <span className="text-sm font-medium text-gray-900">{replyDisplayName}</span>
-                                                    <span className="text-xs text-gray-700">{formatDate(reply.createdAt)}</span>
+                                                    <span className="text-xs text-gray-800">{formatDate(reply.createdAt)}</span>
                                                     {reply.updatedAt !== reply.createdAt && (
-                                                      <span className="text-xs text-gray-700">(수정됨)</span>
+                                                      <span className="text-xs text-gray-800">(수정됨)</span>
                                                     )}
                                                   </div>
                                                   <Menu as="div" className="relative">
                                                     <Menu.Button className="p-1 hover:bg-gray-200 rounded-full">
-                                                      <svg className="w-3 h-3 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                      <svg className="w-3 h-3 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                                                       </svg>
                                                     </Menu.Button>
@@ -2012,7 +2012,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                                                 }}
                                                                 className={`${
                                                                   active ? 'bg-gray-100' : ''
-                                                                } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-700`}
+                                                                } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-800`}
                                                               >
                                                                 편집
                                                               </button>
@@ -2055,14 +2055,14 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                                           setEditingCommentId(null);
                                                           setEditContent('');
                                                         }}
-                                                        className="px-3 py-1 bg-gray-200 text-gray-700 rounded-lg text-xs hover:bg-gray-300"
+                                                        className="px-3 py-1 bg-gray-200 text-gray-800 rounded-lg text-xs hover:bg-gray-300"
                                                       >
                                                         취소
                                                       </button>
                                                     </div>
                                                   </div>
                                                 ) : (
-                                                  <p className="text-sm text-gray-700 whitespace-pre-wrap break-words mt-1">{reply.content}</p>
+                                                  <p className="text-sm text-gray-800 whitespace-pre-wrap break-words mt-1">{reply.content}</p>
                                                 )}
                                               </div>
                                             </div>
@@ -2085,7 +2085,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           <button
                             onClick={loadMoreComments}
                             disabled={isLoadingMoreComments}
-                            className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            className="px-6 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                           >
                             {isLoadingMoreComments ? (
                               <>

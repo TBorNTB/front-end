@@ -41,13 +41,12 @@ type CSRow = {
 
 const PAGE_SIZE = 20;
 
-const sortOptions = ["최신순", "인기순", "조회순"] as const;
+const sortOptions = ["최신순", "인기순"] as const;
 type SortOption = (typeof sortOptions)[number];
 
-const sortMap: Record<SortOption, "LATEST" | "POPULAR" | "VIEWS"> = {
+const sortMap: Record<SortOption, "LATEST" | "POPULAR"> = {
   "최신순": "LATEST",
   "인기순": "POPULAR",
-  "조회순": "VIEWS",
 };
 
 const formatDate = (iso?: string): string => {

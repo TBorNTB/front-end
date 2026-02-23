@@ -57,18 +57,16 @@ const categories = [
   { label: "CTF", value: "CTF" },
 ];
 
-const sortOptions = ["최신순", "인기순", "조회순"] as const;
+const sortOptions = ["최신순", "인기순"] as const;
 
 type SortOption = (typeof sortOptions)[number];
 
-const sortToApi = (sortBy: SortOption): "LATEST" | "POPULAR" | "VIEWS" => {
+const sortToApi = (sortBy: SortOption): "LATEST" | "POPULAR" => {
   switch (sortBy) {
     case "최신순":
       return "LATEST";
     case "인기순":
       return "POPULAR";
-    case "조회순":
-      return "VIEWS";
     default:
       return "LATEST";
   }

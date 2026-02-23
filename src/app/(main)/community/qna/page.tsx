@@ -253,11 +253,11 @@ export default function FAQsPage() {
       case '최신순':
         filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         break;
-      case '인기순':
-        filtered.sort((a, b) => b.views - a.views);
-        break;
       case '답변순':
         filtered.sort((a, b) => b.answers.length - a.answers.length);
+        break;
+      default:
+        filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         break;
     }
 
@@ -292,7 +292,7 @@ export default function FAQsPage() {
           viewMode={viewMode}
           onViewModeChange={setViewMode}
           sortBy={sortBy}
-          sortOptions={['최신순', '인기순', '답변순']}
+          sortOptions={['최신순', '답변순']}
           onSortChange={setSortBy}
           showViewMode={true}
           showSort={true}
