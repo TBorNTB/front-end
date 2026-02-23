@@ -430,7 +430,9 @@ export default function MembersPage() {
             <div className="flex items-start justify-between gap-4 border-b px-5 py-4">
               <div>
                 <h2 className="text-lg font-bold text-foreground">멤버 프로필</h2>
-                <p className="text-sm text-gray-700">@{profileUsername ?? '-'}</p>
+                <p className="text-sm text-gray-700">
+                  {profile ? (displayValue(profile.nickname) || displayValue(profile.realName) || profile.username) : (profileUsername ? `@${profileUsername}` : '-')}
+                </p>
               </div>
               <button
                 type="button"
@@ -470,20 +472,14 @@ export default function MembersPage() {
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-xl font-bold text-foreground">
-                        {profile.realName || profile.nickname || profile.username}
+                        {displayValue(profile.nickname) || displayValue(profile.realName) || profile.username}
                       </h3>
                       <Badge className={getRoleBadgeColor(profile.role)}>
                         {getRoleDisplayLabel(profile.role)}
                       </Badge>
                     </div>
 
-                    <div className="mt-2 text-sm text-gray-700">@{profile.username}</div>
-
                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                      <div className="rounded-lg border border-gray-200 px-3 py-2">
-                        <div className="text-xs text-gray-700 mb-0.5">ID</div>
-                        <div className="text-gray-900">{profile.id}</div>
-                      </div>
                       <div className="rounded-lg border border-gray-200 px-3 py-2">
                         <div className="text-xs text-gray-700 mb-0.5">이메일</div>
                         <div className="text-gray-900 break-all">{displayValue(profile.email)}</div>
@@ -562,13 +558,6 @@ export default function MembersPage() {
                         )}
                       </div>
                     </div>
-
-                    {!isPlaceholder(profile.profileImageUrl) && (
-                      <div className="mt-4 text-sm">
-                        <div className="text-xs text-gray-700 mb-1">프로필 이미지 URL</div>
-                        <div className="break-all text-gray-700">{profile.profileImageUrl}</div>
-                      </div>
-                    )}
                   </div>
                 </div>
               )}
