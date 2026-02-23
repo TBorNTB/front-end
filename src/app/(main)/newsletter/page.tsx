@@ -91,33 +91,6 @@ function NewsletterTabs() {
   );
 }
 
-const testimonials = [
-  {
-    name: '김**',
-    role: '사이버보안 전공생',
-    comment: 'SSG 뉴스레터의 실전 보안 케이스 스터디 덕분에 이론으로만 알고 있던 취약점들을 실제로 이해할 수 있었어요.',
-    avatar: '/api/placeholder/40/40'
-  },
-  {
-    name: '이**',
-    role: '정보보안 취업 준비생',
-    comment: 'SSG 뉴스레터를 매일 읽다보니 보안 트렌드와 최신 해킹 기법에 대한 지식이 자연스럽게 쌓였어요!',
-    avatar: '/api/placeholder/40/40'
-  },
-  {
-    name: '박**',
-    role: '화이트햇 해커',
-    comment: 'SSG 뉴스레터의 CTF 문제와 해설이 실제 해킹 대회에서 큰 도움이 되었습니다!',
-    avatar: '/api/placeholder/40/40'
-  },
-  {
-    name: '최**',
-    role: 'SOC 분석가',
-    comment: 'SSG 뉴스레터 덕분에 새로운 보안 위협과 분석 기법에 대한 인사이트를 얻을 수 있어요.',
-    avatar: '/api/placeholder/40/40'
-  }
-];
-
 const faqs = [
   {
     question: 'SSG 뉴스레터는 무료인가요?',
@@ -201,21 +174,17 @@ export default function SSGNewsletter() {
         </p>
 
         {/* Glowing subscription CTA */}
-        <div className="max-w-md mx-auto">
+        <div className="flex justify-center">
           <a 
             href="#subscribe-form"
-            className="block text-center text-black px-6 py-3 rounded-lg font-bold text-base transition-all shadow-lg glow-button items-center justify-center space-x-2 bg-gradient-to-r from-primary-500 to-secondary-300 hover:from-primary-600 hover:to-secondary-200 shadow-primary-500/30 hover:shadow-primary-500/50 whitespace-nowrap"
+            className="inline-flex items-center justify-center gap-2 text-black px-6 py-2.5 rounded-lg font-bold text-base transition-all shadow-lg glow-button bg-gradient-to-r from-primary-500 to-secondary-300 hover:from-primary-600 hover:to-secondary-200 shadow-primary-500/30 hover:shadow-primary-500/50 whitespace-nowrap"
           >
             <Mail size={16} />
             <span>구독하기</span>
           </a>
         </div>
 
-        {/* Additional CTA hint */}
-        <p className="text-gray-700 text-sm mt-6">
-          매일 아침 9시, 당신의 메일함에서 보안 지식을 만나보세요
-        </p>
-      </div>
+        </div>
 
       {/* Floating newsletter icons */}
       <div className="absolute bottom-20 left-16 opacity-25 animate-pulse text-secondary-300" style={{ animationDelay: '4s' }}>
@@ -236,8 +205,8 @@ export default function SSGNewsletter() {
       {/* How It Works */}
       <section className="section py-20">
         <div className="container">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            {/* Step 1 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            {/* Step 1 - 지식 확인 */}
             <div className="text-center">
               <div className="card p-8 h-full">
                 <div className="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
@@ -246,7 +215,6 @@ export default function SSGNewsletter() {
                 <h3 className="text-xl font-bold text-foreground mb-4">
                   지식 확인
                 </h3>
-                <p className="text-4xl font-bold text-primary-600 mb-2">매일 아침 9시</p>
                 <p className="text-gray-700 mb-4">메일함을 확인해보세요</p>
                 <p className="text-sm text-gray-700 leading-relaxed">
                   내가 선택한 보안 분야의<br />
@@ -256,26 +224,7 @@ export default function SSGNewsletter() {
               </div>
             </div>
 
-            {/* Step 2 */}
-            <div className="text-center">
-              <div className="card p-8 h-full">
-                <div className="w-16 h-16 bg-secondary-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                  <BookOpen className="w-8 h-8 text-secondary-600" />
-                </div>
-                <h3 className="text-xl font-bold text-foreground mb-4">
-                  해설 자료
-                </h3>
-                <p className="text-4xl font-bold text-secondary-600 mb-2">상세한 설명도</p>
-                <p className="text-gray-700 mb-4">함께 보내드리고 있어요</p>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  단순한 문제가 아닌<br />
-                  실무에 적용할 수 있는<br />
-                  상세한 해설과 참고 자료까지
-                </p>
-              </div>
-            </div>
-
-            {/* Step 3 */}
+            {/* Step 2 - 지식 아카이브 */}
             <div className="text-center">
               <div className="card p-8 h-full">
                 <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
@@ -304,15 +253,7 @@ export default function SSGNewsletter() {
             SSG Newsletter와 함께 매일매일 성장해요!
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="card p-8">
-              <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <Clock className="w-6 h-6 text-primary-600" />
-              </div>
-              <h3 className="text-lg font-semibold mb-3">매일 한 문제씩</h3>
-              <p className="text-gray-700 text-sm">꾸준한 보안 학습 루틴 형성</p>
-            </div>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="card p-8">
               <div className="w-12 h-12 bg-secondary-100 rounded-xl flex items-center justify-center mx-auto mb-4">
                 <Mail className="w-6 h-6 text-secondary-600" />
@@ -329,56 +270,6 @@ export default function SSGNewsletter() {
               <p className="text-gray-700 text-sm">실전 대비에 최적인 콘텐츠 구성</p>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="section py-20">
-        <div className="container">
-          <h2 className="text-3xl font-bold text-center text-primary-800 mb-16">
-            SSG Newsletter로 성장한 구독자들의 이야기
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="card p-6">
-                <div className="flex items-start gap-4">
-                  <Image 
-                    src={testimonial.avatar}
-                    alt={testimonial.name}
-                    width={40}
-                    height={40}
-                    className="rounded-full bg-gray-200"
-                  />
-                  <div className="flex-1">
-                    <p className="text-gray-700 mb-4 leading-relaxed">
-                      {testimonial.comment}
-                    </p>
-
-                    <div>
-                      <div className="font-semibold text-primary-700">{testimonial.name}</div>
-                      <div className="text-sm text-gray-700">{testimonial.role}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Subscriber Count */}
-      <section className="section py-20 bg-primary text-white text-center">
-        <div className="container">
-          <h2 className="text-3xl font-bold mb-4">
-            지금까지 <span className="text-4xl text-yellow-300">3,247명</span>의 보안 전문가가
-          </h2>
-          <h3 className="text-2xl font-bold mb-8">
-            SSG Newsletter를 구독했어요!
-          </h3>
-          <p className="text-xl opacity-90">
-            매일 쌓이는 보안 지식이 분명 성장의 발판이 될 거예요
-          </p>
         </div>
       </section>
 
