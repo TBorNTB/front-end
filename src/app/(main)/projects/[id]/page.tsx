@@ -991,6 +991,53 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
+                          <p className="text-gray-800">카테고리</p>
+                          {canEditProject && !isEditingCategory && (
+                            <button type="button" onClick={startEditingCategory} className="p-1 text-gray-400 hover:text-gray-700 rounded">
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                        {isEditingCategory ? (
+                          <div className="space-y-2">
+                            <div className="border border-gray-200 rounded-lg p-2 max-h-[160px] overflow-y-auto space-y-1">
+                              {allCategories.length === 0 ? (
+                                <p className="text-xs text-gray-400">카테고리가 없습니다</p>
+                              ) : (
+                                allCategories.map((cat) => (
+                                  <label key={cat.id} className="flex items-center gap-2 p-1 rounded hover:bg-gray-50 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={editingCategories.includes(cat.name)}
+                                      onChange={() => toggleEditingCategory(cat.name)}
+                                      className="w-3 h-3 text-blue-600 border-gray-300 rounded"
+                                    />
+                                    <span className="text-xs text-gray-900">{cat.name}</span>
+                                  </label>
+                                ))
+                              )}
+                            </div>
+                            <div className="flex gap-1">
+                              <button type="button" onClick={saveCategoryEdit} disabled={isSavingCategories} className="flex-1 py-1 text-xs text-white bg-blue-500 hover:bg-blue-600 rounded disabled:opacity-50">
+                                {isSavingCategories ? '저장 중...' : '저장'}
+                              </button>
+                              <button type="button" onClick={cancelEditingCategory} className="flex-1 py-1 text-xs text-gray-700 bg-gray-100 hover:bg-gray-200 rounded">취소</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap gap-1">
+                            {(project.tags || []).length > 0 ? (
+                              (project.tags || []).map((tag: string, idx: number) => (
+                                <span key={idx} className="px-2 py-0.5 rounded text-xs bg-purple-100 text-purple-700">#{tag}</span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-gray-400">카테고리가 없습니다</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
                           <p className="text-gray-800">사용 기술</p>
                           {canEditProject && !isEditingTechStack && (
                             <button type="button" onClick={startEditingTechStack} className="p-1 text-gray-400 hover:text-gray-700 rounded">
@@ -1765,57 +1812,6 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     />
                   </section>
                 )}
-
-                {/* Tags (카테고리) */}
-                <section className="mb-12">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-sm font-medium text-gray-700">카테고리</h3>
-                    {canEditProject && !isEditingCategory && (
-                      <button type="button" onClick={startEditingCategory} className="p-1 text-gray-400 hover:text-gray-700 rounded">
-                        <Pencil className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
-                  {isEditingCategory ? (
-                    <div className="space-y-2">
-                      <div className="border border-gray-200 rounded-lg p-2 max-h-[200px] overflow-y-auto space-y-1">
-                        {allCategories.length === 0 ? (
-                          <p className="text-xs text-gray-400">카테고리가 없습니다</p>
-                        ) : (
-                          allCategories.map((cat) => (
-                            <label key={cat.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-gray-50 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={editingCategories.includes(cat.name)}
-                                onChange={() => toggleEditingCategory(cat.name)}
-                                className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded"
-                              />
-                              <span className="text-sm text-gray-900">{cat.name}</span>
-                            </label>
-                          ))
-                        )}
-                      </div>
-                      <div className="flex gap-1">
-                        <button type="button" onClick={saveCategoryEdit} disabled={isSavingCategories} className="flex-1 py-1.5 text-xs text-white bg-blue-500 hover:bg-blue-600 rounded disabled:opacity-50">
-                          {isSavingCategories ? '저장 중...' : '저장'}
-                        </button>
-                        <button type="button" onClick={cancelEditingCategory} className="flex-1 py-1.5 text-xs text-gray-700 bg-gray-100 hover:bg-gray-200 rounded">취소</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {(project.tags || []).length > 0 ? (
-                        (project.tags || []).map((tag: string, index: number) => (
-                          <span key={index} className="px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-800 hover:bg-gray-200 transition-colors cursor-pointer">
-                            #{tag}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-sm text-gray-400">카테고리가 없습니다</span>
-                      )}
-                    </div>
-                  )}
-                </section>
 
                 {/* Like Button */}
                 <section className="mb-12 flex justify-center py-4">
