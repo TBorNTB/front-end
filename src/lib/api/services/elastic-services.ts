@@ -250,10 +250,50 @@ export async function uploadRAGDocument(file: File): Promise<RAGDocumentUploadRe
   return json;
 }
 
+export interface ProjectSearchItem {
+  id: number;
+  title: string;
+  description: string;
+  thumbnailUrl: string | null;
+}
+
+export interface ProjectSearchPageResponse {
+  content: ProjectSearchItem[];
+  totalPages: number;
+  totalElements: number;
+}
+
+export const searchProjectsByQuery = async (query: string, size = 5): Promise<ProjectSearchItem[]> => {
+  const params = new URLSearchParams({ query, size: String(size), page: '0' });
+  const url = `${getElasticApiUrl(ELASTIC_ENDPOINTS.ELASTIC.PROJECT_SEARCH)}?${params.toString()}`;
+  try {
+    const response = await fetch(url, { method: 'GET', headers: { accept: 'application/json' } });
+    if (!response.ok) return [];
+    const data: ProjectSearchPageResponse = await response.json();
+    return data.content ?? [];
+  } catch {
+    return [];
+  }
+};
+
+export const fetchLatestProjects = async (size = 6, page = 0): Promise<ProjectSearchItem[]> => {
+  const params = new URLSearchParams({ size: String(size), page: String(page) });
+  const url = `${getElasticApiUrl(ELASTIC_ENDPOINTS.ELASTIC.PROJECT_SEARCH_LATEST)}?${params.toString()}`;
+  try {
+    const response = await fetch(url, { method: 'GET', headers: { accept: 'application/json' } });
+    if (!response.ok) return [];
+    const data: ProjectSearchItem[] = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+};
+
 export const elasticService = {
   searchCSKnowledge,
   searchCSKnowledgeByMember,
   getCSKnowledgeSuggestion,
   uploadRAGDocument,
+  searchProjectsByQuery,
 };
 

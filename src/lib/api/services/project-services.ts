@@ -220,6 +220,7 @@ export interface CreateProjectRequest {
   endedAt: string;
   thumbnailKey: string | null;
   contentImageKeys: string[];
+  parentProjectId?: number | null;
 }
 
 export interface CreateProjectResponse {
@@ -272,6 +273,7 @@ export interface UpdateProjectRequestBody {
   thumbnailKey: string;
   contentImageKeys: string[];
   content: string;
+  parentProjectId?: number | null;
 }
 
 export interface UpdateProjectResponse {

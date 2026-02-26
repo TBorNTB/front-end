@@ -76,6 +76,7 @@ interface MappedProject {
     title: string;
     version: string;
   }>;
+  parentProjectId?: number | null;
   projectStatus: string;
   thumbnailUrl?: string;
   subGoals: Array<{
@@ -342,7 +343,8 @@ export default function ProjectPage({ params }: ProjectPageProps) {
           createdBy: doc.description || 'Unknown',
           thumbnailUrl: doc.thumbnailUrl || null,
         })),
-      relatedProjects: [], // TODO: 연관 프로젝트 API 필요
+      relatedProjects: [], // parentProjectId 있으면 fetchProjectData에서 채움
+      parentProjectId: apiData.parentProjectId ?? null,
       projectStatus: statusMap[apiData.projectStatus] || apiData.projectStatus,
       thumbnailUrl: apiData.thumbnailUrl,
       subGoals: (apiData.subGoalDtos || [])
@@ -390,6 +392,21 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         likes: likeStatusData.likeCount || likeCountData.likedCount,
         comments: 0,
       };
+
+      // parentProjectId가 있으면 부모 프로젝트 조회 → 연관 프로젝트에 표시
+      if (apiData.parentProjectId) {
+        try {
+          const parentData = await fetchProjectDetail(String(apiData.parentProjectId));
+          mappedData.relatedProjects = [{
+            id: String(parentData.id),
+            title: parentData.title,
+            version: '계승 원본',
+          }];
+        } catch {
+          // 부모 프로젝트 로드 실패 시 무시
+        }
+      }
+
       setProject(mappedData);
       setIsLiked(likeStatusData.status === 'LIKED');
     } catch (error) {
@@ -1666,7 +1683,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     onClick={() => toggleSection('related')}
                     className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
                   >
-                    <span className="font-bold text-gray-900">연관 프로젝트</span>
+                    <span className="font-bold text-gray-900">계승 원본 프로젝트</span>
                     <svg
                       className={`w-5 h-5 text-gray-800 transition-transform ${
                         openSections.related ? 'rotate-180' : ''
@@ -1686,19 +1703,17 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           <Link
                             key={related.id}
                             href={`/projects/${related.id}`}
-                            className="block p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                            className="block p-2 rounded-lg border border-purple-100 hover:bg-purple-50 transition-colors"
                           >
-                            <p className="text-sm font-medium text-gray-900 mb-1">
+                            <p className="text-xs text-purple-500 mb-0.5">{related.version}</p>
+                            <p className="text-sm font-medium text-gray-900">
                               {related.title}
-                            </p>
-                            <p className="text-xs text-gray-800">
-                              {related.version}
                             </p>
                           </Link>
                         ))
                       ) : (
                         <p className="text-sm text-gray-800 text-center py-4">
-                          연관 프로젝트가 없습니다
+                          이 프로젝트가 계승하고 있는 프로젝트가 없습니다
                         </p>
                       )}
                     </div>

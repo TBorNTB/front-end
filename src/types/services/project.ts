@@ -318,6 +318,7 @@ export interface DocumentDto {
 
 export interface ProjectDetailResponse {
   id: number;
+  parentProjectId?: number | null;
   title: string;
   description: string;
   ownerProfile: OwnerProfile;
