@@ -14,7 +14,14 @@ export const PROJECT_ENDPOINTS = {
     GET_COLLABORATORS: '/project-service/projects/:id/collaborators',
     UPDATE_COLLABORATORS: '/project-service/api/collaborator/:id',
     GET_CATEGORIES: '/project-service/api/category',
+    UPDATE_PROJECT_CATEGORIES: '/project-service/api/category/:postId',
     COUNTS: '/project-service/api/project/counts',
+  },
+
+  // TechStack endpoints
+  TECH_STACK: {
+    GET_BY_ID: '/project-service/api/tech-stack/:techStackId',
+    UPDATE_PROJECT_TECH_STACKS: '/project-service/api/tech-stack/project/:postId',
   },
 
   // Q&A (Question) endpoints

@@ -325,6 +325,56 @@ export const deleteProject = async (projectId: string | number): Promise<void> =
   }
 };
 
+// --- Category/TechStack Update APIs ---
+
+/** PUT /project-service/api/category/:postId?categoryNames=... - 프로젝트 카테고리 수정 */
+export const updateProjectCategories = async (
+  projectId: string | number,
+  categoryNames: string[]
+): Promise<{ categories: { id: number; name: string }[] }> => {
+  const endpoint = PROJECT_ENDPOINTS.PROJECT.UPDATE_PROJECT_CATEGORIES.replace(':postId', String(projectId));
+  const params = new URLSearchParams();
+  categoryNames.forEach(name => params.append('categoryNames', name));
+  const url = `${getProjectApiUrl(endpoint)}?${params.toString()}`;
+
+  const response = await fetchWithRefresh(url, {
+    method: 'PUT',
+    headers: { accept: 'application/json' },
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    parseApiError(errorText, response.status, '카테고리 수정에 실패했습니다.');
+  }
+
+  return response.json();
+};
+
+/** PUT /project-service/api/tech-stack/project/:postId?techStackNames=... - 프로젝트 테크스택 수정 */
+export const updateProjectTechStacks = async (
+  projectId: string | number,
+  techStackNames: string[]
+): Promise<{ id: number; name: string }[]> => {
+  const endpoint = PROJECT_ENDPOINTS.TECH_STACK.UPDATE_PROJECT_TECH_STACKS.replace(':postId', String(projectId));
+  const params = new URLSearchParams();
+  techStackNames.forEach(name => params.append('techStackNames', name));
+  const url = `${getProjectApiUrl(endpoint)}?${params.toString()}`;
+
+  const response = await fetchWithRefresh(url, {
+    method: 'PUT',
+    headers: { accept: 'application/json' },
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    parseApiError(errorText, response.status, '테크스택 수정에 실패했습니다.');
+  }
+
+  return response.json();
+};
+
 // --- Subgoal APIs ---
 
 export interface SubGoalItem {
