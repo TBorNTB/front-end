@@ -1,34 +1,32 @@
 'use client';
 
-import { notFound, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft, X, UserPlus, Search, Pencil, Trash2, Plus } from 'lucide-react';
-import { useState, useEffect, Fragment, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import { Menu, Transition } from '@headlessui/react';
-import toast from 'react-hot-toast';
-import DocumentModal from '../_components/DocumentModal';
-import { fetchProjectDetail, deleteDocument, updateCollaborators, deleteProject, fetchSubgoals, checkSubgoal, deleteSubgoal, createSubgoal, fetchCategories, updateProjectCategories, updateProjectTechStacks } from '@/lib/api/services/project-services';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
-import { 
-  fetchViewCount,
-  incrementViewCount,
-  fetchLikeCount,
-  fetchLikeStatus,
-  toggleLike,
-  fetchComments,
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { checkSubgoal, createSubgoal, deleteDocument, deleteProject, deleteSubgoal, fetchCategories, fetchProjectDetail, fetchSubgoals, updateCollaborators, updateProjectCategories, updateProjectTechStacks } from '@/lib/api/services/project-services';
+import {
+  Comment,
   createComment,
   createReply,
-  updateComment,
+  CursorUserResponse,
   deleteComment,
+  fetchComments,
+  fetchLikeCount,
+  fetchLikeStatus,
   fetchReplies,
-  Comment,
-  CommentListResponse,
+  incrementViewCount,
   memberService,
-  CursorUserResponse
+  toggleLike,
+  updateComment
 } from '@/lib/api/services/user-services';
+import { Menu, Transition } from '@headlessui/react';
+import { ArrowLeft, Pencil, Plus, Search, Trash2, UserPlus, X } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Fragment, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import toast from 'react-hot-toast';
 import { ProjectDetailResponse } from '../../../../types/services/project';
-import { useCurrentUser } from '@/hooks/useCurrentUser';
+import DocumentModal from '../_components/DocumentModal';
 
 interface ProjectPageProps {
   params: Promise<{ id: string }>;
@@ -432,6 +430,11 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     }
   };
 
+  // 카테고리 전체 목록 로드
+  useEffect(() => {
+    fetchCategories().then(res => setAllCategories(res.categories)).catch(() => {});
+  }, []);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -492,12 +495,6 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       [section]: !prev[section]
     }));
   };
-
-  // 협력자 변경 모달 열기 (바로 창에서 변경)
-  // 카테고리 전체 목록 로드
-  useEffect(() => {
-    fetchCategories().then(res => setAllCategories(res.categories)).catch(() => {});
-  }, []);
 
   // 카테고리 수정 모달
   const openCategoryModal = () => {
@@ -562,6 +559,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     }
   };
 
+  // 협력자 변경 모달 열기 (바로 창에서 변경)
   const openCollaboratorModal = () => {
     setEditingTeam(project ? [...(project.team || [])] : []);
     setCollaboratorSearchQuery('');
@@ -1404,141 +1402,6 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   document.body
                 )}
 
-                {/* 카테고리 수정 모달 */}
-                {isCategoryModalOpen && typeof document !== 'undefined' && createPortal(
-                  <div
-                    className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50"
-                    onClick={closeCategoryModal}
-                  >
-                    <div
-                      className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[85vh] flex flex-col"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                        <h3 className="text-lg font-semibold text-gray-900">카테고리 수정</h3>
-                        <button type="button" onClick={closeCategoryModal} className="p-2 text-gray-800 rounded-lg hover:bg-gray-200">
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
-                      <div className="flex-1 overflow-y-auto p-4">
-                        <div className="border border-gray-200 rounded-lg p-3 min-h-[160px] max-h-[300px] overflow-y-auto space-y-2">
-                          {allCategories.length === 0 ? (
-                            <p className="text-sm text-gray-400">카테고리가 없습니다</p>
-                          ) : (
-                            allCategories.map((cat) => (
-                              <label key={cat.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={editingCategories.includes(cat.name)}
-                                  onChange={() => toggleEditingCategory(cat.name)}
-                                  className="w-4 h-4 text-blue-600 border-gray-300 rounded"
-                                />
-                                <div className="flex-1">
-                                  <span className="text-sm font-medium text-gray-900">{cat.name}</span>
-                                  {cat.description && <p className="text-xs text-gray-500 mt-0.5">{cat.description}</p>}
-                                </div>
-                              </label>
-                            ))
-                          )}
-                        </div>
-                        {editingCategories.length > 0 && (
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {editingCategories.map((name) => (
-                              <span key={name} className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-                                {name}
-                                <button type="button" onClick={() => toggleEditingCategory(name)} className="hover:text-blue-900">
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-4 border-t border-gray-200 flex gap-2">
-                        <button
-                          type="button"
-                          onClick={saveCategoryEdit}
-                          disabled={isSavingCategories}
-                          className="flex-1 py-2.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg disabled:opacity-50"
-                        >
-                          {isSavingCategories ? '저장 중...' : '저장'}
-                        </button>
-                        <button type="button" onClick={closeCategoryModal} className="flex-1 py-2.5 text-sm font-medium text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-lg">
-                          취소
-                        </button>
-                      </div>
-                    </div>
-                  </div>,
-                  document.body
-                )}
-
-                {/* 테크스택 수정 모달 */}
-                {isTechStackModalOpen && typeof document !== 'undefined' && createPortal(
-                  <div
-                    className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50"
-                    onClick={closeTechStackModal}
-                  >
-                    <div
-                      className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[85vh] flex flex-col"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                        <h3 className="text-lg font-semibold text-gray-900">사용 기술 수정</h3>
-                        <button type="button" onClick={closeTechStackModal} className="p-2 text-gray-800 rounded-lg hover:bg-gray-200">
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
-                      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={techStackInput}
-                            onChange={(e) => setTechStackInput(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addEditingTechStack(); } }}
-                            placeholder="기술 스택 입력 후 Enter (예: React, Spring)"
-                            className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
-                          />
-                          <button
-                            type="button"
-                            onClick={addEditingTechStack}
-                            className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
-                        </div>
-                        <div className="flex flex-wrap gap-2 min-h-[60px]">
-                          {editingTechStacks.length === 0 ? (
-                            <p className="text-sm text-gray-400">추가된 기술 스택이 없습니다</p>
-                          ) : (
-                            editingTechStacks.map((tech) => (
-                              <span key={tech} className="inline-flex items-center gap-1 bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm">
-                                {tech}
-                                <button type="button" onClick={() => removeEditingTechStack(tech)} className="hover:text-red-600">
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </span>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                      <div className="p-4 border-t border-gray-200 flex gap-2">
-                        <button
-                          type="button"
-                          onClick={saveTechStackEdit}
-                          disabled={isSavingTechStacks}
-                          className="flex-1 py-2.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg disabled:opacity-50"
-                        >
-                          {isSavingTechStacks ? '저장 중...' : '저장'}
-                        </button>
-                        <button type="button" onClick={closeTechStackModal} className="flex-1 py-2.5 text-sm font-medium text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-lg">
-                          취소
-                        </button>
-                      </div>
-                    </div>
-                  </div>,
-                  document.body
-                )}
-
                 {/* 📄 ENHANCED DOCUMENTS SECTION */}
                 <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
                   <button
@@ -1880,36 +1743,21 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   </section>
                 )}
 
-                {/* Tags (카테고리) */}
-                <section className="mb-12">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-sm font-medium text-gray-700">카테고리</h3>
-                    {canEditProject && (
-                      <button
-                        type="button"
-                        onClick={openCategoryModal}
-                        className="p-1 text-gray-400 hover:text-gray-700 rounded"
-                        title="카테고리 수정"
-                      >
-                        <Pencil className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {(project.tags || []).length > 0 ? (
-                      (project.tags || []).map((tag: string, index: number) => (
+                {/* Tags */}
+                {(project.tags || []).length > 0 && (
+                  <section className="mb-12">
+                    <div className="flex flex-wrap gap-2">
+                      {(project.tags || []).map((tag: string, index: number) => (
                         <span
                           key={index}
                           className="px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-800 hover:bg-gray-200 transition-colors cursor-pointer"
                         >
                           #{tag}
                         </span>
-                      ))
-                    ) : (
-                      <span className="text-sm text-gray-400">카테고리가 없습니다</span>
-                    )}
-                  </div>
-                </section>
+                      ))}
+                    </div>
+                  </section>
+                )}
 
                 {/* Like Button */}
                 <section className="mb-12 flex justify-center py-4">
