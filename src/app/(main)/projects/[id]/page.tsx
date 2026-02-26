@@ -131,8 +131,8 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   const [searchNextCursorId, setSearchNextCursorId] = useState(0);
   const [searchHasNext, setSearchHasNext] = useState(false);
   const [isSavingCollaborators, setIsSavingCollaborators] = useState(false);
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-  const [isTechStackModalOpen, setIsTechStackModalOpen] = useState(false);
+  const [isEditingCategory, setIsEditingCategory] = useState(false);
+  const [isEditingTechStack, setIsEditingTechStack] = useState(false);
   const [allCategories, setAllCategories] = useState<{ id: number; name: string; description: string }[]>([]);
   const [editingCategories, setEditingCategories] = useState<string[]>([]);
   const [editingTechStacks, setEditingTechStacks] = useState<string[]>([]);
@@ -496,13 +496,13 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     }));
   };
 
-  // 카테고리 수정 모달
-  const openCategoryModal = () => {
+  // 카테고리 인라인 편집
+  const startEditingCategory = () => {
     setEditingCategories(project ? [...(project.tags || [])] : []);
-    setIsCategoryModalOpen(true);
+    setIsEditingCategory(true);
   };
-  const closeCategoryModal = () => {
-    setIsCategoryModalOpen(false);
+  const cancelEditingCategory = () => {
+    setIsEditingCategory(false);
     setEditingCategories([]);
   };
   const toggleEditingCategory = (name: string) => {
@@ -516,7 +516,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       setIsSavingCategories(true);
       await updateProjectCategories(projectId, editingCategories);
       setProject({ ...project, tags: [...editingCategories] });
-      closeCategoryModal();
+      setIsEditingCategory(false);
     } catch (e: any) {
       alert(e?.message || '카테고리 수정에 실패했습니다.');
     } finally {
@@ -524,14 +524,14 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     }
   };
 
-  // 테크스택 수정 모달
-  const openTechStackModal = () => {
+  // 테크스택 인라인 편집
+  const startEditingTechStack = () => {
     setEditingTechStacks(project ? [...(project.technologies || [])] : []);
     setTechStackInput('');
-    setIsTechStackModalOpen(true);
+    setIsEditingTechStack(true);
   };
-  const closeTechStackModal = () => {
-    setIsTechStackModalOpen(false);
+  const cancelEditingTechStack = () => {
+    setIsEditingTechStack(false);
     setEditingTechStacks([]);
     setTechStackInput('');
   };
@@ -551,7 +551,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       setIsSavingTechStacks(true);
       await updateProjectTechStacks(projectId, editingTechStacks);
       setProject({ ...project, technologies: [...editingTechStacks] });
-      closeTechStackModal();
+      setIsEditingTechStack(false);
     } catch (e: any) {
       alert(e?.message || '테크스택 수정에 실패했습니다.');
     } finally {
@@ -992,28 +992,51 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                       <div>
                         <div className="flex items-center gap-2 mb-1">
                           <p className="text-gray-800">사용 기술</p>
-                          {canEditProject && (
-                            <button
-                              type="button"
-                              onClick={openTechStackModal}
-                              className="p-1 text-gray-400 hover:text-gray-700 rounded"
-                              title="테크스택 수정"
-                            >
+                          {canEditProject && !isEditingTechStack && (
+                            <button type="button" onClick={startEditingTechStack} className="p-1 text-gray-400 hover:text-gray-700 rounded">
                               <Pencil className="w-3 h-3" />
                             </button>
                           )}
                         </div>
-                        <div className="flex flex-wrap gap-1">
-                          {(project.technologies || []).length > 0 ? (
-                            (project.technologies || []).map((tech: string, idx: number) => (
-                              <span key={idx} className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-800">
-                                {tech}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-xs text-gray-800">기술 스택 정보가 없습니다</span>
-                          )}
-                        </div>
+                        {isEditingTechStack ? (
+                          <div className="space-y-2">
+                            <div className="flex flex-wrap gap-1 min-h-[28px]">
+                              {editingTechStacks.map((tech) => (
+                                <span key={tech} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-700">
+                                  {tech}
+                                  <button type="button" onClick={() => removeEditingTechStack(tech)} className="hover:text-red-500"><X className="w-3 h-3" /></button>
+                                </span>
+                              ))}
+                            </div>
+                            <div className="flex gap-1">
+                              <input
+                                type="text"
+                                value={techStackInput}
+                                onChange={(e) => setTechStackInput(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addEditingTechStack(); } }}
+                                placeholder="기술 입력..."
+                                className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                              />
+                              <button type="button" onClick={addEditingTechStack} className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded"><Plus className="w-3 h-3" /></button>
+                            </div>
+                            <div className="flex gap-1">
+                              <button type="button" onClick={saveTechStackEdit} disabled={isSavingTechStacks} className="flex-1 py-1 text-xs text-white bg-blue-500 hover:bg-blue-600 rounded disabled:opacity-50">
+                                {isSavingTechStacks ? '저장 중...' : '저장'}
+                              </button>
+                              <button type="button" onClick={cancelEditingTechStack} className="flex-1 py-1 text-xs text-gray-700 bg-gray-100 hover:bg-gray-200 rounded">취소</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap gap-1">
+                            {(project.technologies || []).length > 0 ? (
+                              (project.technologies || []).map((tech: string, idx: number) => (
+                                <span key={idx} className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-800">{tech}</span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-gray-800">기술 스택 정보가 없습니다</span>
+                            )}
+                          </div>
+                        )}
                       </div>
                       {project.github && (
                         <div>
@@ -1743,21 +1766,56 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   </section>
                 )}
 
-                {/* Tags */}
-                {(project.tags || []).length > 0 && (
-                  <section className="mb-12">
-                    <div className="flex flex-wrap gap-2">
-                      {(project.tags || []).map((tag: string, index: number) => (
-                        <span
-                          key={index}
-                          className="px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-800 hover:bg-gray-200 transition-colors cursor-pointer"
-                        >
-                          #{tag}
-                        </span>
-                      ))}
+                {/* Tags (카테고리) */}
+                <section className="mb-12">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-sm font-medium text-gray-700">카테고리</h3>
+                    {canEditProject && !isEditingCategory && (
+                      <button type="button" onClick={startEditingCategory} className="p-1 text-gray-400 hover:text-gray-700 rounded">
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                  {isEditingCategory ? (
+                    <div className="space-y-2">
+                      <div className="border border-gray-200 rounded-lg p-2 max-h-[200px] overflow-y-auto space-y-1">
+                        {allCategories.length === 0 ? (
+                          <p className="text-xs text-gray-400">카테고리가 없습니다</p>
+                        ) : (
+                          allCategories.map((cat) => (
+                            <label key={cat.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-gray-50 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={editingCategories.includes(cat.name)}
+                                onChange={() => toggleEditingCategory(cat.name)}
+                                className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded"
+                              />
+                              <span className="text-sm text-gray-900">{cat.name}</span>
+                            </label>
+                          ))
+                        )}
+                      </div>
+                      <div className="flex gap-1">
+                        <button type="button" onClick={saveCategoryEdit} disabled={isSavingCategories} className="flex-1 py-1.5 text-xs text-white bg-blue-500 hover:bg-blue-600 rounded disabled:opacity-50">
+                          {isSavingCategories ? '저장 중...' : '저장'}
+                        </button>
+                        <button type="button" onClick={cancelEditingCategory} className="flex-1 py-1.5 text-xs text-gray-700 bg-gray-100 hover:bg-gray-200 rounded">취소</button>
+                      </div>
                     </div>
-                  </section>
-                )}
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {(project.tags || []).length > 0 ? (
+                        (project.tags || []).map((tag: string, index: number) => (
+                          <span key={index} className="px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-800 hover:bg-gray-200 transition-colors cursor-pointer">
+                            #{tag}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-sm text-gray-400">카테고리가 없습니다</span>
+                      )}
+                    </div>
+                  )}
+                </section>
 
                 {/* Like Button */}
                 <section className="mb-12 flex justify-center py-4">
