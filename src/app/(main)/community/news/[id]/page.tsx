@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, useRef, Fragment } from 'react';
-import { Heart, Eye, Clock, ArrowLeft, Crown, Users, Calendar, Tag, MessageCircle, ChevronDown, Edit, Trash2 } from 'lucide-react';
+import { ThumbsUp, Eye, Clock, ArrowLeft, Crown, Users, Calendar, Tag, MessageCircle, ChevronDown, Edit, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Menu, Transition } from '@headlessui/react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
@@ -671,7 +671,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                                       <span>{item.viewCount.toLocaleString()}</span>
                                     </div>
                                     <div className="flex items-center gap-1">
-                                      <Heart className="w-3 h-3" />
+                                      <ThumbsUp className="w-3 h-3" />
                                       <span>{item.likeCount.toLocaleString()}</span>
                                     </div>
                                   </div>
@@ -766,7 +766,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                 <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
                   <div className="flex items-center gap-8">
                     <div className="flex items-center gap-2 text-gray-700">
-                      <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
+                      <ThumbsUp className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
                       <span className="text-sm font-semibold">{likeCount}</span>
                     </div>
                     <div className="flex items-center gap-2 text-gray-700">

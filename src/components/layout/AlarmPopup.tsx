@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Alarm, AlarmType } from '@/types/services/alarm';
-import { Bell, MessageSquare, Reply, Heart, UserPlus, X, Clock, ChevronRight, Loader2, Trash2 } from 'lucide-react';
+import { Bell, MessageSquare, Reply, ThumbsUp, UserPlus, X, Clock, ChevronRight, Loader2, Trash2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { alarmService, mapAlarmApiToAlarm } from '@/lib/api/services/alarm-services';
@@ -42,7 +42,7 @@ const categoryConfig = {
   },
   [AlarmType.POST_LIKED]: {
     label: '좋아요',
-    icon: Heart,
+    icon: ThumbsUp,
     color: 'text-red-600',
     activeColor: 'text-red-700',
     bgColor: 'bg-red-50',
