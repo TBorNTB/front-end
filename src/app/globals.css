@@ -8,9 +8,12 @@
   --color-text: #1f2937;
   --color-background: #e2eefc;
   --color-foreground: #060810;
-    /* Gradient Backgrounds */
+
+  /* Gradient Backgrounds */
   --color-gradient-background: linear-gradient(to bottom, #000000, #3a4da1);
-  
+  /* Auth full-screen background */
+  --color-gradient-auth: radial-gradient(circle at 50% 50%, #e2eefc 0%, #3a4da1 90%);
+
   /* Primary Scale */
   --color-primary-50: #ebedf6;
   --color-primary-100: #c2c8e2;
@@ -22,7 +25,7 @@
   --color-primary-700: #293772;
   --color-primary-800: #202a59;
   --color-primary-900: #182044;
-  
+
   /* Secondary Scale */
   --color-secondary-50: #f0f7fd;
   --color-secondary-100: #e9f2fd;
@@ -34,7 +37,7 @@
   --color-secondary-700: #4d79aa;
   --color-secondary-800: #3b5e83;
   --color-secondary-900: #2d4764;
-  
+
   /* Gray Scale */
   --color-gray-50: #fbfbfc;
   --color-gray-100: #f2f3f7;
@@ -54,7 +57,6 @@
   --color-info: var(--color-primary);
   --color-loading: var(--color-primary);
 
-
   /* For text utilities (text-error, text-success, etc.) */
   --text-color-error: #EF4444;
   --text-color-success: #16A34A;
@@ -73,7 +75,7 @@
   * {
     border-color: var(--color-gray-200);
   }
-  
+
   body {
     background-color: theme(--color-background);
     color: theme(--color-foreground);
@@ -87,6 +89,11 @@
     border: 1px solid rgba(108, 170, 239, 0.3);
     position: relative;
     overflow: hidden;
+  }
+
+  .bg-authentication {
+    background: var(--color-gradient-auth);
+    min-height: 100vh;
   }
 
   /* 버튼 기본 트랜지션: 호버/포커스 시 부드럽게 */
