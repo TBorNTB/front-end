@@ -731,7 +731,8 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
             text,
           ),
         );
-      } else if (line.trim().startsWith('•') || line.trim().startsWith('-')) {
+      } else if (/^\d+\.\s+/.test(line.trim())) {
+        // Numbered list item
         if (currentParagraph) {
           elements.push(
             <p
@@ -743,7 +744,29 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
           );
           currentParagraph = '';
         }
-
+        const match = line.trim().match(/^(\d+)\.\s+(.*)$/);
+        if (match) {
+          const number = match[1];
+          const item = match[2];
+          elements.push(
+            <li key={`li-${index}`} className="text-gray-700 ml-6 mb-2 list-decimal">
+              <span className="mr-2 font-bold">{number}.</span>{item}
+            </li>,
+          );
+        }
+      } else if (line.trim().startsWith('•') || line.trim().startsWith('-')) {
+        // Bullet list item
+        if (currentParagraph) {
+          elements.push(
+            <p
+              key={`p-${index}`}
+              className="text-gray-700 leading-relaxed mb-4"
+            >
+              {currentParagraph.trim()}
+            </p>,
+          );
+          currentParagraph = '';
+        }
         const item = line.replace(/^[•\-]\s*/, '').trim();
         if (item) {
           elements.push(
@@ -910,13 +933,6 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                     ))}
                 </div>
               )}
-
-                {/* 요약 (description) */}
-                {displayPost.description && displayPost.description.trim() && (
-                  <p className="text-gray-700 text-base leading-relaxed mb-6 border-l-4 border-primary-200 pl-4 py-2 bg-gray-50/50 rounded-r">
-                    {displayPost.description}
-                  </p>
-                )}
               </header>
 
               {/* Thumbnail Image */}
@@ -1322,7 +1338,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                                 : 'text-gray-700 hover:text-primary-600 hover:bg-primary-50/50 active:bg-primary-100'
                             }`}
                           >
-                            {heading.level === 1 ? `${index + 1}. ` : ''}{heading.text}
+                            {heading.text}
                           </button>
                         </li>
                       ))}
@@ -1335,7 +1351,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                   <Code className="w-5 h-5 text-purple-600" />
-                  저자의 다른 글
+                  유명한 글
                 </h3>
                 <div className="space-y-3">
                   {displayPost.relatedArticles && displayPost.relatedArticles.length > 0 ? (

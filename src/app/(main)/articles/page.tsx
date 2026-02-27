@@ -3,7 +3,6 @@
 
 import { useState, useEffect, useRef, Suspense, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 
 type Article = {
   topicSlug: string;
@@ -23,13 +22,6 @@ type Article = {
   likeCount: number;
   viewCount: number;
 };
-import {
-  Search,
-  Plus,
-  Grid,
-  List,
-  ChevronDown,
-} from 'lucide-react';
 import TitleBanner from '@/components/layout/TitleBanner';
 import ContentFilterBar from '@/components/layout/TopSection';
 import CategoryFilter from '@/components/layout/CategoryFilter';

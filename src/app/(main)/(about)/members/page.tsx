@@ -225,13 +225,6 @@ export default function MembersPage() {
       <div className="relative">
         <section className="section py-12">
           <div className="container">
-            {/* Header */}
-            <div className="text-center mb-12">
-              <h1 className="text-4xl font-bold text-primary-700 mb-4">멤버</h1>
-              <p className="text-xl text-gray-700 max-w-2xl mx-auto">
-                SSG의 뛰어난 구성원들을 만나보세요
-              </p>
-            </div>
 
             {/* Filter Bar */}
             <div className="card mb-8">
