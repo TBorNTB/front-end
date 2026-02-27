@@ -144,27 +144,25 @@ export default function SSGNewsletter() {
       </div>
 
       {/* Main content */}
-      <div className="relative z-10 max-w-4xl mx-auto">
-        {/* Security badge with fitted border */}
-        <div className="inline-flex bg-black/50 backdrop-blur-sm rounded-full px-3 py-1.5 mb-6 border border-primary-500">
+         {/* Security badge with fitted border */}
+        <div className="inline-flex bg-black/50 backdrop-blur-sm rounded-full px-3 py-1.5 mb-4 border border-primary-500">
           <span className="text-xs flex items-center gap-2 whitespace-nowrap text-secondary-300">
             <Shield className="h-3 w-3 flex-shrink-0" />
-            세종대학교 정보보안동아리 뉴스레터
+            세종대학교 SSG의 뉴스레터
           </span>
         </div>
 
         {/* Main title with logo integration */}
-        <h1 className="mb-4 flex justify-center items-center text-3xl text-white font-extrabold md:text-5xl">
-          <Image src="/logo-white.svg" alt="Description" width={100} height={50} />
-          Newsletter
-        </h1>
+        <h2 className="mb-3 flex justify-center items-center text-3xl text-white font-extrabold md:text-5xl">
+          <Image src={"/logo-white.svg"} width={120} height={60} className="px-3" alt={''} /> NEWSLETTER
+        </h2>
         
-        <p className="text-2xl text-secondary-300 drop-shadow-[0_0_8px_rgba(58,77,161,0.6)] mb-6">
+        <p className="text-2xl text-secondary-300 drop-shadow-[0_0_8px_rgba(58,77,161,0.6)] mb-4">
           사이버보안 지식 메일링 서비스
         </p>
         
         {/* Enhanced description with glow effects */}
-        <p className="max-w-4xl text-base md:text-lg text-gray-300 leading-relaxed mb-8">
+        <p className="max-w-4xl text-base md:text-lg text-gray-300 leading-relaxed mb-4">
           <span className="text-gray-700">바쁜 보안 전문가와 학습자분들을 위해</span><br />
           <span className="font-semibold text-secondary-300 drop-shadow-[0_0_8px_rgba(58,77,161,0.6)]">
             웹해킹, 리버싱, 포렌식, CTF
@@ -184,8 +182,6 @@ export default function SSGNewsletter() {
           </a>
         </div>
 
-        </div>
-
       {/* Floating newsletter icons */}
       <div className="absolute bottom-20 left-16 opacity-25 animate-pulse text-secondary-300" style={{ animationDelay: '4s' }}>
         <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
@@ -201,51 +197,6 @@ export default function SSGNewsletter() {
       </div>
     </section>
 
-
-      {/* How It Works */}
-      <section className="section py-20">
-        <div className="container">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            {/* Step 1 - 지식 확인 */}
-            <div className="text-center">
-              <div className="card p-8 h-full">
-                <div className="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                  <Mail className="w-8 h-8 text-primary-600" />
-                </div>
-                <h3 className="text-xl font-bold text-foreground mb-4">
-                  지식 확인
-                </h3>
-                <p className="text-gray-700 mb-4">메일함을 확인해보세요</p>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  내가 선택한 보안 분야의<br />
-                  최신 보안 지식과 실습 문제를<br />
-                  확인하고 스스로 학습해보세요
-                </p>
-              </div>
-            </div>
-
-            {/* Step 2 - 지식 아카이브 */}
-            <div className="text-center">
-              <div className="card p-8 h-full">
-                <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                  <Shield className="w-8 h-8 text-green-600" />
-                </div>
-                <h3 className="text-xl font-bold text-foreground mb-4">
-                  지식 아카이브
-                </h3>
-                <p className="text-4xl font-bold text-green-600 mb-2">매일 쌓인 지식은</p>
-                <p className="text-gray-700 mb-4">따로 정리해놨어요</p>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  웹사이트에서 지금까지 받은<br />
-                  모든 보안 지식과 문제들을<br />
-                  체계적으로 정리해서 제공
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Benefits */}
       <section className="section py-20 bg-gray-50">
         <div className="container text-center">
@@ -260,6 +211,12 @@ export default function SSGNewsletter() {
               </div>
               <h3 className="text-lg font-semibold mb-3">이메일 기반으로</h3>
               <p className="text-gray-700 text-sm">푸시 피로감 없이 루틴화</p>
+               <p className="text-gray-700 mb-4">메일함을 확인해보세요</p>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  내가 선택한 보안 분야의<br />
+                  최신 보안 지식과 실습 문제를<br />
+                  확인하고 스스로 학습해보세요
+                </p>
             </div>
 
             <div className="card p-8">
@@ -268,6 +225,12 @@ export default function SSGNewsletter() {
               </div>
               <h3 className="text-lg font-semibold mb-3">실제 보안 업무와 유사한 톤으로</h3>
               <p className="text-gray-700 text-sm">실전 대비에 최적인 콘텐츠 구성</p>
+                <p className="text-gray-700 mb-4">매일 쌓인 지식은 따로 정리해놨어요</p>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  웹사이트에서 지금까지 받은<br />
+                  모든 보안 지식과 문제들을<br />
+                  체계적으로 정리해서 제공
+                </p>
             </div>
           </div>
         </div>

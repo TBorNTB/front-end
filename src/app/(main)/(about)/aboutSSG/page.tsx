@@ -1,5 +1,6 @@
 // app/aboutSSG/page.tsx
 import { Metadata } from 'next';
+import Image from 'next/image';
 import SSGTimeline from "./components/SSGTimeline";
 import { 
   Users, 
@@ -11,7 +12,8 @@ import {
   Zap,
   Database,
   Shield,
-  Network
+  Network,
+  Code
 } from 'lucide-react';
 
 export const metadata: Metadata = {
@@ -20,7 +22,9 @@ export const metadata: Metadata = {
 };
 
 export default function AboutSSGPage() {
+
   return (
+    
     <div className="min-h-screen bg-background text-foreground">      
       {/* Background Effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -51,11 +55,12 @@ export default function AboutSSGPage() {
               </svg>
             </div>
             
-            <h1 className="text-5xl md:text-7xl font-bold mb-8 text-white">
-              We Are SSG
-            </h1>
-            
-            <div className="text-lg md:text-xl leading-relaxed mb-12 text-gray-300">
+            <div className="mb-6">
+              <h2 className="mb-3 flex justify-center items-center text-3xl text-white font-extrabold md:text-5xl">
+                      What is <Image src={"/logo-white.svg"} width={120} height={60} className="px-3" alt={''} /> ?
+              </h2>
+
+              <div className="text-lg md:text-xl leading-relaxed mb-6 text-gray-300">
               <p className="mb-6">
                 <span className="font-semibold text-secondary-300 drop-shadow-[0_0_8px_rgba(58,77,161,0.6)]">
                   SSG(Sejong Security Group)
@@ -73,25 +78,6 @@ export default function AboutSSGPage() {
                 <span className="text-gray-700"> 등 다양한 역량을 이끌어내고 있습니다.</span>
               </p>
             </div>
-            
-            {/* Statistics - Dark Theme */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-              <div className="bg-black/50 backdrop-blur-sm border border-primary-500/30 rounded-lg p-6 text-center hover:border-primary-500/60 transition-all duration-300 hover:bg-black/70">
-                <div className="text-4xl md:text-5xl font-bold mb-2 text-secondary-300 drop-shadow-[0_0_8px_rgba(108,170,239,0.6)]">47</div>
-                <div className="text-gray-700 text-sm md:text-base">국내/외 컨퍼런스 발표</div>
-              </div>
-              <div className="bg-black/50 backdrop-blur-sm border border-primary-500/30 rounded-lg p-6 text-center hover:border-primary-500/60 transition-all duration-300 hover:bg-black/70">
-                <div className="text-4xl md:text-5xl font-bold mb-2 text-primary-400 drop-shadow-[0_0_8px_rgba(58,77,161,0.6)]">71</div>
-                <div className="text-gray-700 text-sm md:text-base">국내/외 대회 수상</div>
-              </div>
-              <div className="bg-black/50 backdrop-blur-sm border border-primary-500/30 rounded-lg p-6 text-center hover:border-primary-500/60 transition-all duration-300 hover:bg-black/70">
-                <div className="text-4xl md:text-5xl font-bold mb-2 text-secondary-300 drop-shadow-[0_0_8px_rgba(108,170,239,0.6)]">140</div>
-                <div className="text-gray-700 text-sm md:text-base">국내/외 소프트웨어 취약점 제보</div>
-              </div>
-              <div className="bg-black/50 backdrop-blur-sm border border-primary-500/30 rounded-lg p-6 text-center hover:border-primary-500/60 transition-all duration-300 hover:bg-black/70">
-                <div className="text-4xl md:text-5xl font-bold mb-2 text-primary-400 drop-shadow-[0_0_8px_rgba(58,77,161,0.6)]">28</div>
-                <div className="text-gray-700 text-sm md:text-base">국내/외 논문 및 학회 발표</div>
-              </div>
             </div>
           </div>
 
@@ -101,11 +87,38 @@ export default function AboutSSGPage() {
               <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          
           <div className="absolute bottom-1/3 right-12 opacity-15 animate-bounce text-primary-500" style={{ animationDelay: '3s' }}>
             <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clipRule="evenodd" />
             </svg>
+          </div>
+
+        {/* Statistics Section - White background */}
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mx-auto mt-12">
+          {/* Stat 1 */}
+          <div className="text-center bg-white rounded-lg shadow-md p-6 border border-primary-200">
+            <div className="text-4xl md:text-5xl font-extrabold mb-4 text-primary-600">48</div>
+            <div className="text-gray-700 text-base md:text-lg font-semibold">국내/외 컨퍼런스 발표</div>
+          </div>
+
+          {/* Stat 2 */}
+          <div className="text-center bg-white rounded-lg shadow-md p-6 border border-primary-200">
+            <div className="text-4xl md:text-5xl font-extrabold mb-4 text-primary-600">77</div>
+            <div className="text-gray-700 text-base md:text-lg font-semibold">국내/외 대회 수상</div>
+          </div>
+
+          {/* Stat 3 */}
+          <div className="text-center bg-white rounded-lg shadow-md p-6 border border-primary-200">
+            <div className="text-4xl md:text-5xl font-extrabold mb-4 text-primary-600">168</div>
+            <div className="text-gray-700 text-base md:text-lg font-semibold">국내/외 소프트웨어 취약점 제보</div>
+          </div>
+
+          {/* Stat 4 */}
+          <div className="text-center bg-white rounded-lg shadow-md p-6 border border-primary-200">
+            <div className="text-4xl md:text-5xl font-extrabold mb-4 text-primary-600">33</div>
+            <div className="text-gray-700 text-base md:text-lg font-semibold">국내/외 논문 및 학회 발표</div>
+          </div>
           </div>
         </section>
 
@@ -114,52 +127,56 @@ export default function AboutSSGPage() {
         <section className="section py-16">
           <div className="container">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              
+              {/* Mission */}
               <div>
                 <h2 className="text-4xl font-bold text-primary-700 mb-6">Our Mission</h2>
-                <p className="text-lg text-gray-700 leading-relaxed mb-6">
+                <p className="text-lg text-gray-800 leading-relaxed mb-6">
                   SSG는 정보보안과 소프트웨어 개발 분야에서 학술적 연구와 실무적 경험을 통해 
                   차세대 보안 전문가를 양성하는 것을 목표로 합니다.
                 </p>
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div className="flex items-start gap-3">
-                    <Shield className="h-6 w-6 text-primary-600 mt-1 flex-shrink-0" />
+                    <Shield className="h-7 w-7 text-primary-600 mt-1 flex-shrink-0" />
                     <div>
                       <h3 className="font-semibold text-primary-700 mb-1">보안 연구</h3>
-                      <p className="text-gray-700">최신 보안 위협과 대응 기술에 대한 심도있는 연구</p>
+                      <p className="text-gray-800">최신 보안 위협과 대응 기술에 대한 심도있는 연구</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <Users className="h-6 w-6 text-primary-600 mt-1 flex-shrink-0" />
+                    <Users className="h-7 w-7 text-primary-600 mt-1 flex-shrink-0" />
                     <div>
                       <h3 className="font-semibold text-primary-700 mb-1">인재 양성</h3>
-                      <p className="text-gray-700">실무 중심의 교육과 멘토링을 통한 전문가 육성</p>
+                      <p className="text-gray-800">실무 중심의 교육과 멘토링을 통한 전문가 육성</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <Network className="h-6 w-6 text-primary-600 mt-1 flex-shrink-0" />
+                    <Network className="h-7 w-7 text-primary-600 mt-1 flex-shrink-0" />
                     <div>
                       <h3 className="font-semibold text-primary-700 mb-1">지식 공유</h3>
-                      <p className="text-gray-700">연구 결과와 경험을 커뮤니티와 적극적으로 공유</p>
+                      <p className="text-gray-800">연구 결과와 경험을 커뮤니티와 적극적으로 공유</p>
                     </div>
                   </div>
                 </div>
               </div>
               
+              {/* Vision */}
               <div className="relative">
-                <div className="card p-8 bg-gradient-to-r from-primary-50 to-secondary-50 border-primary-300">
+                <div className="card p-8 bg-gradient-to-r from-primary-50 to-secondary-50 border border-primary-200 rounded-lg shadow-lg">
                   <h3 className="text-2xl font-bold text-primary-700 mb-4">Our Vision</h3>
-                  <p className="text-gray-700 leading-relaxed">
+                  <p className="text-gray-800 leading-relaxed">
                     세종대학교를 넘어 국내외 보안 커뮤니티에서 인정받는 학술 동아리로 성장하여, 
                     보안 분야의 혁신을 이끄는 리더들을 배출하는 것
                   </p>
                 </div>
               </div>
+
             </div>
           </div>
         </section>
 
         {/* Research Environment Section - Compact Version */}
-        <section className="relative py-12 bg-black text-white overflow-hidden">
+        <section className="relative py-12 bg-gradient-background text-white overflow-hidden">
           {/* Animated background grid pattern */}
           <div className="absolute inset-0 opacity-10">
             <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(58,77,161,0.1)_1px,transparent_1px)] bg-[size:50px_50px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]"></div>
