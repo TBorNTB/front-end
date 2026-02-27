@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Calendar, Eye, Heart, User, Crown, Users } from 'lucide-react';
+import { Calendar, Eye, ThumbsUp, User, Crown, Users } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 
 interface NewsItem {
@@ -194,7 +194,7 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
                 <span>{news.viewCount || 0}</span>
               </div>
               <div className="flex items-center gap-1">
-                <Heart className="h-3.5 w-3.5" />
+                <ThumbsUp className="h-3.5 w-3.5" />
                 <span>{news.likeCount || 0}</span>
               </div>
             </div>
@@ -269,7 +269,7 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
               <span>{news.viewCount || 0}</span>
             </div>
             <div className="flex items-center gap-1">
-              <Heart className="h-3.5 w-3.5" />
+              <ThumbsUp className="h-3.5 w-3.5" />
               <span>{news.likeCount || 0}</span>
             </div>
           </div>

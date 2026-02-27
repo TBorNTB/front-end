@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, createElement, useRef, JSX } from 'react';
-import { Heart, Eye, MessageCircle, Share2, Edit, Clock, ArrowLeft, Code, FileText, Trash2 } from 'lucide-react';
+import { ThumbsUp, Eye, MessageCircle, Share2, Edit, Clock, ArrowLeft, Code, FileText, Trash2 } from 'lucide-react';
 import { fetchArticleById, deleteArticle, type ArticleResponse } from '@/lib/api/services/article-services';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { useRouter } from 'next/navigation';
@@ -1369,7 +1369,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                                 )}
                                 {article.likeCount !== undefined && (
                                   <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
-                                    <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" />
+                                    <ThumbsUp className="w-3.5 h-3.5 text-red-500 fill-red-500" />
                                     <span className="text-gray-700">{article.likeCount}</span>
                                   </div>
                                 )}

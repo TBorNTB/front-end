@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Heart, Eye, Calendar } from 'lucide-react';
+import { ThumbsUp, Eye, Calendar } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 
 interface ArticleCardHomeProps {
@@ -114,7 +114,7 @@ export function ArticleCardHome({ article }: ArticleCardHomeProps) {
                 <span>{article.views || 0}</span>
               </div>
               <div className="flex items-center gap-1">
-                <Heart className="h-3.5 w-3.5" />
+                <ThumbsUp className="h-3.5 w-3.5" />
                 <span>{article.likes || 0}</span>
               </div>
             </div>

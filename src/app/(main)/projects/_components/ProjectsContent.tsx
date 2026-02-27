@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ExternalLink, Github, ChevronLeft, ChevronRight, Heart, Eye, Crown, Users } from 'lucide-react';
+import { ExternalLink, Github, ChevronLeft, ChevronRight, ThumbsUp, Eye, Crown, Users } from 'lucide-react';
 import TitleBanner from '@/components/layout/TitleBanner';
 import ContentFilterBar from '@/components/layout/TopSection';
 import CategoryFilter from '@/components/layout/CategoryFilter';
@@ -753,7 +753,7 @@ export default function ProjectsContent() {
                         {/* Stats */}
                         <div className="flex items-center gap-4 mb-3 text-sm">
                           <div className="flex items-center gap-1 text-gray-700 font-medium">
-                            <Heart size={16} className="text-red-500 fill-red-500" />
+                            <ThumbsUp size={16} className="text-red-500 fill-red-500" />
                             <span>{project.likeCount || 0}</span>
                           </div>
                           <div className="flex items-center gap-1 text-gray-700 font-medium">

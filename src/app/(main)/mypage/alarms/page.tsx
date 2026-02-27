@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Alarm, AlarmType } from '@/types/services/alarm';
-import { Bell, MessageSquare, Reply, Heart, UserPlus, ChevronRight, Clock, Loader2, CheckCheck, Trash2 } from 'lucide-react';
+import { Bell, MessageSquare, Reply, ThumbsUp, UserPlus, ChevronRight, Clock, Loader2, CheckCheck, Trash2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { alarmService, mapAlarmApiToAlarm } from '@/lib/api/services/alarm-services';
 import { useAlarmUnreadCount } from '@/hooks/useAlarmUnreadCount';
@@ -36,7 +36,7 @@ const categoryConfig = {
   },
   [AlarmType.POST_LIKED]: {
     label: '좋아요',
-    icon: Heart,
+    icon: ThumbsUp,
     color: 'text-red-600',
     bgColor: 'bg-red-50',
     activeBgColor: 'bg-red-100',

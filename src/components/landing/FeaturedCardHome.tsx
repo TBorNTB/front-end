@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Heart, Eye, Crown, Users } from 'lucide-react';
+import { ThumbsUp, Eye, Crown, Users } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 
 interface FeaturedProjectCardProps {
@@ -58,7 +58,7 @@ export function FeaturedProjectCard({ project }: FeaturedProjectCardProps) {
             <div className="flex items-center gap-3">
               {project.likes !== undefined && (
                 <div className="flex items-center gap-1 px-3 py-1 bg-red-500/80 backdrop-blur-sm text-white text-sm rounded-full font-medium">
-                  <Heart className="w-4 h-4 fill-white" />
+                  <ThumbsUp className="w-4 h-4 fill-white" />
                   <span>{project.likes}</span>
                 </div>
               )}
