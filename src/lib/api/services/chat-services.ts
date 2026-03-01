@@ -206,3 +206,67 @@ export const markChatRoomAsRead = async (roomId: string): Promise<MarkRoomReadRe
   };
 };
 
+// Update chat room name
+// PUT /user-service/chat/rooms/{roomId}/roomName  -> 204
+export const updateChatRoomName = async (
+  roomId: string,
+  roomName: string
+): Promise<void> => {
+  const response = await fetchWithRefresh(
+    `/api/chat/rooms/${encodeURIComponent(roomId)}/roomName`,
+    {
+      method: 'PUT',
+      headers: {
+        accept: '*/*',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ roomName }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to update room name: ${response.status} - ${errorText}`);
+  }
+};
+
+export interface AddChatRoomMembersRequest {
+  roomName: string;
+  friendsUsername: string[];
+}
+
+export interface AddChatRoomMembersResponse {
+  roomId: string;
+  roomName: string;
+}
+
+// Add members to chat room
+// PUT /user-service/chat/rooms/{roomId}/members
+export const addChatRoomMembers = async (
+  roomId: string,
+  data: AddChatRoomMembersRequest
+): Promise<AddChatRoomMembersResponse> => {
+  const response = await fetchWithRefresh(
+    `/api/chat/rooms/${encodeURIComponent(roomId)}/members`,
+    {
+      method: 'PUT',
+      headers: {
+        accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    }
+  );
+
+  const result = (await response.json().catch(() => null)) as any;
+  if (!response.ok) {
+    const errorText = typeof result === 'string' ? result : JSON.stringify(result?.message ?? result);
+    throw new Error(`Failed to add room members: ${response.status} - ${errorText}`);
+  }
+
+  return {
+    roomId: result?.roomId ?? roomId,
+    roomName: result?.roomName ?? data.roomName,
+  };
+};
+

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CheckCircle, Bookmark, BookmarkCheck, Calendar } from 'lucide-react';
+import { CheckCircle, Calendar } from 'lucide-react';
 
 interface TechTag {
   id: string;
@@ -31,17 +31,16 @@ interface Question {
   answerCount?: number;
   commentCount?: number;
   status?: string;
-  isBookmarked: boolean;
+  isBookmarked?: boolean;
   hasAcceptedAnswer?: boolean;
 }
 
 interface QuestionCardProps {
   question: Question;
-  onBookmark: (questionId: string) => void;
   viewMode: 'grid' | 'list';
 }
 
-export default function QuestionCard({ question, onBookmark, viewMode }: QuestionCardProps) {
+export default function QuestionCard({ question, viewMode }: QuestionCardProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     if (Number.isNaN(date.getTime())) return '-';
@@ -134,19 +133,6 @@ export default function QuestionCard({ question, onBookmark, viewMode }: Questio
             </div>
           </div>
         </div>
-
-        {/* Right: Bookmark Button */}
-        <button
-          onClick={() => onBookmark(question.id)}
-          className="flex-shrink-0 p-2 rounded-lg hover:bg-gray-100 transition-colors"
-          title={question.isBookmarked ? '스크랩 취소' : '스크랩'}
-        >
-          {question.isBookmarked ? (
-            <BookmarkCheck className="w-5 h-5 text-primary-600 fill-primary-600" />
-          ) : (
-            <Bookmark className="w-5 h-5 text-gray-700" />
-          )}
-        </button>
       </div>
     </div>
   );

@@ -1,9 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { Upload } from 'lucide-react';
 import { createDocument } from '@/lib/api/services/project-services';
+import { s3Service } from '@/lib/api/services/s3-services';
 
 interface NewDocumentPageProps {
   params: Promise<{ id: string }>;
@@ -14,8 +17,11 @@ export default function NewDocumentPage({ params }: NewDocumentPageProps) {
   const searchParams = useSearchParams();
   const [projectId, setProjectId] = useState<string>('');
   const [documentTitle, setDocumentTitle] = useState('');
-  const [documentContent, setDocumentContent] = useState(''); // Changed to string
+  const [documentContent, setDocumentContent] = useState('');
   const [documentDescription, setDocumentDescription] = useState('');
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string>('');
+  const [contentImageKeys, setContentImageKeys] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
 
@@ -76,6 +82,22 @@ export default function NewDocumentPage({ params }: NewDocumentPageProps) {
     setDocumentContent(html);
   };
 
+  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setThumbnailFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setThumbnailPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleEditorImageUpload = useCallback(async (file: File) => {
+    const result = await s3Service.uploadFile(file);
+    setContentImageKeys((prev) => [...prev, result.key]);
+    return result;
+  }, []);
+
   const handleSave = async () => {
     if (!documentTitle.trim()) {
       alert('문서 제목을 입력해주세요.');
@@ -89,11 +111,17 @@ export default function NewDocumentPage({ params }: NewDocumentPageProps) {
 
     setIsSaving(true);
     try {
+      let thumbnailKey = '';
+      if (thumbnailFile) {
+        const result = await s3Service.uploadFile(thumbnailFile);
+        thumbnailKey = result.key;
+      }
       const document = await createDocument(projectId, {
-        title: documentTitle,
+        title: documentTitle.trim(),
         content: documentContent,
-        description: documentDescription || documentTitle,
-        thumbnailUrl: '',
+        description: documentDescription?.trim() || documentTitle.trim(),
+        thumbnailKey,
+        contentImageKeys,
       });
       
       localStorage.removeItem('documentDraft');
@@ -192,41 +220,79 @@ export default function NewDocumentPage({ params }: NewDocumentPageProps) {
       {/* Editor Container */}
       <div className="container py-12">
         <div className="max-w-5xl mx-auto">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
-            {/* Title Input */}
-            <input
-              type="text"
-              value={documentTitle}
-              onChange={(e) => setDocumentTitle(e.target.value)}
-              placeholder="문서 제목을 입력하세요..."
-              className="w-full text-4xl font-bold border-none outline-none focus:ring-0 mb-4 px-0 placeholder:text-gray-700"
-              autoFocus
-            />
-
-            {/* Description Input */}
-            <input
-              type="text"
-              value={documentDescription}
-              onChange={(e) => setDocumentDescription(e.target.value)}
-              placeholder="문서 설명을 입력하세요 (선택사항)..."
-              className="w-full text-lg text-gray-700 border-none outline-none focus:ring-0 mb-8 px-0 placeholder:text-gray-700"
-            />
-
-            {/* Metadata Info */}
-            <div className="flex items-center gap-4 text-sm text-gray-700 mb-8 pb-8 border-b border-gray-200">
-              <span>작성자: 김동현</span>
-              <span>•</span>
-              <span>프로젝트: XSS 필터 규칙 테스트</span>
-              <span>•</span>
-              <span>{new Date().toLocaleDateString('ko-KR')}</span>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 md:p-12 space-y-6">
+            <div>
+              <label htmlFor="doc-new-title" className="block text-sm font-medium text-gray-700 mb-2">
+                문서 제목 <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="doc-new-title"
+                type="text"
+                value={documentTitle}
+                onChange={(e) => setDocumentTitle(e.target.value)}
+                placeholder="문서 제목을 입력하세요"
+                className="w-full px-4 py-3 text-lg font-semibold border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+                autoFocus
+              />
             </div>
 
-            {/* TipTap Editor */}
-            <div className="min-h-[700px]">
-              <Editor 
-                content={documentContent}
-                onChange={handleContentChange}
+            <div>
+              <label htmlFor="doc-new-desc" className="block text-sm font-medium text-gray-700 mb-2">
+                요약 (선택)
+              </label>
+              <input
+                id="doc-new-desc"
+                type="text"
+                value={documentDescription}
+                onChange={(e) => setDocumentDescription(e.target.value)}
+                placeholder="문서를 한 줄로 요약해주세요"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-700 placeholder:text-gray-500"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                썸네일 이미지 (선택)
+              </label>
+              <div className="flex items-center gap-4">
+                {thumbnailPreview && (
+                  <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-gray-300 bg-gray-100">
+                    <Image
+                      src={thumbnailPreview}
+                      alt="썸네일 미리보기"
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                  </div>
+                )}
+                <label className="cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleThumbnailChange}
+                    className="hidden"
+                  />
+                  <div className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg border border-gray-300">
+                    <Upload className="w-4 h-4" />
+                    <span>이미지 선택</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                본문 (이미지 붙여넣기·드래그·버튼으로 추가 가능)
+              </label>
+              <div className="border border-gray-300 rounded-lg overflow-hidden min-h-[500px]">
+                <Editor 
+                  content={documentContent}
+                  onChange={handleContentChange}
+                  onImageUpload={handleEditorImageUpload}
+                  placeholder="내용을 입력하세요. 이미지는 붙여넣기, 드래그, 또는 툴바 버튼으로 넣을 수 있습니다."
+                />
+              </div>
             </div>
           </div>
 

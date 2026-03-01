@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ThumbsUp, Eye, Crown, Users } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
+import { decodeHtmlEntities } from '@/lib/html-utils';
 
 interface FeaturedProjectCardProps {
   project: {
@@ -39,7 +40,7 @@ export function FeaturedProjectCard({ project }: FeaturedProjectCardProps) {
         <ImageWithFallback
           src={project.thumbnailImage}
           fallbackSrc="/images/placeholder/project.png"
-          alt={project.title}
+          alt={decodeHtmlEntities(project.title)}
           fill
           className="object-cover opacity-80"
         />
@@ -50,7 +51,7 @@ export function FeaturedProjectCard({ project }: FeaturedProjectCardProps) {
         {/* Status Badge and Stats */}
         <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
           <span className="px-3 py-1 bg-primary-500 text-white text-sm font-medium rounded-full">
-            {project.status}
+            {decodeHtmlEntities(project.status)}
           </span>
           
           {/* Likes and Views */}
@@ -75,10 +76,10 @@ export function FeaturedProjectCard({ project }: FeaturedProjectCardProps) {
         {/* Content */}
         <div className="absolute bottom-6 left-6 right-6 text-white">
           <h3 className="text-xl font-bold mb-3 leading-tight">
-            {project.title}
+            {decodeHtmlEntities(project.title)}
           </h3>
           <p className="text-gray-200 text-sm mb-4 line-clamp-2">
-            {project.description}
+            {decodeHtmlEntities(project.description)}
           </p>
           
           {/* Technologies */}
@@ -88,7 +89,7 @@ export function FeaturedProjectCard({ project }: FeaturedProjectCardProps) {
                 key={index}
                 className="px-2 py-1 bg-white/20 backdrop-blur-sm text-white text-xs rounded-md"
               >
-                {tech}
+                {decodeHtmlEntities(tech)}
               </span>
             ))}
           </div>

@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { ThumbsUp, Eye, MessageCircle, User } from 'lucide-react';
+import { ThumbsUp, Eye, User } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
+import { decodeHtmlEntities } from '@/lib/html-utils';
 
 type Article = {
   id: number;
@@ -22,7 +23,6 @@ type Article = {
   readTime: string;
   views: number;
   likes: number;
-  comments: number;
   tags: string[];
   image: string;
 };
@@ -55,7 +55,7 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
           {article.category && (
             <div className="absolute top-3 right-3 z-10">
               <span className="inline-block px-2.5 py-1 rounded-md bg-white/90 backdrop-blur text-primary-700 text-xs font-semibold border border-primary-100 shadow-sm">
-                {article.category}
+                {decodeHtmlEntities(article.category)}
               </span>
             </div>
           )}
@@ -73,10 +73,10 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
         {/* 내용 */}
         <div className="p-5 flex-1 flex flex-col">
           <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
-            {article.title}
+            {decodeHtmlEntities(article.title)}
           </h3>
           <p className="text-sm text-gray-700 mb-4 line-clamp-2">
-            {article.excerpt}
+            {decodeHtmlEntities(article.excerpt)}
           </p>
 
           {/* 통계 + 작성자 한 줄 (좌측 작성자, 우측 통계) */}
@@ -107,10 +107,6 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
               <div className="flex items-center gap-2">
                 <ThumbsUp className="w-4 h-4 text-gray-700" />
                 <span className="font-medium text-gray-700">{article.likes || 0}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MessageCircle className="w-4 h-4 text-gray-700" />
-                <span className="font-medium text-gray-700">{article.comments || 0}</span>
               </div>
             </div>
           </div>

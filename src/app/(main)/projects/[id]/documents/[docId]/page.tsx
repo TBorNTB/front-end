@@ -1,10 +1,13 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { fetchDocument } from '@/lib/api/services/project-services';
+import type { Document } from '@/lib/api/services/project-services';
+import { decodeHtmlEntities } from '@/lib/html-utils';
 
 interface DocumentViewerProps {
   params: Promise<{ id: string; docId: string }>;
@@ -14,7 +17,7 @@ export default function DocumentViewer({ params }: DocumentViewerProps) {
   const router = useRouter();
   const [projectId, setProjectId] = useState('');
   const [docId, setDocId] = useState('');
-  const [document, setDocument] = useState<any>(null);
+  const [document, setDocument] = useState<Document | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const Editor = useMemo(
@@ -96,29 +99,52 @@ export default function DocumentViewer({ params }: DocumentViewerProps) {
       {/* Document Content */}
       <div className="container py-12">
         <div className="max-w-5xl mx-auto">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
-            {/* Title */}
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              {document.title}
-            </h1>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            {/* Thumbnail */}
+            {document.thumbnailUrl && (
+              <div className="relative w-full h-48 sm:h-56 bg-gray-100">
+                <Image
+                  src={document.thumbnailUrl}
+                  alt={decodeHtmlEntities(document.title)}
+                  fill
+                  className="object-cover object-center"
+                  unoptimized
+                  priority
+                />
+              </div>
+            )}
 
-            {/* Metadata */}
-            <div className="flex items-center gap-4 text-sm text-gray-700 mb-8 pb-8 border-b border-gray-200">
-              <span>생성일: {new Date(document.createdAt).toLocaleDateString('ko-KR')}</span>
-              {document.updatedAt !== document.createdAt && (
-                <>
-                  <span>•</span>
-                  <span>수정일: {new Date(document.updatedAt).toLocaleDateString('ko-KR')}</span>
-                </>
+            <div className="p-8 md:p-12">
+              {/* Title */}
+              <h1 className="text-4xl font-bold text-gray-900 mb-4">
+                {decodeHtmlEntities(document.title)}
+              </h1>
+
+              {/* Description */}
+              {document.description && (
+                <p className="text-lg text-gray-700 mb-6">
+                  {decodeHtmlEntities(document.description)}
+                </p>
               )}
-            </div>
 
-            {/* Content */}
-            <div className="prose prose-lg max-w-none">
-              <Editor 
-                content={document.content}
-                editable={false}
-              />
+              {/* Metadata */}
+              <div className="flex items-center gap-4 text-sm text-gray-700 mb-8 pb-8 border-b border-gray-200">
+                <span>생성일: {document.createdAt ? new Date(document.createdAt).toLocaleDateString('ko-KR') : '-'}</span>
+                {document.updatedAt && document.updatedAt !== document.createdAt && (
+                  <>
+                    <span>•</span>
+                    <span>수정일: {new Date(document.updatedAt).toLocaleDateString('ko-KR')}</span>
+                  </>
+                )}
+              </div>
+
+              {/* Content */}
+              <div className="prose prose-lg max-w-none">
+                <Editor 
+                  content={document.content ?? ''}
+                  editable={false}
+                />
+              </div>
             </div>
           </div>
         </div>

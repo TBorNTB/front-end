@@ -14,6 +14,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { decodeHtmlEntities } from '@/lib/html-utils';
 
 interface NewsDetailPageProps {
   params: Promise<{ id: string }>;
@@ -106,11 +107,11 @@ export default function EditNewsPage({ params }: NewsDetailPageProps) {
       const news = await response.json();
       
       setFormData({
-        title: news.title || '',
-        category: news.category || '',
-        summary: news.summary || '',
-        content: news.content || '',
-        tags: news.tags || [],
+        title: decodeHtmlEntities(news.title || ''),
+        category: decodeHtmlEntities(news.category || ''),
+        summary: decodeHtmlEntities(news.summary || ''),
+        content: decodeHtmlEntities(news.content || ''),
+        tags: Array.isArray(news.tags) ? news.tags.map((t: string) => decodeHtmlEntities(t)) : [],
         participantIds: news.participantIds || [],
       });
 
@@ -382,6 +383,7 @@ export default function EditNewsPage({ params }: NewsDetailPageProps) {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    if (loading) return;
     if (!validateForm()) {
       return;
     }

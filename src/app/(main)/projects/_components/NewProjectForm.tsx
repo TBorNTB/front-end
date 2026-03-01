@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, X, Upload, FileText, User, Search, UserCircle, AtSign } from 'lucide-react';
+import { ArrowLeft, Plus, X, Upload, User, Search, UserCircle, AtSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import TipTapEditor from '@/components/editor/TipTapEditor';
@@ -27,7 +27,6 @@ interface FormData {
   status: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED';
   startDate: string;
   endDate: string;
-  documents: File[];
   collaborators: Array<{ name: string; email: string; role: string }>;
 }
 
@@ -90,7 +89,6 @@ export default function NewProjectForm() {
     status: 'PLANNING',
     startDate: '',
     endDate: '',
-    documents: [],
     collaborators: [],
   });
 
@@ -476,23 +474,6 @@ export default function NewProjectForm() {
     }
   };
 
-  const handleDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      setFormData((prev) => ({
-        ...prev,
-        documents: [...prev.documents, ...Array.from(files)],
-      }));
-    }
-  };
-
-  const removeDocument = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      documents: prev.documents.filter((_, i) => i !== index),
-    }));
-  };
-
   const addCollaborator = (user: CursorUserResponse) => {
     // 만드는 사람(본인)은 협력자에 넣지 않음
     if (currentUser && user.username === currentUser.username) {
@@ -546,6 +527,7 @@ export default function NewProjectForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    if (loading) return;
     if (!validateForm()) {
       return;
     }
@@ -1222,52 +1204,6 @@ export default function NewProjectForm() {
                 })}
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Documents */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">문서</h2>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              프로젝트 문서 업로드
-            </label>
-            <label className="cursor-pointer">
-              <input
-                type="file"
-                multiple
-                onChange={handleDocumentUpload}
-                className="hidden"
-              />
-              <div className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-3 rounded-lg border border-gray-300 w-fit">
-                <FileText className="w-4 h-4" />
-                <span>문서 추가</span>
-              </div>
-            </label>
-
-            {/* Documents List */}
-            <div className="mt-3 space-y-2">
-              {formData.documents.map((doc, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200"
-                >
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-gray-700" />
-                    <span className="text-sm text-gray-700">{doc.name}</span>
-                    <span className="text-xs text-gray-700">({(doc.size / 1024).toFixed(1)} KB)</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeDocument(index)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
 

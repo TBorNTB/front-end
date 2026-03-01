@@ -9,7 +9,8 @@ interface OTPInputProps {
   value: string;
   onChange: (value: string) => void;
   onComplete?: (value: string) => void;
-  onBlur?: () => void;
+  /** Called when last input blurs; receives current value so parent can sync form state */
+  onBlur?: (value?: string) => void;
   hasError?: boolean;
   disabled?: boolean;
   autoFocus?: boolean;
@@ -37,12 +38,13 @@ export function OTPInput({
     }
   }, [autoFocus]);
 
-  // Sync displayValue with form value when form updates externally (e.g., paste)
+  // Normalize: alphanumeric only, uppercase, max length
+  const normalizedValue = (value || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().substring(0, length);
+
+  // Keep display in sync with form value (single source of truth from parent)
   useEffect(() => {
-    if (value && value.length > displayValue.length) {
-      setDisplayValue(value);
-    }
-  }, [value]);
+    setDisplayValue(normalizedValue);
+  }, [normalizedValue]);
 
   const handleChange = (index: number, inputValue: string) => {
     // Get only the last character and validate it's alphanumeric
@@ -152,7 +154,8 @@ export function OTPInput({
             onPaste={handlePaste}
             onFocus={() => setActiveIndex(index)}
             onBlur={() => {
-              if (index === length - 1) onBlur?.();
+              // 매 칸 블러 시마다 현재 입력값을 폼에 동기화 (8자리 채운 뒤 다른 칸으로 이동해도 값 유지)
+              onBlur?.(displayValue);
             }}
             disabled={disabled}
             className={getOTPInputClassName(hasError, activeIndex === index) + " caret-primary-600"}

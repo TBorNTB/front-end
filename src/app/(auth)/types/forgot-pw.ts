@@ -16,6 +16,7 @@ export const verifyCodeSchema = z.object({
 export const resetPasswordSchema = z.object({
   email: z.string().email(),
   verificationCode: z.string()
+    .trim()
     .length(8, { message: "인증코드는 8자리입니다." })
     .regex(/^[a-zA-Z0-9]{8}$/, { message: "인증코드는 숫자와 영어조합만 입력 가능합니다." }),
   newPassword: z.string()

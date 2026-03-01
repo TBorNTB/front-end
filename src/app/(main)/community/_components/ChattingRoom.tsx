@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { X, Send, ArrowLeft, Minus } from "lucide-react";
+import { decodeHtmlEntities } from "@/lib/html-utils";
 
 interface ChatMessage {
   id: string;
@@ -123,7 +124,7 @@ export default function ChattingRoom({
                       : "bg-white border border-gray-200 text-gray-900 rounded-bl-none"
                   }`}
                 >
-                  <p className="text-sm leading-relaxed">{message.content}</p>
+                  <p className="text-sm leading-relaxed">{decodeHtmlEntities(message.content)}</p>
                 </div>
                 <span className="text-xs text-gray-700 mt-1 px-2">
                   {message.timestamp.toLocaleTimeString("ko-KR", {

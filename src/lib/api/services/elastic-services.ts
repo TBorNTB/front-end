@@ -171,6 +171,41 @@ export const searchCSKnowledgeByMember = async (
 };
 
 /**
+ * CS 지식 저자(username)별 목록 조회 - 저자의 다른 글용
+ * Next.js API 라우트(/api/articles/by-user/[username])를 통해 백엔드 호출
+ * @param username 작성자 username
+ * @param page 페이지 (0부터)
+ * @param size 페이지 크기
+ */
+export const getCSKnowledgeByUser = async (
+  username: string,
+  page: number = 0,
+  size: number = 10
+): Promise<CSKnowledgeSearchResponse> => {
+  if (!username || !String(username).trim()) {
+    return { content: [], page: 0, size, totalElements: 0, totalPages: 0 };
+  }
+  try {
+    const encoded = encodeURIComponent(String(username).trim());
+    const url = `/api/articles/by-user/${encoded}?size=${size}&page=${page}`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+      credentials: 'include',
+      cache: 'no-store',
+    });
+    if (!response.ok) {
+      return { content: [], page, size, totalElements: 0, totalPages: 0 };
+    }
+    const data: CSKnowledgeSearchResponse = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching CS knowledge by user:', error);
+    return { content: [], page: 0, size, totalElements: 0, totalPages: 0 };
+  }
+};
+
+/**
  * CS 지식 검색 제안 API 호출 (API 라우트를 통해 호출)
  * @param params 검색 파라미터 (query: 검색어)
  * @returns 검색 제안 목록 (문자열 배열)

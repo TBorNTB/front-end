@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import TitleBanner from '@/components/layout/TitleBanner';
 import ContentFilterBar from '@/components/layout/TopSection';
 import QuestionCard from '../_components/QuestionCard';
-import { MessageSquare, CheckCircle, Bookmark, Tag, User, Calendar } from 'lucide-react';
+import { MessageSquare, CheckCircle, Tag, User, Calendar } from 'lucide-react';
 
 // Types
 interface TechTag {
@@ -264,14 +264,6 @@ export default function FAQsPage() {
     setFilteredQuestions(filtered);
   }, [searchTerm, selectedTag, filterStatus, sortBy, questions]);
 
-  const handleBookmark = (questionId: string) => {
-    setQuestions((prev) =>
-      prev.map((q) =>
-        q.id === questionId ? { ...q, isBookmarked: !q.isBookmarked } : q
-      )
-    );
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <TitleBanner
@@ -420,7 +412,6 @@ export default function FAQsPage() {
                   <QuestionCard
                     key={question.id}
                     question={question}
-                    onBookmark={handleBookmark}
                     viewMode={viewMode}
                   />
                 ))}

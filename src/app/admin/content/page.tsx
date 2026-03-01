@@ -222,11 +222,12 @@ function InlineCategoryManagement() {
               <input
                 type="text"
                 value={newCategory.name}
-                onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
-                placeholder="카테고리 이름을 입력하세요"
+                onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value.replace(/\s+/g, "_") })}
+                placeholder="예: 웹_해킹 (공백 입력 시 _ 로 자동 변환)"
                 className="admin-form-input"
                 disabled={isMutating}
               />
+              <p className="mt-1 text-xs text-gray-500">공백은 반드시 _ 로 붙여집니다.</p>
             </div>
 
             <div className="admin-form-group">
@@ -366,10 +367,12 @@ function InlineCategoryManagement() {
                 <input
                   type="text"
                   value={editForm.nextName}
-                  onChange={(e) => setEditForm({ ...editForm, nextName: e.target.value })}
+                  onChange={(e) => setEditForm({ ...editForm, nextName: e.target.value.replace(/\s+/g, "_") })}
+                  placeholder="예: 웹_해킹"
                   className="admin-form-input"
                   disabled={isMutating}
                 />
+                <p className="mt-1 text-xs text-gray-500">공백은 반드시 _ 로 붙여집니다.</p>
               </div>
 
               <div className="admin-form-group">

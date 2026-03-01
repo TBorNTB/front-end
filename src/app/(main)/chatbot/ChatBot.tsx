@@ -1,14 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ChatWindow from "./_components/ChatWindow";
 import ChatRoomWindow from "./_components/ChatRoomWindow";
 import ChatRoomDetail from "./_components/ChatRoomDetail";
 import ChatBotIcon from "./_components/ChatBotIcon";
 import { useChatRoom } from "@/context/ChatContext";
 
+interface RoomToSelect {
+  id: string;
+  name: string;
+  type: "group";
+  memberCount?: number;
+  members?: Array<{ username: string; nickname: string; realName: string; thumbnailUrl?: string | null }>;
+}
+
 const ChatBot = () => {
-  const { isChatRoomOpen, closeChatRoom } = useChatRoom();
+  const { isChatRoomOpen, closeChatRoom, openChatRoom } = useChatRoom();
 
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -21,6 +29,24 @@ const ChatBot = () => {
     memberCount?: number;
     members?: Array<{ username: string; nickname: string; realName: string; thumbnailUrl?: string | null }>;
   }>>([]);
+
+  // 프로젝트/뉴스에서 "멤버와 채팅하기"로 생성한 방 자동 열기 (같은 방이 두 번 열리지 않도록)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const ev = e as CustomEvent<RoomToSelect>;
+      ev.stopImmediatePropagation(); // 다른 리스너가 같은 이벤트를 처리하지 않도록
+      const room = ev.detail;
+      if (!room?.id) return;
+      const roomId = String(room.id);
+      setOpenChatRooms((prev) => {
+        if (prev.some((r) => String(r.id) === roomId)) return prev;
+        return [...prev, { ...room, id: roomId, members: room.members }];
+      });
+      openChatRoom();
+    };
+    window.addEventListener("chat:selectRoom", handler as EventListener);
+    return () => window.removeEventListener("chat:selectRoom", handler as EventListener);
+  }, [openChatRoom]);
 
   const toggleChat = () => {
     setIsOpen(!isOpen);
@@ -142,6 +168,20 @@ const ChatBot = () => {
           members={room.members}
           onClose={() => handleCloseChatRoomDetail(room.id)}
           onBack={() => handleCloseChatRoomDetail(room.id)}
+          onRoomNameChange={(newName) =>
+            setOpenChatRooms((prev) =>
+              prev.map((r) => (r.id === room.id ? { ...r, name: newName } : r))
+            )
+          }
+          onMembersChange={(addedCount) =>
+            setOpenChatRooms((prev) =>
+              prev.map((r) =>
+                r.id === room.id
+                  ? { ...r, memberCount: (r.memberCount ?? 0) + (addedCount ?? 0) }
+                  : r
+              )
+            )
+          }
           initialPosition={getInitialPosition(index)}
         />
       ))}

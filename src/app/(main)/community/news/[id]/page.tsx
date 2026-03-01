@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, useRef, Fragment } from 'react';
-import { ThumbsUp, Eye, Clock, ArrowLeft, Crown, Users, Calendar, Tag, MessageCircle, ChevronDown, Edit, Trash2 } from 'lucide-react';
+import { ThumbsUp, Eye, Clock, ArrowLeft, Crown, Users, Calendar, Tag, ChevronDown, Edit, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Menu, Transition } from '@headlessui/react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
@@ -24,6 +24,9 @@ import {
 } from '@/lib/api/services/user-services';
 import { deleteNews } from '@/lib/api/services/news-services';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { decodeHtmlEntities } from '@/lib/html-utils';
+import { isCommentEdited } from '@/lib/comment-utils';
+import CreateChatFromPostButton from '@/app/(main)/_components/CreateChatFromPostButton';
 
 interface NewsDetailPageProps {
   params: Promise<{ id: string }>;
@@ -55,6 +58,8 @@ interface NewsDetail {
   tags: string[];
   createdAt: string;
   updatedAt: string;
+  /** 뉴스 생성 시 자동 생성된 채팅방 ID. 있으면 이 ID로만 연다. */
+  chatRoomId?: string | null;
 }
 
 export default function NewsDetailPage({ params }: NewsDetailPageProps) {
@@ -86,7 +91,9 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
   const [editContent, setEditContent] = useState('');
   const [replyingToId, setReplyingToId] = useState<number | null>(null);
   const [replyContent, setReplyContent] = useState('');
-  
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [submittingReplyParentId, setSubmittingReplyParentId] = useState<number | null>(null);
+
   // Sidebar sections
   const [openSections, setOpenSections] = useState<{[key: string]: boolean}>({
     info: true,
@@ -254,6 +261,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
           tags: apiData.tags || [],
           createdAt: apiData.createdAt || '',
           updatedAt: apiData.updatedAt || '',
+          chatRoomId: apiData.chatRoomId ?? null,
         };
         
         setNews(data);
@@ -307,8 +315,8 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
   };
 
   const handleSubmitComment = async () => {
-    if (!commentContent.trim() || !newsId) return;
-    
+    if (!commentContent.trim() || !newsId || isSubmittingComment) return;
+    setIsSubmittingComment(true);
     try {
       await createComment(newsId, 'NEWS', { content: commentContent });
       setCommentContent('');
@@ -316,6 +324,8 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
     } catch (error: any) {
       console.error('Error creating comment:', error);
       alert(error.message || '댓글 작성에 실패했습니다.');
+    } finally {
+      setIsSubmittingComment(false);
     }
   };
 
@@ -375,8 +385,8 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
   };
 
   const handleSubmitReply = async (parentId: number) => {
-    if (!replyContent.trim() || !newsId) return;
-    
+    if (!replyContent.trim() || !newsId || submittingReplyParentId !== null) return;
+    setSubmittingReplyParentId(parentId);
     try {
       await createReply(newsId, parentId, 'NEWS', { content: replyContent });
       setReplyingToId(null);
@@ -386,6 +396,8 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
     } catch (error: any) {
       console.error('Error creating reply:', error);
       alert(error.message || '대댓글 작성에 실패했습니다.');
+    } finally {
+      setSubmittingReplyParentId(null);
     }
   };
 
@@ -549,14 +561,16 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                 )}
               </div>
 
-              {/* Participants Section */}
-              {item.participantProfiles && item.participantProfiles.length > 0 && (
+              {/* Participants Section (writer + participants, for chat room) */}
+              {item.writerProfile && (
                 <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
                   <button
                     onClick={() => toggleSection('participants')}
                     className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
                   >
-                    <span className="font-bold text-gray-900">참여자 ({item.participantProfiles.length})</span>
+                    <span className="font-bold text-gray-900">
+                      참여자 ({1 + (item.participantProfiles?.length ?? 0)})
+                    </span>
                     <ChevronDown
                       className={`w-5 h-5 text-gray-700 transition-transform ${
                         openSections.participants ? 'rotate-180' : ''
@@ -566,7 +580,34 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                   
                   {openSections.participants && (
                     <div className="p-4 space-y-3">
-                      {item.participantProfiles.map((participant, idx) => {
+                      {/* 글쓴이 */}
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-10 h-10 rounded-full overflow-hidden bg-blue-200 flex-shrink-0">
+                          {item.writerProfile?.profileImageUrl ? (
+                            <ImageWithFallback
+                              src={item.writerProfile.profileImageUrl}
+                              fallbackSrc="/images/placeholder/default-avatar.svg"
+                              alt={getDisplayName(item.writerProfile.nickname, item.writerProfile.realName)}
+                              type="avatar"
+                              width={40}
+                              height={40}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-sm font-bold text-blue-700">
+                              {getDisplayName(item.writerProfile?.nickname, item.writerProfile?.realName).charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 text-sm truncate">
+                            {getDisplayName(item.writerProfile?.nickname, item.writerProfile?.realName)}
+                          </p>
+                          <p className="text-xs text-gray-500">글쓴이</p>
+                        </div>
+                      </div>
+                      {/* 참여자 */}
+                      {(item.participantProfiles || []).map((participant, idx) => {
                         const displayName = getDisplayName(participant.nickname, participant.realName);
                         return (
                           <div key={idx} className="flex items-center gap-3">
@@ -595,6 +636,22 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                           </div>
                         );
                       })}
+                      <CreateChatFromPostButton
+                        type="news"
+                        title={decodeHtmlEntities(item.title)}
+                        members={[
+                          {
+                            username: item.writerProfile.username,
+                            displayName: getDisplayName(item.writerProfile.nickname, item.writerProfile.realName) || item.writerProfile.username,
+                          },
+                          ...(item.participantProfiles || []).map((p) => ({
+                            username: p.username,
+                            displayName: getDisplayName(p.nickname, p.realName) || p.username,
+                          })),
+                        ]}
+                        chatRoomId={item.chatRoomId ?? undefined}
+                        className="pt-2 border-t border-gray-200"
+                      />
                     </div>
                   )}
                 </div>
@@ -636,7 +693,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                                     <ImageWithFallback
                                       src={item.thumbnailUrl}
                                       fallbackSrc="/images/placeholder/item.png"
-                                      alt={item.title}
+                                      alt={decodeHtmlEntities(item.title)}
                                       type="news"
                                       width={64}
                                       height={64}
@@ -646,11 +703,11 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                                 )}
                                 <div className="flex-1 min-w-0">
                                   <h4 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-2 hover:text-primary-600 transition-colors">
-                                    {item.title}
+                                    {decodeHtmlEntities(item.title)}
                                   </h4>
                                   {item.summary && (
                                     <p className="text-xs text-gray-700 line-clamp-1 mb-2">
-                                      {item.summary}
+                                      {decodeHtmlEntities(item.summary)}
                                     </p>
                                   )}
                                   <div className="flex items-center gap-2 text-xs text-gray-700 mb-1">
@@ -708,13 +765,13 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
 
                 {/* Title */}
                 <h1 className="text-4xl font-bold text-gray-900 mb-6">
-                  {item.title}
+                  {decodeHtmlEntities(item.title)}
                 </h1>
 
                 {/* Summary */}
                 {item.summary && (
                   <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-                    {item.summary}
+                    {decodeHtmlEntities(item.summary)}
                   </p>
                 )}
 
@@ -773,10 +830,6 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                       <Eye className="w-5 h-5" />
                       <span className="text-sm font-semibold">{viewCount.toLocaleString()}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <MessageCircle className="w-5 h-5" />
-                      <span className="text-sm font-semibold">{comments.length}{hasNextComments ? '+' : ''}</span>
-                    </div>
                   </div>
                   
                   {/* Edit/Delete Buttons - Only show for owner */}
@@ -808,7 +861,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                   <ImageWithFallback
                     src={item.thumbnailUrl}
                     fallbackSrc="/images/placeholder/item.png"
-                    alt={item.title}
+                    alt={decodeHtmlEntities(item.title)}
                     type="news"
                     fill
                     className="object-cover"
@@ -1064,7 +1117,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                   <div className="flex justify-end">
                     <button
                       onClick={handleSubmitComment}
-                      disabled={!commentContent.trim() || isLoadingComments}
+                      disabled={!commentContent.trim() || isLoadingComments || isSubmittingComment}
                       className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       댓글 등록
@@ -1083,7 +1136,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                     아직 댓글이 없습니다. 첫 댓글을 작성해보세요!
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="divide-y divide-gray-200">
                     {comments.map((comment) => {
                       const getDisplayName = (user?: { nickname?: string; realName?: string }): string => {
                         if (!user || (!user.nickname && !user.realName)) {
@@ -1096,9 +1149,9 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                       const initial = displayName.charAt(0).toUpperCase();
 
                       return (
-                        <div key={`comment-${comment.id}`} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                          <div className="flex gap-4">
-                            <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                        <div key={`comment-${comment.id}`} className="py-4 first:pt-0">
+                          <div className="flex gap-3">
+                            <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
                               {profileImageUrl ? (
                                 <ImageWithFallback
                                   src={profileImageUrl}
@@ -1120,14 +1173,14 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                                 <div className="flex items-center gap-2">
                                   <span className="font-medium text-gray-900">{displayName}</span>
                                 <span className="text-sm text-gray-700">{formatDate(comment.createdAt)}</span>
-                                {comment.updatedAt !== comment.createdAt && (
+                                {isCommentEdited(comment.createdAt, comment.updatedAt) && (
                                   <span className="text-xs text-gray-700">(수정됨)</span>
                                 )}
                               </div>
                               <div className="flex items-center gap-2">
                                 <Menu as="div" className="relative">
-                                  <Menu.Button className="p-1 hover:bg-gray-200 rounded-full">
-                                    <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <Menu.Button className="p-1 text-gray-900 hover:bg-gray-200 rounded-full">
+                                    <svg className="w-4 h-4 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                                     </svg>
                                   </Menu.Button>
@@ -1147,7 +1200,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                                             <button
                                               onClick={() => {
                                                 setEditingCommentId(comment.id);
-                                                setEditContent(comment.content);
+                                                setEditContent(decodeHtmlEntities(comment.content));
                                               }}
                                               className={`${
                                                 active ? 'bg-gray-100' : ''
@@ -1204,7 +1257,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                               </div>
                             ) : (
                               <>
-                                <p className="text-gray-700 whitespace-pre-wrap break-words">{comment.content}</p>
+                                <p className="text-gray-700 whitespace-pre-wrap break-words">{decodeHtmlEntities(comment.content)}</p>
                                 
                                 {/* Reply button */}
                                 <div className="mt-3 flex items-center gap-4">
@@ -1245,10 +1298,10 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                                     <div className="flex gap-2">
                                       <button
                                         onClick={() => handleSubmitReply(comment.id)}
-                                        disabled={!replyContent.trim()}
+                                        disabled={!replyContent.trim() || submittingReplyParentId !== null}
                                         className="px-4 py-1.5 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                       >
-                                        등록
+                                        {submittingReplyParentId === comment.id ? '등록 중...' : '등록'}
                                       </button>
                                       <button
                                         onClick={() => {
@@ -1265,15 +1318,14 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
 
                                 {/* Replies */}
                                 {expandedReplies.has(comment.id) && replies[comment.id] && (
-                                  <div className="mt-4 space-y-3 pl-4 border-l-2 border-gray-200">
+                                  <div className="mt-4 ml-4 pl-4 border-l-2 border-gray-200 space-y-4">
                                     {replies[comment.id].map((reply) => {
                                       const replyDisplayName = reply.user ? getDisplayName(reply.user) : reply.username;
                                       const replyProfileImageUrl = reply.user?.profileImageUrl;
                                       const replyInitial = replyDisplayName.charAt(0).toUpperCase();
 
                                       return (
-                                        <div key={`reply-${comment.id}-${reply.id}`} className="bg-white rounded-lg p-3 border border-gray-200">
-                                          <div className="flex gap-3">
+                                        <div key={`reply-${comment.id}-${reply.id}`} className="flex gap-3 rounded-2xl p-3 -mx-3 transition-shadow hover:shadow-[0_8px_28px_8px_rgba(0,0,0,0.18)]">
                                             <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
                                               {replyProfileImageUrl ? (
                                                 <ImageWithFallback
@@ -1296,13 +1348,13 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                                                 <div className="flex items-center gap-2">
                                                   <span className="text-sm font-medium text-gray-900">{replyDisplayName}</span>
                                                 <span className="text-xs text-gray-700">{formatDate(reply.createdAt)}</span>
-                                                {reply.updatedAt !== reply.createdAt && (
+                                                {isCommentEdited(reply.createdAt, reply.updatedAt) && (
                                                   <span className="text-xs text-gray-700">(수정됨)</span>
                                                 )}
                                               </div>
                                               <Menu as="div" className="relative">
-                                                <Menu.Button className="p-1 hover:bg-gray-200 rounded-full">
-                                                  <svg className="w-3 h-3 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <Menu.Button className="p-1 text-gray-900 hover:bg-gray-200 rounded-full">
+                                                  <svg className="w-3 h-3 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                                                   </svg>
                                                 </Menu.Button>
@@ -1322,7 +1374,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                                                           <button
                                                             onClick={() => {
                                                               setEditingCommentId(reply.id);
-                                                              setEditContent(reply.content);
+                                                              setEditContent(decodeHtmlEntities(reply.content));
                                                             }}
                                                             className={`${
                                                               active ? 'bg-gray-100' : ''
@@ -1376,11 +1428,10 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                                                 </div>
                                               </div>
                                             ) : (
-                                              <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">{reply.content}</p>
+                                              <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">{decodeHtmlEntities(reply.content)}</p>
                                             )}
                                           </div>
                                         </div>
-                                      </div>
                                       );
                                     })}
                                   </div>

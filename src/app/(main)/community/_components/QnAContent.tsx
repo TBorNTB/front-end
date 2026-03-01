@@ -223,15 +223,6 @@ export default function QnAContent() {
     };
   }, [page, filterStatus, selectedTag, debouncedKeyword, sortBy]);
 
-  const handleBookmark = (questionId: string) => {
-    setQuestions((prev) =>
-      prev.map((q) => (q.id === questionId ? { ...q, isBookmarked: !q.isBookmarked } : q))
-    );
-    setFilteredQuestions((prev) =>
-      prev.map((q) => (q.id === questionId ? { ...q, isBookmarked: !q.isBookmarked } : q))
-    );
-  };
-
   return (
     <div className="w-full">
       {/* Filter Bar */}
@@ -355,7 +346,6 @@ export default function QnAContent() {
                 <QuestionCard
                   key={question.id}
                   question={question}
-                  onBookmark={handleBookmark}
                   viewMode={viewMode}
                 />
               ))}

@@ -14,6 +14,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { fetchCategories } from '@/lib/api/services/project-services';
 import { fetchArticleById, updateArticle } from '@/lib/api/services/article-services';
 import { s3Service } from '@/lib/api/services/s3-services';
+import { decodeHtmlEntities } from '@/lib/html-utils';
 
 interface FormData {
   title: string;
@@ -100,10 +101,10 @@ export default function EditArticlePage({ params }: EditPageProps) {
         
         if (articleData) {
           setFormData({
-            title: articleData.title || '',
-            category: articleData.category || '',
-            excerpt: articleData.description || '',
-            content: articleData.content || '',
+            title: decodeHtmlEntities(articleData.title || ''),
+            category: decodeHtmlEntities(articleData.category || ''),
+            excerpt: decodeHtmlEntities(articleData.description || ''),
+            content: decodeHtmlEntities(articleData.content || ''),
             tags: [], // tags is not returned from API, keep it empty for edit
           });
 
@@ -238,6 +239,7 @@ export default function EditArticlePage({ params }: EditPageProps) {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    if (loading) return;
     if (!validateForm()) {
       return;
     }

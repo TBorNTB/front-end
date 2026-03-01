@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ThumbsUp, Eye, Calendar } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
+import { decodeHtmlEntities } from '@/lib/html-utils';
 
 interface ArticleCardHomeProps {
   article: {
@@ -53,7 +54,7 @@ export function ArticleCardHome({ article }: ArticleCardHomeProps) {
           {article.category && (
             <div className="absolute top-3 left-3">
               <span className="bg-white/90 backdrop-blur-sm border border-gray-200 text-primary px-2 py-1 rounded-full text-xs font-medium">
-                {article.category}
+                {decodeHtmlEntities(article.category)}
               </span>
             </div>
           )}
@@ -63,11 +64,11 @@ export function ArticleCardHome({ article }: ArticleCardHomeProps) {
         <div className="p-5 flex-1 flex flex-col">
           <div className="flex-1 mb-4">
             <h3 className="font-semibold text-base text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
-              {article.title}
+              {decodeHtmlEntities(article.title)}
             </h3>
             
             <p className="text-sm text-gray-700 line-clamp-3">
-              {article.excerpt || article.description || ''}
+              {decodeHtmlEntities(article.excerpt || article.description || '')}
             </p>
           </div>
 
@@ -76,7 +77,7 @@ export function ArticleCardHome({ article }: ArticleCardHomeProps) {
             <div className="flex flex-wrap gap-1.5 mb-4">
               {article.tags.slice(0, 2).map((tag, index) => (
                 <span key={index} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
-                  #{tag}
+                  #{decodeHtmlEntities(tag)}
                 </span>
               ))}
             </div>

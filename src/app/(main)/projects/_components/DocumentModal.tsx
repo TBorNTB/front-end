@@ -2,9 +2,12 @@
 
 import { Dialog, Transition } from '@headlessui/react';
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Fragment, useState, useMemo } from 'react';
+import { Fragment, useState, useMemo, useCallback } from 'react';
+import { Upload } from 'lucide-react';
 import { createDocument } from '@/lib/api/services/project-services';
+import { s3Service } from '@/lib/api/services/s3-services';
 
 interface DocumentModalProps {
   isOpen: boolean;
@@ -21,8 +24,11 @@ export default function DocumentModal({
 }: DocumentModalProps) {
   const router = useRouter();
   const [documentTitle, setDocumentTitle] = useState('');
-  const [documentContent, setDocumentContent] = useState(''); // Changed from Block[] to string
+  const [documentContent, setDocumentContent] = useState('');
   const [documentDescription, setDocumentDescription] = useState('');
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string>('');
+  const [contentImageKeys, setContentImageKeys] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveOption, setSaveOption] = useState<'save' | 'continue'>('save');
 
@@ -51,11 +57,17 @@ export default function DocumentModal({
 
     setIsSaving(true);
     try {
+      let thumbnailKey = '';
+      if (thumbnailFile) {
+        const result = await s3Service.uploadFile(thumbnailFile);
+        thumbnailKey = result.key;
+      }
       const document = await createDocument(projectId, {
-        title: documentTitle,
+        title: documentTitle.trim(),
         content: documentContent,
-        description: documentDescription || documentTitle,
-        thumbnailUrl: '',
+        description: documentDescription?.trim() || documentTitle.trim(),
+        thumbnailKey,
+        contentImageKeys,
       });
       
       if (saveOption === 'continue') {
@@ -88,8 +100,27 @@ export default function DocumentModal({
     setDocumentTitle('');
     setDocumentContent('');
     setDocumentDescription('');
+    setThumbnailFile(null);
+    setThumbnailPreview('');
+    setContentImageKeys([]);
     setSaveOption('save');
   };
+
+  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setThumbnailFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setThumbnailPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleEditorImageUpload = useCallback(async (file: File) => {
+    const result = await s3Service.uploadFile(file);
+    setContentImageKeys((prev) => [...prev, result.key]);
+    return result;
+  }, []);
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -142,34 +173,79 @@ export default function DocumentModal({
                 </div>
 
                 {/* Modal Body */}
-                <div className="p-6 space-y-4">
-                  {/* Title Input */}
-                  <input
-                    type="text"
-                    value={documentTitle}
-                    onChange={(e) => setDocumentTitle(e.target.value)}
-                    placeholder="문서 제목을 입력하세요..."
-                    className="w-full text-2xl font-bold border-none outline-none focus:ring-0 px-0 placeholder:text-gray-700"
-                    autoFocus
-                  />
-
-                  {/* Description Input */}
-                  <input
-                    type="text"
-                    value={documentDescription}
-                    onChange={(e) => setDocumentDescription(e.target.value)}
-                    placeholder="문서 설명을 입력하세요 (선택사항)..."
-                    className="w-full text-sm text-gray-700 border-none outline-none focus:ring-0 px-0 placeholder:text-gray-700"
-                  />
-
-                  <div className="border-t border-gray-200" />
-
-                  {/* Editor */}
-                  <div className="h-96 overflow-auto">
-                    <Editor 
-                      content={documentContent}
-                      onChange={setDocumentContent}
+                <div className="p-6 space-y-5">
+                  <div>
+                    <label htmlFor="doc-modal-title" className="block text-sm font-medium text-gray-700 mb-2">
+                      문서 제목 <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="doc-modal-title"
+                      type="text"
+                      value={documentTitle}
+                      onChange={(e) => setDocumentTitle(e.target.value)}
+                      placeholder="문서 제목을 입력하세요"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+                      autoFocus
                     />
+                  </div>
+
+                  <div>
+                    <label htmlFor="doc-modal-desc" className="block text-sm font-medium text-gray-700 mb-2">
+                      요약 (선택)
+                    </label>
+                    <input
+                      id="doc-modal-desc"
+                      type="text"
+                      value={documentDescription}
+                      onChange={(e) => setDocumentDescription(e.target.value)}
+                      placeholder="문서를 한 줄로 요약해주세요"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-700 placeholder:text-gray-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      썸네일 이미지 (선택)
+                    </label>
+                    <div className="flex items-center gap-4">
+                      {thumbnailPreview && (
+                        <div className="relative w-28 h-28 rounded-lg overflow-hidden border border-gray-300 bg-gray-100">
+                          <Image
+                            src={thumbnailPreview}
+                            alt="썸네일 미리보기"
+                            fill
+                            className="object-cover"
+                            unoptimized={thumbnailPreview.startsWith('data:')}
+                          />
+                        </div>
+                      )}
+                      <label className="cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleThumbnailChange}
+                          className="hidden"
+                        />
+                        <div className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg border border-gray-300 text-sm">
+                          <Upload className="w-4 h-4" />
+                          <span>이미지 선택</span>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      본문 (이미지 붙여넣기·드래그 가능)
+                    </label>
+                    <div className="border border-gray-300 rounded-lg overflow-hidden min-h-[280px]">
+                      <Editor 
+                        content={documentContent}
+                        onChange={setDocumentContent}
+                        onImageUpload={handleEditorImageUpload}
+                        placeholder="내용을 입력하세요. 이미지는 붙여넣기 또는 드래그로 넣을 수 있습니다."
+                      />
+                    </div>
                   </div>
 
                   {/* Info Message */}

@@ -334,4 +334,6 @@ export interface ProjectDetailResponse {
   techStackDtos: TechStackDto[];
   collaborators: CollaboratorDto[];
   documentDtos: DocumentDto[];
+  /** 채팅방 ID (프로젝트 생성 시 자동 생성된 방). 이 값이 있으면 이름 검색 없이 이 ID로만 연다. */
+  chatRoomId?: string | null;
 }

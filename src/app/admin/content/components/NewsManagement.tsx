@@ -105,6 +105,8 @@ export default function NewsManagement() {
   const [totalElements, setTotalElements] = useState(0);
 
   const debounceRef = useRef<number | null>(null);
+  const controllerRef = useRef<AbortController | null>(null);
+  const isFirstLoadRef = useRef(true);
   const suggestionDebounceRef = useRef<number | null>(null);
   const suggestionsRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -118,9 +120,10 @@ export default function NewsManagement() {
     const q = searchQuery.trim();
     if (q) params.append("keyword", q);
 
-    // Match community "멤버소식" behavior: when 'all', default to MT.
-    const apiCategory = selectedCategory !== "all" ? selectedCategory : "MT";
-    params.append("category", apiCategory);
+    // 전체가 아닐 때만 카테고리 전달 (전체일 때는 미전달 → 백엔드에서 전체 뉴스 조회, 프로젝트/CS 관리와 동일)
+    if (selectedCategory !== "all") {
+      params.append("category", selectedCategory);
+    }
     params.append("postSortType", sortToApi(sortBy));
     params.append("size", String(PAGE_SIZE));
     params.append("page", String(page));
@@ -131,60 +134,67 @@ export default function NewsManagement() {
   useEffect(() => {
     if (debounceRef.current) {
       window.clearTimeout(debounceRef.current);
+      debounceRef.current = null;
     }
+    controllerRef.current?.abort();
+    const controller = new AbortController();
+    controllerRef.current = controller;
 
-    debounceRef.current = window.setTimeout(() => {
-      const controller = new AbortController();
+    const load = async () => {
+      setIsLoading(true);
+      setError(null);
 
-      const load = async () => {
-        setIsLoading(true);
-        setError(null);
+      try {
+        const response = await fetch(`/api/news/search?${queryParams.toString()}`, {
+          signal: controller.signal,
+        });
+        const data = (await response.json().catch(() => null)) as NewsSearchResponse | null;
 
-        try {
-          const response = await fetch(`/api/news/search?${queryParams.toString()}`, {
-            signal: controller.signal,
-          });
-          const data = (await response.json().catch(() => null)) as NewsSearchResponse | null;
-
-          if (!response.ok || !data) {
-            const message = response.statusText || `API error: ${response.status}`;
-            setItems([]);
-            setTotalPages(0);
-            setTotalElements(0);
-            setError(message);
-            return;
-          }
-
-          if (data.error) {
-            setItems([]);
-            setTotalPages(0);
-            setTotalElements(0);
-            setError(data.error);
-            return;
-          }
-
-          setItems((data.content || []).map(toRow));
-          setTotalPages(data.totalPages || 0);
-          setTotalElements(data.totalElements || 0);
-        } catch (err) {
-          if (err instanceof DOMException && err.name === "AbortError") return;
+        if (!response.ok || !data) {
+          const message = response.statusText || `API error: ${response.status}`;
           setItems([]);
           setTotalPages(0);
           setTotalElements(0);
-          setError(err instanceof Error ? err.message : "뉴스를 불러오지 못했습니다.");
-        } finally {
-          setIsLoading(false);
+          setError(message);
+          return;
         }
-      };
 
+        if (data.error) {
+          setItems([]);
+          setTotalPages(0);
+          setTotalElements(0);
+          setError(data.error);
+          return;
+        }
+
+        setItems((data.content || []).map(toRow));
+        setTotalPages(data.totalPages || 0);
+        setTotalElements(data.totalElements || 0);
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        setItems([]);
+        setTotalPages(0);
+        setTotalElements(0);
+        setError(err instanceof Error ? err.message : "뉴스를 불러오지 못했습니다.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (isFirstLoadRef.current) {
+      isFirstLoadRef.current = false;
       load();
-      return () => controller.abort();
-    }, 250);
+    } else {
+      debounceRef.current = window.setTimeout(() => load(), 250);
+    }
 
     return () => {
       if (debounceRef.current) {
         window.clearTimeout(debounceRef.current);
+        debounceRef.current = null;
       }
+      controller.abort();
+      controllerRef.current = null;
     };
   }, [queryParams]);
 

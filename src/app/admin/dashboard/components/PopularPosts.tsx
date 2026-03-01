@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { getApiUrl } from "@/lib/api/config";
 import { ELASTIC_ENDPOINTS } from "@/lib/api/endpoints/elastic-endpoints";
+import { decodeHtmlEntities } from "@/lib/html-utils";
 
 interface PopularContent {
   id: string;
@@ -146,7 +147,7 @@ export default function PopularPosts() {
                   </span>
                   <div className="flex-1 min-w-0">
                     <h4 className="text-sm font-medium text-gray-900 truncate">
-                      {post.title}
+                      {decodeHtmlEntities(post.title)}
                     </h4>
                     <div className="flex items-center gap-3 mt-1 text-xs text-gray-700">
                       <span>조회수 {post.viewCount.toLocaleString()}</span>

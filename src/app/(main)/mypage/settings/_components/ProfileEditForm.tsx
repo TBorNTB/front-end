@@ -23,6 +23,7 @@ import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { validateImageFile } from '@/lib/form-utils';
 import { Upload, X as XIcon } from 'lucide-react';
 import { TechStackInput } from '@/components/ui/TechStackInput';
+import { decodeHtmlEntities } from '@/lib/html-utils';
 
 interface ProfileEditFormData {
   email: string;
@@ -80,12 +81,12 @@ export default function ProfileEditForm() {
         setOriginalEmail(cleanValue(profileData.email));
         setFormData({
           email: cleanValue(profileData.email),
-          realName: cleanValue(profileData.realName),
-          description: cleanValue(profileData.description),
-          techStack: cleanValue(profileData.techStack),
-          githubUrl: cleanValue(profileData.githubUrl),
-          linkedinUrl: cleanValue(profileData.linkedinUrl),
-          blogUrl: cleanValue(profileData.blogUrl),
+          realName: decodeHtmlEntities(cleanValue(profileData.realName)),
+          description: decodeHtmlEntities(cleanValue(profileData.description)),
+          techStack: decodeHtmlEntities(cleanValue(profileData.techStack)),
+          githubUrl: decodeHtmlEntities(cleanValue(profileData.githubUrl)),
+          linkedinUrl: decodeHtmlEntities(cleanValue(profileData.linkedinUrl)),
+          blogUrl: decodeHtmlEntities(cleanValue(profileData.blogUrl)),
           profileImageUrl: cleanValue(profileData.profileImageUrl),
         });
       } catch (err: any) {
@@ -174,6 +175,7 @@ export default function ProfileEditForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
     setIsSaving(true);
     setError(null);
     setSuccess(false);

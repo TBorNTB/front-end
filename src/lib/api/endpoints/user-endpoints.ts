@@ -94,6 +94,8 @@ export const USER_ENDPOINTS = {
     GET_ROOM_CHAT: '/user-service/chat/rooms/{roomId}/chat',
     READ_ROOM: '/user-service/chat/rooms/{roomId}/read',
     LEAVE_ROOM: '/user-service/chat/room/{roomId}',
+    UPDATE_ROOM_NAME: '/user-service/chat/rooms/{roomId}/roomName',
+    ADD_ROOM_MEMBERS: '/user-service/chat/rooms/{roomId}/members',
   },
 
 } as const;

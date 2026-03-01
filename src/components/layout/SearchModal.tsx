@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { X, Search, FileText, FolderOpen, Tag } from "lucide-react";
 import { useLandingData } from "@/hooks/useLandingData";
+import { decodeHtmlEntities } from "@/lib/html-utils";
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -187,10 +188,10 @@ export default function SearchModal({
                       <div className="mt-1">{result.icon}</div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-gray-900 truncate">
-                          {result.title}
+                          {decodeHtmlEntities(result.title)}
                         </h3>
                         <p className="text-sm text-gray-700 mt-1 line-clamp-2">
-                          {result.description}
+                          {decodeHtmlEntities(result.description || '')}
                         </p>
                         <span className="inline-block mt-2 text-xs font-medium px-2 py-1 rounded-full bg-gray-100 text-gray-700">
                           {result.type === "article"

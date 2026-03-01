@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { message: '비밀번호가 성공적으로 재설정되었습니다.' },
+      { message: data.message || '비밀번호가 성공적으로 변경되었습니다.' },
       { status: 200 }
     );
   } catch (error) {

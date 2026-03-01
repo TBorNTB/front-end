@@ -10,6 +10,7 @@ import AlarmPopup from "./AlarmPopup";
 import SearchModal from "./SearchModal";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useAlarmUnreadCount } from "@/hooks/useAlarmUnreadCount";
+import { useChatUnreadCount } from "@/hooks/useChatUnreadCount";
 import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 import { getRoleDisplayLabel, hasAdminAccess } from "@/lib/role-utils";
 import { useChatRoom } from "@/context/ChatContext";
@@ -44,6 +45,7 @@ const Header = () => {
   const { user: profileData } = useCurrentUser();
   const { toggleChatRoom } = useChatRoom();
   const { count: alarmUnreadCount, refresh: refreshAlarmUnread } = useAlarmUnreadCount();
+  const { count: chatUnreadCount } = useChatUnreadCount();
   
   const dropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -223,10 +225,15 @@ const Header = () => {
             {isAuthenticated && (
               <button 
                 onClick={toggleChatRoom}
-                className="p-2 text-gray-700 hover:text-gray-900 transition-colors cursor-pointer"
+                className="relative p-2.5 rounded-lg text-gray-700 hover:text-gray-900 hover:bg-gray-100 transition-colors cursor-pointer"
                 aria-label="Open chat room"
               >
                 <MessageSquare className="w-5 h-5" />
+                {chatUnreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[1rem] h-4 px-1 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white">
+                    {chatUnreadCount > 99 ? '99+' : chatUnreadCount}
+                  </span>
+                )}
               </button>
             )}
 

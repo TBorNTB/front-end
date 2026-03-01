@@ -10,6 +10,7 @@ import CategoryFilter from '@/components/layout/CategoryFilter';
 import { CategoryHelpers, CategoryType, CategoryDisplayNames } from '@/types/services/category';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { categoryService, type CategoryItem } from '@/lib/api/services/category-services';
+import { decodeHtmlEntities } from '@/lib/html-utils';
 
 interface Project {
   id: string;
@@ -693,19 +694,19 @@ export default function ProjectsContent() {
                         <ImageWithFallback
                           src={project.image}
                           type="project"
-                          alt={project.title}
+                          alt={decodeHtmlEntities(project.title)}
                           width={viewMode === 'list' ? 224 : 400}
                           height={viewMode === 'list' ? 224 : 240}
                           className={`w-full object-cover ${viewMode === 'list' ? 'h-full' : 'h-56'} group-hover:scale-105 transition-transform duration-200`}
                         />
                         <div className="absolute top-3 left-3">
                           <span className="bg-white/90 backdrop-blur-sm border border-gray-200 text-primary px-2 py-1 rounded-full text-xs font-medium">
-                            {project.category}
+                            {decodeHtmlEntities(project.category)}
                           </span>
                         </div>
                         <div className="absolute top-3 right-3">
                           <span className={`px-2 py-1 rounded-full text-xs border ${getStatusColor(project.status)}`}>
-                            {project.status}
+                            {decodeHtmlEntities(project.status)}
                           </span>
                         </div>
                       </div>
@@ -715,12 +716,12 @@ export default function ProjectsContent() {
                         <h3 className={`font-semibold text-gray-900 mb-2 line-clamp-2 ${
                           viewMode === 'list' ? 'text-lg' : 'text-base'
                         }`}>
-                          {project.title}
+                          {decodeHtmlEntities(project.title)}
                         </h3>
                         <p className={`text-gray-700 mb-3 leading-relaxed ${
                           viewMode === 'list' ? 'line-clamp-2' : 'line-clamp-3 text-sm'
                         }`}>
-                          {project.description}
+                          {decodeHtmlEntities(project.description)}
                         </p>
 
                         {/* Tags */}
@@ -731,7 +732,7 @@ export default function ProjectsContent() {
                                 key={index}
                                 className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md border border-gray-200"
                               >
-                                {tag}
+                                {decodeHtmlEntities(tag)}
                               </span>
                             ))}
                             {project.tags.length > 5 && (

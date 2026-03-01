@@ -3,6 +3,7 @@
 import { User } from "lucide-react";
 import { Message } from "@/types";
 import ChatBotIcon from "./ChatBotIcon";
+import { decodeHtmlEntities } from "@/lib/html-utils";
 
 interface ChatMessageProps {
   message: Message;
@@ -38,7 +39,7 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
           }`}
         >
           <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-            {message.content}
+            {decodeHtmlEntities(message.content)}
           </p>
           <span className={`text-xs ${isUser ? "text-white/70" : "text-gray-700"}`}>
             {message.timestamp.toLocaleTimeString("ko-KR", {

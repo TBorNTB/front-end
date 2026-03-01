@@ -26,6 +26,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { ELASTIC_ENDPOINTS, getElasticApiUrl } from '@/lib/api/endpoints/elastic-endpoints';
 import { USER_ENDPOINTS, getUserApiUrl } from '@/lib/api/endpoints/user-endpoints';
 import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
+import { decodeHtmlEntities } from '@/lib/html-utils';
 
 // API Response Types
 interface ProjectResponse {
@@ -964,7 +965,7 @@ export default function ActivityContent() {
                       <div className="relative h-48 overflow-hidden">
                         <ImageWithFallback
                           src={activity.image}
-                          alt={activity.title}
+                          alt={decodeHtmlEntities(activity.title)}
                           width={300}
                           height={200}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -988,7 +989,7 @@ export default function ActivityContent() {
                     <div className="p-6">
                       <div className="flex items-center gap-2 mb-2">
                         <h3 className="font-semibold text-foreground line-clamp-2 group-hover:text-primary-700 transition-colors flex-1">
-                          {activity.title}
+                          {decodeHtmlEntities(activity.title)}
                         </h3>
                         {(activity.type === 'like' || activity.type === 'comment') && activity.postType && (
                           <div className="flex-shrink-0">
@@ -999,7 +1000,7 @@ export default function ActivityContent() {
                       
                       {activity.description && (
                         <p className="text-gray-700 text-sm mb-4 line-clamp-2 leading-relaxed">
-                          {activity.description}
+                          {decodeHtmlEntities(activity.description)}
                         </p>
                       )}
                       
@@ -1037,7 +1038,7 @@ export default function ActivityContent() {
                         <div className="flex flex-wrap gap-1">
                           {activity.tags.slice(0, 3).map((tag, index) => (
                             <Badge key={index} variant="outline" className="text-xs bg-gray-50 text-gray-700 border-gray-300">
-                              {tag}
+                              {decodeHtmlEntities(tag)}
                             </Badge>
                           ))}
                           {activity.tags.length > 3 && (
@@ -1058,7 +1059,7 @@ export default function ActivityContent() {
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <h3 className="font-semibold text-foreground truncate flex-1 min-w-0">{activity.title}</h3>
+                        <h3 className="font-semibold text-foreground truncate flex-1 min-w-0">{decodeHtmlEntities(activity.title)}</h3>
                         {(activity.type === 'like' || activity.type === 'comment') && activity.postType && (
                           <div className="flex-shrink-0">
                             {getPostTypeBadge(activity.postType)}
@@ -1068,14 +1069,14 @@ export default function ActivityContent() {
                       </div>
                       
                       {activity.description && (
-                        <p className="text-gray-700 text-sm mb-2 line-clamp-1">{activity.description}</p>
+                        <p className="text-gray-700 text-sm mb-2 line-clamp-1">{decodeHtmlEntities(activity.description)}</p>
                       )}
                       
                       {activity.tags && activity.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mb-2">
                           {activity.tags.slice(0, 2).map((tag, index) => (
                             <Badge key={index} variant="outline" className="text-xs bg-gray-50 text-gray-700 border-gray-300">
-                              {tag}
+                              {decodeHtmlEntities(tag)}
                             </Badge>
                           ))}
                         </div>

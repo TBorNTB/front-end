@@ -3,12 +3,13 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Star, Users, Clock, ArrowRight, Globe, Shield, Code, Lock, Search, Wifi, Cpu, Key } from 'lucide-react';
+import { Users, Clock, ArrowRight, Shield, Code, Lock, Search, Wifi, Cpu, Key } from 'lucide-react';
 import TitleBanner from '@/components/layout/TitleBanner';
 import CategoryFilter from '@/components/layout/CategoryFilter';
 import type { LucideIcon } from 'lucide-react';
 import { categoryService, CategoryItem } from '@/lib/api/services/category-services';
 import { CategoryType, CategorySlugs, CategoryDisplayNames, CategoryDescriptions } from '@/types/services/category';
+import { decodeHtmlEntities } from '@/lib/html-utils';
 
 // Icon mapping for each category
 const CategoryIcons: Record<CategoryType, LucideIcon> = {
@@ -216,7 +217,6 @@ export function LearningTopics() {
                     item.projectStatus === 'COMPLETED' ? 'Completed' :
                     item.projectStatus === 'PLANNING' ? 'Planning' : 'In Progress',
             tags: item.projectTechStacks || [],
-            stars: item.likeCount || 0,
             contributors: (item.collaborators || []).length + (item.owner ? 1 : 0),
             categorySlug: selectedCategory
           }));
@@ -419,12 +419,12 @@ export function LearningTopics() {
                       filteredProjects.map((project) => (
                         <div key={project.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-200">
                           <div className="flex items-start justify-between mb-3">
-                            <h3 className="text-base font-bold text-foreground flex-1">{project.title}</h3>
+                            <h3 className="text-base font-bold text-foreground flex-1">{decodeHtmlEntities(project.title)}</h3>
                             <span className={`px-2 py-1 rounded-full text-xs border ml-3 flex-shrink-0 ${getStatusColor(project.status)}`}>
                               {getStatusText(project.status)}
                             </span>
                           </div>
-                          <p className="text-gray-700 text-sm mb-4">{project.description}</p>
+                          <p className="text-gray-700 text-sm mb-4">{decodeHtmlEntities(project.description)}</p>
                           <div className="flex items-center space-x-2 mb-4">
                             {project.tags && project.tags.length > 0 ? (
                               project.tags.slice(0, 3).map((tag: string, index: number) => (
@@ -436,10 +436,6 @@ export function LearningTopics() {
                           </div>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3 text-xs text-gray-700">
-                              <div className="flex items-center space-x-1">
-                                <Star size={12} />
-                                <span>{project.stars}</span>
-                              </div>
                               <div className="flex items-center space-x-1">
                                 <Users size={12} />
                                 <span>{project.contributors}</span>
@@ -490,18 +486,14 @@ export function LearningTopics() {
                     ) : filteredArticles.length > 0 ? (
                       filteredArticles.map((article) => (
                         <div key={article.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-200">
-                          <h3 className="text-base font-bold text-foreground mb-2">{article.title}</h3>
-                          <p className="text-gray-700 text-sm mb-4">{article.description}</p>
+                          <h3 className="text-base font-bold text-foreground mb-2">{decodeHtmlEntities(article.title)}</h3>
+                          <p className="text-gray-700 text-sm mb-4">{decodeHtmlEntities(article.description)}</p>
                           <div className="flex items-center justify-between text-xs text-gray-700 mb-3">
                             <span>by {article.author}</span>
                             <span>{article.publishDate}</span>
                           </div>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-4 text-xs text-gray-700">
-                              <div className="flex items-center space-x-1">
-                                <Globe size={12} />
-                                <span>{article.views}</span>
-                              </div>
                               <div className="flex items-center space-x-1">
                                 <Clock size={12} />
                                 <span>{article.readTime}</span>

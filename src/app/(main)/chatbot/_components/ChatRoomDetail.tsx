@@ -5,8 +5,11 @@ import { X, Minimize2, MoreVertical, ArrowLeft, Send } from "lucide-react";
 import toast from "react-hot-toast";
 import ChatInput from "./ChatInput";
 import { useChatWebSocket, WebSocketServerMessage } from "@/hooks/useChatWebSocket";
-import { getRoomChatHistory, ChatHistoryItem, leaveChatRoom, markChatRoomAsRead } from "@/lib/api/services/chat-services";
+import { getRoomChatHistory, ChatHistoryItem, leaveChatRoom, markChatRoomAsRead, updateChatRoomName, addChatRoomMembers } from "@/lib/api/services/chat-services";
+import { memberService } from "@/lib/api/services/user-services";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { decodeHtmlEntities } from "@/lib/html-utils";
+import { UserPlus, Pencil, User } from "lucide-react";
 
 interface ChatRoomDetailProps {
   roomId: string;
@@ -16,6 +19,8 @@ interface ChatRoomDetailProps {
   members?: Array<{ username: string; nickname: string; realName: string; thumbnailUrl?: string | null }>;
   onClose: () => void;
   onBack: () => void;
+  onRoomNameChange?: (newName: string) => void;
+  onMembersChange?: (addedCount?: number) => void;
   initialPosition?: { x: number; y: number };
 }
 
@@ -44,7 +49,9 @@ const buildJoinSystemText = (nickname: string): string => {
   return `${name}님이 채팅방에 들어왔습니다.`;
 };
 
-const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onClose, onBack, initialPosition }: ChatRoomDetailProps) => {
+const CHAT_INVITE_ROLES = ["ASSOCIATE_MEMBER", "FULL_MEMBER", "SENIOR", "ADMIN"] as const;
+
+const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onClose, onBack, onRoomNameChange, onMembersChange, initialPosition }: ChatRoomDetailProps) => {
   const currentUsernameRef = useRef<string | null>(null);
   const pendingOwnMessagesRef = useRef<Array<{ localId: string; content: string; sentAtMs: number }>>([]);
   const lastHistoryCursorRequestedRef = useRef<number | null>(null);
@@ -56,6 +63,17 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
   const lastJoinNoticeRef = useRef<{ key: string; at: number } | null>(null);
 
   const { user: currentUser } = useCurrentUser();
+
+  // 채팅방 이름 변경 / 멤버 추가 모달
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [editNameValue, setEditNameValue] = useState("");
+  const [isUpdatingName, setIsUpdatingName] = useState(false);
+  const [showMembersModal, setShowMembersModal] = useState(false);
+  const [addMembersList, setAddMembersList] = useState<Array<{ id: number; username: string; nickname: string; realName: string; profileImageUrl?: string }>>([]);
+  const [addMembersSelected, setAddMembersSelected] = useState<Set<string>>(new Set());
+  const [isLoadingAddMembers, setIsLoadingAddMembers] = useState(false);
+  const [isAddingMembers, setIsAddingMembers] = useState(false);
+  const [addMembersSearch, setAddMembersSearch] = useState("");
 
   useEffect(() => {
     currentUsernameRef.current = currentUser?.username ?? null;
@@ -243,6 +261,92 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
       onClose();
     }
   }, [disconnect, onClose, roomId]);
+
+  const openNameModal = useCallback(() => {
+    setEditNameValue(roomName);
+    setShowNameModal(true);
+    setIsMenuOpen(false);
+  }, [roomName]);
+
+  const saveRoomName = useCallback(async () => {
+    const trimmed = editNameValue.trim();
+    if (!trimmed) {
+      toast.error("방 이름을 입력해주세요.");
+      return;
+    }
+    setIsUpdatingName(true);
+    try {
+      await updateChatRoomName(roomId, trimmed);
+      onRoomNameChange?.(trimmed);
+      setShowNameModal(false);
+      toast.success("채팅방 이름이 변경되었습니다.");
+    } catch (e) {
+      const err = e as Error;
+      toast.error(err.message || "이름 변경에 실패했습니다.");
+    } finally {
+      setIsUpdatingName(false);
+    }
+  }, [roomId, editNameValue, onRoomNameChange]);
+
+  const openMembersModal = useCallback(async () => {
+    setIsMenuOpen(false);
+    setShowMembersModal(true);
+    setAddMembersSelected(new Set());
+    setAddMembersSearch("");
+    setIsLoadingAddMembers(true);
+    try {
+      const res = await memberService.getMembers({ page: 0, size: 50, roles: [...CHAT_INVITE_ROLES] });
+      const existingUsernames = new Set((members ?? []).map((m) => m.username));
+      if (currentUser?.username) existingUsernames.add(currentUser.username);
+      const list = (res.data ?? [])
+        .filter((u: { username: string }) => u.username && !existingUsernames.has(u.username))
+        .map((u: { id: number; username: string; nickname: string; realName: string; profileImageUrl?: string }) => ({
+          id: u.id,
+          username: u.username,
+          nickname: u.nickname ?? "",
+          realName: u.realName ?? "",
+          profileImageUrl: u.profileImageUrl,
+        }));
+      setAddMembersList(list);
+    } catch (e) {
+      toast.error("멤버 목록을 불러오지 못했습니다.");
+      setAddMembersList([]);
+    } finally {
+      setIsLoadingAddMembers(false);
+    }
+  }, [members, currentUser?.username]);
+
+  const toggleAddMember = useCallback((username: string) => {
+    setAddMembersSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(username)) next.delete(username);
+      else next.add(username);
+      return next;
+    });
+  }, []);
+
+  const submitAddMembers = useCallback(async () => {
+    if (addMembersSelected.size === 0) {
+      toast.error("추가할 멤버를 선택해주세요.");
+      return;
+    }
+    setIsAddingMembers(true);
+    try {
+      await addChatRoomMembers(roomId, {
+        roomName,
+        friendsUsername: Array.from(addMembersSelected),
+      });
+      onMembersChange?.(addMembersSelected.size);
+      setShowMembersModal(false);
+      setAddMembersSelected(new Set());
+      toast.success("멤버를 추가했습니다.");
+    } catch (e) {
+      const err = e as Error;
+      toast.error(err.message || "멤버 추가에 실패했습니다.");
+    } finally {
+      setIsAddingMembers(false);
+    }
+  }, [roomId, roomName, addMembersSelected, onMembersChange]);
 
   const mapHistoryItemToMessage = useCallback(
     (item: ChatHistoryItem): ChatMessage => {
@@ -519,7 +623,7 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
       return (
         <div key={message.id} className="flex justify-center my-3">
           <div className="text-xs text-gray-700 bg-gray-100 border border-gray-200 rounded-full px-3 py-1">
-            {message.content}
+            {decodeHtmlEntities(message.content)}
           </div>
         </div>
       );
@@ -575,7 +679,7 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
                   : "bg-white text-gray-900 rounded-bl-sm border border-gray-200"
               } shadow-sm`}
             >
-              <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+              <p className="text-sm whitespace-pre-wrap break-words">{decodeHtmlEntities(message.content)}</p>
             </div>
             <div className={`text-xs text-gray-700 ${isOwn ? "text-right" : "text-left"}`}>
               {formatTime(message.timestamp)}
@@ -671,11 +775,32 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
             <MoreVertical className="w-4 h-4" />
           </button>
           {isMenuOpen && (
-            <div className="absolute right-4 top-16 w-40 bg-white text-gray-900 rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50">
+            <div className="absolute right-4 top-16 w-44 bg-white text-gray-900 rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50">
+              {roomType === "group" && (
+                <>
+                  <button
+                    type="button"
+                    onClick={openNameModal}
+                    className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <Pencil className="w-4 h-4 text-gray-500" />
+                    채팅방 이름 변경
+                  </button>
+                  <button
+                    type="button"
+                    onClick={openMembersModal}
+                    className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <UserPlus className="w-4 h-4 text-gray-500" />
+                    멤버 추가
+                  </button>
+                  <div className="border-t border-gray-100" />
+                </>
+              )}
               <button
                 type="button"
                 onClick={handleLeaveRoom}
-                className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50"
+                className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 text-red-600"
               >
                 나가기
               </button>
@@ -771,6 +896,190 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
           </button>
         </div>
       </div>
+
+      {/* 채팅방 이름 변경 모달 */}
+      {showNameModal && (
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-[60] rounded-2xl" onClick={() => !isUpdatingName && setShowNameModal(false)}>
+          <div className="bg-white rounded-xl shadow-xl w-[90%] max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
+            <h4 className="font-semibold text-gray-900 mb-3">채팅방 이름 변경</h4>
+            <input
+              type="text"
+              value={editNameValue}
+              onChange={(e) => setEditNameValue(e.target.value)}
+              placeholder="채팅방 이름"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary-500 text-sm mb-4"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => !isUpdatingName && setShowNameModal(false)}
+                className="px-4 py-2 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={saveRoomName}
+                disabled={isUpdatingName || !editNameValue.trim()}
+                className="px-4 py-2 text-sm text-white bg-secondary-600 hover:bg-secondary-700 rounded-lg disabled:opacity-50"
+              >
+                {isUpdatingName ? "저장 중..." : "저장"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 멤버 추가 모달 - 그룹 채팅방 만들기 UI와 동일 스타일 */}
+      {showMembersModal && (
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-[60] rounded-2xl p-4" onClick={() => !isAddingMembers && setShowMembersModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col animate-slide-up" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900">멤버 추가</h3>
+              <button
+                type="button"
+                onClick={() => !isAddingMembers && setShowMembersModal(false)}
+                className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-700" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {/* Search */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">검색</label>
+                <input
+                  type="text"
+                  value={addMembersSearch}
+                  onChange={(e) => setAddMembersSearch(e.target.value)}
+                  placeholder="이름 또는 닉네임으로 검색"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Selected Users - 선택된 사용자 pills */}
+              {addMembersSelected.size > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    선택된 사용자 ({addMembersSelected.size}명)
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {addMembersList
+                      .filter((u) => addMembersSelected.has(u.username))
+                      .map((u) => (
+                        <div
+                          key={u.username}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-secondary-100 text-secondary-700 rounded-full text-sm"
+                        >
+                          <span>{u.realName || u.nickname || u.username}</span>
+                          <button
+                            type="button"
+                            onClick={() => toggleAddMember(u.username)}
+                            className="hover:bg-secondary-200 rounded-full p-0.5"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* User List - 사용자 선택 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  사용자 선택
+                </label>
+                <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
+                  {isLoadingAddMembers ? (
+                    <div className="py-12 text-center text-gray-500 text-sm">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-secondary-600 mb-2" />
+                      <p>불러오는 중...</p>
+                    </div>
+                  ) : addMembersList.length === 0 ? (
+                    <div className="py-12 text-center text-gray-500 text-sm">추가할 수 있는 멤버가 없습니다.</div>
+                  ) : (
+                    addMembersList
+                      .filter(
+                        (u) =>
+                          !addMembersSearch.trim() ||
+                          [u.nickname, u.realName, u.username].some((s) =>
+                            (s ?? "").toLowerCase().includes(addMembersSearch.trim().toLowerCase())
+                          )
+                      )
+                      .map((u) => {
+                        const isSelected = addMembersSelected.has(u.username);
+                        const displayName = u.realName || u.nickname || u.username;
+                        const thumb = (u.profileImageUrl ?? "").trim();
+                        const showThumb = thumb.length > 0 && thumb !== "string" && thumb !== "null";
+                        return (
+                          <button
+                            key={u.username}
+                            type="button"
+                            onClick={() => toggleAddMember(u.username)}
+                            className={`w-full flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors text-left ${
+                              isSelected ? "bg-secondary-50" : ""
+                            }`}
+                          >
+                            <div className="relative flex-shrink-0">
+                              {showThumb ? (
+                                <img
+                                  src={thumb}
+                                  alt={displayName}
+                                  className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 rounded-full bg-secondary-100 flex items-center justify-center border-2 border-gray-200">
+                                  <User className="w-5 h-5 text-secondary-600" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-gray-900 truncate">{displayName}</h4>
+                              <p className="text-xs text-gray-700 truncate">@{u.username}</p>
+                            </div>
+                            {isSelected && (
+                              <div className="w-5 h-5 bg-secondary-600 rounded-full flex items-center justify-center flex-shrink-0">
+                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-gray-200">
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => !isAddingMembers && setShowMembersModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+                  disabled={isAddingMembers}
+                >
+                  취소
+                </button>
+                <button
+                  type="button"
+                  onClick={submitAddMembers}
+                  disabled={isAddingMembers || addMembersSelected.size === 0}
+                  className="flex-1 px-4 py-2 bg-secondary-600 text-white rounded-lg hover:bg-secondary-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isAddingMembers ? "추가 중..." : `추가 (${addMembersSelected.size}명)`}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Global styles */}
       <style jsx>{`

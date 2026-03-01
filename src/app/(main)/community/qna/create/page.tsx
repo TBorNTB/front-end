@@ -119,14 +119,10 @@ export default function CreateQuestionPage() {
 
     if (!title.trim()) {
       newErrors.title = '제목을 입력해주세요.';
-    } else if (title.length < 10) {
-      newErrors.title = '제목은 최소 10자 이상이어야 합니다.';
     }
 
     if (!content.trim()) {
       newErrors.content = '내용을 입력해주세요.';
-    } else if (content.length < 20) {
-      newErrors.content = '내용은 최소 20자 이상이어야 합니다.';
     }
 
     if (selectedTags.length === 0) {
@@ -194,19 +190,6 @@ export default function CreateQuestionPage() {
             </div>
           </div>
 
-          {/* Description */}
-          <div className="mb-6">
-            <label className="block text-sm font-semibold text-gray-900 mb-2">설명</label>
-            <input
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="질문 요약(선택)"
-              className="w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 border-gray-300 focus:ring-primary-500"
-            />
-            <p className="mt-1 text-xs text-gray-700">비워두면 제목을 기반으로 자동 생성됩니다.</p>
-          </div>
-
           {/* Title */}
           <div className="mb-6" id="form-field-title">
             <label className="block text-sm font-semibold text-gray-900 mb-2">
@@ -219,7 +202,7 @@ export default function CreateQuestionPage() {
                 setTitle(e.target.value);
                 setErrors((prev) => ({ ...prev, title: undefined }));
               }}
-              placeholder="질문 제목을 입력하세요 (최소 10자)"
+              placeholder="질문 제목을 입력하세요"
               className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 ${
                 errors.title
                   ? 'border-red-300 focus:ring-red-500'
@@ -229,6 +212,19 @@ export default function CreateQuestionPage() {
             {errors.title && (
               <p className="mt-1 text-sm text-red-600">{errors.title}</p>
             )}
+          </div>
+
+          {/* Description */}
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-900 mb-2">설명</label>
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="질문 요약(선택)"
+              className="w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 border-gray-300 focus:ring-primary-500"
+            />
+            <p className="mt-1 text-xs text-gray-700">비워두면 제목을 기반으로 자동 생성됩니다.</p>
           </div>
 
           {/* Tech Tags */}
@@ -315,7 +311,7 @@ export default function CreateQuestionPage() {
                 setContent(e.target.value);
                 setErrors((prev) => ({ ...prev, content: undefined }));
               }}
-              placeholder="질문 내용을 자세히 작성해주세요 (최소 20자)&#10;&#10;• 문제 상황&#10;• 시도한 방법&#10;• 기대 결과"
+              placeholder="질문 내용을 자세히 작성해주세요&#10;&#10;• 문제 상황&#10;• 시도한 방법&#10;• 기대 결과"
               className={`w-full h-64 px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 resize-none ${
                 errors.content
                   ? 'border-red-300 focus:ring-red-500'

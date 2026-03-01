@@ -6,6 +6,7 @@ import { X, Loader2, Mail, User, FileText, Code, Github, Linkedin, Globe, Save, 
 
 import { profileService, UserResponse } from '@/lib/api/services/user-services';
 import { TechStackInput } from '@/components/ui/TechStackInput';
+import { decodeHtmlEntities } from '@/lib/html-utils';
 
 type ProfileEditModalProps = {
   open: boolean;
@@ -38,12 +39,12 @@ export default function ProfileEditModal({ open, profile, onClose, onUpdated }: 
   const initialForm = useMemo<FormState>(() => {
     return {
       email: cleanValue(profile.email),
-      realName: cleanValue(profile.realName),
-      description: cleanValue(profile.description),
-      techStack: cleanValue(profile.techStack),
-      githubUrl: cleanValue(profile.githubUrl),
-      linkedinUrl: cleanValue(profile.linkedinUrl),
-      blogUrl: cleanValue(profile.blogUrl),
+      realName: decodeHtmlEntities(cleanValue(profile.realName)),
+      description: decodeHtmlEntities(cleanValue(profile.description)),
+      techStack: decodeHtmlEntities(cleanValue(profile.techStack)),
+      githubUrl: decodeHtmlEntities(cleanValue(profile.githubUrl)),
+      linkedinUrl: decodeHtmlEntities(cleanValue(profile.linkedinUrl)),
+      blogUrl: decodeHtmlEntities(cleanValue(profile.blogUrl)),
     };
   }, [profile]);
 
@@ -70,6 +71,7 @@ export default function ProfileEditModal({ open, profile, onClose, onUpdated }: 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
 
     try {
       setIsSaving(true);

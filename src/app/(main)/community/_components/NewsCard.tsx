@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Calendar, Eye, ThumbsUp, User, Crown, Users } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
+import { decodeHtmlEntities } from '@/lib/html-utils';
 
 interface NewsItem {
   id: string;
@@ -163,17 +164,17 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
             {news.category && (
               <div className="mb-2">
                 <span className="bg-primary-100 text-primary-700 px-2.5 py-1 rounded-full text-xs font-semibold">
-                  {news.category}
+                  {decodeHtmlEntities(news.category)}
                 </span>
               </div>
             )}
             
             <h3 className="font-bold text-base text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
-              {news.title}
+              {decodeHtmlEntities(news.title)}
             </h3>
             
             <p className="text-sm text-gray-700 mb-3 line-clamp-2">
-              {news.summary || news.content?.substring(0, 150) || ''}
+              {decodeHtmlEntities(news.summary || news.content?.substring(0, 150) || '')}
             </p>
           </div>
 
@@ -222,7 +223,7 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
         {news.category && (
           <div className="absolute top-3 left-3 z-10">
             <span className="bg-primary-600 text-white px-2.5 py-1 rounded-full text-xs font-semibold">
-              {news.category}
+              {decodeHtmlEntities(news.category)}
             </span>
           </div>
         )}
@@ -232,11 +233,11 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
       <div className="p-5 flex-1 flex flex-col">
         <div className="flex-1 mb-4">
           <h3 className="font-semibold text-base text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
-            {news.title}
+            {decodeHtmlEntities(news.title)}
           </h3>
           
           <p className="text-sm text-gray-700 line-clamp-3">
-            {news.summary || news.content?.substring(0, 150) || ''}
+            {decodeHtmlEntities(news.summary || news.content?.substring(0, 150) || '')}
           </p>
         </div>
 
@@ -245,7 +246,7 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
           <div className="flex flex-wrap gap-1.5 mb-4">
             {news.tags.slice(0, 2).map((tag, index) => (
               <span key={index} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
-                #{tag}
+                #{decodeHtmlEntities(tag)}
               </span>
             ))}
           </div>

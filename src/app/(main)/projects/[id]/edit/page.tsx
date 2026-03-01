@@ -13,6 +13,7 @@ import { updateProject, type UpdateProjectRequestBody } from '@/lib/api/services
 import { s3Service } from '@/lib/api/services/s3-services';
 import { ProjectDetailResponse } from '@/types/services/project';
 import { searchProjectsByQuery, fetchLatestProjects, type ProjectSearchItem } from '@/lib/api/services/elastic-services';
+import { decodeHtmlEntities } from '@/lib/html-utils';
 
 export default function ProjectEditPage() {
   const router = useRouter();
@@ -54,13 +55,13 @@ export default function ProjectEditPage() {
         setErrorMessage(null);
         const data: ProjectDetailResponse = await fetchProjectDetail(projectId);
         setForm({
-          title: data.title ?? '',
-          description: data.description ?? '',
+          title: decodeHtmlEntities(data.title ?? ''),
+          description: decodeHtmlEntities(data.description ?? ''),
           projectStatus: data.projectStatus ?? 'PLANNING',
           thumbnailUrl: data.thumbnailUrl ?? '',
           thumbnailKey: '',
           contentImageKeys: [],
-          content: data.content ?? data.contentJson ?? '',
+          content: decodeHtmlEntities(data.content ?? data.contentJson ?? ''),
           parentProjectId: data.parentProjectId ?? null,
         });
         if (data.thumbnailUrl) setThumbnailPreview(data.thumbnailUrl);
@@ -70,7 +71,7 @@ export default function ProjectEditPage() {
           setParentProjectId(data.parentProjectId);
           try {
             const parent = await fetchProjectDetail(String(data.parentProjectId));
-            setParentProjectTitle(parent.title ?? `프로젝트 #${data.parentProjectId}`);
+            setParentProjectTitle(decodeHtmlEntities(parent.title ?? `프로젝트 #${data.parentProjectId}`));
           } catch {
             setParentProjectTitle(`프로젝트 #${data.parentProjectId}`);
           }
@@ -121,7 +122,7 @@ export default function ProjectEditPage() {
 
   const selectParentProject = useCallback((project: ProjectSearchItem) => {
     setParentProjectId(project.id);
-    setParentProjectTitle(project.title);
+    setParentProjectTitle(decodeHtmlEntities(project.title));
     setShowParentDropdown(false);
     setParentQuery('');
   }, []);
@@ -168,6 +169,7 @@ export default function ProjectEditPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!projectId) return;
+    if (isSubmitting) return;
     setErrorMessage(null);
     try {
       setIsSubmitting(true);

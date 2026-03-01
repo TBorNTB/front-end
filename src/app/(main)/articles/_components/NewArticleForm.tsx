@@ -184,6 +184,7 @@ export default function NewArticleForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    if (loading) return;
     if (!validateForm()) {
       return;
     }

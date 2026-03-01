@@ -37,14 +37,16 @@ export interface CreateDocumentRequest {
   title: string;
   content: string;
   description: string;
-  thumbnailUrl?: string;
+  thumbnailKey?: string;
+  contentImageKeys?: string[];
 }
 
 export interface UpdateDocumentRequest {
   title: string;
-  content: string;
   description: string;
-  thumbnailUrl?: string;
+  content: string;
+  thumbnailKey?: string;
+  contentImageKeys?: string[];
 }
 
 // Create a document

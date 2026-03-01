@@ -8,7 +8,6 @@ import {
   Users, 
   FileText, 
   MessageSquare,
-  Settings,
   ExternalLink
 } from "lucide-react";
 import Image from 'next/image';
@@ -38,12 +37,6 @@ const navigation = [
     mobileText: ["커뮤니티", "관리"],
     href: "/admin/community",
     icon: MessageSquare,
-  },
-  {
-    name: "설정",
-    mobileText: "설정",
-    href: "/admin/settings",
-    icon: Settings,
   },
 ];
 

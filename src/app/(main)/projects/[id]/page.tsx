@@ -22,11 +22,14 @@ import { Menu, Transition } from '@headlessui/react';
 import { ArrowLeft, Pencil, Plus, Search, Trash2, UserPlus, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import { ProjectDetailResponse } from '../../../../types/services/project';
 import DocumentModal from '../_components/DocumentModal';
+import CreateChatFromPostButton from '../../_components/CreateChatFromPostButton';
+import { decodeHtmlEntities } from '@/lib/html-utils';
+import { isCommentEdited } from '@/lib/comment-utils';
 
 interface ProjectPageProps {
   params: Promise<{ id: string }>;
@@ -84,6 +87,156 @@ interface MappedProject {
     content: string;
     completed: boolean;
   }>;
+  /** 프로젝트 생성 시 자동 생성된 채팅방 ID. 있으면 이 ID로만 연다. */
+  chatRoomId?: string | null;
+}
+
+const MENU_DROPDOWN_HEIGHT = 200;
+const MENU_DROPDOWN_WIDTH = 192;
+
+function DocumentRowMenuContent({
+  open,
+  buttonRef,
+  onView,
+  onEdit,
+  onDelete,
+}: {
+  open: boolean;
+  buttonRef: React.RefObject<HTMLButtonElement | null>;
+  onView: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setPosition(null);
+      return;
+    }
+    const el = buttonRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const spaceBelow = typeof window !== 'undefined' ? window.innerHeight - rect.bottom : 0;
+    const spaceAbove = rect.top;
+    const opensUp = spaceBelow < MENU_DROPDOWN_HEIGHT && spaceAbove > spaceBelow;
+    setPosition({
+      left: rect.right - MENU_DROPDOWN_WIDTH,
+      top: opensUp ? rect.top - MENU_DROPDOWN_HEIGHT - 8 : rect.bottom + 8,
+    });
+  }, [open, buttonRef]);
+
+  return (
+    <>
+      <Menu.Button
+        ref={buttonRef}
+        className="p-1 text-gray-900 hover:bg-gray-200 rounded-full"
+      >
+        <svg className="w-4 h-4 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+        </svg>
+      </Menu.Button>
+      {open && position && typeof document !== 'undefined' && createPortal(
+        <Transition
+          as={Fragment}
+          enter="transition ease-out duration-100"
+          enterFrom="transform opacity-0 scale-95"
+          enterTo="transform opacity-100 scale-100"
+          leave="transition ease-in duration-75"
+          leaveFrom="transform opacity-100 scale-100"
+          leaveTo="transform opacity-0 scale-95"
+        >
+          <Menu.Items
+            static
+            className="fixed w-48 bg-white divide-y divide-gray-100 rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-[100]"
+            style={{ left: position.left, top: position.top, width: MENU_DROPDOWN_WIDTH }}
+          >
+            <div className="p-1">
+              <Menu.Item>
+                {({ active }: { active: boolean }) => (
+                  <button
+                    onClick={onView}
+                    className={`${
+                      active ? 'bg-gray-100' : ''
+                    } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-800`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    보기
+                  </button>
+                )}
+              </Menu.Item>
+              <Menu.Item>
+                {({ active }: { active: boolean }) => (
+                  <button
+                    onClick={onEdit}
+                    className={`${
+                      active ? 'bg-gray-100' : ''
+                    } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-800`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    편집
+                  </button>
+                )}
+              </Menu.Item>
+            </div>
+            <div className="p-1">
+              <Menu.Item>
+                {({ active }: { active: boolean }) => (
+                  <button
+                    onClick={onDelete}
+                    className={`${
+                      active ? 'bg-red-50' : ''
+                    } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-red-600`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    삭제
+                  </button>
+                )}
+              </Menu.Item>
+            </div>
+          </Menu.Items>
+        </Transition>,
+        document.body
+      )}
+    </>
+  );
+}
+
+function DocumentRowMenu({
+  doc,
+  projectId,
+  onView,
+  onEdit,
+  onDelete,
+}: {
+  doc: { id: string };
+  projectId: string;
+  onView: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+
+  return (
+    <Menu as="div" className="relative opacity-0 group-hover:opacity-100 transition-opacity">
+      {({ open }) => (
+        <DocumentRowMenuContent
+          open={open}
+          buttonRef={buttonRef}
+          onView={onView}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      )}
+    </Menu>
+  );
 }
 
 export default function ProjectPage({ params }: ProjectPageProps) {
@@ -112,7 +265,9 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   const [editContent, setEditContent] = useState('');
   const [replyingToId, setReplyingToId] = useState<number | null>(null);
   const [replyContent, setReplyContent] = useState('');
-  
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [submittingReplyParentId, setSubmittingReplyParentId] = useState<number | null>(null);
+
   // Dropdown states (팀원 섹션 기본 펼침)
   const [openSections, setOpenSections] = useState<{[key: string]: boolean}>({
     info: true,
@@ -354,6 +509,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
           content: sg.content ?? '',
           completed: Boolean(sg.completed),
         })),
+      chatRoomId: apiData.chatRoomId ?? null,
     };
   };
 
@@ -788,7 +944,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     }
   };
 
-  const handleDocumentAction = async (docId: string, action: 'edit' | 'delete' | 'share' | 'download') => {
+  const handleDocumentAction = async (docId: string, action: 'edit' | 'delete') => {
     switch (action) {
       case 'edit':
         router.push(`/projects/${projectId}/documents/${docId}/edit`);
@@ -810,16 +966,6 @@ export default function ProjectPage({ params }: ProjectPageProps) {
           }
         }
         break;
-      case 'share':
-        // Copy share link to clipboard
-        const shareUrl = `${window.location.origin}/projects/${projectId}/documents/${docId}`;
-        navigator.clipboard.writeText(shareUrl);
-        alert('공유 링크가 클립보드에 복사되었습니다!');
-        break;
-      case 'download':
-        // Trigger download
-        window.location.href = `/api/documents/${docId}/download`;
-        break;
     }
   };
 
@@ -832,8 +978,8 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   };
 
   const handleSubmitComment = async () => {
-    if (!commentContent.trim() || !projectId) return;
-    
+    if (!commentContent.trim() || !projectId || isSubmittingComment) return;
+    setIsSubmittingComment(true);
     try {
       await createComment(projectId, 'PROJECT', { content: commentContent });
       setCommentContent('');
@@ -852,6 +998,8 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     } catch (error: any) {
       console.error('Error creating comment:', error);
       alert(error.message || '댓글 작성에 실패했습니다.');
+    } finally {
+      setIsSubmittingComment(false);
     }
   };
 
@@ -924,8 +1072,8 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   };
 
   const handleSubmitReply = async (parentId: number) => {
-    if (!replyContent.trim() || !projectId) return;
-    
+    if (!replyContent.trim() || !projectId || submittingReplyParentId !== null) return;
+    setSubmittingReplyParentId(parentId);
     try {
       await createReply(projectId, parentId, 'PROJECT', { content: replyContent });
       setReplyingToId(null);
@@ -936,6 +1084,8 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     } catch (error: any) {
       console.error('Error creating reply:', error);
       alert(error.message || '대댓글 작성에 실패했습니다.');
+    } finally {
+      setSubmittingReplyParentId(null);
     }
   };
 
@@ -967,7 +1117,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left Sidebar */}
             <aside className="lg:col-span-3">
-              <div className="lg:sticky lg:top-8 space-y-4">
+              <div className="space-y-4">
                 
                 {/* Project Info Section */}
                 <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
@@ -1204,14 +1354,14 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                     sg.completed ? 'text-gray-800 line-through' : 'text-gray-900'
                                   }`}
                                 >
-                                  {sg.content || '(제목 없음)'}
+                                  {decodeHtmlEntities(sg.content || '(제목 없음)')}
                                 </span>
                                 {canEditProject && (
                                   <button
                                     type="button"
                                     onClick={() => handleSubgoalDelete(sg.id)}
                                     disabled={subgoalDeletingId === sg.id}
-                                    className="p-1 text-gray-800 hover:text-red-600 rounded opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                                    className="p-1 text-gray-400 hover:text-red-600 rounded transition-colors disabled:opacity-50"
                                     title="삭제"
                                   >
                                     <X className="w-4 h-4" />
@@ -1311,6 +1461,15 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           </div>
                         </div>
                       ))}
+                      <CreateChatFromPostButton
+                        type="project"
+                        title={decodeHtmlEntities(project.title)}
+                        members={(project.team || [])
+                          .filter((m: any) => m && m.username)
+                          .map((m: any) => ({ username: m.username, displayName: m.name || m.username }))}
+                        chatRoomId={project.chatRoomId ?? undefined}
+                        className="pt-2 border-t border-gray-200"
+                      />
                     </div>
                   )}
                 </div>
@@ -1552,106 +1711,14 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                               </div>
                             </Link>
 
-                            {/* Action Menu (visible on hover) */}
-                            <Menu as="div" className="relative opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Menu.Button className="p-1 hover:bg-gray-200 rounded-full">
-                                <svg className="w-4 h-4 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                                </svg>
-                              </Menu.Button>
-                              <Transition
-                                as={Fragment}
-                                enter="transition ease-out duration-100"
-                                enterFrom="transform opacity-0 scale-95"
-                                enterTo="transform opacity-100 scale-100"
-                                leave="transition ease-in duration-75"
-                                leaveFrom="transform opacity-100 scale-100"
-                                leaveTo="transform opacity-0 scale-95"
-                              >
-                                <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right bg-white divide-y divide-gray-100 rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
-                                  <div className="p-1">
-                                    <Menu.Item>
-                                      {({ active }: { active: boolean }) => (
-                                        <button
-                                          onClick={() => router.push(`/projects/${projectId}/documents/${doc.id}`)}
-                                          className={`${
-                                            active ? 'bg-gray-100' : ''
-                                          } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-800`}
-                                        >
-                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                          </svg>
-                                          보기
-                                        </button>
-                                      )}
-                                    </Menu.Item>
-                                    <Menu.Item>
-                                      {({ active }: { active: boolean }) => (
-                                        <button
-                                          onClick={() => handleDocumentAction(doc.id, 'edit')}
-                                          className={`${
-                                            active ? 'bg-gray-100' : ''
-                                          } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-800`}
-                                        >
-                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                          </svg>
-                                          편집
-                                        </button>
-                                      )}
-                                    </Menu.Item>
-                                    <Menu.Item>
-                                      {({ active }: { active: boolean }) => (
-                                        <button
-                                          onClick={() => handleDocumentAction(doc.id, 'share')}
-                                          className={`${
-                                            active ? 'bg-gray-100' : ''
-                                          } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-800`}
-                                        >
-                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                                          </svg>
-                                          공유
-                                        </button>
-                                      )}
-                                    </Menu.Item>
-                                    <Menu.Item>
-                                      {({ active }: { active: boolean }) => (
-                                        <button
-                                          onClick={() => handleDocumentAction(doc.id, 'download')}
-                                          className={`${
-                                            active ? 'bg-gray-100' : ''
-                                          } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-800`}
-                                        >
-                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                          </svg>
-                                          다운로드
-                                        </button>
-                                      )}
-                                    </Menu.Item>
-                                  </div>
-                                  <div className="p-1">
-                                    <Menu.Item>
-                                      {({ active }: { active: boolean }) => (
-                                        <button
-                                          onClick={() => handleDocumentAction(doc.id, 'delete')}
-                                          className={`${
-                                            active ? 'bg-red-50' : ''
-                                          } group flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-red-600`}
-                                        >
-                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                          </svg>
-                                          삭제
-                                        </button>
-                                      )}
-                                    </Menu.Item>
-                                  </div>
-                                </Menu.Items>
-                              </Transition>
-                            </Menu>
+                            {/* Action Menu (visible on hover) - Portal + position so it never clips */}
+                            <DocumentRowMenu
+                              doc={doc}
+                              projectId={projectId ?? ''}
+                              onView={() => router.push(`/projects/${projectId}/documents/${doc.id}`)}
+                              onEdit={() => handleDocumentAction(doc.id, 'edit')}
+                              onDelete={() => handleDocumentAction(doc.id, 'delete')}
+                            />
                           </div>
                           ))
                         ) : (
@@ -1705,9 +1772,9 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                             href={`/projects/${related.id}`}
                             className="block p-2 rounded-lg border border-purple-100 hover:bg-purple-50 transition-colors"
                           >
-                            <p className="text-xs text-purple-500 mb-0.5">{related.version}</p>
+                            <p className="text-xs text-purple-500 mb-0.5">{decodeHtmlEntities(related.version)}</p>
                             <p className="text-sm font-medium text-gray-900">
-                              {related.title}
+                              {decodeHtmlEntities(related.title)}
                             </p>
                           </Link>
                         ))
@@ -1728,10 +1795,10 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                 {/* Project Header */}
                 <header className="mb-8">
                   <h1 className="text-4xl font-bold text-foreground mb-3">
-                    {project.title}
+                    {decodeHtmlEntities(project.title)}
                   </h1>
                   <p className="text-lg text-gray-800 mb-4">
-                    {project.subtitle}
+                    {decodeHtmlEntities(project.subtitle)}
                   </p>
 
                   {/* Author & Stats */}
@@ -1758,7 +1825,6 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     </div>
                     <span>👁 {project.stats?.views || 0}</span>
                     <span>❤️ {project.stats?.likes || 0}</span>
-                    <span>💬 {project.stats?.comments || 0}</span>
                     {canEditProject && (
                       <div className="flex items-center gap-2 ml-auto">
                         <Link
@@ -1787,7 +1853,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   <div className="relative w-full h-96 mb-8 rounded-xl overflow-hidden bg-gray-100 border border-gray-300">
                     <img 
                       src={project.thumbnailUrl} 
-                      alt={project.title}
+                      alt={decodeHtmlEntities(project.title)}
                       className="w-full h-full object-cover"
                       onError={() => setImageError(true)}
                     />
@@ -1811,7 +1877,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     <h2 className="text-2xl font-bold text-foreground mb-4">프로젝트 개요</h2>
                     <div className="prose prose-lg max-w-none">
                       <p className="text-gray-800 leading-relaxed whitespace-pre-line">
-                        {project.description}
+                        {decodeHtmlEntities(project.description)}
                       </p>
                     </div>
                   </section>
@@ -1905,7 +1971,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     <div className="flex justify-end">
                       <button
                         onClick={handleSubmitComment}
-                        disabled={!commentContent.trim() || isLoadingComments}
+                        disabled={!commentContent.trim() || isLoadingComments || isSubmittingComment}
                         className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         댓글 등록
@@ -1924,7 +1990,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                       아직 댓글이 없습니다. 첫 댓글을 작성해보세요!
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="divide-y divide-gray-200">
                       {comments.map((comment) => {
                         const getDisplayName = (user?: { nickname?: string; realName?: string }): string => {
                           if (!user || (!user.nickname && !user.realName)) {
@@ -1937,8 +2003,8 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                         const initial = displayName.charAt(0).toUpperCase();
 
                         return (
-                          <div key={`comment-${comment.id}`} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                            <div className="flex gap-4">
+                          <div key={`comment-${comment.id}`} className="py-4 first:pt-0">
+                            <div className="flex gap-3">
                               <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
                                 {profileImageUrl ? (
                                   <ImageWithFallback
@@ -1961,14 +2027,14 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                   <div className="flex items-center gap-2">
                                     <span className="font-medium text-gray-900">{displayName}</span>
                                     <span className="text-sm text-gray-800">{formatDate(comment.createdAt)}</span>
-                                    {comment.updatedAt !== comment.createdAt && (
+                                    {isCommentEdited(comment.createdAt, comment.updatedAt) && (
                                       <span className="text-xs text-gray-800">(수정됨)</span>
                                     )}
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <Menu as="div" className="relative">
-                                    <Menu.Button className="p-1 hover:bg-gray-200 rounded-full">
-                                      <svg className="w-4 h-4 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <Menu.Button className="p-1 text-gray-900 hover:bg-gray-200 rounded-full">
+                                      <svg className="w-4 h-4 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                                       </svg>
                                     </Menu.Button>
@@ -1988,7 +2054,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                               <button
                                                 onClick={() => {
                                                   setEditingCommentId(comment.id);
-                                                  setEditContent(comment.content);
+                                                  setEditContent(decodeHtmlEntities(comment.content));
                                                 }}
                                                 className={`${
                                                   active ? 'bg-gray-100' : ''
@@ -2045,7 +2111,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                 </div>
                               ) : (
                                 <>
-                                  <p className="text-gray-800 whitespace-pre-wrap break-words">{comment.content}</p>
+                                  <p className="text-gray-800 whitespace-pre-wrap break-words">{decodeHtmlEntities(comment.content)}</p>
                                   
                                   {/* Reply button */}
                                   <div className="mt-3 flex items-center gap-4">
@@ -2086,10 +2152,10 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                       <div className="flex gap-2">
                                         <button
                                           onClick={() => handleSubmitReply(comment.id)}
-                                          disabled={!replyContent.trim()}
+                                          disabled={!replyContent.trim() || submittingReplyParentId !== null}
                                           className="px-4 py-1.5 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                          등록
+                                          {submittingReplyParentId === comment.id ? '등록 중...' : '등록'}
                                         </button>
                                         <button
                                           onClick={() => {
@@ -2106,15 +2172,14 @@ export default function ProjectPage({ params }: ProjectPageProps) {
 
                                   {/* Replies */}
                                   {expandedReplies.has(comment.id) && replies[comment.id] && (
-                                    <div className="mt-4 space-y-3 pl-4 border-l-2 border-gray-200">
+                                    <div className="mt-4 ml-4 pl-4 border-l-2 border-gray-200 space-y-4">
                                       {replies[comment.id].map((reply) => {
                                         const replyDisplayName = reply.user ? getDisplayName(reply.user) : reply.username;
                                         const replyProfileImageUrl = reply.user?.profileImageUrl;
                                         const replyInitial = replyDisplayName.charAt(0).toUpperCase();
 
                                         return (
-                                          <div key={`reply-${comment.id}-${reply.id}`} className="bg-white rounded-lg p-3 border border-gray-200">
-                                            <div className="flex gap-3">
+                                          <div key={`reply-${comment.id}-${reply.id}`} className="flex gap-3 rounded-2xl p-3 -mx-3 transition-shadow hover:shadow-[0_8px_28px_8px_rgba(0,0,0,0.18)]">
                                               <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
                                                 {replyProfileImageUrl ? (
                                                   <ImageWithFallback
@@ -2137,13 +2202,13 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                                   <div className="flex items-center gap-2">
                                                     <span className="text-sm font-medium text-gray-900">{replyDisplayName}</span>
                                                     <span className="text-xs text-gray-800">{formatDate(reply.createdAt)}</span>
-                                                    {reply.updatedAt !== reply.createdAt && (
+                                                    {isCommentEdited(reply.createdAt, reply.updatedAt) && (
                                                       <span className="text-xs text-gray-800">(수정됨)</span>
                                                     )}
                                                   </div>
                                                   <Menu as="div" className="relative">
-                                                    <Menu.Button className="p-1 hover:bg-gray-200 rounded-full">
-                                                      <svg className="w-3 h-3 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <Menu.Button className="p-1 text-gray-900 hover:bg-gray-200 rounded-full">
+                                                      <svg className="w-3 h-3 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                                                       </svg>
                                                     </Menu.Button>
@@ -2163,7 +2228,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                                               <button
                                                                 onClick={() => {
                                                                   setEditingCommentId(reply.id);
-                                                                  setEditContent(reply.content);
+                                                                  setEditContent(decodeHtmlEntities(reply.content));
                                                                 }}
                                                                 className={`${
                                                                   active ? 'bg-gray-100' : ''
@@ -2217,11 +2282,10 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                                     </div>
                                                   </div>
                                                 ) : (
-                                                  <p className="text-sm text-gray-800 whitespace-pre-wrap break-words mt-1">{reply.content}</p>
+                                                  <p className="text-sm text-gray-800 whitespace-pre-wrap break-words mt-1">{decodeHtmlEntities(reply.content)}</p>
                                                 )}
                                               </div>
                                             </div>
-                                          </div>
                                         );
                                       })}
                                     </div>

@@ -6,8 +6,6 @@ import TitleBanner from '@/components/layout/TitleBanner';
 import { 
   MessageSquare, 
   CheckCircle, 
-  Bookmark, 
-  BookmarkCheck, 
   Eye, 
   Calendar, 
   ThumbsUp,
@@ -32,6 +30,8 @@ import {
   toggleLike,
 } from '@/lib/api/services/user-services';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { decodeHtmlEntities } from '@/lib/html-utils';
+import { isCommentEdited } from '@/lib/comment-utils';
 
 interface TechTag {
   id: string;
@@ -237,6 +237,9 @@ export default function QuestionDetailPage() {
   // Replies (대댓글)
   const [replyTarget, setReplyTarget] = useState<ReplyTarget>(null);
   const [replyContent, setReplyContent] = useState('');
+  const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+  const [isSubmittingQuestionComment, setIsSubmittingQuestionComment] = useState(false);
+  const [isSubmittingAnswerComment, setIsSubmittingAnswerComment] = useState(false);
   const [expandedReplies, setExpandedReplies] = useState<Set<number>>(() => new Set());
   const [repliesByParentId, setRepliesByParentId] = useState<Record<number, Comment[]>>({});
   
@@ -257,27 +260,6 @@ export default function QuestionDetailPage() {
     });
   };
 
-  const getRoleBadge = (role: 'member' | 'admin' | 'guest') => {
-    if (role === 'admin') {
-      return (
-        <span className="px-2 py-0.5 text-xs font-medium bg-primary-100 text-primary-700 rounded">
-          관리자
-        </span>
-      );
-    }
-    if (role === 'guest') {
-      return null;
-    }
-    return (
-      <span className="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-700 rounded">
-        정회원
-      </span>
-    );
-  };
-
-  const handleBookmark = () => {
-    setQuestion(prev => (prev ? { ...prev, isBookmarked: !prev.isBookmarked } : prev));
-  };
 
   const handleUpvoteQuestion = () => {
     if (!questionId || isTogglingQuestionLike) return;
@@ -310,9 +292,9 @@ export default function QuestionDetailPage() {
       return;
     }
 
-    setEditTitle(question.title);
-    setEditDescription(question.description ?? '');
-    setEditContent(question.content);
+    setEditTitle(decodeHtmlEntities(question.title));
+    setEditDescription(question.description ? decodeHtmlEntities(question.description) : '');
+    setEditContent(decodeHtmlEntities(question.content));
     setIsEditing(true);
   };
 
@@ -527,7 +509,7 @@ export default function QuestionDetailPage() {
       return;
     }
     setEditingAnswerId(answer.id);
-    setEditAnswerContent(answer.content);
+    setEditAnswerContent(decodeHtmlEntities(answer.content ?? ''));
   };
 
   const handleCancelEditAnswer = () => {
@@ -589,38 +571,37 @@ export default function QuestionDetailPage() {
     }
   };
 
-  const handleAddQuestionComment = () => {
-    if (!newQuestionComment.trim()) return;
-    if (!questionId) return;
-
-    (async () => {
-      try {
-        await createComment(questionId, 'QNA_QUESTION', { content: newQuestionComment.trim() });
-        const list = await fetchComments(questionId, 'QNA_QUESTION', 0, 20, 'DESC');
-        setQuestion(prev => (prev ? { ...prev, comments: (list.content ?? []).map(toCommentState) } : prev));
-        setNewQuestionComment('');
-      } catch (e) {
-        alert(e instanceof Error ? e.message : '댓글 작성에 실패했습니다.');
-      }
-    })();
+  const handleAddQuestionComment = async () => {
+    if (!newQuestionComment.trim() || !questionId || isSubmittingQuestionComment) return;
+    setIsSubmittingQuestionComment(true);
+    try {
+      await createComment(questionId, 'QNA_QUESTION', { content: newQuestionComment.trim() });
+      const list = await fetchComments(questionId, 'QNA_QUESTION', 0, 20, 'DESC');
+      setQuestion(prev => (prev ? { ...prev, comments: (list.content ?? []).map(toCommentState) } : prev));
+      setNewQuestionComment('');
+    } catch (e) {
+      alert(e instanceof Error ? e.message : '댓글 작성에 실패했습니다.');
+    } finally {
+      setIsSubmittingQuestionComment(false);
+    }
   };
 
-  const handleAddAnswerComment = (answerId: string) => {
+  const handleAddAnswerComment = async (answerId: string) => {
     const commentContent = newAnswerComments[answerId];
-    if (!commentContent?.trim()) return;
-
-    (async () => {
-      try {
-        await createComment(answerId, 'QNA_ANSWER', { content: commentContent.trim() });
-        const list = await fetchComments(answerId, 'QNA_ANSWER', 0, 20, 'DESC');
-        setAnswers(prev =>
-          prev.map(a => (a.id === answerId ? { ...a, comments: (list.content ?? []).map(toCommentState) } : a))
-        );
-        setNewAnswerComments(prev => ({ ...prev, [answerId]: '' }));
-      } catch (e) {
-        alert(e instanceof Error ? e.message : '댓글 작성에 실패했습니다.');
-      }
-    })();
+    if (!commentContent?.trim() || isSubmittingAnswerComment) return;
+    setIsSubmittingAnswerComment(true);
+    try {
+      await createComment(answerId, 'QNA_ANSWER', { content: commentContent.trim() });
+      const list = await fetchComments(answerId, 'QNA_ANSWER', 0, 20, 'DESC');
+      setAnswers(prev =>
+        prev.map(a => (a.id === answerId ? { ...a, comments: (list.content ?? []).map(toCommentState) } : a))
+      );
+      setNewAnswerComments(prev => ({ ...prev, [answerId]: '' }));
+    } catch (e) {
+      alert(e instanceof Error ? e.message : '댓글 작성에 실패했습니다.');
+    } finally {
+      setIsSubmittingAnswerComment(false);
+    }
   };
 
   const handleToggleReplyInput = (target: Exclude<ReplyTarget, null>) => {
@@ -656,9 +637,8 @@ export default function QuestionDetailPage() {
   };
 
   const handleSubmitReply = async () => {
-    if (!replyTarget) return;
-    if (!replyContent.trim()) return;
-
+    if (!replyTarget || !replyContent.trim() || isSubmittingReply) return;
+    setIsSubmittingReply(true);
     try {
       await createReply(replyTarget.postId, replyTarget.parentId, replyTarget.postType, {
         content: replyContent.trim(),
@@ -682,6 +662,8 @@ export default function QuestionDetailPage() {
       }
     } catch (e) {
       alert(e instanceof Error ? e.message : '대댓글 작성에 실패했습니다.');
+    } finally {
+      setIsSubmittingReply(false);
     }
   };
 
@@ -785,7 +767,7 @@ export default function QuestionDetailPage() {
           {/* Header */}
           <div className="flex items-start justify-between mb-6">
             <div className="flex-1">
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">{question.title}</h1>
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">{decodeHtmlEntities(question.title)}</h1>
               
               {/* Meta Info */}
               <div className="flex flex-wrap items-center gap-4 text-sm text-gray-700 mb-4">
@@ -804,7 +786,6 @@ export default function QuestionDetailPage() {
                     </div>
                   )}
                   <span className="font-medium text-gray-700">{question.author}</span>
-                  {getRoleBadge(question.authorRole)}
                 </div>
                 <div className="flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
@@ -873,18 +854,6 @@ export default function QuestionDetailPage() {
                 />
                 <span className="text-sm text-gray-700">{question.upvotes}</span>
               </button>
-
-              <button
-                onClick={handleBookmark}
-                className="p-3 rounded-lg hover:bg-gray-100 transition-colors"
-                title={question.isBookmarked ? '스크랩 취소' : '스크랩'}
-              >
-                {question.isBookmarked ? (
-                  <BookmarkCheck className="w-6 h-6 text-primary-600 fill-primary-600" />
-                ) : (
-                  <Bookmark className="w-6 h-6 text-gray-700" />
-                )}
-              </button>
             </div>
           </div>
 
@@ -940,7 +909,7 @@ export default function QuestionDetailPage() {
                 </div>
               </div>
             ) : (
-              <div className="text-gray-700 whitespace-pre-wrap">{question.content}</div>
+              <div className="text-gray-700 whitespace-pre-wrap">{decodeHtmlEntities(question.content)}</div>
             )}
           </div>
 
@@ -949,33 +918,36 @@ export default function QuestionDetailPage() {
             <h3 className="text-sm font-semibold text-gray-900 mb-3">
               댓글 {question.comments.length}
             </h3>
-            <div className="space-y-3 mb-4">
+            <div className="divide-y divide-gray-200 mb-4">
               {question.comments.map((comment) => (
-                <div key={comment.id} className="bg-gray-50 rounded-lg p-3">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-2">
-                      {comment.profileImageUrl && (
-                        <div className="relative w-6 h-6 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                          <ImageWithFallback
-                            src={comment.profileImageUrl}
-                            fallbackSrc="/images/placeholder/default-avatar.svg"
-                            alt={comment.author}
-                            type="avatar"
-                            width={24}
-                            height={24}
-                            className="w-full h-full object-cover"
-                          />
+                <div key={comment.id} className="py-4 first:pt-0">
+                  <div className="flex gap-3">
+                    <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                      {comment.profileImageUrl ? (
+                        <ImageWithFallback
+                          src={comment.profileImageUrl}
+                          fallbackSrc="/images/placeholder/default-avatar.svg"
+                          alt={comment.author}
+                          type="avatar"
+                          width={36}
+                          height={36}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-sm font-semibold text-gray-600">
+                          {(comment.author || '?').charAt(0).toUpperCase()}
                         </div>
                       )}
-                      <span className="text-sm font-medium text-gray-900">{comment.author}</span>
-                      {getRoleBadge(comment.authorRole)}
-                      <span className="text-xs text-gray-700">{formatDate(comment.createdAt)}</span>
-                      {comment.updatedAt && comment.updatedAt !== comment.createdAt && (
-                        <span className="text-xs text-gray-700">(수정됨)</span>
-                      )}
                     </div>
-                  </div>
-                  <p className="text-sm text-gray-700">{comment.content}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-x-2 text-sm">
+                        <span className="font-medium text-gray-900">{comment.author}</span>
+                        <span className="text-xs text-gray-500">{formatDate(comment.createdAt)}</span>
+                        {isCommentEdited(comment.createdAt, comment.updatedAt) && (
+                          <span className="text-xs text-gray-500">(수정됨)</span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-700 mt-0.5">{decodeHtmlEntities(comment.content)}</p>
 
                   {/* Reply controls */}
                   <div className="mt-3 flex items-center gap-4">
@@ -1030,10 +1002,10 @@ export default function QuestionDetailPage() {
                         <div className="flex gap-2">
                           <button
                             onClick={handleSubmitReply}
-                            disabled={!replyContent.trim()}
+                            disabled={!replyContent.trim() || isSubmittingReply}
                             className="px-4 py-1.5 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            등록
+                            {isSubmittingReply ? '등록 중...' : '등록'}
                           </button>
                           <button
                             onClick={() => {
@@ -1057,36 +1029,43 @@ export default function QuestionDetailPage() {
                     const replies = repliesByParentId[parentId];
                     if (!replies || replies.length === 0) return null;
                     return (
-                      <div className="mt-4 space-y-3 pl-4 border-l-2 border-gray-200">
+                      <div className="mt-4 ml-4 pl-4 border-l-2 border-gray-200 space-y-4">
                         {replies.map((reply) => (
-                          <div key={`reply-${comment.id}-${reply.id}`} className="bg-white rounded-lg p-3 border border-gray-200">
-                            <div className="flex items-center gap-2 mb-1">
-                              {reply.profileImageUrl && (
-                                <div className="relative w-6 h-6 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                                  <ImageWithFallback
-                                    src={reply.profileImageUrl}
-                                    fallbackSrc="/images/placeholder/default-avatar.svg"
-                                    alt={reply.author}
-                                    type="avatar"
-                                    width={24}
-                                    height={24}
-                                    className="w-full h-full object-cover"
-                                  />
+                          <div key={`reply-${comment.id}-${reply.id}`} className="flex gap-3 rounded-2xl p-3 -mx-3 transition-shadow hover:shadow-[0_8px_28px_8px_rgba(0,0,0,0.18)]">
+                            <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                              {reply.profileImageUrl ? (
+                                <ImageWithFallback
+                                  src={reply.profileImageUrl}
+                                  fallbackSrc="/images/placeholder/default-avatar.svg"
+                                  alt={reply.author}
+                                  type="avatar"
+                                  width={32}
+                                  height={32}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-xs font-semibold text-gray-600">
+                                  {(reply.author || '?').charAt(0).toUpperCase()}
                                 </div>
                               )}
-                              <span className="text-sm font-medium text-gray-900">{reply.author}</span>
-                              {getRoleBadge(reply.authorRole)}
-                              <span className="text-xs text-gray-700">{formatDate(reply.createdAt)}</span>
-                              {reply.updatedAt && reply.updatedAt !== reply.createdAt && (
-                                <span className="text-xs text-gray-700">(수정됨)</span>
-                              )}
                             </div>
-                            <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">{reply.content}</p>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-x-2 text-sm">
+                                <span className="font-medium text-gray-900">{reply.author}</span>
+                                <span className="text-xs text-gray-500">{formatDate(reply.createdAt)}</span>
+                                {isCommentEdited(reply.createdAt, reply.updatedAt) && (
+                                  <span className="text-xs text-gray-500">(수정됨)</span>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-700 whitespace-pre-wrap break-words mt-0.5">{decodeHtmlEntities(reply.content)}</p>
+                            </div>
                           </div>
                         ))}
                       </div>
                     );
                   })()}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -1103,7 +1082,8 @@ export default function QuestionDetailPage() {
               />
               <button
                 onClick={handleAddQuestionComment}
-                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                disabled={isSubmittingQuestionComment}
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Send className="w-4 h-4" />
               </button>
@@ -1182,7 +1162,6 @@ export default function QuestionDetailPage() {
                         </div>
                       )}
                       <span className="font-medium text-gray-900">{answer.author}</span>
-                      {getRoleBadge(answer.authorRole)}
                     </div>
                     <span className="text-sm text-gray-700">{formatDate(answer.createdAt)}</span>
                   </div>
@@ -1272,7 +1251,7 @@ export default function QuestionDetailPage() {
                       </div>
                     </div>
                   ) : (
-                    <div className="text-gray-700 whitespace-pre-wrap">{answer.content}</div>
+                    <div className="text-gray-700 whitespace-pre-wrap">{decodeHtmlEntities(answer.content)}</div>
                   )}
                 </div>
 
@@ -1296,31 +1275,36 @@ export default function QuestionDetailPage() {
                   <h4 className="text-sm font-semibold text-gray-900 mb-3">
                     댓글 {answer.comments.length}
                   </h4>
-                  <div className="space-y-2 mb-3">
+                  <div className="divide-y divide-gray-200 mb-3">
                     {answer.comments.map((comment) => (
-                      <div key={comment.id} className="bg-gray-50 rounded-lg p-3">
-                        <div className="flex items-center gap-2 mb-1">
-                          {comment.profileImageUrl && (
-                            <div className="relative w-6 h-6 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                      <div key={comment.id} className="py-4 first:pt-0">
+                        <div className="flex gap-3">
+                          <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                            {comment.profileImageUrl ? (
                               <ImageWithFallback
                                 src={comment.profileImageUrl}
                                 fallbackSrc="/images/placeholder/default-avatar.svg"
                                 alt={comment.author}
                                 type="avatar"
-                                width={24}
-                                height={24}
+                                width={36}
+                                height={36}
                                 className="w-full h-full object-cover"
                               />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-sm font-semibold text-gray-600">
+                                {(comment.author || '?').charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-x-2 text-sm">
+                              <span className="font-medium text-gray-900">{comment.author}</span>
+                              <span className="text-xs text-gray-500">{formatDate(comment.createdAt)}</span>
+                              {isCommentEdited(comment.createdAt, comment.updatedAt) && (
+                                <span className="text-xs text-gray-500">(수정됨)</span>
+                              )}
                             </div>
-                          )}
-                          <span className="text-sm font-medium text-gray-900">{comment.author}</span>
-                          {getRoleBadge(comment.authorRole)}
-                          <span className="text-xs text-gray-700">{formatDate(comment.createdAt)}</span>
-                          {comment.updatedAt && comment.updatedAt !== comment.createdAt && (
-                            <span className="text-xs text-gray-700">(수정됨)</span>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-700">{comment.content}</p>
+                            <p className="text-sm text-gray-700 mt-0.5">{decodeHtmlEntities(comment.content)}</p>
 
                         {/* Reply controls */}
                         <div className="mt-3 flex items-center gap-4">
@@ -1402,36 +1386,43 @@ export default function QuestionDetailPage() {
                           const replies = repliesByParentId[parentId];
                           if (!replies || replies.length === 0) return null;
                           return (
-                            <div className="mt-4 space-y-3 pl-4 border-l-2 border-gray-200">
+                            <div className="mt-4 ml-4 pl-4 border-l-2 border-gray-200 space-y-4">
                               {replies.map((reply) => (
-                                <div key={`reply-${comment.id}-${reply.id}`} className="bg-white rounded-lg p-3 border border-gray-200">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    {reply.profileImageUrl && (
-                                      <div className="relative w-6 h-6 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                                        <ImageWithFallback
-                                          src={reply.profileImageUrl}
-                                          fallbackSrc="/images/placeholder/default-avatar.svg"
-                                          alt={reply.author}
-                                          type="avatar"
-                                          width={24}
-                                          height={24}
-                                          className="w-full h-full object-cover"
-                                        />
+                                <div key={`reply-${comment.id}-${reply.id}`} className="flex gap-3 rounded-2xl p-3 -mx-3 transition-shadow hover:shadow-[0_8px_28px_8px_rgba(0,0,0,0.18)]">
+                                  <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                                    {reply.profileImageUrl ? (
+                                      <ImageWithFallback
+                                        src={reply.profileImageUrl}
+                                        fallbackSrc="/images/placeholder/default-avatar.svg"
+                                        alt={reply.author}
+                                        type="avatar"
+                                        width={32}
+                                        height={32}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-xs font-semibold text-gray-600">
+                                        {(reply.author || '?').charAt(0).toUpperCase()}
                                       </div>
                                     )}
-                                    <span className="text-sm font-medium text-gray-900">{reply.author}</span>
-                                    {getRoleBadge(reply.authorRole)}
-                                    <span className="text-xs text-gray-700">{formatDate(reply.createdAt)}</span>
-                                    {reply.updatedAt && reply.updatedAt !== reply.createdAt && (
-                                      <span className="text-xs text-gray-700">(수정됨)</span>
-                                    )}
                                   </div>
-                                  <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">{reply.content}</p>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex flex-wrap items-center gap-x-2 text-sm">
+                                      <span className="font-medium text-gray-900">{reply.author}</span>
+                                      <span className="text-xs text-gray-500">{formatDate(reply.createdAt)}</span>
+                                      {isCommentEdited(reply.createdAt, reply.updatedAt) && (
+                                        <span className="text-xs text-gray-500">(수정됨)</span>
+                                      )}
+                                    </div>
+                                    <p className="text-sm text-gray-700 whitespace-pre-wrap break-words mt-0.5">{decodeHtmlEntities(reply.content)}</p>
+                                  </div>
                                 </div>
                               ))}
                             </div>
                           );
                         })()}
+                        </div>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1455,7 +1446,8 @@ export default function QuestionDetailPage() {
                     />
                     <button
                       onClick={() => handleAddAnswerComment(answer.id)}
-                      className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                      disabled={isSubmittingAnswerComment}
+                      className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Send className="w-4 h-4" />
                     </button>

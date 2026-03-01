@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ThumbsUp, Eye, Crown, Users } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
+import { decodeHtmlEntities } from '@/lib/html-utils';
 
 interface ProjectCardHomeProps {
   project: {
@@ -134,19 +135,19 @@ export function ProjectCardHome({ project }: ProjectCardHomeProps) {
           <ImageWithFallback
             src={project.thumbnailUrl || ''}
             fallbackSrc="/images/placeholder/project.png"
-            alt={project.title}
+            alt={decodeHtmlEntities(project.title)}
             type="project"
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-200"
           />
           <div className="absolute top-3 left-3">
             <span className="bg-white/90 backdrop-blur-sm border border-gray-200 text-primary px-2 py-1 rounded-full text-xs font-medium">
-              {project.category}
+              {decodeHtmlEntities(project.category)}
             </span>
           </div>
           <div className="absolute top-3 right-3">
             <span className={`px-2 py-1 rounded-full text-xs border ${getStatusColor(project.status)}`}>
-              {project.status}
+              {decodeHtmlEntities(project.status)}
             </span>
           </div>
         </div>
@@ -154,10 +155,10 @@ export function ProjectCardHome({ project }: ProjectCardHomeProps) {
         {/* Content */}
         <div className="p-5 flex-1 flex flex-col">
           <h3 className="font-semibold text-base text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
-            {project.title}
+            {decodeHtmlEntities(project.title)}
           </h3>
           <p className="text-gray-700 mb-3 leading-relaxed line-clamp-3 text-sm">
-            {project.description}
+            {decodeHtmlEntities(project.description)}
           </p>
 
           {/* Tags */}
@@ -168,7 +169,7 @@ export function ProjectCardHome({ project }: ProjectCardHomeProps) {
                   key={index}
                   className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md border border-gray-200"
                 >
-                  {tag}
+                  {decodeHtmlEntities(tag)}
                 </span>
               ))}
               {project.techStacks.length > 5 && (
