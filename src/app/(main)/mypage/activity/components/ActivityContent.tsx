@@ -104,13 +104,16 @@ interface PaginatedResponse<T> {
   totalPages: number;
 }
 
+// Elastic 조회에 포함된 타입만 사용 (QnA 제외)
+const ACTIVITY_POST_TYPES = ['PROJECT', 'ARTICLE', 'NEWS'] as const;
+
 interface LikedPostsResponse {
   message: string;
   size: number;
   page: number;
   totalPage: number;
   data: Array<{
-    postType: 'PROJECT' | 'ARTICLE' | 'NEWS';
+    postType: string;
     postId: number;
   }>;
 }
@@ -121,7 +124,7 @@ interface CommentedPostsResponse {
   page: number;
   totalPage: number;
   data: Array<{
-    postType: 'PROJECT' | 'ARTICLE' | 'NEWS';
+    postType: string;
     postId: number;
   }>;
 }
@@ -130,11 +133,13 @@ interface PostDetailResponse {
   postId: number;
   postType: 'PROJECT' | 'ARTICLE' | 'NEWS';
   title: string;
+  thumbnailUrl?: string | null;
   createdAt: string;
   writer: {
     username: string;
     nickname: string;
     realname: string;
+    profileImageUrl?: string | null;
   };
 }
 
@@ -151,6 +156,7 @@ interface ActivityItem {
   status?: 'active' | 'completed' | 'draft';
   tags?: string[];
   author?: string;
+  authorProfileImageUrl?: string;
   link?: string;
   postType?: 'PROJECT' | 'ARTICLE' | 'NEWS';
 }
@@ -372,7 +378,12 @@ export default function ActivityContent() {
 
     const likedPostsData: LikedPostsResponse = await likedPostsResponse.json();
 
-    if (!likedPostsData.data || likedPostsData.data.length === 0) {
+    // QnA 제외 (Elastic 조회 대상: PROJECT, ARTICLE, NEWS만)
+    const filteredLikedData = (likedPostsData.data || []).filter(item =>
+      ACTIVITY_POST_TYPES.includes(item.postType as (typeof ACTIVITY_POST_TYPES)[number])
+    );
+
+    if (filteredLikedData.length === 0) {
       return {
         items: [],
         pagination: {
@@ -393,7 +404,7 @@ export default function ActivityContent() {
       },
       credentials: 'include',
       body: JSON.stringify({
-        posts: likedPostsData.data.map(item => ({
+        posts: filteredLikedData.map(item => ({
           postType: item.postType,
           postId: item.postId,
         })),
@@ -404,9 +415,10 @@ export default function ActivityContent() {
       throw new Error(`Failed to fetch post details: ${postsResponse.status}`);
     }
 
-    const postDetails: PostDetailResponse[] = await postsResponse.json();
+    const rawPostDetails = await postsResponse.json() as (PostDetailResponse | null)[];
 
-    // Ensure we only return ITEMS_PER_PAGE items
+    // Elastic 응답에서 null 제거 (조회 불가 항목 등)
+    const postDetails = (rawPostDetails || []).filter((p): p is PostDetailResponse => p != null);
     const limitedPostDetails = postDetails.slice(0, ITEMS_PER_PAGE);
 
     // Map to ActivityItem format
@@ -425,8 +437,10 @@ export default function ActivityContent() {
         id: post.postId,
         type: 'like',
         title: post.title,
+        image: post.thumbnailUrl || undefined,
         date: formatDate(post.createdAt),
         author: post.writer.nickname || post.writer.realname || post.writer.username,
+        authorProfileImageUrl: post.writer.profileImageUrl || undefined,
         link,
         postType: post.postType,
       };
@@ -466,7 +480,12 @@ export default function ActivityContent() {
 
     const commentedPostsData: CommentedPostsResponse = await commentedPostsResponse.json();
 
-    if (!commentedPostsData.data || commentedPostsData.data.length === 0) {
+    // QnA 제외 (Elastic 조회 대상: PROJECT, ARTICLE, NEWS만)
+    const filteredCommentedData = (commentedPostsData.data || []).filter(item =>
+      ACTIVITY_POST_TYPES.includes(item.postType as (typeof ACTIVITY_POST_TYPES)[number])
+    );
+
+    if (filteredCommentedData.length === 0) {
       return {
         items: [],
         pagination: {
@@ -487,7 +506,7 @@ export default function ActivityContent() {
       },
       credentials: 'include',
       body: JSON.stringify({
-        posts: commentedPostsData.data.map(item => ({
+        posts: filteredCommentedData.map(item => ({
           postType: item.postType,
           postId: item.postId,
         })),
@@ -498,9 +517,10 @@ export default function ActivityContent() {
       throw new Error(`Failed to fetch post details: ${postsResponse.status}`);
     }
 
-    const postDetails: PostDetailResponse[] = await postsResponse.json();
+    const rawPostDetails = await postsResponse.json() as (PostDetailResponse | null)[];
 
-    // Ensure we only return ITEMS_PER_PAGE items
+    // Elastic 응답에서 null 제거 (조회 불가 항목 등)
+    const postDetails = (rawPostDetails || []).filter((p): p is PostDetailResponse => p != null);
     const limitedPostDetails = postDetails.slice(0, ITEMS_PER_PAGE);
 
     // Map to ActivityItem format
@@ -519,8 +539,10 @@ export default function ActivityContent() {
         id: post.postId,
         type: 'comment',
         title: post.title,
+        image: post.thumbnailUrl || undefined,
         date: formatDate(post.createdAt),
         author: post.writer.nickname || post.writer.realname || post.writer.username,
+        authorProfileImageUrl: post.writer.profileImageUrl || undefined,
         link,
         postType: post.postType,
       };
@@ -586,14 +608,18 @@ export default function ActivityContent() {
 
       if (likesRes.status === 'fulfilled' && likesRes.value.ok) {
         const likedPostsData = await likesRes.value.json() as LikedPostsResponse;
-        // Use actual data count from first page (limited to ITEMS_PER_PAGE)
-        counts.like = likedPostsData.data ? Math.min(likedPostsData.data.length, ITEMS_PER_PAGE) : 0;
+        const filteredLike = (likedPostsData.data || []).filter(item =>
+          ACTIVITY_POST_TYPES.includes(item.postType as (typeof ACTIVITY_POST_TYPES)[number])
+        );
+        counts.like = Math.min(filteredLike.length, ITEMS_PER_PAGE);
       }
 
       if (commentsRes.status === 'fulfilled' && commentsRes.value.ok) {
         const commentedPostsData = await commentsRes.value.json() as CommentedPostsResponse;
-        // Use actual data count from first page (limited to ITEMS_PER_PAGE)
-        counts.comment = commentedPostsData.data ? Math.min(commentedPostsData.data.length, ITEMS_PER_PAGE) : 0;
+        const filteredComment = (commentedPostsData.data || []).filter(item =>
+          ACTIVITY_POST_TYPES.includes(item.postType as (typeof ACTIVITY_POST_TYPES)[number])
+        );
+        counts.comment = Math.min(filteredComment.length, ITEMS_PER_PAGE);
       }
 
       setTabCounts(counts);
@@ -979,7 +1005,7 @@ export default function ActivityContent() {
                 {viewMode === 'grid' ? (
                   // Grid View
                   <>
-                    {(activity.image || activity.type === 'CSnote' || activity.type === 'news') ? (
+                    {(activity.image || activity.type === 'CSnote' || activity.type === 'news' || activity.type === 'like') ? (
                       <div className="relative h-48 overflow-hidden bg-gray-100">
                         {activity.image ? (
                           <ImageWithFallback
@@ -1034,8 +1060,18 @@ export default function ActivityContent() {
                           <span>{activity.date}</span>
                         </div>
                         {activity.author && (
-                          <div className="flex items-center gap-1">
-                            <User className="h-3 w-3" />
+                          <div className="flex items-center gap-1.5">
+                            {activity.authorProfileImageUrl ? (
+                              <ImageWithFallback
+                                src={activity.authorProfileImageUrl}
+                                alt={activity.author}
+                                width={20}
+                                height={20}
+                                className="w-5 h-5 rounded-full object-cover flex-shrink-0"
+                              />
+                            ) : (
+                              <User className="h-3 w-3 flex-shrink-0" />
+                            )}
                             <span>{activity.author}</span>
                           </div>
                         )}
