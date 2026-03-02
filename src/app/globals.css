@@ -299,16 +299,18 @@ input::-webkit-credentials-auto-fill-button {
 .tiptap li[data-type="taskItem"] > label {
   flex-shrink: 0;
   margin: 0.2em 0 0 0;
-  cursor: pointer;
+  cursor: default;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  pointer-events: none;
 }
 .tiptap li[data-type="taskItem"] > label input[type="checkbox"] {
   width: 1.125rem;
   height: 1.125rem;
   accent-color: var(--color-primary-500, #3b82f6);
-  cursor: pointer;
+  cursor: default;
+  pointer-events: none;
 }
 .tiptap li[data-type="taskItem"] > div:last-child {
   flex: 1;
@@ -416,4 +418,84 @@ input::-webkit-credentials-auto-fill-button {
 
 .prose a:hover {
   color: #1e40af;
+}
+
+/* 프로젝트 상세 내용: 할 일 목록 체크박스와 글자 한 줄 배치 (prose 우선 덮어씀) */
+/* data-type 있음 */
+.project-content-renderer ul[data-type="taskList"],
+.project-content-renderer.prose ul[data-type="taskList"] {
+  list-style: none !important;
+  padding-left: 0 !important;
+  margin: 0.5rem 0;
+}
+.project-content-renderer ul[data-type="taskList"] li[data-type="taskItem"],
+.project-content-renderer.prose ul[data-type="taskList"] li[data-type="taskItem"] {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  margin: 0.25rem 0 !important;
+  list-style: none !important;
+}
+.project-content-renderer ul[data-type="taskList"] li[data-type="taskItem"] > label,
+.project-content-renderer.prose ul[data-type="taskList"] li[data-type="taskItem"] > label {
+  flex-shrink: 0 !important;
+  margin: 0 !important;
+  display: inline-flex !important;
+  align-items: center;
+  cursor: pointer;
+}
+.project-content-renderer ul[data-type="taskList"] li[data-type="taskItem"] > div,
+.project-content-renderer.prose ul[data-type="taskList"] li[data-type="taskItem"] > div {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+.project-content-renderer ul[data-type="taskList"] li[data-type="taskItem"] > div p,
+.project-content-renderer.prose ul[data-type="taskList"] li[data-type="taskItem"] > div p {
+  margin: 0 !important;
+}
+.project-content-renderer ul[data-type="taskList"] li[data-type="taskItem"][data-checked="true"] > div,
+.project-content-renderer.prose ul[data-type="taskList"] li[data-type="taskItem"][data-checked="true"] > div {
+  text-decoration: line-through;
+  color: var(--color-gray-600, #6b7280);
+}
+/* data-type 없을 때 폴백: 체크박스 span 이 있는 ul/li 도 동일 레이아웃 */
+.project-content-renderer ul:has(.project-content-checkbox),
+.project-content-renderer.prose ul:has(.project-content-checkbox) {
+  list-style: none !important;
+  padding-left: 0 !important;
+  margin: 0.5rem 0;
+}
+.project-content-renderer ul:has(.project-content-checkbox) li:has(.project-content-checkbox),
+.project-content-renderer.prose ul:has(.project-content-checkbox) li:has(.project-content-checkbox) {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  margin: 0.25rem 0 !important;
+  list-style: none !important;
+}
+.project-content-renderer ul:has(.project-content-checkbox) li:has(.project-content-checkbox) > label,
+.project-content-renderer.prose ul:has(.project-content-checkbox) li:has(.project-content-checkbox) > label {
+  flex-shrink: 0 !important;
+  margin: 0 !important;
+  display: inline-flex !important;
+  align-items: center;
+  cursor: pointer;
+}
+.project-content-renderer ul:has(.project-content-checkbox) li:has(.project-content-checkbox) > div,
+.project-content-renderer.prose ul:has(.project-content-checkbox) li:has(.project-content-checkbox) > div {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+.project-content-renderer ul:has(.project-content-checkbox) li:has(.project-content-checkbox) > div p,
+.project-content-renderer.prose ul:has(.project-content-checkbox) li:has(.project-content-checkbox) > div p {
+  margin: 0 !important;
+}
+.project-content-renderer ul:has(.project-content-checkbox) li:has(.project-content-checkbox[data-checked="true"]) > div,
+.project-content-renderer.prose ul:has(.project-content-checkbox) li:has(.project-content-checkbox[data-checked="true"]) > div {
+  text-decoration: line-through;
+  color: var(--color-gray-600, #6b7280);
 }

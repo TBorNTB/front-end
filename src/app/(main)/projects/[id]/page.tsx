@@ -30,6 +30,7 @@ import DocumentModal from '../_components/DocumentModal';
 import CreateChatFromPostButton from '../../_components/CreateChatFromPostButton';
 import { decodeHtmlEntities } from '@/lib/html-utils';
 import { isCommentEdited } from '@/lib/comment-utils';
+import { ProjectContentRenderer } from '@/components/project/ProjectContentRenderer';
 
 interface ProjectPageProps {
   params: Promise<{ id: string }>;
@@ -419,14 +420,19 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       'COMPLETED': '완료',
     };
 
-    // 기간 계산 (생성일 ~ 종료일)
+    // 기간 계산 (프로젝트 진행 기간: startedAt ~ endedAt)
     const formatDateForPeriod = (date: Date) => {
       if (isNaN(date.getTime())) return 'Unknown';
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     };
-    const createdDate = apiData.createdAt ? new Date(apiData.createdAt) : new Date();
-    const endedDate = apiData.endedAt ? new Date(apiData.endedAt) : (apiData.updatedAt ? new Date(apiData.updatedAt) : new Date());
-    const period = `${formatDateForPeriod(createdDate)} ~ ${formatDateForPeriod(endedDate)}`;
+    const startedDate = apiData.startedAt ? new Date(apiData.startedAt) : (apiData.createdAt ? new Date(apiData.createdAt) : null);
+    const endedDate = apiData.endedAt ? new Date(apiData.endedAt) : null;
+    const period =
+      startedDate && endedDate
+        ? `${formatDateForPeriod(startedDate)} ~ ${formatDateForPeriod(endedDate)}`
+        : startedDate
+          ? `${formatDateForPeriod(startedDate)} ~ -`
+          : '-';
 
     // 탈퇴한 유저 확인 헬퍼 함수
     const getDisplayName = (nickname?: string, realName?: string): string => {
@@ -1155,6 +1161,13 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                       <div>
                         <p className="text-gray-800 mb-1">기간</p>
                         <p className="text-gray-900">{project.period}</p>
+                      </div>
+                      <div className="pt-2 border-t border-gray-100 space-y-1.5">
+                        <p className="text-gray-500 text-xs mb-1">게시글 정보</p>
+                        <div className="flex flex-col gap-1 text-xs">
+                          <span className="text-gray-600">작성일: {project.createdAt}</span>
+                          <span className="text-gray-600">수정일: {project.updatedAt}</span>
+                        </div>
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
@@ -1887,9 +1900,10 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                 {project.content && (
                   <section className="mb-12">
                     <h2 className="text-2xl font-bold text-foreground mb-4">상세 내용</h2>
-                    <div 
+                    <ProjectContentRenderer
+                      html={project.content}
                       className="prose prose-lg max-w-none prose-headings:text-foreground prose-p:text-gray-800 prose-a:text-primary-600 prose-strong:text-foreground prose-code:text-primary-600"
-                      dangerouslySetInnerHTML={{ __html: project.content }}
+                      readOnly
                     />
                   </section>
                 )}

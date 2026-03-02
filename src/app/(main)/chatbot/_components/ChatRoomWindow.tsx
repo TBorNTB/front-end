@@ -33,6 +33,8 @@ interface ChatRoom {
   avatar?: string;
   lastMessage?: string;
   lastMessageTime?: string;
+  /** 메시지가 없을 때 true면 시간이 채팅방 생성 시각임 */
+  isCreationTime?: boolean;
   lastMessageImageUrl?: string;
   lastSenderNickname?: string;
   unreadCount?: number;
@@ -208,19 +210,28 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
         const displayHours = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
         return `${period} ${displayHours}:${minutes.toString().padStart(2, "0")}`;
       };
-      
+
+      const hasLastMessage = (room: ChatRoomResponse) =>
+        (room.lastMessage ?? "").trim().length > 0 || (room.lastMessageImageUrl ?? "").trim().length > 0;
+
       // Transform API response to ChatRoom format
       const transformedRooms: ChatRoom[] = rooms
         .map((room) => {
           const lastMessageText = (room.lastMessage ?? "").trim();
           const lastPreview = lastMessageText.length > 0 ? lastMessageText : room.lastMessageImageUrl ? "[이미지]" : "";
+          const hasMessage = hasLastMessage(room);
+          const timeSource = hasMessage
+            ? (room.lastMessageAt ?? "")
+            : (room.createdAt ?? room.lastMessageAt ?? "");
+          const lastMessageTime = timeSource ? formatRoomTime(timeSource) : "";
           return {
             id: room.roomId,
             name: room.roomName || "이름 없음",
             type: "group",
             avatar: undefined,
             lastMessage: lastPreview,
-            lastMessageTime: formatRoomTime(room.lastMessageAt),
+            lastMessageTime,
+            isCreationTime: !hasMessage && !!(room.createdAt ?? room.lastMessageAt),
             lastMessageImageUrl: room.lastMessageImageUrl ?? undefined,
             lastSenderNickname: room.lastSenderNickname,
             unreadCount: typeof room.unreadCount === "number" ? room.unreadCount : 0,
@@ -575,6 +586,9 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                           <Users className="w-2 h-2 text-white" />
                         </div>
                       )}
+                      {room.unreadCount && room.unreadCount > 0 && (
+                        <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white shadow-sm" aria-hidden />
+                      )}
                     </div>
                     <div className="flex-1 text-left min-w-0">
                       <div className="flex items-center justify-between gap-2">
@@ -582,8 +596,8 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                           {room.name}
                         </h4>
                         {room.lastMessageTime && (
-                          <span className="text-xs text-gray-700 flex-shrink-0">
-                            {room.lastMessageTime}
+                          <span className="text-xs text-gray-700 flex-shrink-0" title={room.isCreationTime ? "채팅방 생성 시각" : "마지막 메시지 시각"}>
+                            {room.isCreationTime ? `생성 ${room.lastMessageTime}` : room.lastMessageTime}
                           </span>
                         )}
                       </div>
@@ -597,7 +611,7 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
                           <p className="text-xs text-gray-700">메시지 없음</p>
                         )}
                         {room.unreadCount && room.unreadCount > 0 && (
-                          <span className="flex-shrink-0 bg-secondary-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                          <span className="flex-shrink-0 min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-sm ring-2 ring-white">
                             {room.unreadCount > 99 ? "99+" : room.unreadCount}
                           </span>
                         )}

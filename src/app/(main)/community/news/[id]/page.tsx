@@ -27,6 +27,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { decodeHtmlEntities } from '@/lib/html-utils';
 import { isCommentEdited } from '@/lib/comment-utils';
 import CreateChatFromPostButton from '@/app/(main)/_components/CreateChatFromPostButton';
+import { ProjectContentRenderer } from '@/components/project/ProjectContentRenderer';
 
 interface NewsDetailPageProps {
   params: Promise<{ id: string }>;
@@ -1003,10 +1004,10 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                       }
                     `}</style>
                     {item.content ? (
-                      <div 
-                        dangerouslySetInnerHTML={{ 
-                          __html: item.content
-                        }}
+                      <ProjectContentRenderer
+                        html={item.content}
+                        className="news-content"
+                        readOnly
                       />
                     ) : (
                       <p className="text-gray-700 italic">내용이 없습니다.</p>

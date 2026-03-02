@@ -325,7 +325,8 @@ export interface ProjectDetailResponse {
   projectStatus: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED';
   createdAt: string;
   updatedAt: string;
-  endedAt: string;
+  startedAt?: string;
+  endedAt?: string;
   thumbnailUrl: string;
   content: string;
   contentJson?: string; // Keep for backward compatibility

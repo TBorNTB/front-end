@@ -5,3 +5,4 @@ export { ProjectCardHome } from './ProjectCardHome';
 export { FeaturedProjectCard } from './FeaturedCardHome';
 export { ArticleCardHome } from './ArticleCardHome';
 export { QuickActions } from './QuickActions';
+export { default as FAQsSection } from './FAQsSection';

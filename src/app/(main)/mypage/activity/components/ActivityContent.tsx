@@ -57,6 +57,8 @@ interface CSKnowledgeResponse {
   id: number;
   title: string;
   content: string;
+  description?: string;
+  thumbnailUrl?: string;
   category: string;
   createdAt: string;
   likeCount: number;
@@ -176,12 +178,20 @@ export default function ActivityContent() {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [_totalElements, setTotalElements] = useState(0);
+  // 탭별 갯수: 해당 탭을 클릭해 데이터를 불러온 뒤에만 갯수 표시 (초기 로드 없음)
   const [tabCounts, setTabCounts] = useState({
     project: 0,
     CSnote: 0,
     news: 0,
     like: 0,
     comment: 0,
+  });
+  const [tabCountsLoaded, setTabCountsLoaded] = useState<Record<string, boolean>>({
+    project: false,
+    CSnote: false,
+    news: false,
+    like: false,
+    comment: false,
   });
   const [activityStats, setActivityStats] = useState<{
     totalPostCount: number;
@@ -218,14 +228,12 @@ export default function ActivityContent() {
     }
   };
 
-  // Fetch projects
-  const fetchProjects = async (username: string, page: number) => {
-    const url = `${getElasticApiUrl(ELASTIC_ENDPOINTS.ELASTIC.PROJECT_BY_USER)}/${encodeURIComponent(username)}?size=${ITEMS_PER_PAGE}&page=${page}`;
-    const response = await fetch(url, {
+  // Fetch projects (참여한 프로젝트) - elastic project/search/member API, 닉네임(name)으로 조회
+  const fetchProjects = async (name: string, page: number) => {
+    const url = `${getElasticApiUrl(ELASTIC_ENDPOINTS.ELASTIC.PROJECT_SEARCH_BY_MEMBER)}?name=${encodeURIComponent(name)}&size=${ITEMS_PER_PAGE}&page=${page}`;
+    const response = await fetchWithRefresh(url, {
       method: 'GET',
-      headers: {
-        'accept': 'application/json',
-      },
+      headers: { accept: 'application/json' },
       credentials: 'include',
     });
 
@@ -233,27 +241,35 @@ export default function ActivityContent() {
       throw new Error(`Failed to fetch projects: ${response.status}`);
     }
 
-    const data: PaginatedResponse<ProjectResponse> = await response.json();
-    return {
-      items: data.content.map((item): ActivityItem => ({
+    const raw = await response.json();
+    const content = Array.isArray(raw) ? raw : (raw?.content ?? []);
+    const pageNum = typeof raw?.page === 'number' ? raw.page : page;
+    const totalPages = typeof raw?.totalPages === 'number' ? raw.totalPages : Math.ceil((raw?.totalElements ?? content.length) / ITEMS_PER_PAGE) || 1;
+    const totalElements = typeof raw?.totalElements === 'number' ? raw.totalElements : content.length;
+
+    const items: ActivityItem[] = content.map((item: any) => {
+      const owner = item.owner ?? item.ownerProfile ?? {};
+      const categories = item.projectCategories ?? item.categories ?? [];
+      const techStacks = item.projectTechStacks ?? item.techStackDtos ?? [];
+      return {
         id: item.id,
-        type: 'project',
-        title: item.title,
-        description: item.description,
+        type: 'project' as const,
+        title: item.title ?? '',
+        description: item.description ?? '',
         image: item.thumbnailUrl || undefined,
-        date: formatDate(item.createdAt),
-        views: item.viewCount,
-        likes: item.likeCount,
-        status: mapProjectStatus(item.projectStatus),
-        tags: [...item.projectCategories, ...item.projectTechStacks],
-        author: item.owner.nickname || item.owner.realname || item.owner.username,
+        date: formatDate(item.createdAt ?? item.created_at ?? ''),
+        views: item.viewCount ?? item.views ?? 0,
+        likes: item.likeCount ?? item.likes ?? 0,
+        status: mapProjectStatus(item.projectStatus ?? item.project_status ?? 'IN_PROGRESS'),
+        tags: [...(Array.isArray(categories) ? categories : []).map((c: any) => (typeof c === 'string' ? c : c?.name ?? '')), ...(Array.isArray(techStacks) ? techStacks : []).map((t: any) => (typeof t === 'string' ? t : t?.name ?? ''))],
+        author: owner.nickname ?? owner.realName ?? owner.realname ?? owner.username ?? '',
         link: `/projects/${item.id}`,
-      })),
-      pagination: {
-        page: data.page,
-        totalPages: data.totalPages,
-        totalElements: data.totalElements,
-      },
+      };
+    });
+
+    return {
+      items,
+      pagination: { page: pageNum, totalPages, totalElements },
     };
   };
 
@@ -274,18 +290,23 @@ export default function ActivityContent() {
 
     const data: PaginatedResponse<CSKnowledgeResponse> = await response.json();
     return {
-      items: data.content.map((item): ActivityItem => ({
-        id: item.id,
-        type: 'CSnote',
-        title: item.title,
-        description: item.content.substring(0, 150) + (item.content.length > 150 ? '...' : ''),
-        date: formatDate(item.createdAt),
-        views: item.viewCount,
-        likes: item.likeCount,
-        tags: [item.category],
-        author: item.writer.nickname || item.writer.realname || item.writer.username,
-        link: `/articles/${item.id}`,
-      })),
+      items: data.content.map((item): ActivityItem => {
+        const desc = item.description ?? item.content ?? '';
+        const descPreview = desc.length > 150 ? desc.substring(0, 150) + '...' : desc;
+        return {
+          id: item.id,
+          type: 'CSnote',
+          title: item.title,
+          description: descPreview,
+          image: item.thumbnailUrl || undefined,
+          date: formatDate(item.createdAt),
+          views: item.viewCount,
+          likes: item.likeCount,
+          tags: [item.category],
+          author: item.writer.nickname || item.writer.realname || item.writer.username,
+          link: `/articles/${item.id}`,
+        };
+      }),
       pagination: {
         page: data.page,
         totalPages: data.totalPages,
@@ -294,14 +315,12 @@ export default function ActivityContent() {
     };
   };
 
-  // Fetch News
-  const fetchNews = async (username: string, page: number) => {
-    const url = `${getElasticApiUrl(ELASTIC_ENDPOINTS.ELASTIC.NEWS_BY_USER)}/${encodeURIComponent(username)}?size=${ITEMS_PER_PAGE}&page=${page}`;
-    const response = await fetch(url, {
+  // Fetch News (작성한 News) - elastic news/search/member API, 닉네임(name)으로 조회
+  const fetchNews = async (name: string, page: number) => {
+    const url = `${getElasticApiUrl(ELASTIC_ENDPOINTS.ELASTIC.NEWS_SEARCH_BY_MEMBER)}?name=${encodeURIComponent(name)}&size=${ITEMS_PER_PAGE}&page=${page}`;
+    const response = await fetchWithRefresh(url, {
       method: 'GET',
-      headers: {
-        'accept': 'application/json',
-      },
+      headers: { accept: 'application/json' },
       credentials: 'include',
     });
 
@@ -316,7 +335,7 @@ export default function ActivityContent() {
         type: 'news',
         title: item.content.title,
         description: item.content.summary || item.content.content.substring(0, 150) + (item.content.content.length > 150 ? '...' : ''),
-        image: item.thumbnailUrl || undefined,
+        image: item.thumbnailUrl ?? (item as any).thumbnail ?? undefined,
         date: formatDate(item.createdAt),
         views: item.viewCount,
         likes: item.likeCount,
@@ -598,13 +617,13 @@ export default function ActivityContent() {
         let result;
         switch (activeTab) {
           case 'project':
-            result = await fetchProjects(user.username, currentPage);
+            result = await fetchProjects(user.nickname || user.realName || user.username, currentPage);
             break;
           case 'CSnote':
             result = await fetchCSKnowledge(user.username, currentPage);
             break;
           case 'news':
-            result = await fetchNews(user.username, currentPage);
+            result = await fetchNews(user.nickname || user.realName || user.username, currentPage);
             break;
           case 'like':
             result = await fetchLikedPosts(currentPage);
@@ -620,12 +639,21 @@ export default function ActivityContent() {
         setTotalPages(result.pagination.totalPages);
         setTotalElements(result.pagination.totalElements);
 
-        // Update tab count based on actual rendered items
-        if (activeTab === 'like' || activeTab === 'comment') {
-          setTabCounts(prev => ({
-            ...prev,
-            [activeTab]: result.items.length,
-          }));
+        // 클릭한 탭의 갯수만 API 응답 totalElements로 갱신
+        setTabCounts(prev => ({
+          ...prev,
+          [activeTab]: result.pagination.totalElements,
+        }));
+        setTabCountsLoaded(prev => ({ ...prev, [activeTab]: true }));
+
+        // 요약 통계는 첫 탭 로드 시에만 한 번 로드 (클릭 시 갯수 보이도록)
+        if (!activityStats) {
+          try {
+            const stats = await profileService.getActivityStats();
+            setActivityStats(stats);
+          } catch {
+            // 무시
+          }
         }
       } catch (err) {
         console.error('Failed to load activities:', err);
@@ -639,21 +667,7 @@ export default function ActivityContent() {
     loadActivities();
   }, [user, userLoading, activeTab, currentPage]);
 
-  // Fetch tab counts and activity stats when user is loaded
-  useEffect(() => {
-    if (!user?.username || userLoading) return;
-
-    const load = async () => {
-      await fetchTabCounts(user.username);
-      try {
-        const stats = await profileService.getActivityStats();
-        setActivityStats(stats);
-      } catch (err) {
-        console.warn('Failed to load activity stats:', err);
-      }
-    };
-    load();
-  }, [user, userLoading]);
+  // 탭/요약 갯수는 초기 로드하지 않음. 탭 클릭 시 해당 탭 데이터 로드 후 갯수 표시.
 
   // Reset page when tab changes
   useEffect(() => {
@@ -813,25 +827,25 @@ export default function ActivityContent() {
   const summaryStats = [
     {
       label: '작성한 글',
-      value: activityStats?.totalPostCount ?? 0,
+      value: activityStats?.totalPostCount ?? null,
       icon: BookOpen,
       colorClass: 'bg-primary-500/10 text-primary-600 border-primary-200',
     },
     {
       label: '총 조회수',
-      value: activityStats?.totalViewCount ?? 0,
+      value: activityStats?.totalViewCount ?? null,
       icon: Eye,
       colorClass: 'bg-blue-500/10 text-blue-600 border-blue-200',
     },
     {
       label: '받은 좋아요',
-      value: activityStats?.totalLikeCount ?? 0,
+      value: activityStats?.totalLikeCount ?? null,
       icon: ThumbsUp,
       colorClass: 'bg-red-500/10 text-red-600 border-red-200',
     },
     {
       label: '받은 댓글',
-      value: activityStats?.totalCommentCount ?? 0,
+      value: activityStats?.totalCommentCount ?? null,
       icon: MessageCircle,
       colorClass: 'bg-amber-500/10 text-amber-600 border-amber-200',
     },
@@ -860,7 +874,7 @@ export default function ActivityContent() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-2xl font-bold tabular-nums">
-                    {typeof stat.value === 'number' ? stat.value.toLocaleString() : '-'}
+                    {stat.value != null ? Number(stat.value).toLocaleString() : '-'}
                   </p>
                   <p className="text-sm font-medium opacity-90">{stat.label}</p>
                 </div>
@@ -884,13 +898,17 @@ export default function ActivityContent() {
               }`}
             >
               {tab.label}
-              <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
-                activeTab === tab.key
-                  ? 'bg-primary-100 text-primary-600'
-                  : 'bg-gray-100 text-gray-700'
-              }`}>
-                {tabCounts[tab.key as keyof typeof tabCounts]}
-              </span>
+              {tab.key !== 'like' && tab.key !== 'comment' && (
+                <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
+                  activeTab === tab.key
+                    ? 'bg-primary-100 text-primary-600'
+                    : 'bg-gray-100 text-gray-700'
+                }`}>
+                  {tabCountsLoaded[tab.key]
+                    ? tabCounts[tab.key as keyof typeof tabCounts].toLocaleString()
+                    : '-'}
+                </span>
+              )}
             </button>
           ))}
         </nav>
@@ -961,30 +979,36 @@ export default function ActivityContent() {
                 {viewMode === 'grid' ? (
                   // Grid View
                   <>
-                    {activity.image && (
-                      <div className="relative h-48 overflow-hidden">
-                        <ImageWithFallback
-                          src={activity.image}
-                          alt={decodeHtmlEntities(activity.title)}
-                          width={300}
-                          height={200}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-                        
+                    {(activity.image || activity.type === 'CSnote' || activity.type === 'news') ? (
+                      <div className="relative h-48 overflow-hidden bg-gray-100">
+                        {activity.image ? (
+                          <ImageWithFallback
+                            src={activity.image}
+                            alt={decodeHtmlEntities(activity.title)}
+                            width={300}
+                            height={200}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                            <div className={`p-4 rounded-xl ${getActivityColor(activity.type)}`}>
+                              {getActivityIcon(activity.type)}
+                            </div>
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
                         <div className="absolute top-3 left-3">
                           <div className={`p-2 rounded-full ${getActivityColor(activity.type)}`}>
                             {getActivityIcon(activity.type)}
                           </div>
                         </div>
-                        
                         {activity.status && (
                           <div className="absolute top-3 right-3">
                             {getStatusBadge(activity.status)}
                           </div>
                         )}
                       </div>
-                    )}
+                    ) : null}
                     
                     <div className="p-6">
                       <div className="flex items-center gap-2 mb-2">

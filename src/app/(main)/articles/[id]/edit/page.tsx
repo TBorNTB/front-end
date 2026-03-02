@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, X, Upload, Search } from 'lucide-react';
+import { ArrowLeft, X, Upload, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -38,7 +38,6 @@ export default function EditArticlePage({ params }: EditPageProps) {
   const [articleId, setArticleId] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [isLoadingArticle, setIsLoadingArticle] = useState(true);
-  const [tagInput, setTagInput] = useState('');
   const [categorySearch, setCategorySearch] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
   const [thumbnailPreview, setThumbnailPreview] = useState<string>('');
@@ -124,7 +123,7 @@ export default function EditArticlePage({ params }: EditPageProps) {
     loadArticle();
   }, [articleId, router]);
 
-  const FORM_FIELD_ORDER = ['title', 'category', 'excerpt', 'content', 'tags'] as const;
+  const FORM_FIELD_ORDER = ['title', 'category', 'excerpt', 'content'] as const;
 
   const scrollToFirstError = (errorKeys: string[]) => {
     const first = FORM_FIELD_ORDER.find((k) => errorKeys.includes(k));
@@ -154,10 +153,6 @@ export default function EditArticlePage({ params }: EditPageProps) {
       newErrors.content = '내용을 작성해주세요.';
     }
 
-    if (formData.tags.length === 0) {
-      newErrors.tags = '최소 하나의 태그를 추가해주세요.';
-    }
-
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) {
       scrollToFirstError(Object.keys(newErrors));
@@ -180,29 +175,6 @@ export default function EditArticlePage({ params }: EditPageProps) {
         [name]: '',
       }));
     }
-  };
-
-  const addTag = () => {
-    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
-      setFormData((prev) => ({
-        ...prev,
-        tags: [...prev.tags, tagInput.trim()],
-      }));
-      setTagInput('');
-      if (errors.tags) {
-        setErrors((prev) => ({
-          ...prev,
-          tags: '',
-        }));
-      }
-    }
-  };
-
-  const removeTag = (tag: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      tags: prev.tags.filter((t) => t !== tag),
-    }));
   };
 
   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -539,57 +511,6 @@ export default function EditArticlePage({ params }: EditPageProps) {
                     </div>
                   </label>
                 </div>
-              </div>
-            </div>
-
-            {/* Tags Section */}
-            <div className="space-y-4" id="form-field-tags">
-              <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <div className="w-1 h-8 bg-primary-600 rounded"></div>
-                태그 <span className="text-red-500">*</span>
-              </h2>
-
-              <div className="flex gap-2">
-                <Input
-                  id="tags"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      addTag();
-                    }
-                  }}
-                  placeholder="태그 입력 후 Enter 또는 버튼 클릭"
-                  className={`py-3 bg-white ${errors.tags && formData.tags.length === 0 ? 'border-red-500 focus:ring-red-500' : 'focus:ring-primary-500'}`}
-                />
-                <Button
-                  type="button"
-                  onClick={addTag}
-                  className="bg-primary-600 hover:bg-primary-700 text-white px-6 font-semibold"
-                >
-                  <Plus className="w-5 h-5" />
-                </Button>
-              </div>
-              {errors.tags && formData.tags.length === 0 && <p className="text-red-500 text-sm flex items-center gap-1">✕ {errors.tags}</p>}
-
-              {/* Tags Display */}
-              <div className="flex flex-wrap gap-2">
-                {formData.tags.map((tag, index) => (
-                  <div
-                    key={tag}
-                    className="inline-flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors"
-                  >
-                    <span>#{tag}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeTag(tag)}
-                      className="ml-1 hover:text-gray-900 transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
               </div>
             </div>
 

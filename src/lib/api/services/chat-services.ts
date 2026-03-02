@@ -13,7 +13,10 @@ export interface ChatRoomMemberResponse {
 export interface ChatRoomResponse {
   roomId: string;
   roomName: string;
+  /** 마지막 메시지 시각 (없으면 빈 문자열 또는 null) */
   lastMessageAt: string;
+  /** 채팅방 생성 시각 (메시지 없을 때 목록에 표시용) */
+  createdAt?: string | null;
   memberCount: number;
   unreadCount: number;
   lastMessage: string;

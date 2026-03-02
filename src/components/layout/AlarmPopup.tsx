@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Alarm, AlarmType } from '@/types/services/alarm';
-import { Bell, MessageSquare, Reply, ThumbsUp, UserPlus, X, Clock, ChevronRight, Loader2, Trash2 } from 'lucide-react';
+import { Bell, Heart, MessageSquare, Reply, ThumbsUp, UserPlus, X, Clock, ChevronRight, Loader2, Trash2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { alarmService, mapAlarmApiToAlarm } from '@/lib/api/services/alarm-services';
@@ -42,7 +42,7 @@ const categoryConfig = {
   },
   [AlarmType.POST_LIKED]: {
     label: '좋아요',
-    icon: ThumbsUp,
+    icon: Heart,
     color: 'text-red-600',
     activeColor: 'text-red-700',
     bgColor: 'bg-red-50',
@@ -405,16 +405,8 @@ export default function AlarmPopup({ isOpen, onClose, onRefreshUnread }: AlarmPo
                           }}
                           className="flex-1 min-w-0 flex items-start space-x-3"
                         >
-                          <div className="flex-shrink-0">
-                            {alarm.relatedUser ? (
-                              <div className={`w-10 h-10 ${config.iconBgColor} rounded-full flex items-center justify-center text-white text-sm font-medium`}>
-                                {alarm.relatedUser.nickname.charAt(0)}
-                              </div>
-                            ) : (
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${alarm.isRead ? 'bg-gray-100' : config.iconBgColor}`}>
-                                <Icon className={`w-5 h-5 ${alarm.isRead ? 'text-gray-700' : config.iconColor}`} />
-                              </div>
-                            )}
+                          <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${alarm.isRead ? 'bg-gray-100' : config.iconBgColor}`} title={config.label}>
+                            <Icon className={`w-5 h-5 ${alarm.isRead ? 'text-gray-600' : config.iconColor}`} aria-hidden />
                           </div>
 
                           <div className="flex-1 min-w-0">

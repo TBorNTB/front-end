@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Alarm, AlarmType } from '@/types/services/alarm';
-import { Bell, MessageSquare, Reply, ThumbsUp, UserPlus, ChevronRight, Clock, Loader2, CheckCheck, Trash2 } from 'lucide-react';
+import { Bell, Heart, MessageSquare, Reply, ThumbsUp, UserPlus, ChevronRight, Clock, Loader2, CheckCheck, Trash2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { alarmService, mapAlarmApiToAlarm } from '@/lib/api/services/alarm-services';
 import { useAlarmUnreadCount } from '@/hooks/useAlarmUnreadCount';
@@ -36,7 +36,7 @@ const categoryConfig = {
   },
   [AlarmType.POST_LIKED]: {
     label: '좋아요',
-    icon: ThumbsUp,
+    icon: Heart,
     color: 'text-red-600',
     bgColor: 'bg-red-50',
     activeBgColor: 'bg-red-100',
@@ -452,8 +452,8 @@ export default function AlarmsPage() {
                             onClick={(e) => handleAlarmClick(alarm, e)}
                             className="flex-1 min-w-0 flex items-start gap-4"
                           >
-                            <div className={`p-2 rounded-lg flex-shrink-0 ${alarm.isRead ? 'bg-gray-100' : config.bgColor}`}>
-                              <Icon className={`w-5 h-5 ${alarm.isRead ? 'text-gray-700' : config.color}`} />
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${alarm.isRead ? 'bg-gray-100' : config.bgColor}`} title={config.label}>
+                              <Icon className={`w-5 h-5 ${alarm.isRead ? 'text-gray-600' : config.color}`} aria-hidden />
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between mb-1">

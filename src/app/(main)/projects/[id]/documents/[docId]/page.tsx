@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
 import { fetchDocument } from '@/lib/api/services/project-services';
 import type { Document } from '@/lib/api/services/project-services';
 import { decodeHtmlEntities } from '@/lib/html-utils';
+import { ProjectContentRenderer } from '@/components/project/ProjectContentRenderer';
 
 interface DocumentViewerProps {
   params: Promise<{ id: string; docId: string }>;
@@ -19,18 +19,6 @@ export default function DocumentViewer({ params }: DocumentViewerProps) {
   const [docId, setDocId] = useState('');
   const [document, setDocument] = useState<Document | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  const Editor = useMemo(
-    () => dynamic(() => import('@/components/editor/TipTapEditor'), { 
-      ssr: false,
-      loading: () => (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
-        </div>
-      )
-    }),
-    []
-  );
 
   useEffect(() => {
     params.then((resolvedParams) => {
@@ -139,12 +127,15 @@ export default function DocumentViewer({ params }: DocumentViewerProps) {
               </div>
 
               {/* Content */}
-              <div className="prose prose-lg max-w-none">
-                <Editor 
-                  content={document.content ?? ''}
-                  editable={false}
+              {document.content ? (
+                <ProjectContentRenderer
+                  html={document.content}
+                  className="prose prose-lg max-w-none prose-headings:text-foreground prose-p:text-gray-800 prose-a:text-primary-600 prose-strong:text-foreground prose-code:text-primary-600"
+                  readOnly
                 />
-              </div>
+              ) : (
+                <p className="text-gray-500 italic">내용이 없습니다.</p>
+              )}
             </div>
           </div>
         </div>

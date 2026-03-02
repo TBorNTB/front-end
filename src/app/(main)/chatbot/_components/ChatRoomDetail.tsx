@@ -610,12 +610,18 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
     setInputValue("");
   };
 
-  const formatTime = (date: Date): string => {
+  const formatMessageTime = (date: Date): string => {
+    const now = new Date();
+    const isToday = date.getDate() === now.getDate() && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
     const hours = date.getHours();
     const minutes = date.getMinutes();
     const period = hours >= 12 ? "오후" : "오전";
     const displayHours = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
-    return `${period} ${displayHours}:${minutes.toString().padStart(2, "0")}`;
+    const timeStr = `${period} ${displayHours}:${minutes.toString().padStart(2, "0")}`;
+    if (isToday) return timeStr;
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    return `${month}월 ${day}일 ${timeStr}`;
   };
 
   const renderMessage = (message: ChatMessage, index: number) => {
@@ -667,7 +673,7 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
 
         <div className={`flex flex-col max-w-[70%] ${isOwn ? "items-end" : "items-start"}`}>
           {!isOwn && showAvatar && (
-            <div className="text-xs text-gray-700 mb-1 px-1">
+            <div className="text-xs text-black font-medium mb-1 px-1">
               {message.senderName}
             </div>
           )}
@@ -681,8 +687,8 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
             >
               <p className="text-sm whitespace-pre-wrap break-words">{decodeHtmlEntities(message.content)}</p>
             </div>
-            <div className={`text-xs text-gray-700 ${isOwn ? "text-right" : "text-left"}`}>
-              {formatTime(message.timestamp)}
+            <div className={`text-xs text-black ${isOwn ? "text-right" : "text-left"}`} title={message.timestamp.toLocaleString("ko-KR")}>
+              {formatMessageTime(message.timestamp)}
             </div>
           </div>
         </div>

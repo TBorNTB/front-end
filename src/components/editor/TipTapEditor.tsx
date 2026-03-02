@@ -120,6 +120,25 @@ function transformPastedMarkdown(text: string): string | null {
   return blocks.length > 0 ? blocks.join('') : null;
 }
 
+/**
+ * TaskList HTML에서 <input checked>만 있고 <li>에 data-checked가 없을 때
+ * TipTap이 체크 상태를 파싱할 수 있도록 li에 data-checked를 동기화합니다.
+ */
+function normalizeTaskListHtml(html: string): string {
+  if (typeof document === 'undefined' || !html?.includes('taskItem')) return html;
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  const items = div.querySelectorAll('li[data-type="taskItem"]');
+  items.forEach((li) => {
+    const input = li.querySelector('input[type="checkbox"]');
+    if (input) {
+      const isChecked = input.hasAttribute('checked');
+      li.setAttribute('data-checked', isChecked ? 'true' : 'false');
+    }
+  });
+  return div.innerHTML;
+}
+
 interface TipTapEditorProps {
   content?: string;
   onChange?: (html: string) => void;
@@ -200,7 +219,7 @@ export default function TipTapEditor({
       }),
       MarkdownShortcuts,
     ],
-    content,
+    content: typeof document !== 'undefined' ? normalizeTaskListHtml(content) : content,
     editable,
     onUpdate: ({ editor }) => {
       onChange?.(editor.getHTML());
@@ -212,10 +231,10 @@ export default function TipTapEditor({
     },
   });
 
-  // Update content when prop changes
+  // Update content when prop changes (정규화해 체크된 태스크가 올바르게 파싱되도록 함)
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
-      editor.commands.setContent(content);
+      editor.commands.setContent(normalizeTaskListHtml(content));
     }
   }, [content, editor]);
 
@@ -267,6 +286,93 @@ export default function TipTapEditor({
     wrapper.addEventListener('paste', handlePaste, true);
     return () => wrapper.removeEventListener('paste', handlePaste, true);
   }, [editor, editable, handleImageUpload]);
+
+  // TipTap TaskItem은 mousedown에서 preventDefault()를 써서 체크박스가 토글되지 않음 → 위임으로 직접 토글
+  // 라벨/체크박스/span(스타일용) 클릭 시 체크되도록, data-type 없이 체크박스가 있는 li도 인식
+  useEffect(() => {
+    if (!editor || !editable) return;
+    const wrapper = editorWrapperRef.current;
+    if (!wrapper) return;
+
+    const findTaskItemLi = (target: EventTarget | null): HTMLElement | null => {
+      const el = target as HTMLElement;
+      if (!el?.closest) return null;
+      let li = el.closest('li[data-type="taskItem"]') as HTMLElement | null;
+      if (!li) {
+        const inLabel = el.closest('label');
+        const isCheckbox = el.tagName === 'INPUT' && (el as HTMLInputElement).type === 'checkbox';
+        const inTaskLi = el.closest('li')?.querySelector('input[type="checkbox"]');
+        if (inLabel || isCheckbox || inTaskLi) {
+          const candidate = el.closest('li');
+          if (candidate?.querySelector('input[type="checkbox"]')) li = candidate as HTMLElement;
+        }
+      }
+      return li;
+    };
+
+    const toggleTaskItem = (li: HTMLElement): boolean => {
+      const view = editor.view;
+      let pos: number;
+      try {
+        pos = view.posAtDOM(li, 0);
+      } catch {
+        return false;
+      }
+      const $pos = editor.state.doc.resolve(pos);
+      for (let d = $pos.depth; d >= 0; d--) {
+        const node = $pos.node(d);
+        if (node.type.name === 'taskItem') {
+          const start = $pos.before(d);
+          const newChecked = !node.attrs.checked;
+          editor.chain().focus(undefined, { scrollIntoView: false }).command(({ tr }) => {
+            tr.setNodeMarkup(start, undefined, { ...node.attrs, checked: newChecked });
+            return true;
+          }).run();
+          const input = li.querySelector('input[type="checkbox"]') as HTMLInputElement | null;
+          if (input) input.checked = newChecked;
+          if (li.dataset) li.dataset.checked = String(newChecked);
+          return true;
+        }
+      }
+      return false;
+    };
+
+    let lastToggledLi: HTMLElement | null = null;
+    let lastToggledAt = 0;
+
+    const handleTaskCheckbox = (e: MouseEvent) => {
+      const li = findTaskItemLi(e.target);
+      if (!li) return;
+      if (toggleTaskItem(li)) {
+        e.preventDefault();
+        e.stopPropagation();
+        lastToggledLi = li;
+        lastToggledAt = Date.now();
+      }
+    };
+
+    const handleTaskCheckboxClick = (e: MouseEvent) => {
+      const li = findTaskItemLi(e.target);
+      if (!li) return;
+      // mousedown에서 이미 토글했으면 중복 토글만 막고, 이벤트는 막아서 체크박스 기본 동작 방지
+      if (lastToggledLi === li && Date.now() - lastToggledAt < 300) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      if (toggleTaskItem(li)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    wrapper.addEventListener('mousedown', handleTaskCheckbox, true);
+    wrapper.addEventListener('click', handleTaskCheckboxClick, true);
+    return () => {
+      wrapper.removeEventListener('mousedown', handleTaskCheckbox, true);
+      wrapper.removeEventListener('click', handleTaskCheckboxClick, true);
+    };
+  }, [editor, editable]);
 
   const handleImageFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

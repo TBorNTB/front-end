@@ -462,10 +462,8 @@ export default function AdminMembersContent() {
     fetchMembers();
   }, [activeTab, page, size, nicknameSearch, realNameSearch, selectedRole]);
 
-  // 등급 변경 요청 조회
+  // 등급 변경 요청 조회 - 회원관리 페이지 진입 시 한 번에 조회 (갯수 표시용)
   useEffect(() => {
-    if (activeTab !== "requests") return;
-
     const fetchRoleChangeRequests = async () => {
       try {
         setRoleChangeLoading(true);
@@ -494,8 +492,11 @@ export default function AdminMembersContent() {
         // 데이터가 배열인지 확인
         if (!Array.isArray(data)) {
           console.warn('Unexpected response format:', data);
-          setRoleChangeRequests([]);
-          setRoleChangeTotalPage(0);
+          setAllRoleChangeRequests([]);
+          if (activeTab === "requests") {
+            setRoleChangeRequests([]);
+            setRoleChangeTotalPage(0);
+          }
           return;
         }
 
@@ -504,19 +505,22 @@ export default function AdminMembersContent() {
           item => item.roleChange && item.roleChange.requestStatus === 'PENDING'
         );
         
-        // 전체 목록 저장 (개수 표시용)
+        // 전체 목록 저장 (갯수 표시 + 요청 탭 목록용)
         setAllRoleChangeRequests(pendingRequests);
       } catch (err) {
         console.error('Error fetching role change requests:', err);
-        setRoleChangeRequests([]);
-        setRoleChangeTotalPage(0);
+        setAllRoleChangeRequests([]);
+        if (activeTab === "requests") {
+          setRoleChangeRequests([]);
+          setRoleChangeTotalPage(0);
+        }
       } finally {
         setRoleChangeLoading(false);
       }
     };
 
     fetchRoleChangeRequests();
-  }, [activeTab]);
+  }, []);
 
   // 등급별 회원 수 조회
   useEffect(() => {

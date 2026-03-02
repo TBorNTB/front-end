@@ -3,11 +3,12 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, createElement, useRef, JSX } from 'react';
-import { ThumbsUp, Eye, MessageCircle, Share2, Edit, Clock, ArrowLeft, Code, FileText, Trash2 } from 'lucide-react';
+import { ThumbsUp, Eye, MessageCircle, Edit, Clock, ArrowLeft, Code, FileText, Trash2 } from 'lucide-react';
 import { fetchArticleById, deleteArticle, type ArticleResponse } from '@/lib/api/services/article-services';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { useRouter } from 'next/navigation';
 import TableOfContents from '@/components/editor/TableOfContents';
+import { ProjectContentRenderer } from '@/components/project/ProjectContentRenderer';
 import { searchCSKnowledge, getCSKnowledgeByUser } from '@/lib/api/services/elastic-services';
 import { decodeHtmlEntities } from '@/lib/html-utils';
 import { isCommentEdited } from '@/lib/comment-utils';
@@ -991,11 +992,13 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
               )}
 
               {/* Post Content */}
-              <div
-                ref={contentRef}
-                className="prose prose-slate prose-lg max-w-none mb-12"
-                dangerouslySetInnerHTML={{ __html: addHeadingIds(displayPost.content) }}
-              />
+              <div ref={contentRef} className="mb-12">
+                <ProjectContentRenderer
+                  html={addHeadingIds(displayPost.content)}
+                  className="prose prose-slate prose-lg max-w-none prose-headings:text-foreground prose-p:text-gray-800 prose-a:text-primary-600 prose-strong:text-foreground prose-code:text-primary-600"
+                  readOnly
+                />
+              </div>
 
               {/* Stats Bar with Action Buttons */}
               <div className="flex items-center justify-between py-5 border-y border-gray-200 mb-8">
@@ -1035,10 +1038,6 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                   >
                     <Trash2 className="w-4 h-4" />
                     삭제
-                  </button>
-                  <button className="inline-flex items-center gap-2 px-4 py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm border border-gray-300 cursor-pointer">
-                    <Share2 className="w-4 h-4" />
-                    공유
                   </button>
                 </div>
               </div>

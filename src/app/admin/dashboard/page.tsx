@@ -274,18 +274,7 @@ export default function AdminDashboardPage() {
           <div className="card">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-primary-900">등급 변경 요청</h3>
-              <div className="flex items-center space-x-2">
-                {roleChangeLoading ? (
-                  <Loader2 className="h-4 w-4 text-gray-700 animate-spin" />
-                ) : (
-                  <>
-                    <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium">
-                      {allRoleChangeRequests.length}개 대기중
-                    </span>
-                    <Users className="h-5 w-5 text-primary-400" />
-                  </>
-                )}
-              </div>
+              <Users className="h-5 w-5 text-primary-400" />
             </div>
             
             {roleChangeLoading ? (
@@ -388,7 +377,7 @@ export default function AdminDashboardPage() {
                     onClick={() => router.push('/admin/members?tab=requests')}
                     className="w-full flex items-center justify-center space-x-2 text-sm text-primary-600 hover:text-primary-700 font-medium py-2 hover:bg-primary-50 rounded-lg transition-colors"
                   >
-                    <span>모든 등급 요청 보기 ({allRoleChangeRequests.length}개)</span>
+                    <span>모든 등급 요청 보기</span>
                     <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
