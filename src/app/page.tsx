@@ -161,6 +161,7 @@ export default function Home() {
         description: p.description,
         status: convertStatus(p.projectStatus),
         category: p.projectCategories?.[0] || '프로젝트',
+        categories: p.projectCategories || [],
         collaborators: collaboratorsList,
         likes: p.likeCount || 0,
         views: p.viewCount,

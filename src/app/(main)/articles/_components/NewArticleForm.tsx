@@ -264,11 +264,11 @@ export default function NewArticleForm() {
                     value={formData.title}
                     onChange={handleInputChange}
                     placeholder="글의 제목을 입력해주세요"
-                    maxLength={50}
+                    maxLength={30}
                     className={`py-3 pr-16 bg-white ${errors.title ? 'border-red-500 focus:ring-red-500' : 'focus:ring-primary-500'}`}
                   />
                   <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-700 pointer-events-none font-medium">
-                    {formData.title.length}/50
+                    {formData.title.length}/30
                   </span>
                 </div>
                 {errors.title && <p className="text-red-500 text-sm mt-2 flex items-center gap-1">✕ {errors.title}</p>}

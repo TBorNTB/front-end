@@ -30,6 +30,7 @@ export interface ProjectCardData {
   description: string;
   status: string;
   category: string;
+  categories?: string[];
   collaborators: { profileImage: string }[];
   likes: number;
   views?: number;

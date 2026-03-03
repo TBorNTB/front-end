@@ -1140,9 +1140,9 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                 </div>
 
                 <div className="flex items-center justify-between mb-6"> 
-                  <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-primary flex items-center gap-2">
                     <span className="relative inline-flex items-center justify-center mr-2">
-                      <MessageCircle className="w-6 h-6 text-secondary-500" />
+                      <MessageCircle className="w-6 h-6 text-primary" />
                       <span className="absolute -top-1 -right-2 min-w-[22px] px-1 text-[10px] leading-5 text-white bg-secondary-500 rounded-full border border-white shadow-sm text-center">
                         {displayedCommentCount}
                         {hasNextComments ? '+' : ''}
@@ -1420,7 +1420,7 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
               {/* More from Author */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <Code className="w-5 h-5 text-purple-600" />
+                  <Code className="w-5 h-5 text-secondary-600" />
                   저자의 다른 글
                 </h3>
                 <div className="space-y-3">
@@ -1438,12 +1438,12 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                         <Link
                           key={article.id}
                           href={`/articles/${article.slug}`}
-                          className="block group p-4 rounded-xl border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all duration-200 cursor-pointer bg-white hover:bg-purple-50/30"
+                          className="block group p-4 rounded-xl border border-gray-200 hover:border-secondary-300 hover:shadow-md transition-all duration-200 cursor-pointer bg-white hover:bg-secondary-50/30"
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-purple-100 text-purple-700 whitespace-nowrap">
+                                <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-secondary-100 text-secondary-700 whitespace-nowrap">
                                   {article.category}
                                 </span>
                                 {article.viewCount !== undefined && (
@@ -1459,7 +1459,7 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                                   </div>
                                 )}
                               </div>
-                              <h4 className="text-sm font-bold text-gray-900 group-hover:text-purple-600 transition-colors mb-1.5 line-clamp-2 leading-snug">
+                              <h4 className="text-sm font-bold text-gray-900 group-hover:text-secondary-600 transition-colors mb-1.5 line-clamp-2 leading-snug">
                                 {article.title}
                               </h4>
                               <div className="flex items-center gap-2 text-xs text-gray-700">
@@ -1473,7 +1473,7 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                               </div>
                             </div>
                             <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-5 h-5 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                               </svg>
                             </div>

@@ -4,16 +4,15 @@ import Link from 'next/link';
 import { ThumbsUp, Eye, Crown, Users, MessageCircle } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { decodeHtmlEntities } from '@/lib/html-utils';
-import { getProjectStatusKorean, getProjectStatusColor, getProjectStatusApiValue } from '@/types/services/project';
+import { getProjectStatusKorean, getProjectStatusColor } from '@/types/services/project';
 
-interface ProjectCard {
+interface ProjectCardHomeProps {
   project: {
     id: string;
     title: string;
     description: string;
     status: string;
     category: string;
-    categories?: string[];
     collaborators: { profileImage: string }[];
     likes: number;
     views?: number;
@@ -114,20 +113,10 @@ const AvatarStack = ({
   );
 };
 
-export function ProjectCardHome({ project }: ProjectCard) {
-  const status = getProjectStatusApiValue(project.status) ?? project.status;
-  const normalizedCategories = (project.categories && project.categories.length > 0
-    ? project.categories
-    : [project.category]
-  )
-    .map((category) => decodeHtmlEntities(category || '').trim())
-    .filter((category, index, array) => category.length > 0 && array.indexOf(category) === index);
-  const visibleCategories = normalizedCategories.slice(0, 3);
-  const remainingCategoryCount = Math.max(0, normalizedCategories.length - visibleCategories.length);
-
+export function ProjectCardHome({ project }: ProjectCardHomeProps) {
   return (
     <Link href={`/projects/${project.id}`} className="block">
-      <div className="group relative bg-white border border-primary-500 ring-1 ring-gray-200 rounded-xl overflow-hidden shadow-sm hover:border-primary-300 hover:ring-primary-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+      <div className="group relative bg-white border border-gray-300 ring-1 ring-gray-200 rounded-xl overflow-hidden shadow-sm hover:border-primary-300 hover:ring-primary-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
         {/* Image */}
         <div className="relative overflow-hidden h-56">
           <ImageWithFallback
@@ -139,31 +128,19 @@ export function ProjectCardHome({ project }: ProjectCard) {
             className="object-cover group-hover:scale-105 transition-transform duration-200"
           />
           <div className="absolute top-3 left-3">
-            <div className="flex flex-wrap gap-1.5 max-w-[calc(100%-4.5rem)]">
-              {visibleCategories.map((category) => (
-                <span
-                  key={category}
-                  className="bg-primary-50 backdrop-blur-sm border border-primary-200 text-primary px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap"
-                >
-                  {category}
-                </span>
-              ))}
-              {remainingCategoryCount > 0 && (
-                <span className="bg-primary-50 backdrop-blur-sm border border-primary-200 text-primary px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap">
-                  +{remainingCategoryCount}
-                </span>
-              )}
-            </div>
+            <span className="bg-white/90 backdrop-blur-sm border border-gray-200 text-primary px-2 py-1 rounded-full text-xs font-medium">
+              {decodeHtmlEntities(project.category)}
+            </span>
           </div>
           <div className="absolute top-3 right-3">
-            <span className={`px-2 py-1 rounded-full text-xs border font-semibold ${getProjectStatusColor(status)}`}>
-              {getProjectStatusKorean(status)}
+            <span className={`px-2 py-1 rounded-full text-xs border font-semibold ${getProjectStatusColor(project.status)}`}>
+              {getProjectStatusKorean(project.status)}
             </span>
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-5 flex-1 flex flex-col bg-white border-t border-primary-200">
+        <div className="p-5 flex-1 flex flex-col bg-white border-t border-gray-100">
           <h3 className="font-semibold text-base text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
             {decodeHtmlEntities(project.title)}
           </h3>
@@ -198,10 +175,8 @@ export function ProjectCardHome({ project }: ProjectCard) {
             />
           </div>
 
-          {/* Stats + 상세 보기 */}
-          <div className="flex items-center justify-between mb-3 pt-3 border-t border-gray-200 text-sm text-gray-700">
-            {/* Stats */}
-            <div className="flex items-center gap-4">
+          {/* Stats */}
+          <div className="flex items-center gap-4 mb-3 pt-3 border-t border-gray-200 text-sm text-gray-700">
               <div className="flex items-center gap-1">
                 <Eye className="h-3.5 w-3.5" />
                 <span>{project.views || 0}</span>
@@ -212,16 +187,8 @@ export function ProjectCardHome({ project }: ProjectCard) {
               </div>
               <div className="flex items-center gap-2">
                 <MessageCircle className="h-3.5 w-3.5" />
-                <span className="font-medium">{project.comments || 0}</span>
+                <span className="font-medium ">{project.comments || 0}</span>
               </div>
-            </div>
-
-            {/* 상세 보기 Button */}
-            <span
-              className="bg-primary text-white px-4 py-1.5 rounded-lg text-xs font-medium hover:bg-primary-700 transition-colors"
-            >
-              상세 보기
-            </span>
           </div>
         </div>
       </div>
