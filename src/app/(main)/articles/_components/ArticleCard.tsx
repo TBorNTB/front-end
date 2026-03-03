@@ -123,7 +123,7 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
               {article.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-xs hover:bg-gray-200 transition-colors"
+                  className="px-2 py-0.5 rounded-full bg-secondary-100 text-secondary-700 text-xs hover:bg-gray-200 transition-colors"
                 >
                   #{tag}
                 </span>
@@ -144,9 +144,9 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
               </div>
             </div>
 
-            {/* 상세 보기 Button */}
+            {/* 읽어 보기 Button */}
             <span className="bg-primary text-white px-4 py-1.5 rounded-lg text-xs font-medium hover:bg-primary-700 transition-colors">
-              상세 보기
+              읽어보기
             </span>
           </div>
         </div>

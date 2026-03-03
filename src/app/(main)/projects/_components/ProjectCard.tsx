@@ -177,13 +177,13 @@ export function ProjectCardHome({ project }: ProjectCard) {
               {project.techStacks.slice(0, 5).map((tag: string, index: number) => (
                 <span
                   key={index}
-                  className="px-2 py-1 bg-white text-gray-700 text-xs rounded-md border border-gray-300"
+                  className="px-2 py-1 bg-secondary-100 text-secondary-700 text-xs rounded-md border border-secondary-300"
                 >
                   {decodeHtmlEntities(tag)}
                 </span>
               ))}
               {project.techStacks.length > 5 && (
-                <span className="px-2 py-1 bg-white text-gray-700 text-xs rounded-md border border-gray-300">
+                <span className="px-2 py-1 bg-secondary-100 text-secondary-700 text-xs rounded-md border border-secondary-300">
                   +{project.techStacks.length - 5}
                 </span>
               )}

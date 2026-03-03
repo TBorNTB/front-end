@@ -19,7 +19,10 @@ export const formatDateText = (
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return fallback;
 
-  return new Intl.DateTimeFormat(locale, options).format(date).replace(/\.\s*$/, '');
+  return new Intl.DateTimeFormat(locale, options)
+    .format(date)
+    .replace(/\.\s*$/, '')
+    .replace(/\.\s+/g, '.');
 };
 
 export function DateDisplay({

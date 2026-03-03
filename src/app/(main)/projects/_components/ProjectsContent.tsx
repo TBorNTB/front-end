@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ExternalLink, Github, ChevronLeft, ChevronRight, ThumbsUp, Eye, Crown, Users } from 'lucide-react';
+import { ProjectCardHome } from './ProjectCard';
 import TitleBanner from '@/components/layout/TitleBanner';
 import ContentFilterBar from '@/components/layout/TopSection';
 import CategoryFilter from '@/components/layout/CategoryFilter';
@@ -251,17 +252,34 @@ export default function ProjectsContent() {
         title: item.title || '제목 없음',
         description: item.description || '',
         image: getValidImageUrl(item.thumbnailUrl),
+        thumbnailUrl: getValidImageUrl(item.thumbnailUrl),
         tags: item.projectTechStacks || [],
+        techStacks: item.projectTechStacks || [],
         category: item.projectCategories?.[0] ? 
           CategoryDisplayNames[item.projectCategories[0] as CategoryType] || item.projectCategories[0] : 
           '',
+        categories: (item.projectCategories || []).map((category: string) =>
+          CategoryDisplayNames[category as CategoryType] || category
+        ),
         topicSlug: item.projectCategories?.[0] ? 
           CategoryHelpers.getSlug(item.projectCategories[0] as CategoryType) : 
           '',
         status: item.projectStatus || 'PLANNING',
         stars: item.likeCount || 0,
+        likes: item.likeCount || 0,
         likeCount: item.likeCount || 0,
+        views: item.viewCount || 0,
         viewCount: item.viewCount || 0,
+        comments: 0,
+        owner: item.owner ? {
+          username: item.owner.username || '',
+          nickname: item.owner.nickname || 'Unknown',
+          realname: item.owner.realname || '',
+          profileImageUrl: getValidProfileImageUrl(item.owner.profileImageUrl)
+        } : undefined,
+        collaborators: (item.collaborators || []).map((collab: any) => ({
+          profileImage: getValidProfileImageUrl(collab.profileImageUrl)
+        })),
         creator: item.owner ? {
           username: item.owner.username || '',
           nickname: item.owner.nickname || 'Unknown',
@@ -525,15 +543,20 @@ export default function ProjectsContent() {
 
             {/* Projects Grid/List */}
             {!isLoading && (
-              <div className={viewMode === 'grid' 
-                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" 
+              <div className={viewMode === 'grid'
+                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                 : "space-y-6"
               }>
-                {projects.map((project) => (
-                  <div key={project.id} className={`group ${viewMode === 'list' ? 'flex gap-6' : ''}`}>
-                    <div className={`bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-primary hover:shadow-lg transition-all duration-200 hover:-translate-y-1 ${
-                      viewMode === 'list' ? 'flex flex-1' : ''
-                    }`}>
+                {viewMode === 'grid' ? (
+                  projects.map((project) => (
+                    <ProjectCardHome key={project.id} project={project} />
+                  ))
+                ) : (
+                  projects.map((project) => (
+                    <div key={project.id} className={`group ${viewMode === 'list' ? 'flex gap-6' : ''}`}>
+                      <div className={`bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-primary hover:shadow-lg transition-all duration-200 hover:-translate-y-1 ${
+                        viewMode === 'list' ? 'flex flex-1' : ''
+                      }`}>
                       {/* Image */}
                       <div className={`relative ${viewMode === 'list' ? 'w-56 flex-shrink-0 overflow-hidden' : 'overflow-hidden'}`}>
                         <ImageWithFallback
@@ -644,8 +667,9 @@ export default function ProjectsContent() {
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                    </div>
+                  ))
+                )}
               </div>
             )}
 

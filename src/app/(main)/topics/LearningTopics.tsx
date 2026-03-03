@@ -9,6 +9,7 @@ import CategoryFilter from '@/components/layout/CategoryFilter';
 import type { LucideIcon } from 'lucide-react';
 import { categoryService, CategoryItem } from '@/lib/api/services/category-services';
 import { CategoryType, CategorySlugs, CategoryDisplayNames, CategoryDescriptions } from '@/types/services/category';
+import { getProjectStatusColor, getProjectStatusKorean, getProjectStatusApiValue } from '@/types/services/project';
 import { decodeHtmlEntities } from '@/lib/html-utils';
 import { formatDateText } from '@/components/ui/date';
 
@@ -142,22 +143,14 @@ const fetchCategoryArticleCount = async (categoryName: string): Promise<number> 
   }
 };
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'Completed': return 'bg-green-100 text-green-700 border-green-300';
-    case 'Planning': return 'bg-yellow-100 text-yellow-700 border-yellow-300';
-    case 'In Progress': return 'bg-blue-100 text-blue-700 border-blue-300';
-    default: return 'bg-gray-100 text-gray-700 border-gray-300';
+const getArticleReadTime = (item: any): string => {
+  if (typeof item?.readTime === 'string' && item.readTime.trim()) {
+    return item.readTime;
   }
-};
 
-const getStatusText = (status: string) => {
-  switch (status) {
-    case 'Completed': return '완료';
-    case 'Planning': return '계획중';
-    case 'In Progress': return '진행중';
-    default: return status;
-  }
+  const text = (item?.content ?? item?.description ?? '').toString();
+  const minutes = Math.max(1, Math.ceil(text.length / 500));
+  return `${minutes}분 읽기`;
 };
 
 export function LearningTopics() {
@@ -232,9 +225,7 @@ export function LearningTopics() {
       return;
     }
 
-    const fetchProjectsAndArticles = async () => {
-      const categoryApiFormat = getCategoryApiFormat(currentCategory.name);
-      
+    const fetchProjectsAndArticles = async () => {      
       // Fetch projects
       setLoadingProjects(true);
       try {
@@ -252,9 +243,7 @@ export function LearningTopics() {
             title: item.title || '제목 없음',
             description: item.description || '',
             category: item.projectCategories?.[0] || currentCategory.name,
-            status: item.projectStatus === 'IN_PROGRESS' ? 'In Progress' :
-                    item.projectStatus === 'COMPLETED' ? 'Completed' :
-                    item.projectStatus === 'PLANNING' ? 'Planning' : 'In Progress',
+            status: item.projectStatus || 'IN_PROGRESS',
             tags: item.projectTechStacks || [],
             contributors: (item.collaborators || []).length + (item.owner ? 1 : 0),
             categorySlug: selectedCategory
@@ -289,7 +278,7 @@ export function LearningTopics() {
             category: item.category || currentCategory.name,
             author: item.writer?.nickname || item.writer?.realname || '작성자',
             publishDate: item.createdAt ? formatDateText(item.createdAt, undefined, '') : '',
-            readTime: '5분 읽기',
+            readTime: getArticleReadTime(item),
             views: item.viewCount || 0,
             comments: 0,
             categorySlug: selectedCategory
@@ -452,18 +441,23 @@ export function LearningTopics() {
                       </div>
                     ) : filteredProjects.length > 0 ? (
                       filteredProjects.map((project) => (
-                        <div key={project.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-200">
+                        <div key={project.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-200 ">
+                          {(() => {
+                            const status = getProjectStatusApiValue(project.status) || project.status;
+                            return (
                           <div className="flex items-start justify-between mb-3">
                             <h3 className="text-base font-bold text-foreground flex-1">{decodeHtmlEntities(project.title)}</h3>
-                            <span className={`px-2 py-1 rounded-full text-xs border ml-3 flex-shrink-0 ${getStatusColor(project.status)}`}>
-                              {getStatusText(project.status)}
+                            <span className={`px-2 py-1 rounded-full text-xs border ml-3 flex-shrink-0 ${getProjectStatusColor(status)}`}>
+                              {getProjectStatusKorean(status)}
                             </span>
                           </div>
+                            );
+                          })()}
                           <p className="text-gray-700 text-sm mb-4">{decodeHtmlEntities(project.description)}</p>
                           <div className="flex items-center space-x-2 mb-4">
                             {project.tags && project.tags.length > 0 ? (
                               project.tags.slice(0, 3).map((tag: string, index: number) => (
-                                <span key={index} className="bg-white text-gray-700 px-2 py-1 rounded text-xs border border-gray-200">
+                                <span key={index} className="bg-secondary-50 text-secondary-700 px-2 py-1 rounded text-xs border border-secondary-200">
                                   {tag}
                                 </span>
                               ))
@@ -480,7 +474,7 @@ export function LearningTopics() {
                               onClick={() => router.push(`/projects/${project.id}`)}
                               className="text-primary-600 hover:text-primary-700 text-sm font-medium transition-colors hover:underline"
                             >
-                              자세히 보기 →
+                              상세 보기 →
                             </button>
                           </div>
                         </div>
