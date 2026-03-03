@@ -117,11 +117,11 @@ export default function DocumentViewer({ params }: DocumentViewerProps) {
 
               {/* Metadata */}
               <div className="flex items-center gap-4 text-sm text-gray-700 mb-8 pb-8 border-b border-gray-200">
-                <span>생성일: {document.createdAt ? new Date(document.createdAt).toLocaleDateString('ko-KR') : '-'}</span>
+                <span>생성일: {document.createdAt ? new Date(document.createdAt).toLocaleDateString('ko-KR').replace(/\.\s*$/, '') : '-'}</span>
                 {document.updatedAt && document.updatedAt !== document.createdAt && (
                   <>
                     <span>•</span>
-                    <span>수정일: {new Date(document.updatedAt).toLocaleDateString('ko-KR')}</span>
+                    <span>수정일: {new Date(document.updatedAt).toLocaleDateString('ko-KR').replace(/\.\s*$/, '')}</span>
                   </>
                 )}
               </div>

@@ -3,6 +3,119 @@ import { PROJECT_ENDPOINTS, getProjectApiUrl } from '../endpoints/project-endpoi
 import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
 import { getSafeApiErrorMessage } from '@/lib/api/helpers';
 
+export type ProjectSortType = 'LATEST' | 'POPULAR';
+export type ProjectStatusApiValue = 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED';
+
+export interface ProjectSearchParams {
+  query?: string;
+  projectStatus?: ProjectStatusApiValue[];
+  categories?: string[];
+  projectSortType?: ProjectSortType;
+  size?: number;
+  page?: number;
+}
+
+export interface ProjectSearchItem {
+  id: number;
+  title?: string;
+  description?: string;
+  thumbnailUrl?: string | null;
+  projectTechStacks?: string[];
+  projectCategories?: string[];
+  projectStatus?: ProjectStatusApiValue;
+  likeCount?: number;
+  viewCount?: number;
+  updatedAt?: string;
+  createdAt?: string;
+  owner?: {
+    username?: string;
+    nickname?: string;
+    realname?: string;
+    profileImageUrl?: string;
+  };
+  collaborators?: Array<{
+    username?: string;
+    nickname?: string;
+    realname?: string;
+    profileImageUrl?: string;
+  }>;
+}
+
+export interface ProjectSearchResponse {
+  content: ProjectSearchItem[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  error?: string;
+}
+
+export const fetchProjects = async (params: ProjectSearchParams): Promise<ProjectSearchResponse> => {
+  try {
+    const queryParams = new URLSearchParams();
+
+    const queryValue = params.query?.trim();
+    if (queryValue && queryValue !== ' ') {
+      queryParams.append('query', queryValue);
+    }
+
+    params.projectStatus?.forEach(status => {
+      if (status?.trim()) {
+        queryParams.append('projectStatus', status.trim());
+      }
+    });
+
+    params.categories?.forEach(category => {
+      if (category?.trim()) {
+        queryParams.append('categories', category.trim());
+      }
+    });
+
+    queryParams.append('projectSortType', params.projectSortType || 'LATEST');
+    queryParams.append('size', String(params.size ?? 12));
+    queryParams.append('page', String(params.page ?? 0));
+
+    const response = await fetch(`/api/projects/search?${queryParams.toString()}`);
+
+    if (!response.ok) {
+      return {
+        content: [],
+        page: params.page ?? 0,
+        size: params.size ?? 12,
+        totalElements: 0,
+        totalPages: 0,
+        error: getSafeApiErrorMessage(response, '프로젝트'),
+      };
+    }
+
+    return await response.json();
+  } catch {
+    return {
+      content: [],
+      page: params.page ?? 0,
+      size: params.size ?? 12,
+      totalElements: 0,
+      totalPages: 0,
+      error: '프로젝트 목록을 불러오는 중 오류가 발생했습니다.',
+    };
+  }
+};
+
+export const fetchProjectSearchSuggestions = async (query: string): Promise<string[]> => {
+  if (!query?.trim()) return [];
+
+  try {
+    const response = await fetch(`/api/projects/suggestions?query=${encodeURIComponent(query.trim())}`);
+
+    if (!response.ok) return [];
+
+    const data = await response.json();
+    return Array.isArray(data) ? data.slice(0, 5) : [];
+  } catch {
+    return [];
+  }
+};
+
 // Fetch project detail by ID
 export const fetchProjectDetail = async (id: string | number): Promise<ProjectDetailResponse> => {
   const endpoint = PROJECT_ENDPOINTS.PROJECT.GET_BY_ID.replace(':id', String(id));

@@ -258,7 +258,7 @@ export default function QuestionDetailPage() {
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
-    });
+    }).replace(/\.\s*$/, '');
   };
 
 

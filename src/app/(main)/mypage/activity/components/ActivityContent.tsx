@@ -214,7 +214,7 @@ export default function ActivityContent() {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
-      }).replace(/\./g, '.').replace(/\s/g, '');
+      }).replace(/\.\s*$/, '').replace(/\./g, '.').replace(/\s/g, '');
     } catch {
       return dateString;
     }

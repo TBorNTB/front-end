@@ -130,7 +130,7 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
-    });
+    }).replace(/\.\s*$/, '');
   };
 
   // Default writer and participants

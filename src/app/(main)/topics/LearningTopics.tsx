@@ -249,7 +249,7 @@ export function LearningTopics() {
             description: item.description ?? '',
             category: item.category || currentCategory.name,
             author: item.writer?.nickname || item.writer?.realname || '작성자',
-            publishDate: item.createdAt ? new Date(item.createdAt).toLocaleDateString('ko-KR') : '',
+            publishDate: item.createdAt ? new Date(item.createdAt).toLocaleDateString('ko-KR').replace(/\.\s*$/, '') : '',
             readTime: '5분 읽기',
             views: item.viewCount || 0,
             comments: 0,

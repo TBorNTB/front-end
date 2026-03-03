@@ -30,7 +30,7 @@ const formatDate = (dateString?: string) => {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
-  });
+  }).replace(/\.\s*$/, '');
 };
 
 export function ArticleCardHome({ article }: ArticleCardHomeProps) {

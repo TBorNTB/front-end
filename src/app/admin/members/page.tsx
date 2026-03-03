@@ -733,7 +733,7 @@ export default function AdminMembersContent() {
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit'
-    });
+    }).replace(/\.\s*$/, '');
   };
 
   const handleRefresh = () => {
@@ -753,7 +753,7 @@ export default function AdminMembersContent() {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit'
-    });
+    }).replace(/\.\s*$/, '');
   };
 
   return (

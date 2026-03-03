@@ -74,7 +74,7 @@ function formatTimeAgo(dateString: string): string {
   if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}시간 전`;
   if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}일 전`;
 
-  return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+  return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }).replace(/\.\s*$/, '');
 }
 
 interface AlarmPopupProps {

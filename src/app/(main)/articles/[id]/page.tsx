@@ -948,6 +948,7 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
 
                 {/* Author, Date, Time, Category in one line */}
                 <div className="flex flex-wrap items-center gap-3 mb-4 text-sm text-gray-700">
+                  {/* Author */}
                   <div className="flex items-center gap-2">
                     <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200">
                       {displayPost.author.avatar ? (
@@ -968,29 +969,39 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                     </div>
                     <span className="font-medium text-gray-900">{displayPost.author.name}</span>
                   </div>
+
+                  {/* Published Date */}
                   <div className="flex items-center gap-1.5 text-gray-700">
                     <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                     <span>
-                      {new Date(displayPost.publishedAt).toLocaleDateString('ko-KR', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                      })}
+                      {new Date(displayPost.publishedAt)
+                        .toLocaleDateString('ko-KR', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit',
+                        })
+                        .replace(/\.\s*$/, '')}
                     </span>
                   </div>
-                  {displayPost.readTime && (
-                    <div className="flex items-center gap-1.5 text-gray-700">
-                      <Clock className="w-4 h-4 text-gray-700" />
-                      <span>{displayPost.readTime}</span>
+
+                  {/* Read Time + Category together */}
+                  {(displayPost.readTime || displayPost.category) && (
+                    <div className="flex items-center gap-2 text-gray-700">
+                      {displayPost.readTime && (
+                        <>
+                          <Clock className="w-4 h-4 text-gray-700" />
+                          <span>{displayPost.readTime}</span>
+                        </>
+                      )}
+                      {displayPost.category && (
+                        <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-primary-100 text-primary-700">
+                          {displayPost.category}
+                        </span>
+                      )}
                     </div>
                   )}
-                  <div className="flex-1 flex justify-end">
-                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
-                      {displayPost.category}
-                    </span>
-                  </div>
                 </div>
 
                 {/* Tags below metadata */}
@@ -999,7 +1010,7 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                     {displayPost.tags.map((tag, index) => (
                       <span
                         key={index}
-                        className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200"
+                        className="px-2.5 py-1 rounded-full text-xs font-semibold bg-secondary-100 text-secondary-700 border border-secondary-200"
                       >
                         #{tag}
                       </span>
@@ -1049,12 +1060,6 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                     </svg>
                     <span className="text-base font-medium">
                       {displayPost.stats.likes}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <MessageCircle className="w-5 h-5" />
-                    <span className="text-base font-medium">
-                      {displayPost.stats.comments}
                     </span>
                   </div>
                 </div>
@@ -1141,8 +1146,8 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                 <div className="flex items-center justify-between mb-6"> 
                   <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
                     <span className="relative inline-flex items-center justify-center mr-2">
-                      <MessageCircle className="w-6 h-6 text-primary-700" />
-                      <span className="absolute -top-1 -right-2 min-w-[22px] px-1 text-[10px] leading-5 text-white bg-primary-600 rounded-full border border-white shadow-sm text-center">
+                      <MessageCircle className="w-6 h-6 text-secondary-500" />
+                      <span className="absolute -top-1 -right-2 min-w-[22px] px-1 text-[10px] leading-5 text-white bg-secondary-500 rounded-full border border-white shadow-sm text-center">
                         {displayedCommentCount}
                         {hasNextComments ? '+' : ''}
                       </span>
@@ -1175,7 +1180,7 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                 {/* 댓글 목록 */}
                 {isLoadingComments ? (
                   <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
                     <p className="text-gray-700 mt-2 text-sm">댓글을 불러오는 중...</p>
                   </div>
                 ) : displayedComments.length === 0 ? (
@@ -1220,11 +1225,13 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                                 <div className="flex items-center gap-2">
                                   <span className="font-semibold text-gray-900">{displayName}</span>
                                 <span className="text-xs text-gray-700">
-                                  {new Date(comment.createdAt).toLocaleDateString('ko-KR', {
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric',
-                                  })}
+                                  {new Date(comment.createdAt)
+                                    .toLocaleDateString('ko-KR', {
+                                      year: 'numeric',
+                                      month: 'long',
+                                      day: 'numeric',
+                                    })
+                                    .replace(/\.\s*$/, '')}
                                 </span>
                               </div>
                               <div className="flex items-center gap-2">
@@ -1350,7 +1357,7 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                                         <div className="flex items-center gap-2 mb-1">
                                           <span className="font-medium text-gray-900 text-sm">{replyDisplayName}</span>
                                         <span className="text-xs text-gray-700">
-                                          {new Date(reply.createdAt).toLocaleDateString('ko-KR')}
+                                          {new Date(reply.createdAt).toLocaleDateString('ko-KR').replace(/\.\s*$/, '')}
                                         </span>
                                       </div>
                                       <p className="text-gray-700 text-sm">{reply.content}</p>
@@ -1433,7 +1440,7 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                         if (!dateString) return '';
                         try {
                           const date = new Date(dateString);
-                          return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+                          return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }).replace(/\.\s*$/, '');
                         } catch {
                           return '';
                         }

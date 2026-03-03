@@ -1,5 +1,12 @@
 import { CategoryType } from'./category';
 
+// Enums for project-related constants
+export enum ProjectStatus {
+  PLANNING = '기획중',
+  IN_PROGRESS = '진행중',
+  COMPLETED = '완료',
+}
+
 // 프로젝트 상태 한글 변환 및 색상 매핑
 export const getProjectStatusKorean = (status: string) => {
   switch (status) {
@@ -33,12 +40,30 @@ export const getProjectStatusColor = (status: string) => {
   }
 };
 
-// Enums for project-related constants
-export enum ProjectStatus {
-  PLANNING = '기획중',
-  IN_PROGRESS = '진행중',
-  COMPLETED = '완료',
-}
+export type ProjectStatusApiValue = 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED';
+
+export const PROJECT_STATUS_FILTER_OPTIONS = [
+  '전체',
+  ProjectStatus.IN_PROGRESS,
+  ProjectStatus.COMPLETED,
+  ProjectStatus.PLANNING,
+] as const;
+
+export const getProjectStatusApiValue = (status: string): ProjectStatusApiValue | undefined => {
+  switch (status) {
+    case 'PLANNING':
+    case ProjectStatus.PLANNING:
+      return 'PLANNING';
+    case 'IN_PROGRESS':
+    case ProjectStatus.IN_PROGRESS:
+      return 'IN_PROGRESS';
+    case 'COMPLETED':
+    case ProjectStatus.COMPLETED:
+      return 'COMPLETED';
+    default:
+      return undefined;
+  }
+};
 
 export enum DocumentType {
   README = 'README',
@@ -185,21 +210,6 @@ export interface ProjectCard {
   topTechStacks: string[];
   collaboratorCount: number;
   completionRate: number;
-}
-
-export interface ProjectDetail extends Project {
-  // Additional computed properties for detail view
-  statusHistory?: Array<{
-    status: ProjectStatus;
-    changedAt: Date;
-    changedBy: string;
-  }>;
-  metrics?: {
-    totalHours: number;
-    estimatedHours: number;
-    efficiency: number;
-    completionRate: number;
-  };
 }
 
 // Form interfaces

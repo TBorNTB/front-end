@@ -341,11 +341,13 @@ function ArticlesContent() {
       realname: item.writer?.realname,
       avatarUrl: item.writer?.profileImageUrl || '',
     },
-    date: item.createdAt ? new Date(item.createdAt).toLocaleDateString('ko-KR') : new Date().toLocaleDateString('ko-KR'),
+    date: item.createdAt
+      ? new Date(item.createdAt).toLocaleDateString('ko-KR').replace(/\.\s*$/, '')
+      : new Date().toLocaleDateString('ko-KR').replace(/\.\s*$/, ''),
     readTime: '5분',
     views: item.viewCount || 0,
     likes: item.likeCount || 0,
-    comments: 0,
+    comments: item.commentCount || item.comments || 0,
     tags: [],
     image: item.thumbnailUrl || '', // Use thumbnailUrl if available, otherwise empty string triggers placeholder
   })) || [];

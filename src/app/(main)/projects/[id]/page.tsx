@@ -408,7 +408,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       try {
         const date = new Date(dateString);
         if (isNaN(date.getTime())) return 'Unknown';
-        return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\.\s*$/, '');
       } catch {
         return 'Unknown';
       }
@@ -1101,7 +1101,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     if (Number.isNaN(date.getTime())) return '-';
-    return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\.\s*$/, '');
   };
 
   return (

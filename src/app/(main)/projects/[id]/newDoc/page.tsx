@@ -210,7 +210,7 @@ export default function NewDocumentPage({ params }: NewDocumentPageProps) {
               <span>•</span>
               <span>프로젝트: XSS 필터 규칙 테스트</span>
               <span>•</span>
-              <span>{new Date().toLocaleDateString('ko-KR')}</span>
+              <span>{new Date().toLocaleDateString('ko-KR').replace(/\.\s*$/, '')}</span>
             </div>
 
             {/* TipTap Editor */}

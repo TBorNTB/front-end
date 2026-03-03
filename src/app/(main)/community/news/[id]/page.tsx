@@ -411,7 +411,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     if (Number.isNaN(date.getTime())) return '-';
-    return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\.\s*$/, '');
   };
 
   const isValidImageUrl = (url?: string): string | null => {
@@ -727,7 +727,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                                       {(() => {
                                         const date = new Date(item.createdAt);
                                         if (Number.isNaN(date.getTime())) return '-';
-                                        return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+                                        return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\.\s*$/, '');
                                       })()}
                                     </span>
                                   </div>
@@ -813,11 +813,13 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                     </div>
                     <div className="flex items-center gap-3 mt-1">
                       <p className="text-sm text-gray-700">
-                        {new Date(item.createdAt).toLocaleDateString('ko-KR', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
+                        {new Date(item.createdAt)
+                          .toLocaleDateString('ko-KR', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })
+                          .replace(/\.\s*$/, '')}
                       </p>
                       <span className="text-gray-700">·</span>
                       <div className="flex items-center gap-1 text-sm text-gray-700">

@@ -8,145 +8,13 @@ import TitleBanner from '@/components/layout/TitleBanner';
 import ContentFilterBar from '@/components/layout/TopSection';
 import CategoryFilter from '@/components/layout/CategoryFilter';
 import { CategoryHelpers, CategoryType, CategoryDisplayNames } from '@/types/services/category';
-import { getProjectStatusKorean, getProjectStatusColor } from '@/types/services/project';
+import { getProjectStatusKorean, getProjectStatusColor, getProjectStatusApiValue, PROJECT_STATUS_FILTER_OPTIONS } from '@/types/services/project';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { categoryService, type CategoryItem } from '@/lib/api/services/category-services';
+import { fetchProjects, fetchProjectSearchSuggestions, type ProjectSortType } from '@/lib/api/services/project-services';
 import { decodeHtmlEntities } from '@/lib/html-utils';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { isGuest, getGuestRestrictionMessage } from '@/lib/role-utils';
-import { getSafeApiErrorMessage } from '@/lib/api/helpers';
-
-interface Project {
-  id: string;
-  title: string;
-  description: string;
-  thumbnailUrl: string;
-  projectStatus: 'IN_PROGRESS' | 'COMPLETED' | 'PLANNING' | 'ARCHIVED';
-  projectCategories: string[];
-  projectTechStacks: string[];
-  createdAt: string;
-  updatedAt: string;
-  likeCount: number;
-  viewCount: number;
-  owner?: {
-    username?: string;
-    nickname?: string;
-    realname?: string;
-    profileImageUrl?: string;
-  } | null;
-  collaborators?: Array<{
-    username?: string;
-    nickname?: string;
-    realname?: string;
-    profileImageUrl?: string;
-  }>;
-}
-
-// ============================================================================
-// 🔧 API Service Layer (Move to src/lib/services/project.ts later)
-// ============================================================================
-
-interface ProjectSearchParams {
-  query?: string;
-  projectStatus?: string;
-  categories?: string;
-  projectSortType?: string;
-  size?: number;
-  page?: number;
-}
-
-interface ProjectSearchResponse {
-  content: any[];
-  page: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
-  error?: string;
-}
-
-/**
- * Fetch projects from Elasticsearch API
- * TODO: Move to src/lib/services/project.ts with proper error handling
- */
-const fetchProjects = async (params: ProjectSearchParams): Promise<ProjectSearchResponse> => {
-  try {
-    const queryParams = new URLSearchParams();
-    
-    // Query: only append if provided and not empty
-    const queryValue = params.query?.trim();
-    if (queryValue && queryValue !== ' ') {
-      queryParams.append('query', queryValue);
-    }
-    
-    // Project status: only append if selected
-    if (params.projectStatus) {
-      params.projectStatus.split(',').forEach(status => {
-        if (status.trim()) queryParams.append('projectStatus', status.trim());
-      });
-    }
-    
-    // Categories: append each separately
-    if (params.categories) {
-      params.categories.split(',').forEach(cat => {
-        if (cat.trim()) queryParams.append('categories', cat.trim());
-      });
-    }
-    
-    // Always include sort, size, page
-    queryParams.append('projectSortType', params.projectSortType || 'LATEST');
-    queryParams.append('size', (params.size || 12).toString());
-    queryParams.append('page', (params.page || 0).toString());
-
-    const url = `/api/projects/search?${queryParams.toString()}`; // ✅ Use API route
-
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      return {
-        content: [],
-        page: 0,
-        size: 0,
-        totalElements: 0,
-        totalPages: 0,
-        error: getSafeApiErrorMessage(response, '프로젝트'),
-      };
-    }
-
-    return await response.json();
-  } catch (error) {
-    return {
-      content: [],
-      page: 0,
-      size: 0,
-      totalElements: 0,
-      totalPages: 0,
-      error: '프로젝트 목록을 불러오는 중 오류가 발생했습니다.',
-    };
-  }
-};
-
-/**
- * Fetch search suggestions from Elasticsearch
- * 최대 5개 제안 반환
- */
-const fetchSearchSuggestions = async (query: string): Promise<string[]> => {
-  if (!query?.trim()) return [];
-
-  try {
-    const response = await fetch(
-      `/api/projects/suggestions?query=${encodeURIComponent(query.trim())}`
-    );
-
-    if (!response.ok) return [];
-
-    const data = await response.json();
-    // API 라우트에서 이미 5개로 제한하지만, 안전을 위해 여기서도 제한
-    return Array.isArray(data) ? data.slice(0, 5) : [];
-  } catch (error) {
-    console.error('Error fetching search suggestions:', error);
-    return [];
-  }
-};
 
 // ============================================================================
 // 🎨 UI Helpers
@@ -154,22 +22,10 @@ const fetchSearchSuggestions = async (query: string): Promise<string[]> => {
 
 const PAGE_SIZE = 6;
 
-const statusMap: Record<string, string> = {
-  '진행중': 'IN_PROGRESS',
-  '완료': 'COMPLETED',
-  '기획': 'ARCHIVED'
+const sortToApi = (sort: string): ProjectSortType => {
+  if (sort === '인기순') return 'POPULAR';
+  return 'LATEST';
 };
-
-const sortMap: Record<string, string> = {
-  '최신순': 'LATEST',
-  '인기순': 'POPULAR',
-};
-
-const statusToEnglish = (status: string) => statusMap[status] || '';
-const sortToEnglish = (sort: string) => sortMap[sort] || 'LATEST';
-
-// Use shared status color mapping
-const getStatusColor = (status: string) => getProjectStatusColor(status);
 
 const getValidImageUrl = (url: string | null | undefined): string => {
   if (!url || typeof url !== 'string') return '/images/placeholder/project.png';
@@ -315,7 +171,6 @@ const AvatarStack = ({
 // 📄 Main Component
 // ============================================================================
 
-const statuses = ['전체', '진행중', '완료', '계획중'];
 const sortOptions = ['최신순', '인기순'];
 
 export default function ProjectsContent() {
@@ -374,12 +229,11 @@ export default function ProjectsContent() {
   const loadProjects = async (page: number = 0) => {
     setIsLoading(true);
     try {
-      // API에서 받은 카테고리 이름을 그대로 사용
-      const categoriesParam = selectedCategories.length > 0
-        ? selectedCategories.join(',')
-        : undefined;
+      const categoriesParam = selectedCategories.length > 0 ? selectedCategories : undefined;
       const statusParam = selectedStatuses.length > 0
-        ? selectedStatuses.map(status => statusToEnglish(status)).join(',')
+        ? selectedStatuses
+            .map(status => getProjectStatusApiValue(status))
+            .filter((status): status is NonNullable<typeof status> => Boolean(status))
         : undefined;
       const searchQuery = searchTerm.trim();
 
@@ -387,7 +241,7 @@ export default function ProjectsContent() {
         query: searchQuery,
         projectStatus: statusParam,
         categories: categoriesParam,
-        projectSortType: sortToEnglish(sortBy),
+        projectSortType: sortToApi(sortBy),
         size: PAGE_SIZE,
         page: page,
       });
@@ -404,9 +258,7 @@ export default function ProjectsContent() {
         topicSlug: item.projectCategories?.[0] ? 
           CategoryHelpers.getSlug(item.projectCategories[0] as CategoryType) : 
           '',
-        status: item.projectStatus === 'IN_PROGRESS' ? '진행중' :
-          item.projectStatus === 'COMPLETED' ? '완료' :
-          item.projectStatus === 'PLANNING' ? '기획중' : '알 수 없음',
+        status: item.projectStatus || 'PLANNING',
         stars: item.likeCount || 0,
         likeCount: item.likeCount || 0,
         viewCount: item.viewCount || 0,
@@ -453,7 +305,7 @@ export default function ProjectsContent() {
     if (searchTerm.length > 0) {
       setIsSearching(true);
       debounceTimerRef.current = setTimeout(async () => {
-        const suggestions = await fetchSearchSuggestions(searchTerm);
+        const suggestions = await fetchProjectSearchSuggestions(searchTerm);
         setSearchSuggestions(suggestions);
         setShowSuggestions(suggestions.length > 0);
         setIsSearching(false);
@@ -547,7 +399,7 @@ export default function ProjectsContent() {
     <div className="min-h-screen bg-background">
       <TitleBanner
         title="Projects"
-        description="동아리 멤버들이 만들어낸 프로젝트를 만나보세요."
+        description="동아리 멤버들이 진행하는 다양한 보안 프로젝트 만나보세요."
         backgroundImage="/images/BgHeader.png"
       />
       <div className="w-full px-3 sm:px-4 lg:px-10 py-10">
@@ -600,7 +452,7 @@ export default function ProjectsContent() {
 
               {/* Status Filters */}
               <div className="space-y-3">
-                {statuses.map((status) => {
+                {PROJECT_STATUS_FILTER_OPTIONS.map((status) => {
                   const isSelected = status === '전체'
                     ? selectedStatuses.length === 0
                     : selectedStatuses.includes(status);

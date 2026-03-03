@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ThumbsUp, Eye, User } from 'lucide-react';
+import { ThumbsUp, Eye, User, MessageCircle, Clock, Calendar } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { decodeHtmlEntities } from '@/lib/html-utils';
 
@@ -23,6 +23,7 @@ type Article = {
   readTime: string;
   views: number;
   likes: number;
+  comments: number;
   tags: string[];
   image: string;
 };
@@ -92,7 +93,7 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
                     className="w-full h-full rounded-full object-cover"
                   />
                 ) : (
-                  <User className="w-3.5 h-3.5 text-blue-600" />
+                  <User className="w-3.5 h-3.5 text-secondary-500" />
                 )}
               </div>
               <span className="text-xs text-gray-700 font-medium">
@@ -107,6 +108,10 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
               <div className="flex items-center gap-2">
                 <ThumbsUp className="w-4 h-4 text-gray-700" />
                 <span className="font-medium text-gray-700">{article.likes || 0}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 text-gray-700" />
+                <span className="font-medium text-gray-700">{article.comments || 0}</span>
               </div>
             </div>
           </div>
@@ -128,8 +133,15 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
           {/* 하단 메타 */}
           <div className="mt-auto flex items-center justify-between text-xs text-gray-700 pt-3 border-t border-gray-100">
             <div className="flex items-center gap-2">
-              <span>{article.date}</span>
-              <span>· {article.readTime}</span>
+              <div className="flex items-center gap-1">
+                <Calendar className="w-3 h-3 text-gray-700" />
+                <span>{article.date}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Clock className="w-3 h-3 text-gray-700" />
+                <span> {article.readTime}</span>
+              </div>
+              
             </div>
           </div>
         </div>
