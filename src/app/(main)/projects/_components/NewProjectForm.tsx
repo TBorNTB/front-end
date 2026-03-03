@@ -32,22 +32,24 @@ interface FormData {
   collaborators: Array<{ name: string; email: string; role: string }>;
 }
 
+
 interface FormErrors {
   [key: string]: string;
 }
 
 export default function NewProjectForm() {
-  const router = useRouter();
-  const { user: currentUser, isLoading: userLoading } = useCurrentUser();
-  const [loading, setLoading] = useState(false);
-  const [tagInput, setTagInput] = useState('');
-  const [subGoalInput, setSubGoalInput] = useState('');
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [thumbnailPreview, setThumbnailPreview] = useState<string>('');
-  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
-  const [thumbnailKey, setThumbnailKey] = useState<string>('');
-  const [contentImageKeys, setContentImageKeys] = useState<string[]>([]);
-  const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
+    const router = useRouter();
+    const { user: currentUser, isLoading: userLoading } = useCurrentUser();
+    const [loading, setLoading] = useState(false);
+    const [tagInput, setTagInput] = useState('');
+    const [subGoalInput, setSubGoalInput] = useState('');
+    const [errors, setErrors] = useState<FormErrors>({});
+    const [thumbnailPreview, setThumbnailPreview] = useState<string | null>('');
+    const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+    const [thumbnailKey, setThumbnailKey] = useState<string>('');
+    const [contentImageKeys, setContentImageKeys] = useState<string[]>([]);
+    const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
+    const [categorySearchQuery, setCategorySearchQuery] = useState('');
   
   // API data states
   const [categories, setCategories] = useState<Array<{ id: number; name: string; description: string }>>([]);
@@ -111,6 +113,35 @@ export default function NewProjectForm() {
   }, []);
 
   // Load initial users with cursor pagination
+  useEffect(() => {
+    const loadInitialUsers = async () => {
+      try {
+        setIsLoadingUsers(true);
+        setNextCursorId(0);
+        setHasNext(true);
+        
+        const response = await memberService.getMembersByCursor({ 
+          cursorId: 0, 
+          size: 7, 
+          direction: 'ASC' 
+        });
+        
+        setAllUsers(response.content);
+        setFilteredUsers(response.content);
+        setNextCursorId(response.nextCursorId);
+        setHasNext(response.hasNext);
+      } catch (error) {
+        console.error('Failed to load users:', error);
+        setAllUsers([]);
+        setFilteredUsers([]);
+      } finally {
+        setIsLoadingUsers(false);
+      }
+    };
+    loadInitialUsers();
+  }, []);
+
+// Load initial users with cursor pagination
   useEffect(() => {
     const loadInitialUsers = async () => {
       try {
@@ -468,12 +499,19 @@ export default function NewProjectForm() {
     const file = e.target.files?.[0];
     if (file) {
       setThumbnailFile(file);
+      setThumbnailKey('');
       const reader = new FileReader();
       reader.onloadend = () => {
         setThumbnailPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleRemoveThumbnail = () => {
+    setThumbnailPreview(null);
+    setThumbnailFile(null);
+    setThumbnailKey('');
   };
 
   const addCollaborator = (user: CursorUserResponse) => {
@@ -588,13 +626,14 @@ export default function NewProjectForm() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen py-12 px-4">
+      <div className="w-full mx-auto">
       {/* Loading state for user authentication */}
       {userLoading && (
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
-            <p className="text-gray-700">로딩 중...</p>
+            <p className="text-gray-600">로딩 중...</p>
           </div>
         </div>
       )}
@@ -603,7 +642,7 @@ export default function NewProjectForm() {
       {!userLoading && !currentUser && (
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <p className="text-gray-700 mb-4">프로젝트를 생성하려면 먼저 로그인해주세요.</p>
+            <p className="text-gray-600 mb-4">프로젝트를 생성하려면 먼저 로그인해주세요.</p>
             <Link href="/login">
               <Button className="bg-primary-600 hover:bg-primary-700 text-white">
                 로그인
@@ -615,96 +654,122 @@ export default function NewProjectForm() {
 
       {/* Main form - only show when user is loaded and authenticated */}
       {!userLoading && currentUser && (
-        <>
+        <div className="bg-white rounded-2xl shadow-lg p-8">
           {/* Header */}
-          <div className="flex items-center gap-4 mb-8">
-            <Link href="/projects" className="text-gray-700 hover:text-gray-900">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">새 프로젝트 만들기</h1>
-              <p className="text-gray-700 mt-1">새로운 프로젝트를 등록하고 협력자들과 함께 작업하세요.</p>
+          <div className="mb-8 pb-6 ">
+            <div className="flex items-center gap-4 mb-2">
+              <Link
+                href="/projects"
+                className="inline-flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <h1 className="text-4xl font-bold text-gray-900">새 프로젝트 만들기</h1>
             </div>
+            <p className="text-lg text-gray-600 ml-14">새로운 프로젝트를 등록하고 협력자들과 함께 작업하세요.</p>
           </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-8">
         {/* Basic Information */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
-          <h2 className="text-xl font-semibold text-gray-900">기본 정보</h2>
+        <div className="bg-white space-y-6 border-b border-gray-200">
+          <h2 className="text-2xl font-semibold text-gray-900 border-l-4 border-primary-600 pl-3">기본 정보</h2>
 
           {/* Project Name */}
           <div id="form-field-title">
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="title" className="block text-sm font-semibold text-gray-900 mb-2">
               프로젝트 이름 <span className="text-red-500">*</span>
             </label>
+            <div className="relative">
             <Input
               id="title"
               name="title"
               value={formData.title}
               onChange={handleInputChange}
               placeholder="프로젝트 이름을 입력해주세요."
-              className={errors.title ? 'border-red-500' : ''}
+              maxLength={50}
+              className={errors.title ? 'border-red-500' : 'border-primary-200 focus:ring-secondary-500'}
             />
+            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-700 pointer-events-none font-medium">
+                    {formData.title.length}/50
+            </span>
+            </div>
             {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
           </div>
 
           {/* Categories */}
           <div id="form-field-categories">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
               카테고리 <span className="text-red-500">*</span>
             </label>
             {isLoadingCategories ? (
               <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50">
-                <span className="text-gray-700">카테고리 로딩 중...</span>
+                <span className="text-gray-500">카테고리 로딩 중...</span>
               </div>
             ) : (
               <>
+                {/* Category Search Input */}
+                <div className="relative mb-3">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary-400" />
+                  <Input
+                    placeholder="카테고리 검색..."
+                    value={categorySearchQuery}
+                    onChange={(e) => setCategorySearchQuery(e.target.value)}
+                    className="pl-10 border-primary-200 focus:ring-secondary-500"
+                  />
+                </div>
+                <p className="text-xs text-primary-600 mb-2">카테고리는 최대 3개까지 선택할 수 있습니다.</p>
                 <div className={`border rounded-lg p-3 min-h-[120px] max-h-[200px] overflow-y-auto ${
                   errors.categories ? 'border-red-500' : 'border-gray-300'
                 }`}>
                   {categories.length === 0 ? (
-                    <p className="text-gray-700 text-sm">카테고리가 없습니다</p>
+                    <p className="text-gray-500 text-sm">카테고리가 없습니다</p>
                   ) : (
                     <div className="space-y-2">
-                      {categories.map((cat) => {
-                        const isSelected = formData.categories.includes(cat.name);
-                        return (
-                          <label
-                            key={cat.id}
-                            className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => toggleCategory(cat.name)}
-                              className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                            />
-                            <div className="flex-1">
-                              <span className="text-sm font-medium text-gray-900">{cat.name}</span>
-                              {cat.description && (
-                                <p className="text-xs text-gray-700 mt-0.5">{cat.description}</p>
-                              )}
-                            </div>
-                          </label>
-                        );
-                      })}
+                      {categories
+                        .filter((cat) =>
+                          cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase()) ||
+                          cat.description?.toLowerCase().includes(categorySearchQuery.toLowerCase())
+                        )
+                        .map((cat) => {
+                          const isSelected = formData.categories.includes(cat.name);
+                          const disabled = !isSelected && formData.categories.length >= 3;
+                          return (
+                            <label
+                              key={cat.id}
+                              className={`flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                              <input
+                                type="checkbox"
+                                name="categories"
+                                value={cat.name}
+                                checked={isSelected}
+                                disabled={disabled}
+                                onChange={() => toggleCategory(cat.name)}
+                                className="w-4 h-4 text-primary-600 border-gray-300 focus:ring-secondary-500"
+                              />
+                              <div className="flex-1">
+                                <span className="text-sm font-medium text-gray-900">{cat.name}</span>
+                                {cat.description && (
+                                  <p className="text-xs text-gray-500 mt-0.5">{cat.description}</p>
+                                )}
+                              </div>
+                            </label>
+                          );
+                        })}
                     </div>
                   )}
                 </div>
                 {/* Selected Categories Display */}
                 {formData.categories.length > 0 && (
                   <div className="mt-3">
-                    <p className="text-xs text-gray-700 mb-2">선택된 카테고리:</p>
+                    <p className="text-xs text-gray-600 mb-2">선택된 카테고리:</p>
                     <div className="flex flex-wrap gap-2">
-                      {formData.categories.map((categoryName) => (
-                        <span
-                          key={categoryName}
-                          className="inline-flex items-center gap-2 bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium"
-                        >
-                          {categoryName}
+                      {formData.categories.map((cat) => (
+                        <span key={cat} className="inline-flex items-center gap-2 bg-primary-50 text-primary-700 px-3 py-1 rounded-full text-sm font-medium">
+                          {cat}
                           <button
                             type="button"
-                            onClick={() => toggleCategory(categoryName)}
+                            onClick={() => toggleCategory(cat)}
                             className="hover:text-primary-900"
                           >
                             <X className="w-4 h-4" />
@@ -729,7 +794,7 @@ export default function NewProjectForm() {
               name="status"
               value={formData.status}
               onChange={handleInputChange}
-              className=" text-sm w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className=" text-sm w-full px-3 py-2 text-gray-900 border border-primary-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary-500"
             >
               {PROJECT_STATUS_API_OPTIONS.map((status) => (
                 <option key={status} value={status}>
@@ -742,7 +807,7 @@ export default function NewProjectForm() {
           {/* Project Duration */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="startDate" className="block text-sm text-gray-700 mb-2">
                 시작일
               </label>
               <Input
@@ -751,10 +816,11 @@ export default function NewProjectForm() {
                 type="date"
                 value={formData.startDate}
                 onChange={handleInputChange}
+                className='border-primary-200 focus:ring-secondary-500'
               />
             </div>
             <div>
-              <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="endDate" className="block text-sm text-gray-700 mb-2">
                 종료일
               </label>
               <Input
@@ -763,65 +829,86 @@ export default function NewProjectForm() {
                 type="date"
                 value={formData.endDate}
                 onChange={handleInputChange}
+                className='border-primary-200 focus:ring-secondary-500'
               />
             </div>
           </div>
         </div>
 
         {/* Thumbnail Upload */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">썸네일 이미지</h2>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              프로젝트 썸네일
-            </label>
-            <div className="flex items-center gap-4">
-              {thumbnailPreview && (
-                <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-gray-300">
-                  <Image
-                    src={thumbnailPreview}
-                    alt="Thumbnail preview"
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              )}
-              <label className="cursor-pointer">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleThumbnailChange}
-                  className="hidden"
-                />
-                <div className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg border border-gray-300">
-                  <Upload className="w-4 h-4" />
-                  <span>이미지 업로드</span>
-                </div>
-              </label>
+        <div className="bg-white space-y-6 ">
+        <h2 className="text-2xl font-semibold text-gray-900 border-l-4 border-primary-600 pl-3">썸네일 이미지</h2>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+             프로젝트 썸네일 이미지 
+        </label>
+        <div>
+          <div className="flex flex-col gap-4">
+            {/* Upload Button */}
+            <label className="cursor-pointer inline-block">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleThumbnailChange}
+              className="hidden"
+            />
+            <div className="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg border border-gray-300 w-auto">
+              <Upload className="w-4 h-4" />
+              <span>이미지 업로드</span>
             </div>
+          </label>
+
+            {/* Thumbnail Preview below button */}
+            {thumbnailPreview && (
+              <div className="relative w-full lg:w-9/12 h-96 mb-8 rounded-xl overflow-hidden bg-gray-100 border border-gray-300">
+                <Image
+                  src={thumbnailPreview}
+                  alt="Thumbnail preview"
+                  fill
+                  className="object-cover"
+                />
+                {/* X button to remove thumbnail */}
+                <button
+                  type="button"
+                  onClick={handleRemoveThumbnail}
+                  className="absolute top-2 right-2 bg-white/70 text-red-500 rounded-full p-2 hover:bg-white shadow-md"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
           </div>
         </div>
+      </div>
 
         {/* Description */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">설명</h2>
+        <div className="bg-white space-y-4 border-b border-gray-200">
+        <h2 className="text-2xl font-semibold text-gray-900 border-l-4 border-primary-600 pl-3">설명</h2>
 
           <div id="form-field-description">
             <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-              한 줄 설명 <span className="text-red-500">*</span>
+              프로젝트 요약 <span className="text-red-500">*</span>
             </label>
-            <Input
+          <div className="relative">
+             <Input
               id="description"
               name="description"
               value={formData.description}
               onChange={handleInputChange}
               placeholder="프로젝트를 간단히 설명해주세요."
-              className={errors.description ? 'border-red-500' : ''}
-            />
+              maxLength={100}
+              className={`${
+                        errors.description
+                          ? 'border-red-500 focus-visible:ring-red-500'
+                          : 'border-primary-200 focus-visible:ring-secondary-500'
+                      } `}
+                    />
+            <span className="absolute right-3 bottom-2 text-xs text-gray-700 pointer-events-none font-medium">
+              {formData.description.length}/100
+            </span>
+          </div>
             {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
           </div>
-
+           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               상세 설명
@@ -839,12 +926,12 @@ export default function NewProjectForm() {
         </div>
 
         {/* Tags and Tech Stack */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">태그</h2>
+        <div className="bg-white space-y-4 border-b border-gray-200">
+        <h2 className="text-2xl font-semibold text-gray-900 border-l-4 border-primary-600 pl-3">기술 스택 <span className="text-red-500">*</span></h2>
 
           <div id="form-field-tags">
             <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-2">
-              기술 스택 / 태그 <span className="text-red-500">*</span>
+              프로젝트를 생성할 때 관련된 기술태그 입력하세요. 
             </label>
             <div className="flex gap-2 mb-3">
               <Input
@@ -858,7 +945,7 @@ export default function NewProjectForm() {
                   }
                 }}
                 placeholder="태그를 입력하고 Enter를 누르세요 (예: React, Node.js)"
-                className={errors.tags ? 'border-red-500' : ''}
+                className={`${errors.tags ? 'border-red-500' : 'border-primary-200'} focus:ring-secondary-500`}
               />
               <Button
                 type="button"
@@ -875,7 +962,7 @@ export default function NewProjectForm() {
               {formData.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="inline-flex items-center gap-2 bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium"
+                  className="inline-flex items-center gap-2 bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium "
                 >
                   {tag}
                   <button
@@ -891,9 +978,11 @@ export default function NewProjectForm() {
           </div>
 
           {/* Sub Goals */}
+        <h2 className="text-2xl font-semibold text-gray-900 border-l-4 border-primary-600 pl-3">서브 목표</h2>
+
           <div>
             <label htmlFor="subGoals" className="block text-sm font-medium text-gray-700 mb-2">
-              서브 목표
+              프로젝트를 생성할 때 달성하고 싶은 서브 목표 체크리스트를 입력하세요.
             </label>
             <div className="flex gap-2 mb-3">
               <Input
@@ -907,24 +996,28 @@ export default function NewProjectForm() {
                   }
                 }}
                 placeholder="서브 목표를 입력하고 Enter를 누르세요"
+                className="border-primary-200 focus:ring-secondary-500"
               />
               <Button
                 type="button"
                 onClick={addSubGoal}
-                className="bg-primary-500 hover:bg-primary-600 text-white"
+                className="bg-primary-500 hover:bg-primary-600 text-white "
               >
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
 
-            {/* Sub Goals Display */}
-            <div className="flex flex-wrap gap-2">
-              {formData.subGoals.map((goal) => (
-                <span
-                  key={goal}
-                  className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium"
-                >
-                  {goal}
+            {/* Sub Goals Checklist Display */}
+            <div className="flex flex-col gap-2 mb-2">
+              {formData.subGoals.map((goal, idx) => (
+                <label key={goal} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={false} // Will be managed in project details page
+                    disabled
+                    className="w-4 h-4 text-green-600 border-gray-300"
+                  />
+                  <span className="text-sm text-gray-900">{goal}</span>
                   <button
                     type="button"
                     onClick={() => removeSubGoal(goal)}
@@ -932,79 +1025,74 @@ export default function NewProjectForm() {
                   >
                     <X className="w-4 h-4" />
                   </button>
-                </span>
+                </label>
               ))}
             </div>
           </div>
         </div>
 
         {/* Team Members */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">팀원</h2>
-
+        <h2 className="text-2xl font-semibold text-gray-900 border-l-4 border-primary-600 pl-3 mb-0">
+          팀원
+        </h2>
+        <div className="bg-white rounded-lg space-y-4">
+           <label htmlFor="members" className="block text-sm font-medium text-gray-700 mt-4">
+          함께할 팀 멤버를 추가하세요.
+        </label>
           <div className="space-y-4">
-            {/* User Search */}
-            <div className="relative" ref={userSearchRef}>
-              <div className="space-y-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* 닉네임 검색 */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-gray-700 items-center gap-2">
-                      <AtSign className="w-4 h-4 text-primary-500" />
-                      닉네임 검색
-                    </label>
-                    <div className="relative">
-                      <AtSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary-500" />
-                      <Input
-                        placeholder="닉네임을 입력하세요"
-                        value={nicknameSearch}
-                        onChange={(e) => setNicknameSearch(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleSearchUsers();
-                          }
-                        }}
-                        className="pl-10 border-primary-200 focus:border-primary-500 focus:ring-primary-500"
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* 실명 검색 */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-gray-700 items-center gap-2">
-                      <UserCircle className="w-4 h-4 text-green-500" />
-                      실명 검색
-                    </label>
-                    <div className="relative">
-                      <UserCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-green-500" />
-                      <Input
-                        placeholder="실명을 입력하세요"
-                        value={realNameSearch}
-                        onChange={(e) => setRealNameSearch(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleSearchUsers();
-                          }
-                        }}
-                        className="pl-10 border-green-200 focus:border-green-500 focus:ring-green-500"
-                      />
-                    </div>
+          {/* User Search */}
+          <div className="relative" ref={userSearchRef}>
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                {/* 닉네임 검색 */}
+                <div className="space-y-2 md:col-span-1">
+                  <div className="relative">
+                    <AtSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary-500" />
+                    <Input
+                      placeholder="닉네임을 입력하세요"
+                      value={nicknameSearch}
+                      onChange={(e) => setNicknameSearch(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleSearchUsers();
+                        }
+                      }}
+                      className="pl-10 border-primary-200  focus:ring-secondary-500"
+                    />
                   </div>
                 </div>
-                
-                {/* 버튼 영역 */}
-                <div className="flex gap-2 justify-end">
+
+                {/* 실명 검색 */}
+                <div className="space-y-2 md:col-span-1">
+                  <div className="relative">
+                    <UserCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-green-500" />
+                    <Input
+                      placeholder="실명을 입력하세요"
+                      value={realNameSearch}
+                      onChange={(e) => setRealNameSearch(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleSearchUsers();
+                        }
+                      }}
+                      className="pl-10 border-primary-200  focus:ring-secondary-500"
+                    />
+                  </div>
+                </div>
+
+                {/* 버튼 영역 – 같은 행, 오른쪽 정렬 */}
+                <div className="flex items-center justify-end gap-2 md:col-span-1 mt-2 md:mt-0">
                   <Button
                     type="button"
                     onClick={handleSearchUsers}
                     disabled={isLoadingUsers}
-                    className="bg-primary-500 hover:bg-primary-600 text-white px-6"
+                    className="bg-primary-500 hover:bg-primary-600 text-white px-4 whitespace-nowrap"
                   >
                     {isLoadingUsers ? (
                       <>
-                        <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
                         조회 중...
                       </>
                     ) : (
@@ -1014,21 +1102,22 @@ export default function NewProjectForm() {
                       </>
                     )}
                   </Button>
+
                   {isSearchMode && (
                     <Button
                       type="button"
                       onClick={handleResetSearch}
                       variant="outline"
-                      className="px-4 border-gray-300"
+                      className="px-3 border-gray-300 whitespace-nowrap"
                     >
-                      <X className="w-4 h-4 mr-2" />
+                      <X className="w-4 h-4 mr-1" />
                       초기화
                     </Button>
                   )}
                 </div>
               </div>
             </div>
-
+          </div>
             {/* User List - Scrollable */}
             <div className="border border-gray-300 rounded-lg overflow-hidden">
               <div 
@@ -1213,33 +1302,33 @@ export default function NewProjectForm() {
         </div>
 
         {/* 계승 프로젝트 */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+        <div className="bg-white space-y-4 ">
+        <h2 className="text-2xl font-semibold text-gray-900 border-l-4 border-primary-600 pl-3">계승 프로젝트</h2>
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">계승 프로젝트</h2>
-            <p className="text-sm text-gray-500 mt-1">이 프로젝트가 계승하는 원본 프로젝트를 선택하세요. (선택 사항)</p>
+            <p className="text-sm text-gray-800 mt-1">이 프로젝트가 계승하는 원본 프로젝트를 선택하세요. </p>
           </div>
 
           {parentProjectId ? (
-            <div className="flex items-center gap-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+            <div className="flex items-center gap-3 p-3 bg-secondary-50 border border-secondary-200 rounded-lg">
               <div className="flex-1">
-                <p className="text-sm font-medium text-purple-900">{parentProjectTitle}</p>
-                <p className="text-xs text-purple-600">ID: {parentProjectId}</p>
+                <p className="text-sm font-medium text-secondary-900">{parentProjectTitle}</p>
+                <p className="text-xs text-secondary-600">ID: {parentProjectId}</p>
               </div>
-              <button type="button" onClick={clearParentProject} className="text-purple-400 hover:text-purple-600">
+              <button type="button" onClick={clearParentProject} className="text-red-500 hover:text-red-700">
                 <X className="w-4 h-4" />
               </button>
             </div>
           ) : (
             <div className="relative" ref={parentSearchRef}>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-500" />
                 <input
                   type="text"
                   value={parentQuery}
                   onChange={handleParentQueryChange}
                   onFocus={() => { setShowParentDropdown(true); if (!parentQuery.trim()) loadParentProjects(0); }}
                   placeholder="프로젝트 이름으로 검색..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-primary-200 rounded-lg text-sm focus:outline-none focus:ring-secondary-500"
                 />
               </div>
 
@@ -1247,7 +1336,7 @@ export default function NewProjectForm() {
                 <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto" ref={parentListRef}>
                   {isLoadingParent ? (
                     <div className="p-4 text-center text-sm text-gray-500">
-                      <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-purple-500 mb-1" />
+                      <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-secondary-500 mb-1" />
                       <p>불러오는 중...</p>
                     </div>
                   ) : parentResults.length === 0 ? (
@@ -1259,7 +1348,7 @@ export default function NewProjectForm() {
                           key={project.id}
                           type="button"
                           onClick={() => selectParentProject(project)}
-                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-purple-50 text-left transition-colors"
+                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary-50 text-left transition-colors"
                         >
                           {project.thumbnailUrl ? (
                             <img src={project.thumbnailUrl} alt={project.title} className="w-8 h-8 rounded object-cover flex-shrink-0" />
@@ -1277,7 +1366,7 @@ export default function NewProjectForm() {
                           type="button"
                           onClick={() => loadParentProjects(parentPage + 1)}
                           disabled={isLoadingParent}
-                          className="w-full py-2 text-xs text-purple-600 hover:bg-purple-50 text-center disabled:opacity-50"
+                          className="w-full py-2 text-xs text-secondary-600 hover:bg-secondary-50 text-center disabled:opacity-50"
                         >
                           더 보기
                         </button>
@@ -1291,8 +1380,8 @@ export default function NewProjectForm() {
         </div>
 
         {/* Links */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">링크</h2>
+        <div className="bg-white space-y-4 border-b border-gray-200">
+        <h2 className="text-2xl font-semibold text-gray-900 border-l-4 border-primary-600 pl-3">팀원</h2>
 
           <div id="form-field-repositoryUrl">
             <label htmlFor="repositoryUrl" className="block text-sm font-medium text-gray-700 mb-2">
@@ -1305,7 +1394,7 @@ export default function NewProjectForm() {
               value={formData.repositoryUrl}
               onChange={handleInputChange}
               placeholder="예: https://github.com/username/project"
-              className={errors.repositoryUrl ? 'border-red-500' : ''}
+              className={errors.repositoryUrl ? 'border-red-500' : 'border-primary-200focus:ring-secondary-500'}
             />
             {errors.repositoryUrl && (
               <p className="text-red-500 text-sm mt-1">{errors.repositoryUrl}</p>
@@ -1323,7 +1412,7 @@ export default function NewProjectForm() {
               value={formData.projectUrl}
               onChange={handleInputChange}
               placeholder="예: https://myproject.com"
-              className={errors.projectUrl ? 'border-red-500' : ''}
+              className={errors.projectUrl ? 'border-red-500' : 'border-primary-200focus:ring-secondary-500'}
             />
             {errors.projectUrl && <p className="text-red-500 text-sm mt-1">{errors.projectUrl}</p>}
           </div>
@@ -1338,15 +1427,16 @@ export default function NewProjectForm() {
           </Link>
           <Button
             type="submit"
-            disabled={loading || isUploadingThumbnail}
+            disabled={loading}
             className="bg-primary-600 hover:bg-primary-700 text-white"
           >
-            {loading || isUploadingThumbnail ? '생성 중...' : '프로젝트 생성'}
+            {loading ? '생성 중...' : '프로젝트 생성'}
           </Button>
         </div>
       </form>
-        </>
+        </div>
       )}
+    </div>
     </div>
   );
 }

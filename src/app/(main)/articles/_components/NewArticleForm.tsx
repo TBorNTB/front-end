@@ -210,7 +210,7 @@ export default function NewArticleForm() {
       {userLoading && (
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-secondary-600 mb-4"></div>
             <p className="text-gray-700">로딩 중...</p>
           </div>
         </div>
@@ -222,7 +222,7 @@ export default function NewArticleForm() {
           <div className="text-center">
             <p className="text-gray-700 mb-4">글을 작성하려면 먼저 로그인해주세요.</p>
             <Link href="/login">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button className="bg-primary-600 hover:bg-primary-700 text-white">
                 로그인
               </Button>
             </Link>

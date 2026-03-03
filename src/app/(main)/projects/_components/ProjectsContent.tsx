@@ -664,62 +664,66 @@ export default function ProjectsContent() {
 
             {/* Pagination */}
             {!isLoading && totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 mt-8">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 0}
-                  className={`p-2 rounded-lg border transition-colors ${
-                    currentPage === 0
-                      ? 'border-gray-200 text-gray-700 cursor-not-allowed'
-                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <ChevronLeft size={20} />
-                </button>
+              <div className="flex flex-col items-center gap-2 mt-8">
+                {/* Buttons + page numbers */}
+                <div className="flex items-center justify-center gap-2">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 0}
+                    className={`p-2 rounded-lg border transition-colors ${
+                      currentPage === 0
+                        ? 'border-gray-200 text-gray-700 cursor-not-allowed'
+                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
 
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    let pageNum: number;
-                    if (totalPages <= 5) {
-                      pageNum = i;
-                    } else if (currentPage < 3) {
-                      pageNum = i;
-                    } else if (currentPage > totalPages - 4) {
-                      pageNum = totalPages - 5 + i;
-                    } else {
-                      pageNum = currentPage - 2 + i;
-                    }
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum: number;
+                      if (totalPages <= 5) {
+                        pageNum = i;
+                      } else if (currentPage < 3) {
+                        pageNum = i;
+                      } else if (currentPage > totalPages - 4) {
+                        pageNum = totalPages - 5 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
 
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                        className={`px-4 py-2 rounded-lg border transition-colors ${
-                          currentPage === pageNum
-                            ? 'bg-primary text-white border-primary'
-                            : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        {pageNum + 1}
-                      </button>
-                    );
-                  })}
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => handlePageChange(pageNum)}
+                          className={`px-4 py-2 rounded-lg border transition-colors ${
+                            currentPage === pageNum
+                              ? 'bg-primary text-white border-primary'
+                              : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          {pageNum + 1}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage >= totalPages - 1}
+                    className={`p-2 rounded-lg border transition-colors ${
+                      currentPage >= totalPages - 1
+                        ? 'border-gray-200 text-gray-700 cursor-not-allowed'
+                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <ChevronRight size={20} />
+                  </button>
                 </div>
 
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage >= totalPages - 1}
-                  className={`p-2 rounded-lg border transition-colors ${
-                    currentPage >= totalPages - 1
-                      ? 'border-gray-200 text-gray-700 cursor-not-allowed'
-                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <ChevronRight size={20} />
-                </button>
-
-                <span className="ml-4 text-sm text-gray-700">
-                  {currentPage + 1} / {totalPages} 페이지
+                {/* Page indicator below */}
+                <span className="text-sm text-gray-700">
+                  {currentPage + 1} / {totalPages}
                 </span>
               </div>
             )}
