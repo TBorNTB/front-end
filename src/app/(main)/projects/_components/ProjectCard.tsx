@@ -164,14 +164,7 @@ export function ProjectCardHome({ project }: ProjectCard) {
 
         {/* Content */}
         <div className="p-5 flex-1 flex flex-col bg-white border-t border-primary-200">
-          <h3 className="font-semibold text-base text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
-            {decodeHtmlEntities(project.title)}
-          </h3>
-          <p className="text-gray-700 mb-3 leading-relaxed line-clamp-3 text-sm">
-            {decodeHtmlEntities(project.description)}
-          </p>
-
-          {/* Tags */}
+        {/* Tags */}
           {project.techStacks && project.techStacks.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-3">
               {project.techStacks.slice(0, 5).map((tag: string, index: number) => (
@@ -189,6 +182,12 @@ export function ProjectCardHome({ project }: ProjectCard) {
               )}
             </div>
           )}
+          <h3 className="font-semibold text-base text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
+            {decodeHtmlEntities(project.title)}
+          </h3>
+          <p className="text-gray-700 mb-3 leading-relaxed line-clamp-3 text-sm">
+            {decodeHtmlEntities(project.description)}
+          </p>
 
           {/* Contributors */}
           <div className="mb-3">

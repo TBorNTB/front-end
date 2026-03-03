@@ -471,7 +471,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
   // 뉴스가 없거나 에러가 있는 경우 삭제된 게시글 메시지 표시
   if ((error && !news) || (!isLoading && !news)) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="text-center max-w-md mx-auto px-4">
           <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm">
             <div className="mb-4">
@@ -511,26 +511,23 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
   const readTime = Math.ceil((item.content?.length || 0) / 500);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Back Navigation */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="container py-4">
-          <Link
-            href="/community"
-            className="inline-flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors group"
-          >
-            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-            <span className="text-sm font-medium">목록으로 돌아가기</span>
-          </Link>
-        </div>
-      </div>
+    <div className="min-h-screen bg-background">
 
       {/* Main Content */}
       <div className="container py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left Sidebar */}
           <aside className="lg:col-span-3">
+            
             <div className="lg:sticky lg:top-8 space-y-4">
+              {/* Back Navigation */}
+              <Link
+                href="/community"
+                className="inline-flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors group"
+              >
+                <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                <span className="text-sm font-medium">목록으로 돌아가기</span>
+              </Link>
               {/* News Info Section */}
               <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
                 <button
@@ -827,7 +824,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                 <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
                   <div className="flex items-center gap-8">
                     <div className="flex items-center gap-2 text-gray-700">
-                      <ThumbsUp className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
+                      <ThumbsUp className={`w-5 h-5 ${isLiked ? 'fill-secondary-500 text-secondary-500' : ''}`} />
                       <span className="text-sm font-semibold">{likeCount}</span>
                     </div>
                     <div className="flex items-center gap-2 text-gray-700">
@@ -1045,14 +1042,14 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                     disabled={isTogglingLike}
                     className={`flex flex-col items-center gap-2 px-8 py-4 rounded-full border-2 transition-colors group ${
                       isLiked
-                        ? 'border-red-500 bg-red-50 hover:bg-red-100'
+                        ? 'border-secondary-500 bg-secondary-50 hover:bg-secondary-100'
                         : 'border-gray-300 hover:border-primary-500 hover:bg-primary-50'
                     } ${isTogglingLike ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                   >
                     <svg
                       className={`w-8 h-8 transition-colors ${
                         isLiked
-                          ? 'text-red-500 fill-red-500'
+                          ? 'text-secondary-500 fill-secondary-500'
                           : 'text-gray-700 group-hover:text-primary-600'
                       }`}
                       fill={isLiked ? 'currentColor' : 'none'}
@@ -1068,7 +1065,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                     </svg>
                     <span
                       className={`text-2xl font-bold transition-colors ${
-                        isLiked ? 'text-red-600' : 'text-gray-900 group-hover:text-primary-600'
+                        isLiked ? 'text-secondary-600' : 'text-gray-900 group-hover:text-primary-600'
                       }`}
                     >
                       {likeCount}

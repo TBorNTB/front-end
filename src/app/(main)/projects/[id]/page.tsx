@@ -19,7 +19,7 @@ import {
   updateComment
 } from '@/lib/api/services/user-services';
 import { Menu, Transition } from '@headlessui/react';
-import { ArrowLeft, Pencil, Plus, Search, Trash2, UserPlus, X } from 'lucide-react';
+import { ArrowLeft, Eye, Pencil, Plus, Search, ThumbsUp, Trash2, UserPlus, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -647,7 +647,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
             </p>
             <Link
               href="/projects"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               목록으로 돌아가기
@@ -1106,25 +1106,22 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   return (
     <>
       <div className="min-h-screen bg-background">
-        {/* Back Navigation */}
-        <div className="bg-white border-b border-gray-200 shadow-sm">
-          <div className="container py-4">
-            <Link
-              href="/projects"
-              className="inline-flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors group"
-            >
-              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-              <span className="text-sm font-medium">목록으로 돌아가기</span>
-            </Link>
-          </div>
-        </div>
-
         <div className="container py-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left Sidebar */}
             <aside className="lg:col-span-3">
+
               <div className="space-y-4">
-                
+
+              {/* Back Navigation */}
+                <Link
+                  href="/community"
+                  className="inline-flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors group"
+                >
+                  <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                  <span className="text-sm font-medium">목록으로 돌아가기</span>
+                </Link>
+                      
                 {/* Project Info Section */}
                 <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
                   <button
@@ -1186,7 +1183,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                       type="checkbox"
                                       checked={editingCategories.includes(cat.name)}
                                       onChange={() => toggleEditingCategory(cat.name)}
-                                      className="w-3 h-3 text-blue-600 border-gray-300 rounded"
+                                      className="w-3 h-3 text-primary-600 border-gray-300 rounded"
                                     />
                                     <span className="text-xs text-gray-900">{cat.name}</span>
                                   </label>
@@ -1194,7 +1191,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                               )}
                             </div>
                             <div className="flex gap-1">
-                              <button type="button" onClick={saveCategoryEdit} disabled={isSavingCategories} className="flex-1 py-1 text-xs text-white bg-blue-500 hover:bg-blue-600 rounded disabled:opacity-50">
+                              <button type="button" onClick={saveCategoryEdit} disabled={isSavingCategories} className="flex-1 py-1 text-xs text-white bg-primary-500 hover:bg-primary-600 rounded disabled:opacity-50">
                                 {isSavingCategories ? '저장 중...' : '저장'}
                               </button>
                               <button type="button" onClick={cancelEditingCategory} className="flex-1 py-1 text-xs text-gray-700 bg-gray-100 hover:bg-gray-200 rounded">취소</button>
@@ -1204,7 +1201,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           <div className="flex flex-wrap gap-1">
                             {(project.tags || []).length > 0 ? (
                               (project.tags || []).map((tag: string, idx: number) => (
-                                <span key={idx} className="px-2 py-0.5 rounded text-xs bg-purple-100 text-purple-700">#{tag}</span>
+                                <span key={idx} className="px-2 py-0.5 rounded text-xs bg-secondary-100 text-secondary-700">#{tag}</span>
                               ))
                             ) : (
                               <span className="text-xs text-gray-400">카테고리가 없습니다</span>
@@ -1225,7 +1222,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           <div className="space-y-2">
                             <div className="flex flex-wrap gap-1 min-h-[28px]">
                               {editingTechStacks.map((tech) => (
-                                <span key={tech} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-700">
+                                <span key={tech} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-primary-100 text-primary-700">
                                   {tech}
                                   <button type="button" onClick={() => removeEditingTechStack(tech)} className="hover:text-red-500"><X className="w-3 h-3" /></button>
                                 </span>
@@ -1238,12 +1235,12 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                 onChange={(e) => setTechStackInput(e.target.value)}
                                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addEditingTechStack(); } }}
                                 placeholder="기술 입력..."
-                                className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-primary-400"
                               />
                               <button type="button" onClick={addEditingTechStack} className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded"><Plus className="w-3 h-3" /></button>
                             </div>
                             <div className="flex gap-1">
-                              <button type="button" onClick={saveTechStackEdit} disabled={isSavingTechStacks} className="flex-1 py-1 text-xs text-white bg-blue-500 hover:bg-blue-600 rounded disabled:opacity-50">
+                              <button type="button" onClick={saveTechStackEdit} disabled={isSavingTechStacks} className="flex-1 py-1 text-xs text-white bg-primary-500 hover:bg-primary-600 rounded disabled:opacity-50">
                                 {isSavingTechStacks ? '저장 중...' : '저장'}
                               </button>
                               <button type="button" onClick={cancelEditingTechStack} className="flex-1 py-1 text-xs text-gray-700 bg-gray-100 hover:bg-gray-200 rounded">취소</button>
@@ -1748,7 +1745,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                           </svg>
-                          도큐멘트 추가
+                          새 도큐멘트 착성
                         </button>
                       </div>
                     </div>
@@ -1781,9 +1778,9 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           <Link
                             key={related.id}
                             href={`/projects/${related.id}`}
-                            className="block p-2 rounded-lg border border-purple-100 hover:bg-purple-50 transition-colors"
+                            className="block p-2 rounded-lg border border-secondary-100 hover:bg-secondary-50 transition-colors"
                           >
-                            <p className="text-xs text-purple-500 mb-0.5">{decodeHtmlEntities(related.version)}</p>
+                            <p className="text-xs text-secondary-500 mb-0.5">{decodeHtmlEntities(related.version)}</p>
                             <p className="text-sm font-medium text-gray-900">
                               {decodeHtmlEntities(related.title)}
                             </p>
@@ -1808,9 +1805,6 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   <h1 className="text-4xl font-bold text-foreground mb-3">
                     {decodeHtmlEntities(project.title)}
                   </h1>
-                  <p className="text-lg text-gray-800 mb-4">
-                    {decodeHtmlEntities(project.subtitle)}
-                  </p>
 
                   {/* Author & Stats */}
                   <div className="flex flex-wrap items-center gap-6 text-sm text-gray-800">
@@ -1834,8 +1828,18 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                       </div>
                       <span className="font-medium">{project.author?.name || 'Unknown'}</span>
                     </div>
-                    <span>👁 {project.stats?.views || 0}</span>
-                    <span>❤️ {project.stats?.likes || 0}</span>
+                    {project.stats?.views !== undefined && (
+                      <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
+                        <Eye className="w-3.5 h-3.5 text-gray-700" />
+                        <span className="text-gray-700">{project.stats.views}</span>
+                      </div>
+                    )}
+                    {project.stats?.likes !== undefined && (
+                      <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
+                        <ThumbsUp className="w-3.5 h-3.5 text-secondary-500 fill-secondary-500" />
+                        <span className="text-gray-700">{project.stats.likes}</span>
+                      </div>
+                    )}
                     {canEditProject && (
                       <div className="flex items-center gap-2 ml-auto">
                         <Link
@@ -1914,14 +1918,14 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     disabled={isTogglingLike}
                     className={`flex flex-col items-center gap-2 px-8 py-4 rounded-full border-2 transition-colors group ${
                       isLiked 
-                        ? 'border-red-500 bg-red-50 hover:bg-red-100' 
+                        ? 'border-secondary-500 bg-secondary-50 hover:bg-secondary-100' 
                         : 'border-gray-300 hover:border-primary-500 hover:bg-primary-50'
                     } ${isTogglingLike ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                   >
                     <svg 
                       className={`w-8 h-8 transition-colors ${
                         isLiked 
-                          ? 'text-red-500 fill-red-500' 
+                          ? 'text-secondary-500 fill-secondary-500' 
                           : 'text-gray-800 group-hover:text-primary-600'
                       }`} 
                       fill={isLiked ? 'currentColor' : 'none'} 
@@ -1932,7 +1936,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     </svg>
                     <span className={`text-2xl font-bold transition-colors ${
                       isLiked 
-                        ? 'text-red-600' 
+                        ? 'text-secondary-600' 
                         : 'text-gray-900 group-hover:text-primary-600'
                     }`}>
                       {project.stats?.likes || 0}

@@ -622,7 +622,7 @@ export default function ProjectsContent() {
                         {/* Stats */}
                         <div className="flex items-center gap-4 mb-3 text-sm">
                           <div className="flex items-center gap-1 text-gray-700 font-medium">
-                            <ThumbsUp size={16} className="text-red-500 fill-red-500" />
+                            <ThumbsUp size={16} className="text-secondary-500 fill-secondary-500" />
                             <span>{project.likeCount || 0}</span>
                           </div>
                           <div className="flex items-center gap-1 text-gray-700 font-medium">

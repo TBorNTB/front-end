@@ -98,7 +98,7 @@
 
   /* 버튼 기본 트랜지션: 호버/포커스 시 부드럽게 */
   button:not(:disabled) {
-    @apply transition-[opacity,background-color,color,box-shadow,border-color] duration-200 ease-out;
+    @apply transition-[opacity,background-color,color,box-shadow,border-color] duration-200 ease-out cursor-pointer;
   }
 
   .btn {
