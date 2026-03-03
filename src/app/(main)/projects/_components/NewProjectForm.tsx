@@ -686,11 +686,11 @@ export default function NewProjectForm() {
               value={formData.title}
               onChange={handleInputChange}
               placeholder="프로젝트 이름을 입력해주세요."
-              maxLength={50}
+              maxLength={30}
               className={errors.title ? 'border-red-500' : 'border-primary-200 focus:ring-secondary-500'}
             />
             <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-700 pointer-events-none font-medium">
-                    {formData.title.length}/50
+                    {formData.title.length}/30
             </span>
             </div>
             {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}

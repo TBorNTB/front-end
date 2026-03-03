@@ -59,12 +59,15 @@ export const getProjectStatusApiValue = (status: string): ProjectStatusApiValue 
   switch (status) {
     case 'PLANNING':
     case ProjectStatus.PLANNING:
+    case 'Planning':
       return 'PLANNING';
     case 'IN_PROGRESS':
     case ProjectStatus.IN_PROGRESS:
+    case 'In Progress':
       return 'IN_PROGRESS';
     case 'COMPLETED':
     case ProjectStatus.COMPLETED:
+    case 'Active':
       return 'COMPLETED';
     default:
       return undefined;

@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { ThumbsUp, Eye, Crown, Users, MessageCircle } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { decodeHtmlEntities } from '@/lib/html-utils';
-import { getProjectStatusKorean, getProjectStatusColor } from '@/types/services/project';
+import { getProjectStatusKorean, getProjectStatusColor, getProjectStatusApiValue } from '@/types/services/project';
 
-interface ProjectCardHomeProps {
+interface ProjectCard {
   project: {
     id: string;
     title: string;
@@ -44,85 +44,81 @@ const AvatarStack = ({
   const ownerName = owner?.nickname || owner?.realname || owner?.username || 'Unknown';
 
   return (
-    <div className="space-y-2">
-      {/* Owner Section */}
-      {owner && (
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5">
-            <Crown size={14} className="text-yellow-500" />
-            <span className="text-xs font-medium text-gray-700">소유자</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div 
-              className="relative inline-block"
-              title={ownerName}
-            >
+  <div className="space-y-2 flex items-center justify-between">
+  {/* Owner Section */}
+  {owner && (
+    <div className="flex items-center gap-2 relative">
+      <div className="relative inline-block" title={ownerName}>
+        {/* Avatar */}
+        <ImageWithFallback
+          src={owner.profileImageUrl || ''}
+          fallbackSrc="/images/placeholder/default-avatar.svg"
+          alt={ownerName}
+                width={24}
+                height={24}
+                className="w-6 h-6 rounded-full border-2 border-yellow-400 bg-gray-200 shadow-sm"
+        />
+        {/* Crown above avatar */}
+        <Crown
+        size={12}
+        className="absolute -top-1.5 right-0.5 text-yellow-500 fill-yellow-500 drop-shadow transform"
+        style={{ rotate: '20deg' }}
+      />
+      </div>
+      <span
+        className="text-xs text-gray-700 font-medium"
+        title={ownerName}
+      >
+        {ownerName}
+      </span>
+    </div>
+  )}
+
+  {/* Collaborators Section */}
+  {collaborators.length > 0 && (
+    <div className="flex items-center gap-2">
+      <Users size={14} className="text-secondary-500" />
+      <div className="flex items-center gap-1.5">
+        <div className="flex -space-x-2">
+          {visibleContributors.map((contributor, index) => (
+            <div key={index} className="relative inline-block">
               <ImageWithFallback
-                src={owner.profileImageUrl || ''}
+                src={contributor.profileImage || ''}
                 fallbackSrc="/images/placeholder/default-avatar.svg"
-                alt={ownerName}
-                width={28}
-                height={28}
-                className="w-7 h-7 rounded-full border-2 border-yellow-400 bg-gray-200 shadow-sm"
+                alt="Collaborator"
+                width={24}
+                height={24}
+                className="w-6 h-6 rounded-full border-2 border-white bg-gray-200"
               />
             </div>
-            <span 
-              className="text-xs text-gray-700 font-medium"
-              title={ownerName}
+          ))}
+          {remainingCount > 0 && (
+            <div
+              className="w-6 h-6 rounded-full border-2 border-white bg-gray-300 flex items-center justify-center relative"
+              title={`+${remainingCount} more contributors`}
             >
-              {ownerName}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Collaborators Section */}
-      {collaborators.length > 0 && (
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5">
-            <Users size={14} className="text-blue-500" />
-            <span className="text-xs font-medium text-gray-700">협력자</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="flex -space-x-2">
-              {visibleContributors.map((contributor, index) => (
-                <div 
-                  key={index} 
-                  className="relative inline-block"
-                >
-                  <ImageWithFallback
-                    src={contributor.profileImage || ''}
-                    fallbackSrc="/images/placeholder/default-avatar.svg"
-                    alt="Collaborator"
-                    width={24}
-                    height={24}
-                    className="w-6 h-6 rounded-full border-2 border-white bg-gray-200"
-                  />
-                </div>
-              ))}
-              {remainingCount > 0 && (
-                <div
-                  className="w-6 h-6 rounded-full border-2 border-white bg-gray-300 flex items-center justify-center relative"
-                  title={`+${remainingCount} more contributors`}
-                >
-                  <span className="text-xs font-medium text-gray-700">+{remainingCount}</span>
-                </div>
-              )}
+              <span className="text-xs font-medium text-gray-700">
+                +{remainingCount}
+              </span>
             </div>
-            <span className="text-xs text-gray-700">
-              {collaborators.length}명
-            </span>
-          </div>
+          )}
         </div>
-      )}
+        <span className="text-xs text-gray-700">
+          {collaborators.length}명
+        </span>
+      </div>
     </div>
+  )}
+</div>
   );
 };
 
-export function ProjectCardHome({ project }: ProjectCardHomeProps) {
+export function ProjectCardHome({ project }: ProjectCard) {
+  const normalizedStatus = getProjectStatusApiValue(project.status) ?? project.status;
+
   return (
     <Link href={`/projects/${project.id}`} className="block">
-      <div className="group relative bg-white border border-gray-300 ring-1 ring-gray-200 rounded-xl overflow-hidden shadow-sm hover:border-primary-300 hover:ring-primary-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+      <div className="group relative bg-white border border-primary-300 ring-1 ring-gray-200 rounded-xl overflow-hidden shadow-sm hover:border-primary-300 hover:ring-primary-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
         {/* Image */}
         <div className="relative overflow-hidden h-56">
           <ImageWithFallback
@@ -139,14 +135,14 @@ export function ProjectCardHome({ project }: ProjectCardHomeProps) {
             </span>
           </div>
           <div className="absolute top-3 right-3">
-            <span className={`px-2 py-1 rounded-full text-xs border font-semibold ${getProjectStatusColor(project.status)}`}>
-              {getProjectStatusKorean(project.status)}
+            <span className={`px-2 py-1 rounded-full text-xs border font-semibold ${getProjectStatusColor(normalizedStatus)}`}>
+              {getProjectStatusKorean(normalizedStatus)}
             </span>
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-5 flex-1 flex flex-col bg-white border-t border-gray-100">
+        <div className="p-5 flex-1 flex flex-col bg-white border-t border-primary-200">
           <h3 className="font-semibold text-base text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
             {decodeHtmlEntities(project.title)}
           </h3>
@@ -181,8 +177,10 @@ export function ProjectCardHome({ project }: ProjectCardHomeProps) {
             />
           </div>
 
-          {/* Stats */}
-          <div className="flex items-center gap-4 mb-3 pt-3 border-t border-gray-200 text-sm text-gray-700">
+          {/* Stats + 자세히 보기 */}
+          <div className="flex items-center justify-between mb-3 pt-3 border-t border-gray-200 text-sm text-gray-700">
+            {/* Stats */}
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
                 <Eye className="h-3.5 w-3.5" />
                 <span>{project.views || 0}</span>
@@ -193,8 +191,16 @@ export function ProjectCardHome({ project }: ProjectCardHomeProps) {
               </div>
               <div className="flex items-center gap-2">
                 <MessageCircle className="h-3.5 w-3.5" />
-                <span className="font-medium ">{project.comments || 0}</span>
+                <span className="font-medium">{project.comments || 0}</span>
               </div>
+            </div>
+
+            {/* 자세히 보기 Button */}
+            <span
+              className="bg-primary text-white px-4 py-1.5 rounded-lg text-xs font-medium hover:bg-primary-700 transition-colors"
+            >
+              자세히 보기
+            </span>
           </div>
         </div>
       </div>
