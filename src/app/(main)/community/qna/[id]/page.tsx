@@ -30,6 +30,7 @@ import {
   toggleLike,
 } from '@/lib/api/services/user-services';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { requireNotGuest } from '@/lib/role-utils';
 import { decodeHtmlEntities } from '@/lib/html-utils';
 import { isCommentEdited } from '@/lib/comment-utils';
 
@@ -286,6 +287,7 @@ export default function QuestionDetailPage() {
   };
 
   const handleStartEdit = () => {
+    if (!requireNotGuest(currentUser?.role, 'edit')) return;
     if (!question) return;
     if (!canManageQuestion) {
       alert('작성자(또는 관리자)만 수정할 수 있습니다.');
@@ -303,6 +305,7 @@ export default function QuestionDetailPage() {
   };
 
   const handleSaveEdit = async () => {
+    if (!requireNotGuest(currentUser?.role, 'edit')) return;
     if (!questionId || !question || isSaving) return;
     if (!canManageQuestion) {
       alert('작성자(또는 관리자)만 수정할 수 있습니다.');
@@ -354,6 +357,7 @@ export default function QuestionDetailPage() {
   };
 
   const handleDeleteQuestion = async () => {
+    if (!requireNotGuest(currentUser?.role, 'delete')) return;
     if (!questionId || isSaving) return;
     if (!canManageQuestion) {
       alert('작성자(또는 관리자)만 삭제할 수 있습니다.');
@@ -478,6 +482,7 @@ export default function QuestionDetailPage() {
   };
 
   const handleSubmitAnswer = async () => {
+    if (!requireNotGuest(currentUser?.role, 'create')) return;
     if (!questionId) return;
     if (currentRole === 'guest') {
       alert('로그인이 필요합니다.');
@@ -504,6 +509,7 @@ export default function QuestionDetailPage() {
   };
 
   const handleStartEditAnswer = (answer: Answer) => {
+    if (!requireNotGuest(currentUser?.role, 'edit')) return;
     if (!canManageAnswer(answer)) {
       alert('작성자(또는 관리자)만 수정할 수 있습니다.');
       return;
@@ -518,6 +524,7 @@ export default function QuestionDetailPage() {
   };
 
   const handleSaveEditAnswer = async (answerId: string) => {
+    if (!requireNotGuest(currentUser?.role, 'edit')) return;
     if (isSavingAnswer) return;
     if (!editAnswerContent.trim()) {
       alert('내용을 입력해주세요.');
@@ -547,6 +554,7 @@ export default function QuestionDetailPage() {
   };
 
   const handleDeleteAnswer = async (answerId: string) => {
+    if (!requireNotGuest(currentUser?.role, 'delete')) return;
     const target = answers.find((a) => a.id === answerId);
     if (!target) return;
     if (!canManageAnswer(target)) {
@@ -572,6 +580,7 @@ export default function QuestionDetailPage() {
   };
 
   const handleAddQuestionComment = async () => {
+    if (!requireNotGuest(currentUser?.role, 'create')) return;
     if (!newQuestionComment.trim() || !questionId || isSubmittingQuestionComment) return;
     setIsSubmittingQuestionComment(true);
     try {
@@ -587,6 +596,7 @@ export default function QuestionDetailPage() {
   };
 
   const handleAddAnswerComment = async (answerId: string) => {
+    if (!requireNotGuest(currentUser?.role, 'create')) return;
     const commentContent = newAnswerComments[answerId];
     if (!commentContent?.trim() || isSubmittingAnswerComment) return;
     setIsSubmittingAnswerComment(true);
@@ -637,6 +647,7 @@ export default function QuestionDetailPage() {
   };
 
   const handleSubmitReply = async () => {
+    if (!requireNotGuest(currentUser?.role, 'create')) return;
     if (!replyTarget || !replyContent.trim() || isSubmittingReply) return;
     setIsSubmittingReply(true);
     try {

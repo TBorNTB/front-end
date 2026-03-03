@@ -27,6 +27,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { decodeHtmlEntities } from '@/lib/html-utils';
 import { toNewsCategoryEnum } from '@/lib/constants/news-categories';
 import { isCommentEdited } from '@/lib/comment-utils';
+import { requireNotGuest } from '@/lib/role-utils';
 import CreateChatFromPostButton from '@/app/(main)/_components/CreateChatFromPostButton';
 import { ProjectContentRenderer } from '@/components/project/ProjectContentRenderer';
 
@@ -317,6 +318,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
   };
 
   const handleSubmitComment = async () => {
+    if (!requireNotGuest(currentUser?.role, 'create')) return;
     if (!commentContent.trim() || !newsId || isSubmittingComment) return;
     setIsSubmittingComment(true);
     try {
@@ -332,6 +334,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
   };
 
   const handleEditComment = async (commentId: number) => {
+    if (!requireNotGuest(currentUser?.role, 'edit')) return;
     if (!editContent.trim()) return;
     
     try {
@@ -346,6 +349,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
   };
 
   const handleDeleteComment = async (commentId: number) => {
+    if (!requireNotGuest(currentUser?.role, 'delete')) return;
     if (!confirm('댓글을 삭제하시겠습니까?')) return;
     
     try {
@@ -387,6 +391,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
   };
 
   const handleSubmitReply = async (parentId: number) => {
+    if (!requireNotGuest(currentUser?.role, 'create')) return;
     if (!replyContent.trim() || !newsId || submittingReplyParentId !== null) return;
     setSubmittingReplyParentId(parentId);
     try {
@@ -428,10 +433,12 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
   };
 
   const handleEdit = () => {
+    if (!requireNotGuest(currentUser?.role, 'edit')) return;
     router.push(`/community/news/${newsId}/edit`);
   };
 
   const handleDelete = async () => {
+    if (!requireNotGuest(currentUser?.role, 'delete')) return;
     if (!confirm('정말 이 뉴스를 삭제하시겠습니까?')) {
       return;
     }

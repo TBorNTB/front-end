@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Upload } from 'lucide-react';
 import { createDocument } from '@/lib/api/services/project-services';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { requireNotGuest } from '@/lib/role-utils';
 import { s3Service } from '@/lib/api/services/s3-services';
 
 interface NewDocumentPageProps {
@@ -15,6 +17,7 @@ interface NewDocumentPageProps {
 export default function NewDocumentPage({ params }: NewDocumentPageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user: currentUser } = useCurrentUser();
   const [projectId, setProjectId] = useState<string>('');
   const [documentTitle, setDocumentTitle] = useState('');
   const [documentContent, setDocumentContent] = useState('');
@@ -99,6 +102,7 @@ export default function NewDocumentPage({ params }: NewDocumentPageProps) {
   }, []);
 
   const handleSave = async () => {
+    if (!requireNotGuest(currentUser?.role, 'create', 'document')) return;
     if (!documentTitle.trim()) {
       alert('문서 제목을 입력해주세요.');
       return;

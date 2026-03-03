@@ -13,6 +13,7 @@ import { fetchCategories, createProject } from '@/lib/api/services/project-servi
 import { memberService, CursorUserResponse } from '@/lib/api/services/user-services';
 import { s3Service } from '@/lib/api/services/s3-services';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { requireNotGuest } from '@/lib/role-utils';
 import { searchProjectsByQuery, fetchLatestProjects, type ProjectSearchItem } from '@/lib/api/services/elastic-services';
 
 interface FormData {
@@ -528,6 +529,7 @@ export default function NewProjectForm() {
     e.preventDefault();
 
     if (loading) return;
+    if (!requireNotGuest(currentUser?.role, 'create', 'project')) return;
     if (!validateForm()) {
       return;
     }

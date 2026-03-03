@@ -30,6 +30,7 @@ import DocumentModal from '../_components/DocumentModal';
 import CreateChatFromPostButton from '../../_components/CreateChatFromPostButton';
 import { decodeHtmlEntities } from '@/lib/html-utils';
 import { isCommentEdited } from '@/lib/comment-utils';
+import { requireNotGuest } from '@/lib/role-utils';
 import { ProjectContentRenderer } from '@/components/project/ProjectContentRenderer';
 
 interface ProjectPageProps {
@@ -876,6 +877,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   };
 
   const handleDeleteProject = async () => {
+    if (!requireNotGuest(currentUser?.role, 'delete')) return;
     if (!projectId || !confirm('정말로 이 프로젝트를 삭제하시겠습니까? 삭제된 프로젝트는 복구할 수 없습니다.')) return;
     try {
       setIsDeletingProject(true);
@@ -923,6 +925,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   };
 
   const handleSubgoalDelete = async (sgId: string) => {
+    if (!requireNotGuest(currentUser?.role, 'delete')) return;
     if (!projectId || !canEditProject || !confirm('이 하위 목표를 삭제할까요?')) return;
     try {
       setSubgoalDeletingId(sgId);
@@ -936,6 +939,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   };
 
   const handleSubgoalCreate = async () => {
+    if (!requireNotGuest(currentUser?.role, 'edit')) return;
     const content = subgoalNewContent.trim();
     if (!projectId || !canEditProject || !content) return;
     try {
@@ -951,6 +955,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   };
 
   const handleDocumentAction = async (docId: string, action: 'edit' | 'delete') => {
+    if (!requireNotGuest(currentUser?.role, action)) return;
     switch (action) {
       case 'edit':
         router.push(`/projects/${projectId}/documents/${docId}/edit`);
@@ -980,10 +985,12 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   };
 
   const handleAddFullDocument = () => {
+    if (!requireNotGuest(currentUser?.role, 'create', 'document')) return;
     router.push(`/projects/${projectId}/documents/new`);
   };
 
   const handleSubmitComment = async () => {
+    if (!requireNotGuest(currentUser?.role, 'create')) return;
     if (!commentContent.trim() || !projectId || isSubmittingComment) return;
     setIsSubmittingComment(true);
     try {
@@ -1010,6 +1017,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   };
 
   const handleEditComment = async (commentId: number) => {
+    if (!requireNotGuest(currentUser?.role, 'edit')) return;
     if (!editContent.trim()) return;
     
     try {
@@ -1024,6 +1032,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   };
 
   const handleDeleteComment = async (commentId: number) => {
+    if (!requireNotGuest(currentUser?.role, 'delete')) return;
     if (!confirm('댓글을 삭제하시겠습니까?')) return;
     
     try {
@@ -1078,6 +1087,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   };
 
   const handleSubmitReply = async (parentId: number) => {
+    if (!requireNotGuest(currentUser?.role, 'create')) return;
     if (!replyContent.trim() || !projectId || submittingReplyParentId !== null) return;
     setSubmittingReplyParentId(parentId);
     try {
@@ -1842,6 +1852,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                       <div className="flex items-center gap-2 ml-auto">
                         <Link
                           href={`/projects/${projectId}/edit`}
+                          onClick={(e) => { if (!requireNotGuest(currentUser?.role, 'edit')) e.preventDefault(); }}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors"
                         >
                           <Pencil className="w-4 h-4" />

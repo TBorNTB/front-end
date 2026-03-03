@@ -11,6 +11,7 @@ import TipTapEditor from '@/components/editor/TipTapEditor';
 import TableOfContents from '@/components/editor/TableOfContents';
 import Image from 'next/image';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { requireNotGuest } from '@/lib/role-utils';
 import { fetchCategories } from '@/lib/api/services/project-services';
 import { fetchArticleById, updateArticle } from '@/lib/api/services/article-services';
 import { s3Service } from '@/lib/api/services/s3-services';
@@ -212,6 +213,7 @@ export default function EditArticlePage({ params }: EditPageProps) {
     e.preventDefault();
 
     if (loading) return;
+    if (!requireNotGuest(currentUser?.role, 'edit')) return;
     if (!validateForm()) {
       return;
     }

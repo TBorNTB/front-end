@@ -1,6 +1,7 @@
 import { ProjectDetailResponse } from '@/types/services/project';
 import { PROJECT_ENDPOINTS, getProjectApiUrl } from '../endpoints/project-endpoints';
 import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
+import { getSafeApiErrorMessage } from '@/lib/api/helpers';
 
 // Fetch project detail by ID
 export const fetchProjectDetail = async (id: string | number): Promise<ProjectDetailResponse> => {
@@ -15,8 +16,11 @@ export const fetchProjectDetail = async (id: string | number): Promise<ProjectDe
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to fetch project: ${response.status} - ${errorText}`);
+    if (process.env.NODE_ENV === 'development') {
+      const errorText = await response.text();
+      console.error('[project] fetch error', response.status, errorText);
+    }
+    throw new Error(getSafeApiErrorMessage(response, '프로젝트'));
   }
 
   return response.json();
@@ -68,8 +72,11 @@ export const createDocument = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to create document: ${response.status} - ${errorText}`);
+    if (process.env.NODE_ENV === 'development') {
+      const errorText = await response.text();
+      console.error('[project] create document error', response.status, errorText);
+    }
+    throw new Error(getSafeApiErrorMessage(response, '문서'));
   }
 
   return response.json();
@@ -88,8 +95,11 @@ export const fetchDocument = async (documentId: string | number): Promise<Docume
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to fetch document: ${response.status} - ${errorText}`);
+    if (process.env.NODE_ENV === 'development') {
+      const errorText = await response.text();
+      console.error('[project] fetch document error', response.status, errorText);
+    }
+    throw new Error(getSafeApiErrorMessage(response, '문서'));
   }
 
   return response.json();
@@ -114,8 +124,11 @@ export const updateDocument = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to update document: ${response.status} - ${errorText}`);
+    if (process.env.NODE_ENV === 'development') {
+      const errorText = await response.text();
+      console.error('[project] update document error', response.status, errorText);
+    }
+    throw new Error(getSafeApiErrorMessage(response, '문서'));
   }
 
   return response.json();
@@ -135,8 +148,11 @@ export const deleteDocument = async (documentId: string | number): Promise<void>
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to delete document: ${response.status} - ${errorText}`);
+    if (process.env.NODE_ENV === 'development') {
+      const errorText = await response.text();
+      console.error('[project] delete document error', response.status, errorText);
+    }
+    throw new Error(getSafeApiErrorMessage(response, '문서'));
   }
 };
 
@@ -162,15 +178,11 @@ export const updateCollaborators = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    try {
-      const data = JSON.parse(errorText);
-      const msg = data?.message || data?.error || data?.detail;
-      if (msg) throw new Error(String(msg));
-    } catch (e) {
-      if (e instanceof Error && e.message && e.message !== errorText) throw e;
-      throw new Error('협력자 수정에 실패했습니다.');
+    if (process.env.NODE_ENV === 'development') {
+      const errorText = await response.text();
+      console.error('[project] update collaborators error', response.status, errorText);
     }
+    throw new Error(getSafeApiErrorMessage(response) || '협력자 수정에 실패했습니다.');
   }
 
   return response.json();
@@ -200,8 +212,11 @@ export const fetchCategories = async (): Promise<CategoryListResponse> => {
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to fetch categories: ${response.status} - ${errorText}`);
+    if (process.env.NODE_ENV === 'development') {
+      const errorText = await response.text();
+      console.error('[project] fetch categories error', response.status, errorText);
+    }
+    throw new Error(getSafeApiErrorMessage(response, '카테고리'));
   }
 
   return response.json();
@@ -248,23 +263,18 @@ export const createProject = async (data: CreateProjectRequest): Promise<CreateP
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to create project: ${response.status} - ${errorText}`);
+    if (process.env.NODE_ENV === 'development') {
+      const errorText = await response.text();
+      console.error('[project] create project error', response.status, errorText);
+    }
+    throw new Error(getSafeApiErrorMessage(response, '프로젝트'));
   }
 
   return response.json();
 };
 
-// Parse API error response and throw with user-facing message
-function parseApiError(errorText: string, status: number, fallback: string): never {
-  try {
-    const data = JSON.parse(errorText);
-    const msg = data?.message || data?.error || data?.detail || (typeof data?.errors === 'string' ? data.errors : undefined);
-    if (msg) throw new Error(String(msg));
-  } catch (e) {
-    if (e instanceof Error && e.message !== errorText) throw e;
-  }
-  throw new Error(fallback || errorText || `요청에 실패했습니다. (${status})`);
+function throwSafeError(response: Response, fallback: string): never {
+  throw new Error(getSafeApiErrorMessage(response) || fallback);
 }
 
 export interface UpdateProjectRequestBody {
@@ -303,8 +313,11 @@ export const updateProject = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    parseApiError(errorText, response.status, '프로젝트 수정에 실패했습니다.');
+    if (process.env.NODE_ENV === 'development') {
+      const errorText = await response.text();
+      console.error('[project] update error', response.status, errorText);
+    }
+    throwSafeError(response, '프로젝트 수정에 실패했습니다.');
   }
 
   return response.json();
@@ -324,8 +337,11 @@ export const deleteProject = async (projectId: string | number): Promise<void> =
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    parseApiError(errorText, response.status, '프로젝트 삭제에 실패했습니다.');
+    if (process.env.NODE_ENV === 'development') {
+      const errorText = await response.text();
+      console.error('[project] delete error', response.status, errorText);
+    }
+    throwSafeError(response, '프로젝트 삭제에 실패했습니다.');
   }
 };
 
@@ -348,8 +364,11 @@ export const updateProjectCategories = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    parseApiError(errorText, response.status, '카테고리 수정에 실패했습니다.');
+    if (process.env.NODE_ENV === 'development') {
+      const errorText = await response.text();
+      console.error('[project] update categories error', response.status, errorText);
+    }
+    throwSafeError(response, '카테고리 수정에 실패했습니다.');
   }
 
   return response.json();
@@ -372,8 +391,11 @@ export const updateProjectTechStacks = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    parseApiError(errorText, response.status, '테크스택 수정에 실패했습니다.');
+    if (process.env.NODE_ENV === 'development') {
+      const errorText = await response.text();
+      console.error('[project] update tech stacks error', response.status, errorText);
+    }
+    throwSafeError(response, '테크스택 수정에 실패했습니다.');
   }
 
   return response.json();
@@ -399,15 +421,11 @@ export const fetchSubgoals = async (projectId: string | number): Promise<SubGoal
     cache: 'no-store',
   });
   if (!response.ok) {
-    const errorText = await response.text();
-    try {
-      const data = JSON.parse(errorText);
-      const msg = data?.message || data?.error || data?.detail;
-      if (msg) throw new Error(String(msg));
-    } catch (e) {
-      if (e instanceof Error && e.message !== errorText) throw e;
+    if (process.env.NODE_ENV === 'development') {
+      const errorText = await response.text();
+      console.error('[project] fetch subgoals error', response.status, errorText);
     }
-    throw new Error('하위 목표 조회에 실패했습니다.');
+    throw new Error(getSafeApiErrorMessage(response, '하위 목표'));
   }
   const list = await response.json();
   return Array.isArray(list) ? list : [];
@@ -431,8 +449,11 @@ export const checkSubgoal = async (
     body: JSON.stringify({ isCheck }),
   });
   if (!response.ok) {
-    const errorText = await response.text();
-    parseApiError(errorText, response.status, '체크 상태 변경에 실패했습니다.');
+    if (process.env.NODE_ENV === 'development') {
+      const errorText = await response.text();
+      console.error('[project] check subgoal error', response.status, errorText);
+    }
+    throwSafeError(response, '체크 상태 변경에 실패했습니다.');
   }
   return response.json();
 };
@@ -453,8 +474,11 @@ export const deleteSubgoal = async (
     credentials: 'include',
   });
   if (!response.ok) {
-    const errorText = await response.text();
-    parseApiError(errorText, response.status, '하위 목표 삭제에 실패했습니다.');
+    if (process.env.NODE_ENV === 'development') {
+      const errorText = await response.text();
+      console.error('[project] delete subgoal error', response.status, errorText);
+    }
+    throwSafeError(response, '하위 목표 삭제에 실패했습니다.');
   }
   return response.json();
 };
@@ -476,8 +500,11 @@ export const createSubgoal = async (
     body: JSON.stringify({ content: content.trim() }),
   });
   if (!response.ok) {
-    const errorText = await response.text();
-    parseApiError(errorText, response.status, '하위 목표 추가에 실패했습니다.');
+    if (process.env.NODE_ENV === 'development') {
+      const errorText = await response.text();
+      console.error('[project] create subgoal error', response.status, errorText);
+    }
+    throwSafeError(response, '하위 목표 추가에 실패했습니다.');
   }
   return response.json();
 };

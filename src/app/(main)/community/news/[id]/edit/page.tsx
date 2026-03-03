@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { requireNotGuest } from '@/lib/role-utils';
 import toast from 'react-hot-toast';
 import { updateNews } from '@/lib/api/services/news-services';
 import { s3Service } from '@/lib/api/services/s3-services';
@@ -378,6 +379,7 @@ export default function EditNewsPage({ params }: NewsDetailPageProps) {
     e.preventDefault();
 
     if (loading) return;
+    if (!requireNotGuest(currentUser?.role, 'edit')) return;
     if (!validateForm()) {
       return;
     }

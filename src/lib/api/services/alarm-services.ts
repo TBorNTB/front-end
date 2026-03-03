@@ -4,6 +4,7 @@ import { USER_ENDPOINTS } from '@/lib/api/endpoints';
 import type { AlarmType } from '@/types/services/alarm';
 import type { AlarmApi, AlarmListResponse, AlarmUnreadCountResponse, AlarmBulkRequest, Alarm } from '@/types/services/alarm';
 import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
+import { getSafeApiErrorMessage } from '@/lib/api/helpers';
 
 /** domainType + domainId로 링크 생성 */
 export function generateAlarmLink(domainType?: string, domainId?: number | string): string {
@@ -13,6 +14,7 @@ export function generateAlarmLink(domainType?: string, domainId?: number | strin
     case 'PROJECT':
       return `/projects/${id}`;
     case 'ARTICLE':
+      return `/articles/${id}`;
     case 'CSKNOWLEDGE':
     case 'DOCUMENT':
       return `/community/news/${id}`;
@@ -69,8 +71,7 @@ export const alarmService = {
     });
 
     if (!response.ok) {
-      if (response.status === 401 || response.status === 403) throw new Error('Authentication failed');
-      throw new Error(`Failed to fetch alarms: ${response.status}`);
+      throw new Error(getSafeApiErrorMessage(response, '알람'));
     }
 
     return response.json();
@@ -90,7 +91,7 @@ export const alarmService = {
 
     if (!response.ok) {
       if (response.status === 401 || response.status === 403) return 0;
-      throw new Error(`Failed to fetch unread count: ${response.status}`);
+      throw new Error(getSafeApiErrorMessage(response, '알람'));
     }
 
     const data: AlarmUnreadCountResponse = await response.json();
@@ -110,9 +111,7 @@ export const alarmService = {
     });
 
     if (!response.ok) {
-      if (response.status === 401 || response.status === 403) throw new Error('Authentication failed');
-      if (response.status === 404) throw new Error('Alarm not found');
-      throw new Error(`Failed to mark as seen: ${response.status}`);
+      throw new Error(getSafeApiErrorMessage(response, '알람'));
     }
   },
 
@@ -132,9 +131,7 @@ export const alarmService = {
     });
 
     if (!response.ok) {
-      if (response.status === 400) throw new Error('Invalid request');
-      if (response.status === 401 || response.status === 403) throw new Error('Authentication failed');
-      throw new Error(`Failed to mark as seen bulk: ${response.status}`);
+      throw new Error(getSafeApiErrorMessage(response, '알람'));
     }
   },
 
@@ -151,8 +148,7 @@ export const alarmService = {
     });
 
     if (!response.ok) {
-      if (response.status === 401 || response.status === 403) throw new Error('Authentication failed');
-      throw new Error(`Failed to mark all as seen: ${response.status}`);
+      throw new Error(getSafeApiErrorMessage(response, '알람'));
     }
   },
 
@@ -168,9 +164,7 @@ export const alarmService = {
     });
 
     if (!response.ok && response.status !== 204) {
-      if (response.status === 401 || response.status === 403) throw new Error('Authentication failed');
-      if (response.status === 404) throw new Error('Alarm not found');
-      throw new Error(`Failed to delete alarm: ${response.status}`);
+      throw new Error(getSafeApiErrorMessage(response, '알람'));
     }
   },
 
@@ -190,9 +184,7 @@ export const alarmService = {
     });
 
     if (!response.ok && response.status !== 204) {
-      if (response.status === 400) throw new Error('Invalid request');
-      if (response.status === 401 || response.status === 403) throw new Error('Authentication failed');
-      throw new Error(`Failed to delete alarms bulk: ${response.status}`);
+      throw new Error(getSafeApiErrorMessage(response, '알람'));
     }
   },
 
@@ -208,8 +200,7 @@ export const alarmService = {
     });
 
     if (!response.ok && response.status !== 204) {
-      if (response.status === 401 || response.status === 403) throw new Error('Authentication failed');
-      throw new Error(`Failed to delete read alarms: ${response.status}`);
+      throw new Error(getSafeApiErrorMessage(response, '알람'));
     }
   },
 

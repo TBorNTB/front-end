@@ -1,5 +1,6 @@
 import { getApiUrl } from '../config';
 import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
+import { getSafeApiErrorMessage } from '@/lib/api/helpers';
 
 // News creation types
 export interface CreateNewsRequest {
@@ -89,8 +90,11 @@ export const createNews = async (data: CreateNewsRequest): Promise<CreateNewsRes
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to create news: ${response.status} - ${errorText}`);
+    if (process.env.NODE_ENV === 'development') {
+      const errorText = await response.text();
+      console.error('[news] create error', response.status, errorText);
+    }
+    throw new Error(getSafeApiErrorMessage(response, '뉴스'));
   }
 
   return response.json();
@@ -132,8 +136,11 @@ export const updateNews = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to update news: ${response.status} - ${errorText}`);
+    if (process.env.NODE_ENV === 'development') {
+      const errorText = await response.text();
+      console.error('[news] update error', response.status, errorText);
+    }
+    throw new Error(getSafeApiErrorMessage(response, '뉴스'));
   }
 
   return response.json();
@@ -152,8 +159,11 @@ export const deleteNews = async (id: string | number): Promise<void> => {
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to delete news: ${response.status} - ${errorText}`);
+    if (process.env.NODE_ENV === 'development') {
+      const errorText = await response.text();
+      console.error('[news] delete error', response.status, errorText);
+    }
+    throw new Error(getSafeApiErrorMessage(response, '뉴스'));
   }
 };
 

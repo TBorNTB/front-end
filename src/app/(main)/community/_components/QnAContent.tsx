@@ -244,7 +244,9 @@ export default function QnAContent() {
         onSortChange={setSortBy}
         showViewMode={true}
         showSort={true}
-        showCreateButton={currentUserRole !== 'guest'}
+        showCreateButton={true}
+        createButtonDisabled={currentUserRole === 'guest'}
+        createButtonDisabledMessage="외부인은 질문을 작성할 수 없습니다."
         createButtonText="질문하기"
         createButtonHref="/community/qna/create"
         placeholderText="질문 검색..."

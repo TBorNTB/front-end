@@ -852,7 +852,7 @@ export default function ActivityContent() {
 
   const summaryStats = [
     {
-      label: '작성한 글',
+      label: '참여한 글',
       value: activityStats?.totalPostCount ?? null,
       icon: BookOpen,
       colorClass: 'bg-primary-500/10 text-primary-600 border-primary-200',
@@ -885,7 +885,7 @@ export default function ActivityContent() {
         <p className="text-gray-700">참여한 프로젝트와 작성한 콘텐츠를 확인하세요</p>
       </div>
 
-      {/* 활동 요약 카드 - 작성한 글, 조회수, 좋아요, 댓글 */}
+      {/* 활동 요약 카드 - 참여한 글, 조회수, 좋아요, 댓글 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {summaryStats.map((stat) => {
           const Icon = stat.icon;

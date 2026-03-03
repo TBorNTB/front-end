@@ -5,14 +5,24 @@ import { useRouter } from "next/navigation";
 import { Plus, PenSquare, Users } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import toast from "react-hot-toast";
+import { isGuest, getGuestRestrictionMessage } from "@/lib/role-utils";
+import type { GuestRestrictionSubject } from "@/lib/role-utils";
 
-const actions = [
+const actions: Array<{
+  icon: typeof Plus;
+  title: string;
+  description: string;
+  href: string;
+  requiresAuth: boolean;
+  guestSubject?: GuestRestrictionSubject;
+}> = [
   {
     icon: Plus,
     title: "Create Project",
     description: "Start a new cybersecurity initiative",
     href: "/projects/create",
     requiresAuth: true,
+    guestSubject: "project",
   },
   {
     icon: PenSquare,
@@ -20,6 +30,7 @@ const actions = [
     description: "Share your expertise and insights",
     href: "/articles/create",
     requiresAuth: true,
+    guestSubject: "article",
   },
   {
     icon: Users,
@@ -32,18 +43,19 @@ const actions = [
 
 export function QuickActions() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   const handleActionClick = (action: typeof actions[0], e: React.MouseEvent) => {
-    // 인증이 필요한 액션이고 사용자가 로그인하지 않은 경우
     if (action.requiresAuth && !isAuthenticated) {
-      e.preventDefault();
       toast.error("로그인이 필요합니다.");
       router.push("/login");
       return;
     }
-
-    // 인증이 필요 없거나 로그인한 경우 정상적으로 이동
+    // 로그인했지만 GUEST(외부인)인 경우 클릭 시 에러 메시지
+    if (action.requiresAuth && action.guestSubject && isGuest(user?.role)) {
+      alert(getGuestRestrictionMessage("create", action.guestSubject));
+      return;
+    }
     router.push(action.href);
   };
 

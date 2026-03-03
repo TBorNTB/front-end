@@ -4,6 +4,7 @@
 
 import { PROJECT_ENDPOINTS, getProjectApiUrl } from '@/lib/api/endpoints/project-endpoints';
 import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
+import { getSafeApiErrorMessage } from '@/lib/api/helpers';
 
 
 // API 응답 타입 정의
@@ -66,7 +67,11 @@ export const categoryService = {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch categories: ${response.status}`);
+        if (process.env.NODE_ENV === 'development') {
+          const errorText = await response.text().catch(() => '');
+          console.error('[category] getCategories error', response.status, errorText);
+        }
+        throw new Error(getSafeApiErrorMessage(response, '카테고리'));
       }
 
       const data: CategoryResponse = await response.json();
@@ -96,10 +101,11 @@ export const categoryService = {
     });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => '');
-      throw new Error(
-        `Failed to create category: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`,
-      );
+      if (process.env.NODE_ENV === 'development') {
+        const errorText = await response.text().catch(() => '');
+        console.error('[category] create error', response.status, errorText);
+      }
+      throw new Error(getSafeApiErrorMessage(response, '카테고리'));
     }
 
     return response.json();
@@ -124,10 +130,11 @@ export const categoryService = {
     });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => '');
-      throw new Error(
-        `Failed to update category: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`,
-      );
+      if (process.env.NODE_ENV === 'development') {
+        const errorText = await response.text().catch(() => '');
+        console.error('[category] update error', response.status, errorText);
+      }
+      throw new Error(getSafeApiErrorMessage(response, '카테고리'));
     }
 
     return response.json();
@@ -152,10 +159,11 @@ export const categoryService = {
     });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => '');
-      throw new Error(
-        `Failed to delete category: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`,
-      );
+      if (process.env.NODE_ENV === 'development') {
+        const errorText = await response.text().catch(() => '');
+        console.error('[category] delete error', response.status, errorText);
+      }
+      throw new Error(getSafeApiErrorMessage(response, '카테고리'));
     }
 
     return response.json();

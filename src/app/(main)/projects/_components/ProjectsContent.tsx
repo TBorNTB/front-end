@@ -11,6 +11,9 @@ import { CategoryHelpers, CategoryType, CategoryDisplayNames } from '@/types/ser
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { categoryService, type CategoryItem } from '@/lib/api/services/category-services';
 import { decodeHtmlEntities } from '@/lib/html-utils';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { isGuest, getGuestRestrictionMessage } from '@/lib/role-utils';
+import { getSafeApiErrorMessage } from '@/lib/api/helpers';
 
 interface Project {
   id: string;
@@ -98,33 +101,25 @@ const fetchProjects = async (params: ProjectSearchParams): Promise<ProjectSearch
     const response = await fetch(url);
 
     if (!response.ok) {
-      // Safe-parsed error payload plus status context for debugging
-      const errorData = await response.json().catch(() => ({} as Record<string, unknown>));
-      const message = (errorData as { message?: string; error?: string })?.message
-        || (errorData as { error?: string })?.error
-        || response.statusText
-        || `API error: ${response.status}`;
-
       return {
         content: [],
         page: 0,
         size: 0,
         totalElements: 0,
         totalPages: 0,
-        error: message,
+        error: getSafeApiErrorMessage(response, '프로젝트'),
       };
     }
 
     return await response.json();
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error while fetching projects';
     return {
       content: [],
       page: 0,
       size: 0,
       totalElements: 0,
       totalPages: 0,
-      error: message,
+      error: '프로젝트 목록을 불러오는 중 오류가 발생했습니다.',
     };
   }
 };
@@ -329,6 +324,7 @@ const statuses = ['전체', '진행중', '완료', '계획중'];
 const sortOptions = ['최신순', '인기순'];
 
 export default function ProjectsContent() {
+  const { user: currentUser } = useCurrentUser();
   const searchParams = useSearchParams();
   
   // State
@@ -582,6 +578,8 @@ export default function ProjectsContent() {
           showViewMode={true}
           showSort={true}
           showCreateButton={true}
+          createButtonDisabled={isGuest(currentUser?.role)}
+          createButtonDisabledMessage={getGuestRestrictionMessage('create', 'project')}
           createButtonText="새 프로젝트"
           createButtonHref="/projects/create"
           placeholderText="프로젝트 검색..."

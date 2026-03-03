@@ -11,6 +11,7 @@ import TipTapEditor from '@/components/editor/TipTapEditor';
 import TableOfContents from '@/components/editor/TableOfContents';
 import Image from 'next/image';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { requireNotGuest } from '@/lib/role-utils';
 import { fetchCategories } from '@/lib/api/services/project-services';
 import { createArticle } from '@/lib/api/services/article-services';
 import { s3Service } from '@/lib/api/services/s3-services';
@@ -157,6 +158,7 @@ export default function NewArticleForm() {
     e.preventDefault();
 
     if (loading) return;
+    if (!requireNotGuest(currentUser?.role, 'create', 'article')) return;
     if (!validateForm()) {
       return;
     }

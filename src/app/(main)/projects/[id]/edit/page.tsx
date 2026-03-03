@@ -5,6 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowLeft, Upload, Search, X } from 'lucide-react';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { requireNotGuest } from '@/lib/role-utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import TipTapEditor from '@/components/editor/TipTapEditor';
@@ -18,6 +20,7 @@ import { decodeHtmlEntities } from '@/lib/html-utils';
 export default function ProjectEditPage() {
   const router = useRouter();
   const params = useParams();
+  const { user: currentUser } = useCurrentUser();
   const projectId = String(params?.id ?? '');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -168,6 +171,7 @@ export default function ProjectEditPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!requireNotGuest(currentUser?.role, 'edit')) return;
     if (!projectId) return;
     if (isSubmitting) return;
     setErrorMessage(null);

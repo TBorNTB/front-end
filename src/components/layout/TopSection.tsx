@@ -22,6 +22,9 @@ export interface ContentFilterBarProps {
   showViewMode?: boolean;
   showSort?: boolean;
   showCreateButton?: boolean;
+  /** GUEST일 때 true. 클릭 시 createButtonDisabledMessage를 alert로 표시하고 이동하지 않음 */
+  createButtonDisabled?: boolean;
+  createButtonDisabledMessage?: string;
   createButtonText?: string;
   createButtonHref?: string;
   additionalFilters?: React.ReactNode;
@@ -46,6 +49,8 @@ export default function ContentFilterBar({
   showViewMode = true,
   showSort = true,
   showCreateButton = true,
+  createButtonDisabled = false,
+  createButtonDisabledMessage = '외부인은 이 작업을 할 수 없습니다.',
   createButtonText = '새 글 쓰기',
   createButtonHref = '/articles/create',
   additionalFilters,
@@ -235,10 +240,14 @@ export default function ContentFilterBar({
             </div>
           )}
 
-          {/* Create Button */}
+          {/* Create Button - GUEST일 때 클릭 시 에러 메시지 표시 */}
           {showCreateButton && (
             <Link
               href={createButtonHref}
+              onClick={createButtonDisabled ? (e) => {
+                e.preventDefault();
+                alert(createButtonDisabledMessage);
+              } : undefined}
               className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 transition-colors shadow-sm hover:shadow-md whitespace-nowrap"
             >
               <Plus className="w-4 h-4" />

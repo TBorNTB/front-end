@@ -6,7 +6,10 @@ import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { NewsCard } from './NewsCard';
 import ContentFilterBar from '@/components/layout/TopSection';
 import CategoryFilter from '@/components/layout/CategoryFilter';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { isGuest, getGuestRestrictionMessage } from '@/lib/role-utils';
 import { NEWS_CATEGORY_OPTIONS, toNewsCategoryEnum } from '@/lib/constants/news-categories';
+import { getSafeApiErrorMessage } from '@/lib/api/helpers';
 // News API Response Types
 interface NewsSearchParams {
   keyword?: string;
@@ -82,25 +85,18 @@ const fetchNews = async (params: NewsSearchParams): Promise<NewsSearchResponse> 
     const response = await fetch(url);
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({} as Record<string, unknown>));
-      const message = (errorData as { message?: string; error?: string })?.message
-        || (errorData as { error?: string })?.error
-        || response.statusText
-        || `API error: ${response.status}`;
-
       return {
         content: [],
         page: params.page || 0,
         size: params.size || PAGE_SIZE,
         totalElements: 0,
         totalPages: 0,
-        error: message,
+        error: getSafeApiErrorMessage(response, '뉴스'),
       };
     }
 
     return await response.json();
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error fetching news:', error);
     return {
       content: [],
@@ -108,7 +104,7 @@ const fetchNews = async (params: NewsSearchParams): Promise<NewsSearchResponse> 
       size: params.size || PAGE_SIZE,
       totalElements: 0,
       totalPages: 0,
-      error: message,
+      error: '뉴스 목록을 불러오는 중 오류가 발생했습니다.',
     };
   }
 };
@@ -331,6 +327,7 @@ type NewsContentProps = { createHref?: string };
 export default function NewsContent({ createHref = '/community/news/create' }: NewsContentProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user: currentUser } = useCurrentUser();
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -621,6 +618,8 @@ export default function NewsContent({ createHref = '/community/news/create' }: N
         showViewMode={true}
         showSort={true}
         showCreateButton={true}
+        createButtonDisabled={isGuest(currentUser?.role)}
+        createButtonDisabledMessage={getGuestRestrictionMessage('create', 'news')}
         createButtonText="새 글 쓰기"
         createButtonHref={createHref}
         placeholderText="뉴스 검색..."

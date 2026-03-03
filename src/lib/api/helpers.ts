@@ -45,7 +45,7 @@ export const getAccessTokenFromCookies = (): string | undefined => {
 export const requireAccessTokenFromCookies = (): string => {
   const token = getAccessTokenFromCookies();
   if (!token) {
-    throw new Error('로그인이 필요합니다. (accessToken 쿠키 없음)');
+    throw new Error('로그인이 필요합니다.');
   }
 
   return token;
@@ -163,49 +163,39 @@ export const cleanUserResponse = (data: any): UserResponse => {
 };
 
 // ============================================================================
-// 🚨 Error Handling Helpers
+// 🚨 Error Handling Helpers (보안: 내부 구조·상태코드·서버 메시지 노출 금지)
 // ============================================================================
 
 /**
- * Parse and normalize error from fetch response
- * Provides user-friendly Korean error messages
- * 
- * @param response - Fetch Response object
- * @param data - Parsed JSON data (if available)
- * @param context - Context for error message (e.g., "프로필 조회")
- * @returns User-friendly error message
+ * API 실패 시 사용자에게 보여줄 안전한 메시지만 반환합니다.
+ * 상태 코드, JSON, 서버 상세 메시지는 반환하지 않습니다.
+ */
+export const getSafeApiErrorMessage = (response: Response, context?: string): string => {
+  if (response.status === 401) return '로그인이 필요합니다. 다시 로그인해주세요.';
+  if (response.status === 403) return '접근 권한이 없습니다.';
+  if (response.status === 400) return '잘못된 요청입니다. 입력 내용을 확인해 주세요.';
+  if (response.status === 404) return context ? `${context} 정보를 찾을 수 없습니다.` : '요청한 정보를 찾을 수 없습니다.';
+  if (response.status === 409) return '요청을 처리할 수 없습니다. 잠시 후 다시 시도해 주세요.';
+  if (response.status >= 500) return '서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
+  return '요청을 처리할 수 없습니다. 잠시 후 다시 시도해 주세요.';
+};
+
+/**
+ * Parse and normalize error from fetch response.
+ * 사용자에게 보여줄 메시지만 반환 (상태코드·서버 message/error 필드 노출 안 함).
  */
 export const parseApiError = (
   response: Response,
-  data: any,
+  _data: any,
   context: string
 ): string => {
-  // Authentication errors
-  if (response.status === 401) {
-    return '로그인이 필요합니다. 다시 로그인해주세요.';
-  }
-  
-  if (response.status === 403) {
-    return '접근 권한이 없습니다.';
-  }
-  
-  // Validation errors
-  if (response.status === 400) {
-    return data?.message || data?.error || '잘못된 요청입니다.';
-  }
-  
-  // Not found
-  if (response.status === 404) {
-    return `${context} 정보를 찾을 수 없습니다.`;
-  }
-  
-  // Server errors
-  if (response.status >= 500) {
-    return '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
-  }
-  
-  // Default with backend message
-  return data?.message || data?.error || `${context} 실패 (${response.status})`;
+  if (response.status === 401) return '로그인이 필요합니다. 다시 로그인해주세요.';
+  if (response.status === 403) return '접근 권한이 없습니다.';
+  if (response.status === 400) return '잘못된 요청입니다. 입력 내용을 확인해 주세요.';
+  if (response.status === 404) return `${context} 정보를 찾을 수 없습니다.`;
+  if (response.status === 409) return '요청을 처리할 수 없습니다. 잠시 후 다시 시도해 주세요.';
+  if (response.status >= 500) return '서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
+  return '요청을 처리할 수 없습니다. 잠시 후 다시 시도해 주세요.';
 };
 
 /**

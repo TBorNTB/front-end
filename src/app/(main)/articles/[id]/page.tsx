@@ -12,6 +12,8 @@ import { ProjectContentRenderer } from '@/components/project/ProjectContentRende
 import { searchCSKnowledge, getCSKnowledgeByUser } from '@/lib/api/services/elastic-services';
 import { decodeHtmlEntities } from '@/lib/html-utils';
 import { isCommentEdited } from '@/lib/comment-utils';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { requireNotGuest } from '@/lib/role-utils';
 import { 
   fetchViewCount,
   incrementViewCount,
@@ -144,6 +146,7 @@ interface PostData {
 
 export default function BlogPostPage({ params }: BlogPostPageProps) {
   const router = useRouter();
+  const { user: currentUser } = useCurrentUser();
   const [articleId, setArticleId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -318,6 +321,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
   // 아티클 삭제
   const handleDeleteArticle = async () => {
+    if (!requireNotGuest(currentUser?.role, 'delete')) return;
     if (!articleId) return;
     
     if (!confirm('정말로 이 아티클을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
@@ -336,6 +340,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
   // 댓글 작성
   const handleCreateComment = async (content: string) => {
+    if (!requireNotGuest(currentUser?.role, 'create')) return;
     if (!content.trim() || !articleId || isSubmittingComment) return;
     setIsSubmittingComment(true);
     try {
@@ -352,6 +357,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
   // 댓글 수정
   const handleUpdateComment = async (commentId: number) => {
+    if (!requireNotGuest(currentUser?.role, 'edit')) return;
     if (!editContent.trim()) return;
 
     try {
@@ -368,6 +374,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
   // 댓글 삭제
   const handleDeleteComment = async (commentId: number) => {
+    if (!requireNotGuest(currentUser?.role, 'delete')) return;
     if (!confirm('댓글을 삭제하시겠습니까?')) return;
 
     try {
@@ -382,6 +389,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
   // 대댓글 작성
   const handleCreateReply = async (parentId: number) => {
+    if (!requireNotGuest(currentUser?.role, 'create')) return;
     if (!replyContent.trim() || !articleId || submittingReplyParentId !== null) return;
     setSubmittingReplyParentId(parentId);
     try {
@@ -1026,7 +1034,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                 
                 <div className="flex items-center gap-3">
                   <button 
-                    onClick={() => router.push(`/articles/${articleId}/edit`)}
+                    onClick={() => { if (requireNotGuest(currentUser?.role, 'edit')) router.push(`/articles/${articleId}/edit`); }}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-white text-primary-600 rounded-lg hover:bg-primary-50 transition-colors font-medium text-sm border border-primary-500 cursor-pointer"
                   >
                     <Edit className="w-4 h-4" />

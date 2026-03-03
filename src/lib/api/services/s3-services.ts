@@ -1,6 +1,7 @@
 'use client';
 
 import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
+import { getSafeApiErrorMessage } from '@/lib/api/helpers';
 
 /**
  * S3 파일 업로드 서비스
@@ -35,10 +36,10 @@ export const s3Service = {
       const responseData = await response.json().catch(() => null);
 
       if (!response.ok) {
-        const errorMessage = responseData?.message ||
-                            responseData?.error ||
-                            `Presigned URL 생성 실패 (${response.status})`;
-        throw new Error(errorMessage);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[s3] getPresignedUrl error', response.status, responseData);
+        }
+        throw new Error(getSafeApiErrorMessage(response, '파일'));
       }
 
       // responseData가 null이거나 undefined인 경우
@@ -101,8 +102,11 @@ export const s3Service = {
       });
 
       if (!uploadResponse.ok) {
-        const errorData = await uploadResponse.json().catch(() => ({}));
-        throw new Error(errorData.error || `파일 업로드 실패 (${uploadResponse.status})`);
+        if (process.env.NODE_ENV === 'development') {
+          const errorData = await uploadResponse.json().catch(() => ({}));
+          console.error('[s3] upload error', uploadResponse.status, errorData);
+        }
+        throw new Error(getSafeApiErrorMessage(uploadResponse, '파일'));
       }
 
       console.log('✅ S3 업로드 성공:', fileUrl);
@@ -114,7 +118,7 @@ export const s3Service = {
       };
     } catch (error: any) {
       console.error('❌ S3 파일 업로드 실패:', error);
-      throw new Error(error.message || '파일 업로드 중 오류가 발생했습니다.');
+      throw new Error('파일 업로드 중 오류가 발생했습니다.');
     }
   },
 };

@@ -1,7 +1,7 @@
 // src/lib/api/services/article.ts
 import { ARTICLE_ENDPOINTS, getArticleApiUrl } from '@/lib/api/endpoints/article-endpoints';
 import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
-import { parseApiError, safeJsonParse } from '@/lib/api/helpers';
+import { getSafeApiErrorMessage, parseApiError, safeJsonParse } from '@/lib/api/helpers';
 import { INTERNAL_ENDPOINTS, getInternalApiUrl } from '@/lib/api/endpoints';
 
 export interface WriterProfile {
@@ -64,7 +64,7 @@ export const fetchArticleById = async (id: string | number): Promise<ArticleResp
         console.warn(`Article with ID ${id} not found`);
         return null;
       }
-      throw new Error(`Failed to fetch article: ${response.status}`);
+      throw new Error(getSafeApiErrorMessage(response, '아티클'));
     }
 
     const data: ArticleResponse = await response.json();
@@ -101,8 +101,11 @@ export const updateArticle = async (id: string | number, data: ArticleUpdateRequ
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to update article: ${response.status} - ${errorText}`);
+    if (process.env.NODE_ENV === 'development') {
+      const errorText = await response.text();
+      console.error('[article] update error', response.status, errorText);
+    }
+    throw new Error(getSafeApiErrorMessage(response, '아티클'));
   }
 
   return response.json();
@@ -132,16 +135,12 @@ export const deleteArticle = async (id: string | number): Promise<void> => {
   });
 
   if (!response.ok) {
+    if (process.env.NODE_ENV === 'development') {
+      const errorText = await response.text();
+      console.error('[article] delete error', response.status, errorText);
+    }
     const data = await safeJsonParse(response.clone());
-    const errorText = (await response.text()).trim();
-    const normalized = errorText || response.statusText || '';
-    const message = parseApiError(response, data, 'CS 지식 삭제');
-
-    throw new Error(
-      normalized
-        ? `${message} (${response.status}) - ${normalized}`
-        : `${message} (${response.status})`
-    );
+    throw new Error(parseApiError(response, data, 'CS 지식'));
   }
 };
 
@@ -168,8 +167,11 @@ export const createArticle = async (data: ArticleCreateRequest): Promise<Article
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to create article: ${response.status} - ${errorText}`);
+    if (process.env.NODE_ENV === 'development') {
+      const errorText = await response.text();
+      console.error('[article] create error', response.status, errorText);
+    }
+    throw new Error(getSafeApiErrorMessage(response, '아티클'));
   }
 
   return response.json();

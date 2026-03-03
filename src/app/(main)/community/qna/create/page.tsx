@@ -6,6 +6,8 @@ import TitleBanner from '@/components/layout/TitleBanner';
 import { Tag, X, AlertCircle } from 'lucide-react';
 import { categoryService, type CategoryItem } from '@/lib/api/services/category-services';
 import { questionService } from '@/lib/api/services/question-services';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { isGuest, requireNotGuest } from '@/lib/role-utils';
 
 interface TechTag {
   id: string;
@@ -50,8 +52,8 @@ export default function CreateQuestionPage() {
     }));
   }, [categories]);
 
-  // Current user role (should come from auth context)
-  const currentUserRole: 'guest' | 'member' | 'admin' = 'member' as 'guest' | 'member' | 'admin';
+  const { user: currentUser } = useCurrentUser();
+  const currentUserRole: 'guest' | 'member' | 'admin' = isGuest(currentUser?.role) ? 'guest' : 'member';
 
   useEffect(() => {
     let cancelled = false;
@@ -143,6 +145,7 @@ export default function CreateQuestionPage() {
   };
 
   const handleSubmit = async () => {
+    if (!requireNotGuest(currentUser?.role, 'create', 'qna')) return;
     if (!validate() || isSubmitting) return;
 
     setIsSubmitting(true);

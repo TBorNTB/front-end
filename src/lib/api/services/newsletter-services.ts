@@ -1,5 +1,6 @@
 // lib/api/services/newsletter-service.ts
 // Newsletter 구독 관련 API 서비스
+import { getSafeApiErrorMessage } from '@/lib/api/helpers';
 // API 요청 타입 정의
 export type EmailFrequency = 'DAILY' | 'WEEKLY';
 
@@ -86,10 +87,10 @@ export const newsletterService = {
       const responseData = await response.json().catch(() => null);
 
       if (!response.ok) {
-        const errorMessage = responseData?.message || 
-                            responseData?.error || 
-                            `구독 요청 실패 (${response.status})`;
-        throw new Error(errorMessage);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[newsletter] subscribe error', response.status, responseData);
+        }
+        throw new Error(getSafeApiErrorMessage(response, '뉴스레터'));
       }
 
       if (!responseData) {
@@ -138,10 +139,10 @@ export const newsletterService = {
       const responseData = await response.json().catch(() => null);
 
       if (!response.ok) {
-        const errorMessage = responseData?.message || 
-                            responseData?.error || 
-                            `인증 코드 확인 실패 (${response.status})`;
-        throw new Error(errorMessage);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[newsletter] verify error', response.status, responseData);
+        }
+        throw new Error(getSafeApiErrorMessage(response, '뉴스레터'));
       }
 
       if (!responseData) {
@@ -187,9 +188,10 @@ export const newsletterService = {
       const responseData = await response.json().catch(() => null);
 
       if (!response.ok) {
-        const errorMessage =
-          responseData?.message || responseData?.error || `이메일 인증 실패 (${response.status})`;
-        throw new Error(errorMessage);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[newsletter] verifyEmail error', response.status, responseData);
+        }
+        throw new Error(getSafeApiErrorMessage(response, '뉴스레터'));
       }
 
       if (!responseData) {
@@ -233,9 +235,10 @@ export const newsletterService = {
       const responseData = await response.json().catch(() => null);
 
       if (!response.ok) {
-        const errorMessage =
-          responseData?.message || responseData?.error || `구독 해제 인증코드 요청 실패 (${response.status})`;
-        throw new Error(errorMessage);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[newsletter] cancelSendCode error', response.status, responseData);
+        }
+        throw new Error(getSafeApiErrorMessage(response, '뉴스레터'));
       }
 
       if (!responseData) {
@@ -279,9 +282,10 @@ export const newsletterService = {
       const responseData = await response.json().catch(() => null);
 
       if (!response.ok) {
-        const errorMessage =
-          responseData?.message || responseData?.error || `구독 해제 인증코드 확인 실패 (${response.status})`;
-        throw new Error(errorMessage);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[newsletter] cancelConfirm error', response.status, responseData);
+        }
+        throw new Error(getSafeApiErrorMessage(response, '뉴스레터'));
       }
 
       if (!responseData) {
@@ -325,9 +329,10 @@ export const newsletterService = {
       const responseData = await response.json().catch(() => null);
 
       if (!response.ok) {
-        const errorMessage =
-          responseData?.message || responseData?.error || `선호도 수정 인증코드 요청 실패 (${response.status})`;
-        throw new Error(errorMessage);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[newsletter] preferencesSendCode error', response.status, responseData);
+        }
+        throw new Error(getSafeApiErrorMessage(response, '뉴스레터'));
       }
 
       if (!responseData) {
@@ -371,9 +376,10 @@ export const newsletterService = {
       const responseData = await response.json().catch(() => null);
 
       if (!response.ok) {
-        const errorMessage =
-          responseData?.message || responseData?.error || `선호도 수정 인증코드 확인 실패 (${response.status})`;
-        throw new Error(errorMessage);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[newsletter] preferencesVerify error', response.status, responseData);
+        }
+        throw new Error(getSafeApiErrorMessage(response, '뉴스레터'));
       }
 
       if (!responseData) {
@@ -415,9 +421,10 @@ export const newsletterService = {
       const responseData = await response.json().catch(() => null);
 
       if (!response.ok) {
-        const errorMessage =
-          responseData?.message || responseData?.error || `구독 상태 조회 실패 (${response.status})`;
-        throw new Error(errorMessage);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[newsletter] status error', response.status, responseData);
+        }
+        throw new Error(getSafeApiErrorMessage(response, '뉴스레터'));
       }
 
       if (!responseData) {

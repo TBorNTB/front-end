@@ -1,5 +1,6 @@
 import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
 import { PROJECT_ENDPOINTS, getProjectApiUrl } from '@/lib/api/endpoints/project-endpoints';
+import { getSafeApiErrorMessage } from '@/lib/api/helpers';
 import type {
   AnswerUpsertRequest,
   AnswerItem,
@@ -52,10 +53,11 @@ export const questionService = {
     });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => '');
-      throw new Error(
-        `Failed to create question: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`
-      );
+      if (process.env.NODE_ENV === 'development') {
+        const errorText = await response.text().catch(() => '');
+        console.error('[question] create error', response.status, errorText);
+      }
+      throw new Error(getSafeApiErrorMessage(response, '질문'));
     }
 
     return response.json();
@@ -81,10 +83,11 @@ export const questionService = {
     });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => '');
-      throw new Error(
-        `Failed to fetch questions: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`
-      );
+      if (process.env.NODE_ENV === 'development') {
+        const errorText = await response.text().catch(() => '');
+        console.error('[question] search error', response.status, errorText);
+      }
+      throw new Error(getSafeApiErrorMessage(response, '질문'));
     }
 
     return response.json();
@@ -107,10 +110,11 @@ export const questionService = {
     });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => '');
-      throw new Error(
-        `Failed to fetch question detail: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`
-      );
+      if (process.env.NODE_ENV === 'development') {
+        const errorText = await response.text().catch(() => '');
+        console.error('[question] get detail error', response.status, errorText);
+      }
+      throw new Error(getSafeApiErrorMessage(response, '질문'));
     }
 
     return response.json();
@@ -137,10 +141,11 @@ export const questionService = {
     });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => '');
-      throw new Error(
-        `Failed to update question: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`
-      );
+      if (process.env.NODE_ENV === 'development') {
+        const errorText = await response.text().catch(() => '');
+        console.error('[question] update error', response.status, errorText);
+      }
+      throw new Error(getSafeApiErrorMessage(response, '질문'));
     }
 
     return response.json();
@@ -162,10 +167,11 @@ export const questionService = {
     });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => '');
-      throw new Error(
-        `Failed to delete question: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`
-      );
+      if (process.env.NODE_ENV === 'development') {
+        const errorText = await response.text().catch(() => '');
+        console.error('[question] delete error', response.status, errorText);
+      }
+      throw new Error(getSafeApiErrorMessage(response, '질문'));
     }
   },
 
@@ -205,10 +211,11 @@ export const questionService = {
     });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => '');
-      throw new Error(
-        `Failed to fetch answers: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`
-      );
+      if (process.env.NODE_ENV === 'development') {
+        const errorText = await response.text().catch(() => '');
+        console.error('[question] fetch answers error', response.status, errorText);
+      }
+      throw new Error(getSafeApiErrorMessage(response, '답변'));
     }
 
     return response.json();
@@ -238,10 +245,11 @@ export const questionService = {
     });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => '');
-      throw new Error(
-        `Failed to create answer: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`
-      );
+      if (process.env.NODE_ENV === 'development') {
+        const errorText = await response.text().catch(() => '');
+        console.error('[question] create answer error', response.status, errorText);
+      }
+      throw new Error(getSafeApiErrorMessage(response, '답변'));
     }
 
     return response.json();
@@ -271,10 +279,11 @@ export const questionService = {
     });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => '');
-      throw new Error(
-        `Failed to update answer: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`
-      );
+      if (process.env.NODE_ENV === 'development') {
+        const errorText = await response.text().catch(() => '');
+        console.error('[question] update answer error', response.status, errorText);
+      }
+      throw new Error(getSafeApiErrorMessage(response, '답변'));
     }
 
     return response.json();
@@ -299,10 +308,11 @@ export const questionService = {
     });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => '');
-      throw new Error(
-        `Failed to delete answer: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`
-      );
+      if (process.env.NODE_ENV === 'development') {
+        const errorText = await response.text().catch(() => '');
+        console.error('[question] delete answer error', response.status, errorText);
+      }
+      throw new Error(getSafeApiErrorMessage(response, '답변'));
     }
   },
 
@@ -325,10 +335,11 @@ export const questionService = {
     });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => '');
-      throw new Error(
-        `Failed to accept answer: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`
-      );
+      if (process.env.NODE_ENV === 'development') {
+        const errorText = await response.text().catch(() => '');
+        console.error('[question] accept answer error', response.status, errorText);
+      }
+      throw new Error(getSafeApiErrorMessage(response, '답변 채택'));
     }
   },
 };

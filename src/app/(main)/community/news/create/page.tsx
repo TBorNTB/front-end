@@ -15,6 +15,7 @@ import { createNews } from '@/lib/api/services/news-services';
 import { memberService, CursorUserResponse } from '@/lib/api/services/user-services';
 import { s3Service } from '@/lib/api/services/s3-services';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { requireNotGuest } from '@/lib/role-utils';
 import { NEWS_CATEGORY_OPTIONS } from '@/lib/constants/news-categories';
 
 interface FormData {
@@ -333,6 +334,7 @@ export default function NewNewsForm() {
     e.preventDefault();
 
     if (loading) return;
+    if (!requireNotGuest(currentUser?.role, 'create', 'news')) return;
     if (!validateForm()) {
       return;
     }

@@ -29,6 +29,8 @@ import ArticleCard from './_components/ArticleCard';
 import { searchCSKnowledge, getCSKnowledgeSuggestion, type CSKnowledgeSearchResponse } from '@/lib/api/services/elastic-services';
 import { categoryService, type CategoryItem } from '@/lib/api/services/category-services';
 import { CategoryType, CategoryDisplayNames, CategorySlugs } from '@/types/services/category';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { isGuest, getGuestRestrictionMessage } from '@/lib/role-utils';
 
 const ARTICLES_PER_PAGE = 6;
 
@@ -84,6 +86,7 @@ const convertSlugToApiCategory = (slug: string, categories: Category[]): string 
 function ArticlesContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user: currentUser } = useCurrentUser();
 
   const [categories, setCategories] = useState<Category[]>([{ name: '전체', slug: 'all' }]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
@@ -105,7 +108,6 @@ function ArticlesContent() {
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const suggestionsRef = useRef<HTMLDivElement | null>(null);
 
-  const currentUser: 'guest' | 'member' | 'admin' | null = 'member';
   const sortOptions = ['최신순', '인기순'];
 
   // 카테고리 목록 API 호출
@@ -415,6 +417,8 @@ function ArticlesContent() {
           showViewMode={true}
           showSort={true}
           showCreateButton={true}
+          createButtonDisabled={isGuest(currentUser?.role)}
+          createButtonDisabledMessage={getGuestRestrictionMessage('create', 'article')}
           createButtonText="새 글 쓰기"
           createButtonHref="/articles/create"
           placeholderText="찾고자 할 컨텐츠를 작성해주세요"

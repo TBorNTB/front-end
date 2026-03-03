@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Upload } from 'lucide-react';
 import { fetchDocument, updateDocument } from '@/lib/api/services/project-services';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { requireNotGuest } from '@/lib/role-utils';
 import { s3Service } from '@/lib/api/services/s3-services';
 import { decodeHtmlEntities } from '@/lib/html-utils';
 
@@ -15,6 +17,7 @@ interface EditDocumentPageProps {
 
 export default function EditDocumentPage({ params }: EditDocumentPageProps) {
   const router = useRouter();
+  const { user: currentUser } = useCurrentUser();
   const [projectId, setProjectId] = useState<string>('');
   const [docId, setDocId] = useState<string>('');
   const [documentTitle, setDocumentTitle] = useState('');
@@ -101,6 +104,7 @@ export default function EditDocumentPage({ params }: EditDocumentPageProps) {
   }, []);
 
   const handleSave = async () => {
+    if (!requireNotGuest(currentUser?.role, 'edit')) return;
     if (!documentTitle.trim()) {
       alert('문서 제목을 입력해주세요.');
       return;

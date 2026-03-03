@@ -375,7 +375,7 @@ export default function ProfileContent() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-xl font-semibold text-foreground mb-1">나의 활동</h2>
-            <p className="text-gray-700 text-sm">작성한 글, 조회수, 받은 좋아요·댓글 등 활동 통계를 확인하세요.</p>
+            <p className="text-gray-700 text-sm">참여한 글, 조회수, 받은 좋아요·댓글 등 활동 통계를 확인하세요.</p>
           </div>
           <Link
             href="/mypage/activity"
