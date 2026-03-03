@@ -121,8 +121,8 @@ const AvatarStack = ({
 
 export function ProjectCardHome({ project }: ProjectCardHomeProps) {
   return (
-    <Link href={`/projects/${project.id}`}>
-      <div className="group bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-primary hover:shadow-lg transition-all duration-200 hover:-translate-y-1">
+    <Link href={`/projects/${project.id}`} className="block">
+      <div className="group relative bg-white border border-gray-300 ring-1 ring-gray-200 rounded-xl overflow-hidden shadow-sm hover:border-primary-300 hover:ring-primary-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
         {/* Image */}
         <div className="relative overflow-hidden h-56">
           <ImageWithFallback
@@ -146,7 +146,7 @@ export function ProjectCardHome({ project }: ProjectCardHomeProps) {
         </div>
 
         {/* Content */}
-        <div className="p-5 flex-1 flex flex-col">
+        <div className="p-5 flex-1 flex flex-col bg-white border-t border-gray-100">
           <h3 className="font-semibold text-base text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
             {decodeHtmlEntities(project.title)}
           </h3>
@@ -160,13 +160,13 @@ export function ProjectCardHome({ project }: ProjectCardHomeProps) {
               {project.techStacks.slice(0, 5).map((tag: string, index: number) => (
                 <span
                   key={index}
-                  className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md border border-gray-200"
+                  className="px-2 py-1 bg-white text-gray-700 text-xs rounded-md border border-gray-300"
                 >
                   {decodeHtmlEntities(tag)}
                 </span>
               ))}
               {project.techStacks.length > 5 && (
-                <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md border border-gray-200">
+                <span className="px-2 py-1 bg-white text-gray-700 text-xs rounded-md border border-gray-300">
                   +{project.techStacks.length - 5}
                 </span>
               )}
@@ -182,7 +182,7 @@ export function ProjectCardHome({ project }: ProjectCardHomeProps) {
           </div>
 
           {/* Stats */}
-          <div className="flex items-center gap-4 mb-3 text-sm text-gray-700">
+          <div className="flex items-center gap-4 mb-3 pt-3 border-t border-gray-200 text-sm text-gray-700">
               <div className="flex items-center gap-1">
                 <Eye className="h-3.5 w-3.5" />
                 <span>{project.views || 0}</span>
