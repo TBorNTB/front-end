@@ -191,11 +191,11 @@ export function ProjectCardHome({ project }: ProjectCardHomeProps) {
           {/* Stats */}
           <div className="flex items-center gap-4 mb-3 text-sm">
             <div className="flex items-center gap-1 text-gray-700 font-medium">
-              <ThumbsUp size={16} className="text-red-500 fill-red-500" />
+              <ThumbsUp size={16} className="fill-secondary-500 text-secondary-500" />
               <span>{project.likes || 0}</span>
             </div>
             <div className="flex items-center gap-1 text-gray-700 font-medium">
-              <Eye size={16} className="text-blue-600" />
+              <Eye size={16} className=" text-secondary-500" />
               <span>{project.views || 0}</span>
             </div>
           </div>

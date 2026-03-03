@@ -52,7 +52,7 @@ export function ArticleCardHome({ article }: ArticleCardHomeProps) {
           
           {/* Category Badge */}
           {article.category && (
-            <div className="absolute top-3 left-3">
+            <div className="absolute top-3 right-3">
               <span className="bg-white/90 backdrop-blur-sm border border-gray-200 text-primary px-2 py-1 rounded-full text-xs font-medium">
                 {decodeHtmlEntities(article.category)}
               </span>

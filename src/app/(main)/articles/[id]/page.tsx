@@ -2,18 +2,13 @@
 'use client';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState, useEffect, createElement, useRef, JSX } from 'react';
-import { ThumbsUp, Eye, MessageCircle, Edit, Clock, ArrowLeft, Code, FileText, Trash2 } from 'lucide-react';
+import { useState, useEffect, createElement, useRef, JSX, Fragment } from 'react';
+import { ThumbsUp, Eye, MessageCircle, Share2, Edit, Clock, ArrowLeft, Code, FileText, Trash2 } from 'lucide-react';
 import { fetchArticleById, deleteArticle, type ArticleResponse } from '@/lib/api/services/article-services';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { useRouter } from 'next/navigation';
 import TableOfContents from '@/components/editor/TableOfContents';
-import { ProjectContentRenderer } from '@/components/project/ProjectContentRenderer';
-import { searchCSKnowledge, getCSKnowledgeByUser } from '@/lib/api/services/elastic-services';
-import { decodeHtmlEntities } from '@/lib/html-utils';
-import { isCommentEdited } from '@/lib/comment-utils';
-import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { requireNotGuest } from '@/lib/role-utils';
+import { searchCSKnowledge, searchCSKnowledgeByMember } from '@/lib/api/services/elastic-services';
 import { 
   fetchViewCount,
   incrementViewCount,
@@ -30,7 +25,7 @@ import {
   CommentListResponse
 } from '@/lib/api/services/user-services';
 
-interface BlogPostPageProps {
+interface ArticlePostPageProps {
   params: Promise<{ id: string }>;
 }
 
@@ -63,42 +58,6 @@ const addHeadingIds = (content: string) => {
     return `<h${level}${attrs} id="${id}">`;
   });
 };
-
-/** 댓글 입력 폼 - 로컬 state만 사용해 타이핑 시 상위 리렌더 방지(화면 흔들림 방지) */
-function ArticleCommentForm({
-  onSubmit,
-  disabled,
-}: {
-  onSubmit: (content: string) => void;
-  disabled: boolean;
-}) {
-  const [content, setContent] = useState('');
-  const handleSubmit = () => {
-    const trimmed = content.trim();
-    if (!trimmed || disabled) return;
-    onSubmit(trimmed);
-    setContent('');
-  };
-  return (
-    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 mb-6">
-      <textarea
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        placeholder="댓글을 입력하세요..."
-        className="w-full min-h-[100px] p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-300 resize-none"
-      />
-      <div className="flex justify-end mt-3">
-        <button
-          onClick={handleSubmit}
-          disabled={!content.trim() || disabled}
-          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          댓글 작성
-        </button>
-      </div>
-    </div>
-  );
-}
 
 interface PostData {
   id: string | number;
@@ -144,9 +103,8 @@ interface PostData {
   }>;
 }
 
-export default function BlogPostPage({ params }: BlogPostPageProps) {
+export default function ArticlePostPage({ params }: ArticlePostPageProps) {
   const router = useRouter();
-  const { user: currentUser } = useCurrentUser();
   const [articleId, setArticleId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -159,6 +117,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
   // Comment states
   const [comments, setComments] = useState<Comment[]>([]);
   const commentsRef = useRef<Comment[]>([]); // 현재 댓글 목록 추적용
+  const [commentContent, setCommentContent] = useState('');
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [isLoadingMoreComments, setIsLoadingMoreComments] = useState(false);
   const [commentSortDirection, setCommentSortDirection] = useState<'ASC' | 'DESC'>('DESC');
@@ -171,8 +130,6 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
   const [editContent, setEditContent] = useState('');
   const [replyingToId, setReplyingToId] = useState<number | null>(null);
   const [replyContent, setReplyContent] = useState('');
-  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
-  const [submittingReplyParentId, setSubmittingReplyParentId] = useState<number | null>(null);
 
   // ✅ Next.js 15: params는 Promise라 언랩 필요
   useEffect(() => {
@@ -321,7 +278,6 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
   // 아티클 삭제
   const handleDeleteArticle = async () => {
-    if (!requireNotGuest(currentUser?.role, 'delete')) return;
     if (!articleId) return;
     
     if (!confirm('정말로 이 아티클을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
@@ -339,25 +295,22 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
   };
 
   // 댓글 작성
-  const handleCreateComment = async (content: string) => {
-    if (!requireNotGuest(currentUser?.role, 'create')) return;
-    if (!content.trim() || !articleId || isSubmittingComment) return;
-    setIsSubmittingComment(true);
+  const handleCreateComment = async () => {
+    if (!commentContent.trim() || !articleId) return;
+
     try {
-      await createComment(articleId, 'ARTICLE', { content });
+      await createComment(articleId, 'ARTICLE', { content: commentContent });
+      setCommentContent('');
       // 댓글 목록 새로고침 (reset: true로 처음부터 다시 로드)
       await loadComments(articleId, commentSortDirection, true);
     } catch (error) {
       console.error('Error creating comment:', error);
       alert('댓글 작성에 실패했습니다.');
-    } finally {
-      setIsSubmittingComment(false);
     }
   };
 
   // 댓글 수정
   const handleUpdateComment = async (commentId: number) => {
-    if (!requireNotGuest(currentUser?.role, 'edit')) return;
     if (!editContent.trim()) return;
 
     try {
@@ -374,7 +327,6 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
   // 댓글 삭제
   const handleDeleteComment = async (commentId: number) => {
-    if (!requireNotGuest(currentUser?.role, 'delete')) return;
     if (!confirm('댓글을 삭제하시겠습니까?')) return;
 
     try {
@@ -389,9 +341,8 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
   // 대댓글 작성
   const handleCreateReply = async (parentId: number) => {
-    if (!requireNotGuest(currentUser?.role, 'create')) return;
-    if (!replyContent.trim() || !articleId || submittingReplyParentId !== null) return;
-    setSubmittingReplyParentId(parentId);
+    if (!replyContent.trim() || !articleId) return;
+
     try {
       await createReply(articleId, parentId, 'ARTICLE', { content: replyContent });
       setReplyingToId(null);
@@ -404,8 +355,6 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
     } catch (error) {
       console.error('Error creating reply:', error);
       alert('대댓글 작성에 실패했습니다.');
-    } finally {
-      setSubmittingReplyParentId(null);
     }
   };
 
@@ -469,11 +418,12 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
             profileImageUrl: '',
           };
 
-          // 저자의 다른 글 조회 (username 기준 API 사용 - /csknowledge/user/:username)
-          const authorUsername = writerProfile.username || '';
-          const authorArticlesResponse = authorUsername
-            ? await getCSKnowledgeByUser(authorUsername, 0, 4).catch(() => ({ content: [], page: 0, size: 4, totalElements: 0, totalPages: 0 }))
-            : { content: [], page: 0, size: 4, totalElements: 0, totalPages: 0 };
+          // 저자의 다른 글 조회 (nickname 기반으로 직접 조회 - 추가 API 호출 제거)
+          const authorArticlesResponse = await searchCSKnowledgeByMember({ 
+            name: writerProfile.nickname || writerProfile.realName, 
+            page: 0, 
+            size: 4 // 현재 글 제외하고 3개 필요하므로 4개 가져옴
+          }).catch(() => ({ content: [], page: 0, size: 4, totalElements: 0, totalPages: 0 }));
 
           // 인기 아티클 매핑 (현재 아티클 제외)
           const popularArticles = popularArticlesResponse.content
@@ -527,7 +477,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
               likes: likeStatusData.likeCount || likeCountData.likedCount,
               comments: 0, // 댓글 수는 댓글 로드 후 업데이트
             },
-            tags: [], // 태그 목데이터 제거
+            tags: ['React', 'Next.js', 'TypeScript', '웹 개발', 'Frontend'],
             relatedArticles: authorArticles,
             popularArticles: popularArticles,
           };
@@ -581,7 +531,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
       likes: 89,
       comments: 12,
     },
-    tags: [], // 태그 목데이터 제거
+    tags: ['시스템 해킹', '보안', 'CS 지식', '메모리', '버퍼 오버플로우'],
     relatedArticles: [
       {
         id: '2',
@@ -691,11 +641,53 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
     let inCodeBlock = false;
     let codeBlockContent: string[] = [];
     let codeBlockLanguage = '';
+    let currentList: { type: 'ol' | 'ul'; items: React.ReactNode[] } | null = null;
+    let listItemBuffer: string[] = [];
+    let inNumberedList = false;
+
+    const flushList = () => {
+      if (currentList) {
+        if (currentList.type === 'ol') {
+          elements.push(
+            <ol key={`ol-${elements.length}`} className="list-decimal ml-6 mb-4">
+              {currentList.items}
+            </ol>
+          );
+        } else {
+          elements.push(
+            <ul key={`ul-${elements.length}`} className="list-disc ml-6 mb-4">
+              {currentList.items}
+            </ul>
+          );
+        }
+        currentList = null;
+      }
+    };
+
+    const flushListItemBuffer = (index: number) => {
+      if (listItemBuffer.length > 0 && currentList && currentList.type === 'ol') {
+        currentList.items.push(
+          <li key={`li-${index}-${currentList.items.length}`} className="text-gray-700 mb-2">
+            {listItemBuffer.map((line, i) => (
+              <Fragment key={i}>{line}<br /></Fragment>
+            ))}
+          </li>
+        );
+        listItemBuffer = [];
+      }
+    };
 
     lines.forEach((line, index) => {
       // 코드 블록 시작/끝 감지
       const codeBlockMatch = line.match(/^```(\w+)?$/);
       if (codeBlockMatch) {
+        if (inNumberedList) {
+          flushListItemBuffer(index);
+          flushList();
+          inNumberedList = false;
+        } else {
+          flushList();
+        }
         if (inCodeBlock) {
           // 코드 블록 종료
           if (currentParagraph) {
@@ -748,6 +740,13 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
       const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
       if (headingMatch) {
+        if (inNumberedList) {
+          flushListItemBuffer(index);
+          flushList();
+          inNumberedList = false;
+        } else {
+          flushList();
+        }
         if (currentParagraph) {
           elements.push(
             <p
@@ -781,9 +780,91 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
             text,
           ),
         );
+      } else if (/^\d+\.$/.test(line.trim())) {
+        // Numbered list item (with blank line after number)
+        if (!inNumberedList) {
+          flushList();
+          currentList = { type: 'ol', items: [] };
+          inNumberedList = true;
+        } else {
+          flushListItemBuffer(index);
+        }
+        // Start new list item buffer
+        listItemBuffer = [];
       } else if (/^\d+\.\s+/.test(line.trim())) {
-        // Numbered list item
-        if (currentParagraph) {
+        // Numbered list item (number and content on same line)
+        if (!inNumberedList) {
+          flushList();
+          currentList = { type: 'ol', items: [] };
+          inNumberedList = true;
+        } else {
+          flushListItemBuffer(index);
+        }
+        const match = line.trim().match(/^\d+\.\s+(.*)$/);
+        listItemBuffer = [match ? match[1] : ''];
+      } else if (inNumberedList && (line.trim() === '' || !/^\d+\./.test(line.trim()))) {
+        // Inside numbered list, add to buffer (blank or content line)
+        if (line.trim() !== '') {
+          listItemBuffer.push(line);
+        }
+      } else {
+        if (inNumberedList) {
+          flushListItemBuffer(index);
+          flushList();
+          inNumberedList = false;
+        } else {
+          flushList();
+        }
+        // ...existing code for bullets, inline code, paragraphs...
+        if (line.trim().startsWith('•') || line.trim().startsWith('-')) {
+          if (currentParagraph) {
+            elements.push(
+              <p
+                key={`p-${index}`}
+                className="text-gray-700 leading-relaxed mb-4"
+              >
+                {currentParagraph.trim()}
+              </p>,
+            );
+            currentParagraph = '';
+          }
+          const item = line.replace(/^[•\-]\s*/, '').trim();
+          if (item) {
+            if (!currentList || currentList.type !== 'ul') {
+              flushList();
+              currentList = { type: 'ul', items: [] };
+            }
+            currentList.items.push(
+              <li key={`li-${index}`} className="text-gray-700 mb-2">
+                {item}
+              </li>
+            );
+          }
+        } else if (line.trim().startsWith('`') && line.trim().endsWith('`') && line.trim().length > 2) {
+          // 인라인 코드
+          if (currentParagraph) {
+            elements.push(
+              <p
+                key={`p-${index}`}
+                className="text-gray-700 leading-relaxed mb-4"
+              >
+                {currentParagraph.trim()}
+              </p>,
+            );
+            currentParagraph = '';
+          }
+          const codeText = line.trim().slice(1, -1);
+          elements.push(
+            <code
+              key={`inline-code-${index}`}
+              className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm font-mono"
+            >
+              {codeText}
+            </code>,
+          );
+        } else if (line.trim()) {
+          currentParagraph += line + ' ';
+        } else if (currentParagraph) {
           elements.push(
             <p
               key={`p-${index}`}
@@ -794,73 +875,16 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
           );
           currentParagraph = '';
         }
-        const match = line.trim().match(/^(\d+)\.\s+(.*)$/);
-        if (match) {
-          const number = match[1];
-          const item = match[2];
-          elements.push(
-            <li key={`li-${index}`} className="text-gray-700 ml-6 mb-2 list-decimal">
-              <span className="mr-2 font-bold">{number}.</span>{item}
-            </li>,
-          );
-        }
-      } else if (line.trim().startsWith('•') || line.trim().startsWith('-')) {
-        // Bullet list item
-        if (currentParagraph) {
-          elements.push(
-            <p
-              key={`p-${index}`}
-              className="text-gray-700 leading-relaxed mb-4"
-            >
-              {currentParagraph.trim()}
-            </p>,
-          );
-          currentParagraph = '';
-        }
-        const item = line.replace(/^[•\-]\s*/, '').trim();
-        if (item) {
-          elements.push(
-            <li key={`li-${index}`} className="text-gray-700 ml-6 mb-2 list-disc">
-              {item}
-            </li>,
-          );
-        }
-      } else if (line.trim().startsWith('`') && line.trim().endsWith('`') && line.trim().length > 2) {
-        // 인라인 코드
-        if (currentParagraph) {
-          elements.push(
-            <p
-              key={`p-${index}`}
-              className="text-gray-700 leading-relaxed mb-4"
-            >
-              {currentParagraph.trim()}
-            </p>,
-          );
-          currentParagraph = '';
-        }
-        const codeText = line.trim().slice(1, -1);
-        elements.push(
-          <code
-            key={`inline-code-${index}`}
-            className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm font-mono"
-          >
-            {codeText}
-          </code>,
-        );
-      } else if (line.trim()) {
-        currentParagraph += line + ' ';
-      } else if (currentParagraph) {
-        elements.push(
-          <p
-            key={`p-${index}`}
-            className="text-gray-700 leading-relaxed mb-4"
-          >
-            {currentParagraph.trim()}
-          </p>,
-        );
-        currentParagraph = '';
       }
     });
+
+    if (inNumberedList) {
+      flushListItemBuffer(lines.length);
+      flushList();
+      inNumberedList = false;
+    } else {
+      flushList();
+    }
 
     if (inCodeBlock && codeBlockContent.length > 0) {
       elements.push(
@@ -919,7 +943,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
               {/* Post Header */}
               <header className="mb-8">
                 <h1 className="text-4xl font-bold text-foreground mb-4">
-                  {decodeHtmlEntities(displayPost.title)}
+                  {displayPost.title}
                 </h1>
 
                 {/* Author, Date, Time, Category in one line */}
@@ -944,7 +968,6 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                     </div>
                     <span className="font-medium text-gray-900">{displayPost.author.name}</span>
                   </div>
-                  
                   <div className="flex items-center gap-1.5 text-gray-700">
                     <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -957,17 +980,17 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                       })}
                     </span>
                   </div>
-
                   {displayPost.readTime && (
                     <div className="flex items-center gap-1.5 text-gray-700">
                       <Clock className="w-4 h-4 text-gray-700" />
                       <span>{displayPost.readTime}</span>
                     </div>
                   )}
-
-                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
-                    {decodeHtmlEntities(displayPost.category)}
-                  </span>
+                  <div className="flex-1 flex justify-end">
+                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                      {displayPost.category}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Tags below metadata */}
@@ -978,7 +1001,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                         key={index}
                         className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200"
                       >
-                        #{decodeHtmlEntities(tag)}
+                        #{tag}
                       </span>
                     ))}
                 </div>
@@ -991,7 +1014,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                   <ImageWithFallback
                     src={displayPost.thumbnail}
                     fallbackSrc="/images/placeholder/article.png"
-                    alt={decodeHtmlEntities(displayPost.title)}
+                    alt={displayPost.title}
                     type="article"
                     fill
                     className="object-cover"
@@ -1000,13 +1023,11 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
               )}
 
               {/* Post Content */}
-              <div ref={contentRef} className="mb-12">
-                <ProjectContentRenderer
-                  html={addHeadingIds(displayPost.content)}
-                  className="prose prose-slate prose-lg max-w-none prose-headings:text-foreground prose-p:text-gray-800 prose-a:text-primary-600 prose-strong:text-foreground prose-code:text-primary-600"
-                  readOnly
-                />
-              </div>
+              <div
+                ref={contentRef}
+                className="prose prose-slate prose-lg max-w-none mb-12"
+                dangerouslySetInnerHTML={{ __html: addHeadingIds(displayPost.content) }}
+              />
 
               {/* Stats Bar with Action Buttons */}
               <div className="flex items-center justify-between py-5 border-y border-gray-200 mb-8">
@@ -1030,11 +1051,17 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                       {displayPost.stats.likes}
                     </span>
                   </div>
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <MessageCircle className="w-5 h-5" />
+                    <span className="text-base font-medium">
+                      {displayPost.stats.comments}
+                    </span>
+                  </div>
                 </div>
                 
                 <div className="flex items-center gap-3">
                   <button 
-                    onClick={() => { if (requireNotGuest(currentUser?.role, 'edit')) router.push(`/articles/${articleId}/edit`); }}
+                    onClick={() => router.push(`/articles/${articleId}/edit`)}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-white text-primary-600 rounded-lg hover:bg-primary-50 transition-colors font-medium text-sm border border-primary-500 cursor-pointer"
                   >
                     <Edit className="w-4 h-4" />
@@ -1046,6 +1073,10 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                   >
                     <Trash2 className="w-4 h-4" />
                     삭제
+                  </button>
+                  <button className="inline-flex items-center gap-2 px-4 py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm border border-gray-300 cursor-pointer">
+                    <Share2 className="w-4 h-4" />
+                    공유
                   </button>
                 </div>
               </div>
@@ -1088,11 +1119,24 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
               {/* Comments Section */}
               <div className="mb-8">
-              {/* 댓글 입력 - 로컬 state로 타이핑 시 화면 흔들림 방지 */}
-                <ArticleCommentForm
-                  onSubmit={handleCreateComment}
-                  disabled={isLoadingComments || isSubmittingComment}
-                />
+              {/* 댓글 입력 */}
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 mb-6">
+                  <textarea
+                    value={commentContent}
+                    onChange={(e) => setCommentContent(e.target.value)}
+                    placeholder="댓글을 입력하세요..."
+                    className="w-full min-h-[100px] p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-300 resize-none"
+                  />
+                  <div className="flex justify-end mt-3">
+                    <button
+                      onClick={handleCreateComment}
+                      disabled={!commentContent.trim() || isLoadingComments}
+                      className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      댓글 작성
+                    </button>
+                  </div>
+                </div>
 
                 <div className="flex items-center justify-between mb-6"> 
                   <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
@@ -1139,7 +1183,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                     아직 댓글이 없습니다. 첫 댓글을 작성해보세요!
                   </div>
                 ) : (
-                  <div className="divide-y divide-gray-200">
+                  <div className="space-y-4">
                     {displayedComments.map((comment) => {
                       const getDisplayName = (user?: { nickname?: string; realName?: string }): string => {
                         if (!user || (!user.nickname && !user.realName)) {
@@ -1152,119 +1196,173 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                       const initial = displayName.charAt(0).toUpperCase();
 
                       return (
-                        <div key={comment.id} className="flex gap-3 py-4 first:pt-0">
-                            <div className="flex-shrink-0">
-                              <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-200">
-                                {profileImageUrl ? (
-                                  <ImageWithFallback
-                                    src={profileImageUrl}
-                                    fallbackSrc="/images/placeholder/default-avatar.svg"
-                                    alt={displayName}
-                                    type="avatar"
-                                    width={36}
-                                    height={36}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-sm font-semibold text-gray-600">
-                                    {initial}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                                <span className="font-semibold text-gray-900">{displayName}</span>
-                                <span className="text-xs text-gray-500">
-                                  {new Date(comment.createdAt).toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                                {isCommentEdited(comment.createdAt, comment.updatedAt) && (
-                                  <span className="text-xs text-gray-500">(수정됨)</span>
-                                )}
-                              </div>
-                              {editingCommentId === comment.id ? (
-                                <div className="mt-1">
-                                  <textarea
-                                    value={editContent}
-                                    onChange={(e) => setEditContent(e.target.value)}
-                                    className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm"
-                                    rows={3}
-                                  />
-                                  <div className="flex gap-2 mt-2">
-                                    <button onClick={() => handleUpdateComment(comment.id)} className="text-sm text-blue-600 hover:text-blue-700 font-medium">저장</button>
-                                    <button onClick={() => { setEditingCommentId(null); setEditContent(''); }} className="text-sm text-gray-600 hover:text-gray-800">취소</button>
-                                  </div>
-                                </div>
+                        <div key={comment.id} className="bg-white rounded-lg p-4 border border-gray-200">
+                          <div className="flex items-start gap-3">
+                            <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                              {profileImageUrl ? (
+                                <ImageWithFallback
+                                  src={profileImageUrl}
+                                  fallbackSrc="/images/placeholder/default-avatar.svg"
+                                  alt={displayName}
+                                  type="avatar"
+                                  width={40}
+                                  height={40}
+                                  className="w-full h-full object-cover"
+                                />
                               ) : (
-                                <p className="text-gray-800 text-sm whitespace-pre-wrap mt-0.5">{decodeHtmlEntities(comment.content)}</p>
+                                <div className="w-full h-full flex items-center justify-center text-sm font-semibold text-gray-700">
+                                  {initial}
+                                </div>
                               )}
-                              <div className="flex items-center gap-3 mt-1">
-                                {editingCommentId !== comment.id && (
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-gray-900">{displayName}</span>
+                                <span className="text-xs text-gray-700">
+                                  {new Date(comment.createdAt).toLocaleDateString('ko-KR', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                  })}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {editingCommentId === comment.id ? (
                                   <>
                                     <button
-                                      onClick={() => setReplyingToId(replyingToId === comment.id ? null : comment.id)}
-                                      className="text-xs font-medium text-gray-600 hover:text-gray-900"
+                                      onClick={() => handleUpdateComment(comment.id)}
+                                      className="text-xs text-blue-600 hover:text-blue-700"
                                     >
-                                      답글
+                                      저장
                                     </button>
-                                    <button onClick={() => { setEditingCommentId(comment.id); setEditContent(decodeHtmlEntities(comment.content)); }} className="text-xs text-gray-600 hover:text-gray-800">수정</button>
-                                    <button onClick={() => handleDeleteComment(comment.id)} className="text-xs text-red-500 hover:text-red-700">삭제</button>
+                                    <button
+                                      onClick={() => {
+                                        setEditingCommentId(null);
+                                        setEditContent('');
+                                      }}
+                                      className="text-xs text-gray-700 hover:text-gray-800"
+                                    >
+                                      취소
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <button
+                                      onClick={() => {
+                                        setEditingCommentId(comment.id);
+                                        setEditContent(comment.content);
+                                      }}
+                                      className="text-xs text-gray-700 hover:text-gray-800"
+                                    >
+                                      수정
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteComment(comment.id)}
+                                      className="text-xs text-red-500 hover:text-red-700"
+                                    >
+                                      삭제
+                                    </button>
                                   </>
                                 )}
                               </div>
-                              {comment.replyCount > 0 && (
-                                <button
-                                  onClick={() => loadReplies(comment.id)}
-                                  className="mt-2 text-xs font-medium text-gray-600 hover:text-gray-900"
-                                >
-                                  {expandedReplies.has(comment.id) ? '답글 숨기기' : `답글 ${comment.replyCount}개`}
-                                </button>
-                              )}
-                              {replyingToId === comment.id && (
-                                <div className="mt-3 flex gap-2">
-                                  <textarea
-                                    value={replyContent}
-                                    onChange={(e) => setReplyContent(e.target.value)}
-                                    placeholder="답글을 입력하세요..."
-                                    className="flex-1 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm"
-                                    rows={2}
-                                  />
-                                  <div className="flex flex-col gap-1">
-                                    <button onClick={() => handleCreateReply(comment.id)} disabled={submittingReplyParentId !== null} className="px-3 py-1.5 bg-primary-600 text-white rounded-lg text-xs hover:bg-primary-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed">{submittingReplyParentId === comment.id ? '등록 중...' : '작성'}</button>
-                                    <button onClick={() => { setReplyingToId(null); setReplyContent(''); }} className="px-3 py-1 text-gray-600 hover:text-gray-800 text-xs">취소</button>
-                                  </div>
-                                </div>
-                              )}
-                              {expandedReplies.has(comment.id) && replies[comment.id] && (
-                                <div className="mt-4 ml-4 pl-4 border-l-2 border-gray-200 space-y-4">
-                                  {replies[comment.id].map((reply) => {
-                                    const replyDisplayName = reply.user ? getDisplayName(reply.user) : reply.username;
-                                    const replyProfileImageUrl = reply.user?.profileImageUrl;
-                                    const replyInitial = replyDisplayName.charAt(0).toUpperCase();
-                                    return (
-                                      <div key={reply.id} className="flex gap-3 rounded-2xl p-3 -mx-3 transition-shadow hover:shadow-[0_8px_28px_8px_rgba(0,0,0,0.18)]">
-                                        <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                                          {replyProfileImageUrl ? (
-                                            <ImageWithFallback src={replyProfileImageUrl} fallbackSrc="/images/placeholder/default-avatar.svg" alt={replyDisplayName} type="avatar" width={32} height={32} className="w-full h-full object-cover" />
-                                          ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-xs font-semibold text-gray-600">{replyInitial}</div>
-                                          )}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                          <div className="flex flex-wrap items-center gap-x-2 text-sm">
-                                            <span className="font-medium text-gray-900">{replyDisplayName}</span>
-                                            <span className="text-xs text-gray-500">{new Date(reply.createdAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                                            {isCommentEdited(reply.createdAt, reply.updatedAt) && <span className="text-xs text-gray-500">(수정됨)</span>}
-                                          </div>
-                                          <p className="text-gray-800 text-sm whitespace-pre-wrap mt-0.5">{decodeHtmlEntities(reply.content)}</p>
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              )}
                             </div>
+                            {editingCommentId === comment.id ? (
+                              <div className="space-y-2">
+                                <textarea
+                                  value={editContent}
+                                  onChange={(e) => setEditContent(e.target.value)}
+                                  className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                />
+                              </div>
+                            ) : (
+                              <p className="text-gray-700 text-sm whitespace-pre-wrap">{comment.content}</p>
+                            )}
+                            {comment.replyCount > 0 && (
+                              <button
+                                onClick={() => loadReplies(comment.id)}
+                                className="mt-2 text-xs text-primary-600 hover:text-primary-700"
+                              >
+                                {expandedReplies.has(comment.id) ? '답글 숨기기' : `답글 ${comment.replyCount}개 보기`}
+                              </button>
+                            )}
+                            {replyingToId === comment.id ? (
+                              <div className="mt-3 space-y-2">
+                                <textarea
+                                  value={replyContent}
+                                  onChange={(e) => setReplyContent(e.target.value)}
+                                  placeholder="답글을 입력하세요..."
+                                  className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm"
+                                />
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleCreateReply(comment.id)}
+                                    className="px-3 py-1 bg-primary-600 text-white rounded text-xs hover:bg-primary-700"
+                                  >
+                                    작성
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setReplyingToId(null);
+                                      setReplyContent('');
+                                    }}
+                                    className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300"
+                                  >
+                                    취소
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setReplyingToId(comment.id)}
+                                className="mt-2 text-xs text-primary-600 hover:text-primary-700"
+                              >
+                                답글 달기
+                              </button>
+                            )}
+                            {expandedReplies.has(comment.id) && replies[comment.id] && (
+                              <div className="mt-4 ml-4 space-y-3 border-l-2 border-gray-200 pl-4">
+                                {replies[comment.id].map((reply) => {
+                                  const replyDisplayName = reply.user ? getDisplayName(reply.user) : reply.username;
+                                  const replyProfileImageUrl = reply.user?.profileImageUrl;
+                                  const replyInitial = replyDisplayName.charAt(0).toUpperCase();
+
+                                  return (
+                                    <div key={reply.id} className="flex items-start gap-2">
+                                      <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                                        {replyProfileImageUrl ? (
+                                          <ImageWithFallback
+                                            src={replyProfileImageUrl}
+                                            fallbackSrc="/images/placeholder/default-avatar.svg"
+                                            alt={replyDisplayName}
+                                            type="avatar"
+                                            width={32}
+                                            height={32}
+                                            className="w-full h-full object-cover"
+                                          />
+                                        ) : (
+                                          <div className="w-full h-full flex items-center justify-center text-xs font-semibold text-gray-700">
+                                            {replyInitial}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <span className="font-medium text-gray-900 text-sm">{replyDisplayName}</span>
+                                        <span className="text-xs text-gray-700">
+                                          {new Date(reply.createdAt).toLocaleDateString('ko-KR')}
+                                        </span>
+                                      </div>
+                                      <p className="text-gray-700 text-sm">{reply.content}</p>
+                                    </div>
+                                  </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
+                        </div>
+                      </div>
                       );
                     })}
                     {hasNextComments && (
@@ -1322,7 +1420,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                 </div>
               )}
 
-              {/* 저자의 다른 글 */}
+              {/* More from Author */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                   <Code className="w-5 h-5 text-purple-600" />
@@ -1366,7 +1464,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                                 )}
                               </div>
                               <h4 className="text-sm font-bold text-gray-900 group-hover:text-purple-600 transition-colors mb-1.5 line-clamp-2 leading-snug">
-                                {decodeHtmlEntities(article.title)}
+                                {article.title}
                               </h4>
                               <div className="flex items-center gap-2 text-xs text-gray-700">
                                 <span className="font-medium">{article.author}</span>

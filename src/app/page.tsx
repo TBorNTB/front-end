@@ -277,21 +277,21 @@ export default function Home() {
   };
 
   // Article pagination
-  const visibleArticles = allArticles.slice(articleIndex, articleIndex + 3);
-  const canGoNextArticles = articleIndex + 3 < allArticles.length;
+  const visibleArticles = allArticles.slice(articleIndex, articleIndex + 4);
+  const canGoNextArticles = articleIndex + 4 < allArticles.length;
   const canGoPrevArticles = articleIndex > 0;
 
   const goNextArticles = () => {
-    const next = articleIndex + 3;
+    const next = articleIndex + 4;
     setArticleIndex(next < allArticles.length ? next : 0);
   };
 
   const goPrevArticles = () => {
-    const prev = articleIndex - 3;
+    const prev = articleIndex - 4;
     if (prev >= 0) {
       setArticleIndex(prev);
     } else {
-      const lastPage = Math.floor((allArticles.length - 1) / 3) * 3;
+      const lastPage = Math.floor((allArticles.length - 1) / 4) * 4;
       setArticleIndex(Math.max(0, lastPage));
     }
   };
@@ -346,9 +346,12 @@ export default function Home() {
                       최신의 보안 기술과 오픈소스를 활용한<br />
                       실무에 적용 가능한 솔루션입니다.
                     </p>
-                    <button className="btn btn-primary btn-lg">
-                      프로젝트 더보기
-                    </button>
+                    <Link href="/projects">
+                      <button className="btn btn-primary btn-lg">
+                        프로젝트 더보기
+                      </button>
+                    </Link>
+
                   </div>
 
                   {/* Right Side - Featured Project Card */}
@@ -449,8 +452,20 @@ export default function Home() {
         {/* Latest Articles Section */}
         <section className="section bg-background">
           <div className="container">
-            <h2 className="text-3xl font-bold text-gray-900 mb-8">Latest Articles</h2>
-            <p className="text-gray-700 mb-12">Stay informed with expert insights</p>
+            <div>
+                    <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                      LATEST ARTICLES
+                    </h2>
+                    <p className="text-gray-700 text-lg mb-4">
+                      정보보안과 소프트웨어 개발의 모든 지식과 경험을 한곳에서. 최신 글과 소식을 통해 늘 새로운 인사이트를 만나보세요.
+                    </p>
+                    <Link href="/articles">
+                      <button className="btn btn-primary btn-lg mb-6">
+                        CS지식 둘러보기
+                      </button>
+                    </Link>
+
+            </div>
             
             {articlesLoading ? (
               <div className="text-center py-12">
@@ -488,15 +503,15 @@ export default function Home() {
                   )}
                   
                   {/* Articles Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {visibleArticles.map((article) => (
-                      <ArticleCardHome key={article.id} article={article} />
-                    ))}
-                  </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                      {visibleArticles.map((article) => (
+                        <ArticleCardHome key={article.id} article={article} />
+                      ))}
+                    </div>
                 </div>
                 
                 {/* Page Indicator */}
-                {allArticles.length > 2 && (
+                {allArticles.length > 3 && (
                   <div className="mt-8 flex justify-center items-center gap-3">
                     <button
                       onClick={goPrevArticles}
@@ -512,12 +527,12 @@ export default function Home() {
                     </button>
                     
                     <div className="flex gap-2">
-                      {Array.from({ length: Math.ceil(allArticles.length / 3) }).map((_, index) => (
+                      {Array.from({ length: Math.ceil(allArticles.length / 4) }).map((_, index) => (
                         <button
                           key={index}
-                          onClick={() => setArticleIndex(index * 3)}
+                          onClick={() => setArticleIndex(index * 4)}
                           className={`h-2 rounded-full transition-all ${
-                            Math.floor(articleIndex / 3) === index
+                            Math.floor(articleIndex / 4) === index
                               ? 'bg-primary-500 w-8'
                               : 'bg-gray-300 hover:bg-gray-400 w-2'
                           }`}
