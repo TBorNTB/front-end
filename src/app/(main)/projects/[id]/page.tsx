@@ -1105,18 +1105,16 @@ export default function ProjectPage({ params }: ProjectPageProps) {
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-background">
         {/* Back Navigation */}
-        <div className="bg-white border-b border-gray-200">
-          <div className="container py-6">
+        <div className="bg-white border-b border-gray-200 shadow-sm">
+          <div className="container py-4">
             <Link
               href="/projects"
-              className="flex items-center gap-2 text-gray-800 hover:text-gray-900 transition-colors"
+              className="inline-flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors group"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              <span className="text-sm">프로젝트 목록</span>
+              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+              <span className="text-sm font-medium">목록으로 돌아가기</span>
             </Link>
           </div>
         </div>
@@ -1427,16 +1425,6 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </button>
-                    {currentUser && project && (project.author?.username === currentUser.username || (project.team || []).some((m: any) => m?.username === currentUser.username)) && (
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); openCollaboratorModal(); }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors"
-                      >
-                        <UserPlus className="w-4 h-4" />
-                        협력자 변경
-                      </button>
-                    )}
                   </div>
                   
                   {openSections.team && (
@@ -1472,15 +1460,27 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           </div>
                         </div>
                       ))}
-                      <CreateChatFromPostButton
-                        type="project"
-                        title={decodeHtmlEntities(project.title)}
-                        members={(project.team || [])
-                          .filter((m: any) => m && m.username)
-                          .map((m: any) => ({ username: m.username, displayName: m.name || m.username }))}
-                        chatRoomId={project.chatRoomId ?? undefined}
-                        className="pt-2 border-t border-gray-200"
-                      />
+                      <div className="pt-2 border-t border-gray-200 flex items-center gap-2">
+                        <CreateChatFromPostButton
+                          type="project"
+                          title={decodeHtmlEntities(project.title)}
+                          members={(project.team || [])
+                            .filter((m: any) => m && m.username)
+                            .map((m: any) => ({ username: m.username, displayName: m.name || m.username }))}
+                          chatRoomId={project.chatRoomId ?? undefined}
+                          className="flex-1"
+                        />
+                        {canEditProject && (
+                          <button
+                            type="button"
+                            onClick={openCollaboratorModal}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors whitespace-nowrap"
+                          >
+                            <UserPlus className="w-4 h-4" />
+                            협력자 변경
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
