@@ -836,49 +836,50 @@ export default function NewProjectForm() {
         </div>
 
         {/* Thumbnail Upload */}
-        <div className="bg-white space-y-6 ">
-        <h2 className="text-2xl font-semibold text-gray-900 border-l-4 border-primary-600 pl-3">썸네일 이미지</h2>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-             프로젝트 썸네일 이미지 
-        </label>
-        <div>
-          <div className="flex flex-col gap-4">
-            {/* Upload Button */}
-            <label className="cursor-pointer inline-block">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleThumbnailChange}
-              className="hidden"
-            />
-            <div className="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg border border-gray-300 w-auto">
-              <Upload className="w-4 h-4" />
-              <span>이미지 업로드</span>
-            </div>
-          </label>
+        <div className="bg-white space-y-4">
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <div className="w-1 h-8 bg-primary-600 rounded"></div>
+            썸네일 (선택)
+          </h2>
 
-            {/* Thumbnail Preview below button */}
-            {thumbnailPreview && (
-              <div className="relative w-full lg:w-9/12 h-96 mb-8 rounded-xl overflow-hidden bg-gray-100 border border-gray-300">
-                <Image
-                  src={thumbnailPreview}
-                  alt="Thumbnail preview"
-                  fill
-                  className="object-cover"
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-primary-400 transition-colors">
+            <div className="flex flex-col items-center gap-4">
+              {thumbnailPreview && (
+                <div className="relative w-full max-w-xs h-40 rounded-lg overflow-hidden border-2 border-white shadow-lg">
+                  <Image
+                    src={thumbnailPreview}
+                    alt="Thumbnail preview"
+                    fill
+                    className="object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemoveThumbnail}
+                    className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+
+              <label className="cursor-pointer flex flex-col items-center gap-2 w-full">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleThumbnailChange}
+                  className="hidden"
                 />
-                {/* X button to remove thumbnail */}
-                <button
-                  type="button"
-                  onClick={handleRemoveThumbnail}
-                  className="absolute top-2 right-2 bg-white/70 text-red-500 rounded-full p-2 hover:bg-white shadow-md"
-                >
-                  ✕
-                </button>
-              </div>
-            )}
+                <div className="flex items-center justify-center w-12 h-12 bg-primary-100 rounded-lg">
+                  <Upload className="w-6 h-6 text-primary-600" />
+                </div>
+                <div className="text-center">
+                  <p className="font-semibold text-gray-900">클릭하여 이미지 업로드</p>
+                  <p className="text-sm text-gray-700 mt-1">또는 드래그 앤 드롭</p>
+                </div>
+              </label>
+            </div>
           </div>
         </div>
-      </div>
 
         {/* Description */}
         <div className="bg-white space-y-4 border-b border-gray-200">
