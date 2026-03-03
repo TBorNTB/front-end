@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Users, Clock, ArrowRight, Shield, Code, Lock, Search, Wifi, Cpu, Key } from 'lucide-react';
+import { Users, Clock, ArrowRight, Shield } from 'lucide-react';
 import TitleBanner from '@/components/layout/TitleBanner';
 import CategoryFilter from '@/components/layout/CategoryFilter';
 import type { LucideIcon } from 'lucide-react';
@@ -11,28 +11,6 @@ import { categoryService, CategoryItem } from '@/lib/api/services/category-servi
 import { CategoryType, CategorySlugs, CategoryDisplayNames, CategoryDescriptions } from '@/types/services/category';
 import { decodeHtmlEntities } from '@/lib/html-utils';
 import { formatDateText } from '@/components/ui/date';
-
-// Icon mapping for each category
-const CategoryIcons: Record<CategoryType, LucideIcon> = {
-  [CategoryType.WEB_HACKING]: Code,
-  [CategoryType.REVERSING]: Search,
-  [CategoryType.SYSTEM_HACKING]: Lock,
-  [CategoryType.DIGITAL_FORENSICS]: Shield,
-  [CategoryType.NETWORK_SECURITY]: Wifi,
-  [CategoryType.IOT_SECURITY]: Cpu,
-  [CategoryType.CRYPTOGRAPHY]: Key,
-};
-
-// Color mapping for each category
-const CategoryColors: Record<CategoryType, string> = {
-  [CategoryType.WEB_HACKING]: 'bg-blue-500',
-  [CategoryType.REVERSING]: 'bg-purple-500',
-  [CategoryType.SYSTEM_HACKING]: 'bg-red-500',
-  [CategoryType.DIGITAL_FORENSICS]: 'bg-green-500',
-  [CategoryType.NETWORK_SECURITY]: 'bg-indigo-500',
-  [CategoryType.IOT_SECURITY]: 'bg-orange-500',
-  [CategoryType.CRYPTOGRAPHY]: 'bg-yellow-500',
-};
 
 // 카테고리 이름으로 CategoryType을 찾는 헬퍼 함수
 const getCategoryTypeByName = (name: string): CategoryType | null => {
@@ -61,6 +39,10 @@ interface CategoryDisplayData {
   type: CategoryType;
   description: string;
   content: string;
+}
+
+interface SearchTotalResponse {
+  totalElements?: number;
 }
 
 // 범용 slug 생성 함수 - 어떤 카테고리 이름이 와도 자동으로 처리
@@ -120,9 +102,49 @@ const transformCategoryData = (apiCategory: CategoryItem): CategoryDisplayData |
   };
 };
 
+const fetchCategoryProjectCount = async (categoryName: string): Promise<number> => {
+  try {
+    const projectParams = new URLSearchParams();
+    projectParams.append('categories', categoryName);
+    projectParams.append('size', '1');
+    projectParams.append('page', '0');
+    projectParams.append('projectSortType', 'LATEST');
+
+    const projectResponse = await fetch(`/api/projects/search?${projectParams.toString()}`);
+    if (!projectResponse.ok) {
+      return 0;
+    }
+
+    const projectData: SearchTotalResponse = await projectResponse.json();
+    return Number(projectData.totalElements ?? 0);
+  } catch {
+    return 0;
+  }
+};
+
+const fetchCategoryArticleCount = async (categoryName: string): Promise<number> => {
+  try {
+    const articleParams = new URLSearchParams();
+    articleParams.append('category', categoryName);
+    articleParams.append('size', '1');
+    articleParams.append('page', '0');
+    articleParams.append('sortType', 'LATEST');
+
+    const articleResponse = await fetch(`/api/articles/search?${articleParams.toString()}`);
+    if (!articleResponse.ok) {
+      return 0;
+    }
+
+    const articleData: SearchTotalResponse = await articleResponse.json();
+    return Number(articleData.totalElements ?? 0);
+  } catch {
+    return 0;
+  }
+};
+
 const getStatusColor = (status: string) => {
   switch (status) {
-    case 'Completed': return 'bg-green-100 text-green-700 border-green-300';
+    case 'Completed': return 'bg-secondary-100 text-green-700 border-green-300';
     case 'Planning': return 'bg-yellow-100 text-yellow-700 border-yellow-300';
     case 'In Progress': return 'bg-blue-100 text-blue-700 border-blue-300';
     default: return 'bg-gray-100 text-gray-700 border-gray-300';
@@ -174,7 +196,23 @@ export function LearningTopics() {
         const transformedCategories = response.categories
           .map(transformCategoryData)
           .filter((cat): cat is CategoryDisplayData => cat !== null);
-        setCategories(transformedCategories);
+
+        const categoriesWithCounts = await Promise.all(
+          transformedCategories.map(async (category) => {
+            const [projects, articles] = await Promise.all([
+              fetchCategoryProjectCount(category.name),
+              fetchCategoryArticleCount(category.name),
+            ]);
+
+            return {
+              ...category,
+              projects,
+              articles,
+            };
+          })
+        );
+
+        setCategories(categoriesWithCounts);
       } catch (err) {
         console.error('Failed to fetch categories:', err);
         setError('카테고리를 불러오는데 실패했습니다.');
@@ -281,9 +319,8 @@ export function LearningTopics() {
       {/* Categories Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {categories.map((category) => {
-          // 알 수 없는 카테고리도 기본 아이콘/색상 사용 (확장성 고려)
-          const IconComponent = CategoryIcons[category.type] || Shield;
-          const colorClass = CategoryColors[category.type] || 'bg-gray-500';
+          const IconComponent = Shield;
+          const colorClass = 'bg-primary';
           
           return (
             <div 
@@ -295,7 +332,7 @@ export function LearningTopics() {
                 <div className={`w-12 h-12 rounded-xl ${colorClass} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
                   <IconComponent className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground group-hover:text-primary-600 transition-colors">
+                <h3 className="text-xl font-bold text-primary group-hover:text-primary-800 transition-colors">
                   {category.name}
                 </h3>
               </div>
@@ -336,11 +373,8 @@ export function LearningTopics() {
               <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(58,77,161,0.1)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
             </div>
             <div className="relative z-10 flex items-start space-x-4">
-              <div className={`w-16 h-16 rounded-xl ${CategoryColors[cat.type]} flex items-center justify-center flex-shrink-0`}>
-                {(() => {
-                  const Icon = CategoryIcons[cat.type];
-                  return <Icon className="w-8 h-8 text-white" />;
-                })()}
+              <div className="w-16 h-16 rounded-xl bg-primary-600 flex items-center justify-center flex-shrink-0">
+                <Shield className="w-8 h-8 text-white" />
               </div>
               <div className="flex-1">
                 <h1 className="text-3xl font-bold text-white mb-2">{cat.name}</h1>
@@ -386,12 +420,12 @@ export function LearningTopics() {
                 selectedCategory={selectedCategory}
                 onCategoryChange={(slug) => {
                   if (slug === 'all') {
-                    router.push('/topics');
+                    router.replace('/topics');
                   } else {
                     router.push(`/topics?category=${slug}`);
                   }
                 }}
-                title="전체 카테고리"
+                title="카테고리"
               />
             </div>
           </div>
@@ -473,7 +507,7 @@ export function LearningTopics() {
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <h2 className="text-xl font-bold text-foreground">아티클</h2>
-                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+                    <span className="bg-secondary-100 text-secondary-700 px-3 py-1 rounded-full text-sm font-medium">
                       {filteredArticles.length}개
                     </span>
                   </div>
@@ -519,7 +553,7 @@ export function LearningTopics() {
                   <div className="text-center">
                     <button
                       onClick={() => router.push(`/articles?topic=${cat?.slug}`)}
-                      className="text-green-600 hover:text-green-700 font-medium flex items-center space-x-2 mx-auto text-sm transition-colors hover:underline"
+                      className="text-secondary-600 hover:text-secondary-700 font-medium flex items-center space-x-2 mx-auto text-sm transition-colors hover:underline"
                     >
                       <span>모든 CS지식 보기</span>
                       <ArrowRight size={16} />

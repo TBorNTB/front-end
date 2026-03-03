@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { categoryService, type CategoryItem } from '@/lib/api/services/category-services';
-import { CategoryType, CategorySlugs, CategoryDescriptions, CategoryHelpers } from '@/types/services/category';
+import { CategoryType, CategoryDescriptions, CategoryHelpers } from '@/types/services/category';
 
 type Project = {
   id: string;
@@ -61,10 +61,88 @@ interface LandingDataState {
   error: string | null;
 }
 
+interface SearchTotalResponse {
+  totalElements?: number;
+}
+
+const createSlugFromName = (name: string): string => {
+  const koreanToSlugMap: Record<string, string> = {
+    '웹 해킹': 'web-hacking',
+    '리버싱': 'reversing',
+    '시스템 해킹': 'system-hacking',
+    '디지털 포렌식': 'digital-forensics',
+    '네트워크 보안': 'network-security',
+    'IoT보안': 'iot-security',
+    '암호학': 'cryptography',
+  };
+
+  if (koreanToSlugMap[name]) {
+    return koreanToSlugMap[name];
+  }
+
+  if (/^[a-zA-Z0-9\s-]+$/.test(name)) {
+    return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  }
+
+  return name.toLowerCase().replace(/\s+/g, '-');
+};
+
+const fetchCategoryProjectCount = async (categoryName: string): Promise<number> => {
+  try {
+    const queryParams = new URLSearchParams();
+    queryParams.append('categories', categoryName);
+    queryParams.append('projectSortType', 'LATEST');
+    queryParams.append('size', '1');
+    queryParams.append('page', '0');
+
+    const response = await fetch(`/api/projects/search?${queryParams.toString()}`, {
+      method: 'GET',
+      headers: {
+        accept: 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      return 0;
+    }
+
+    const data: SearchTotalResponse = await response.json();
+    return Number(data.totalElements ?? 0);
+  } catch {
+    return 0;
+  }
+};
+
+const fetchCategoryArticleCount = async (categoryName: string): Promise<number> => {
+  try {
+    const queryParams = new URLSearchParams();
+    queryParams.append('category', categoryName);
+    queryParams.append('sortType', 'LATEST');
+    queryParams.append('size', '1');
+    queryParams.append('page', '0');
+
+    const response = await fetch(`/api/articles/search?${queryParams.toString()}`, {
+      method: 'GET',
+      headers: {
+        accept: 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      return 0;
+    }
+
+    const data: SearchTotalResponse = await response.json();
+    return Number(data.totalElements ?? 0);
+  } catch {
+    return 0;
+  }
+};
+
 const mapCategoriesToTopics = (categories: CategoryItem[]): LandingTopic[] => {
   return categories.map((cat) => {
     const type = CategoryHelpers.getTypeByDisplayName(cat.name) || CategoryType.WEB_HACKING;
-    const slug = CategorySlugs[type];
+    const slug = createSlugFromName(cat.name);
     return {
       id: `topic-${cat.id}`,
       name: cat.name,
@@ -168,19 +246,30 @@ const fetchLatestArticles = async (): Promise<Article[]> => {
 const fetchCategoriesForTopics = async (): Promise<LandingTopic[]> => {
   try {
     const response = await categoryService.getCategories();
-    return response.categories.map((cat) => {
-      const type = CategoryHelpers.getTypeByDisplayName(cat.name) || CategoryType.WEB_HACKING;
-      const slug = CategorySlugs[type];
-      return {
-        id: `topic-${cat.id}`,
-        name: cat.name,
-        slug,
-        description: cat.description || CategoryDescriptions[type],
-        type,
-        projectCount: 0,
-        articleCount: 0,
-      };
-    });
+
+    const topics = await Promise.all(
+      response.categories.map(async (cat) => {
+        const type = CategoryHelpers.getTypeByDisplayName(cat.name) || CategoryType.WEB_HACKING;
+        const slug = createSlugFromName(cat.name);
+
+        const [projectCount, articleCount] = await Promise.all([
+          fetchCategoryProjectCount(cat.name),
+          fetchCategoryArticleCount(cat.name),
+        ]);
+
+        return {
+          id: `topic-${cat.id}`,
+          name: cat.name,
+          slug,
+          description: cat.description || CategoryDescriptions[type],
+          type,
+          projectCount,
+          articleCount,
+        };
+      })
+    );
+
+    return topics;
   } catch (error) {
     console.error('Error fetching categories for topics:', error);
     return [];
