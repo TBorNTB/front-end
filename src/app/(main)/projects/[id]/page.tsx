@@ -33,6 +33,7 @@ import { isCommentEdited } from '@/lib/comment-utils';
 import { requireNotGuest } from '@/lib/role-utils';
 import { ProjectContentRenderer } from '@/components/project/ProjectContentRenderer';
 import { formatDateText } from '@/components/ui/date';
+import StatsActionBar from '@/components/layout/StatsActionBar';
 
 interface ProjectPageProps {
   params: Promise<{ id: string }>;
@@ -1944,9 +1945,10 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   )}
                 </section>
 
-                <section className="mb-8 border-t border-b border-gray-200 py-5">
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-center gap-5 text-sm text-gray-700">
+                <StatsActionBar
+                  statsClassName="gap-5"
+                  stats={
+                    <>
                       {project.stats?.views !== undefined && (
                         <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
                           <Eye className="w-3.5 h-3.5 text-gray-700" />
@@ -1965,10 +1967,11 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           <span>{project.stats.comments}</span>
                         </div>
                       )}
-                    </div>
-
-                    {canEditProject && (
-                      <div className="flex items-center gap-2">
+                    </>
+                  }
+                  actions={
+                    canEditProject ? (
+                      <>
                         <Link
                           href={`/projects/${projectId}/edit`}
                           onClick={(e) => { if (!requireNotGuest(currentUser?.role, 'edit')) e.preventDefault(); }}
@@ -1986,10 +1989,10 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           <Trash2 className="w-4 h-4" />
                           {isDeletingProject ? '삭제 중...' : '삭제'}
                         </button>
-                      </div>
-                    )}
-                  </div>
-                </section>
+                      </>
+                    ) : undefined
+                  }
+                />
 
                 {/* Like Button */}
                 <section className="mb-12 flex justify-center py-4">
@@ -2030,9 +2033,9 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                 {/* Comments Section */}
                 <section>
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-foreground">
+                    <h3 className="text-2xl font-bold text-foreground">
                       댓글 {comments.length > 0 && `(${comments.length}${hasNextComments ? '+' : ''})`}
-                    </h2>
+                    </h3>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setCommentSortDirection('DESC')}

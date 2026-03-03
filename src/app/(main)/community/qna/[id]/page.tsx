@@ -34,6 +34,7 @@ import { requireNotGuest } from '@/lib/role-utils';
 import { decodeHtmlEntities } from '@/lib/html-utils';
 import { isCommentEdited } from '@/lib/comment-utils';
 import { formatDateText } from '@/components/ui/date';
+import StatsActionBar from '@/components/layout/StatsActionBar';
 
 interface TechTag {
   id: string;
@@ -923,6 +924,27 @@ export default function QuestionDetailPage() {
               <div className="text-gray-700 whitespace-pre-wrap">{decodeHtmlEntities(question.content)}</div>
             )}
           </div>
+
+          <StatsActionBar
+            className="mb-4"
+            statsClassName="gap-6"
+            stats={
+              <>
+                <div className="flex items-center gap-2 text-gray-700">
+                  <Eye className="w-4 h-4" />
+                  <span className="text-sm font-medium">{question.views}</span>
+                </div>
+                <div className="flex items-center gap-2 text-gray-700">
+                  <ThumbsUp className="w-4 h-4" />
+                  <span className="text-sm font-medium">{question.upvotes}</span>
+                </div>
+                <div className="flex items-center gap-2 text-gray-700">
+                  <MessageSquare className="w-4 h-4" />
+                  <span className="text-sm font-medium">{question.comments.length}</span>
+                </div>
+              </>
+            }
+          />
 
           {/* Comments on Question */}
           <div className="border-t pt-4">

@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, useRef, Fragment } from 'react';
-import { ThumbsUp, Eye, Clock, ArrowLeft, Crown, Users, Calendar, Tag, ChevronDown, Edit, Trash2 } from 'lucide-react';
+import { ThumbsUp, Eye, Clock, ArrowLeft, Crown, Users, Calendar, Tag, ChevronDown, Edit, Trash2, MessageCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Menu, Transition } from '@headlessui/react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
@@ -31,6 +31,7 @@ import { requireNotGuest } from '@/lib/role-utils';
 import { DateDisplay, formatDateText } from '@/components/ui/date';
 import CreateChatFromPostButton from '@/app/(main)/_components/CreateChatFromPostButton';
 import { ProjectContentRenderer } from '@/components/project/ProjectContentRenderer';
+import StatsActionBar from '@/components/layout/StatsActionBar';
 
 interface NewsDetailPageProps {
   params: Promise<{ id: string }>;
@@ -820,40 +821,47 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                   </div>
                 </div>
 
-                {/* Stats Bar */}
-                <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
-                  <div className="flex items-center gap-8">
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <ThumbsUp className={`w-5 h-5 ${isLiked ? 'fill-secondary-500 text-secondary-500' : ''}`} />
-                      <span className="text-sm font-semibold">{likeCount}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <Eye className="w-5 h-5" />
-                      <span className="text-sm font-semibold">{viewCount.toLocaleString()}</span>
-                    </div>
-                  </div>
-                  
-                  {/* Edit/Delete Buttons - Only show for owner */}
-                  {isOwner && (
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={handleEdit}
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        <Edit className="w-4 h-4" />
-                        수정
-                      </button>
-                      <button
-                        onClick={handleDelete}
-                        disabled={isDeleting}
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        {isDeleting ? '삭제 중...' : '삭제'}
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <StatsActionBar
+                  className="mt-6"
+                  statsClassName="gap-8"
+                  stats={
+                    <>
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <ThumbsUp className={`w-5 h-5 ${isLiked ? 'fill-secondary-500 text-secondary-500' : ''}`} />
+                        <span className="text-sm font-semibold">{likeCount}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <Eye className="w-5 h-5" />
+                        <span className="text-sm font-semibold">{viewCount.toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <MessageCircle className="w-5 h-5" />
+                        <span className="text-sm font-semibold">{comments.length}</span>
+                      </div>
+                    </>
+                  }
+                  actions={
+                    isOwner ? (
+                      <>
+                        <button
+                          onClick={handleEdit}
+                          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          <Edit className="w-4 h-4" />
+                          수정
+                        </button>
+                        <button
+                          onClick={handleDelete}
+                          disabled={isDeleting}
+                          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          {isDeleting ? '삭제 중...' : '삭제'}
+                        </button>
+                      </>
+                    ) : undefined
+                  }
+                />
               </header>
 
               {/* Thumbnail Image */}
