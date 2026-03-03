@@ -6,6 +6,7 @@ import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { NewsCard } from './NewsCard';
 import ContentFilterBar from '@/components/layout/TopSection';
 import CategoryFilter from '@/components/layout/CategoryFilter';
+import { NEWS_CATEGORY_OPTIONS, toNewsCategoryEnum } from '@/lib/constants/news-categories';
 // News API Response Types
 interface NewsSearchParams {
   keyword?: string;
@@ -64,9 +65,9 @@ const fetchNews = async (params: NewsSearchParams): Promise<NewsSearchResponse> 
       queryParams.append('keyword', params.keyword.trim());
     }
     
-    // Category: only append if a specific category is selected
+    // Category: Elastic-service에는 enum으로 전달 (UNITED_SEMINAR 등)
     if (params.category && params.category !== 'all') {
-      queryParams.append('category', params.category);
+      queryParams.append('category', toNewsCategoryEnum(params.category));
     }
     
     // Sort type: default to LATEST
@@ -155,36 +156,10 @@ const convertSortToApiType = (sortBy: string): string => {
   }
 };
 
-// News 카테고리 정의
-export enum NewsCategoryType {
-  MT = 'MT',
-  OT = 'OT',
-  STUDY = 'STUDY',
-  SEMINAR = 'SEMINAR',
-  UNITED_SEMINAR = 'UNITED_SEMINAR',
-  CONFERENCE = 'CONFERENCE',
-  CTF = 'CTF'
-}
-
-export const NewsCategoryDisplayNames: Record<NewsCategoryType, string> = {
-  [NewsCategoryType.MT]: 'MT',
-  [NewsCategoryType.OT]: 'OT',
-  [NewsCategoryType.STUDY]: '스터디',
-  [NewsCategoryType.SEMINAR]: '세미나',
-  [NewsCategoryType.UNITED_SEMINAR]: '연합 세미나',
-  [NewsCategoryType.CONFERENCE]: '컨퍼런스',
-  [NewsCategoryType.CTF]: 'CTF'
-};
-
+// API 검색 시 value(한글 description)를 그대로 전송
 const newsCategories = [
   { name: '전체', value: 'all' },
-  { name: 'MT', value: NewsCategoryType.MT },
-  { name: 'OT', value: NewsCategoryType.OT },
-  { name: '스터디', value: NewsCategoryType.STUDY },
-  { name: '세미나', value: NewsCategoryType.SEMINAR },
-  { name: '연합 세미나', value: NewsCategoryType.UNITED_SEMINAR },
-  { name: '컨퍼런스', value: NewsCategoryType.CONFERENCE },
-  { name: 'CTF', value: NewsCategoryType.CTF },
+  ...NEWS_CATEGORY_OPTIONS.map(({ label, value }) => ({ name: label, value })),
 ];
 
 // 목 데이터 (예시용)
@@ -195,7 +170,7 @@ const mockNewsData: NewsItem[] = [
       title: '2025년 신입생 OT 개최 안내',
       summary: '세종대학교 정보보안 동아리 SSG의 2025년 신입생 오리엔테이션이 개최됩니다.',
       content: '세종대학교 정보보안 동아리 SSG의 2025년 신입생 오리엔테이션이 개최됩니다. 많은 참여 부탁드립니다.',
-      category: NewsCategoryType.OT
+      category: 'OT'
     },
     thumbnailUrl: undefined,
     tags: ['OT', '신입생', '안내'],
@@ -215,7 +190,7 @@ const mockNewsData: NewsItem[] = [
       title: '웹 해킹 스터디 3기 모집',
       summary: '웹 해킹 기초부터 실전까지 함께 공부하는 스터디를 모집합니다.',
       content: '웹 해킹 기초부터 실전까지 함께 공부하는 스터디를 모집합니다. 매주 화요일 오후 7시에 진행됩니다.',
-      category: NewsCategoryType.STUDY
+      category: '스터디'
     },
     thumbnailUrl: undefined,
     tags: ['스터디', '웹해킹', '모집'],
@@ -235,7 +210,7 @@ const mockNewsData: NewsItem[] = [
       title: '리버싱 세미나 개최',
       summary: 'IDA Pro를 활용한 리버싱 기초 세미나가 개최됩니다.',
       content: 'IDA Pro를 활용한 리버싱 기초 세미나가 개최됩니다. 실습 위주로 진행되니 노트북을 지참해주세요.',
-      category: NewsCategoryType.SEMINAR
+      category: '세미나'
     },
     thumbnailUrl: undefined,
     tags: ['세미나', '리버싱', 'IDA Pro'],
@@ -255,7 +230,7 @@ const mockNewsData: NewsItem[] = [
       title: '2025년 MT 일정 안내',
       summary: '2025년도 MT(Membership Training) 일정을 안내드립니다.',
       content: '2025년도 MT(Membership Training) 일정을 안내드립니다. 많은 참여 부탁드립니다.',
-      category: NewsCategoryType.MT
+      category: 'MT'
     },
     thumbnailUrl: undefined,
     tags: ['MT', '일정', '안내'],
@@ -275,7 +250,7 @@ const mockNewsData: NewsItem[] = [
       title: '연합 세미나: 사이버 보안 트렌드',
       summary: '다른 대학 동아리와 함께하는 연합 세미나가 개최됩니다.',
       content: '다른 대학 동아리와 함께하는 연합 세미나가 개최됩니다. 최신 사이버 보안 트렌드에 대해 논의합니다.',
-      category: NewsCategoryType.UNITED_SEMINAR
+      category: '연합 세미나'
     },
     thumbnailUrl: undefined,
     tags: ['연합세미나', '보안트렌드'],
@@ -295,7 +270,7 @@ const mockNewsData: NewsItem[] = [
       title: 'DEF CON Korea 컨퍼런스 참가',
       summary: 'SSG 동아리원들이 DEF CON Korea 컨퍼런스에 참가합니다.',
       content: 'SSG 동아리원들이 DEF CON Korea 컨퍼런스에 참가합니다. 많은 관심 부탁드립니다.',
-      category: NewsCategoryType.CONFERENCE
+      category: '컨퍼런스'
     },
     thumbnailUrl: undefined,
     tags: ['컨퍼런스', 'DEF CON'],
@@ -315,7 +290,7 @@ const mockNewsData: NewsItem[] = [
       title: 'CTF 대회 준비 스터디',
       summary: 'CTF 대회 준비를 위한 스터디가 시작됩니다.',
       content: 'CTF 대회 준비를 위한 스터디가 시작됩니다. Pwn, Web, Crypto 등 다양한 분야를 다룹니다.',
-      category: NewsCategoryType.CTF
+      category: 'CTF'
     },
     thumbnailUrl: undefined,
     tags: ['CTF', '대회', '스터디'],
@@ -335,7 +310,7 @@ const mockNewsData: NewsItem[] = [
       title: '시스템 해킹 스터디 모집',
       summary: '시스템 해킹 심화 스터디를 모집합니다.',
       content: '시스템 해킹 심화 스터디를 모집합니다. Buffer Overflow, ROP 등 고급 기법을 다룹니다.',
-      category: NewsCategoryType.STUDY
+      category: '스터디'
     },
     thumbnailUrl: undefined,
     tags: ['스터디', '시스템해킹'],

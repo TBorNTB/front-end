@@ -15,6 +15,7 @@ import { createNews } from '@/lib/api/services/news-services';
 import { memberService, CursorUserResponse } from '@/lib/api/services/user-services';
 import { s3Service } from '@/lib/api/services/s3-services';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { NEWS_CATEGORY_OPTIONS } from '@/lib/constants/news-categories';
 
 interface FormData {
   title: string;
@@ -29,16 +30,8 @@ interface FormErrors {
   [key: string]: string;
 }
 
-// 백엔드 enum과 동일: MT, OT, STUDY, SEMINAR, UNITED_SEMINAR, CONFERENCE, CTF
-const NEWS_CATEGORIES: { label: string; value: string }[] = [
-  { label: 'MT', value: 'MT' },
-  { label: 'OT', value: 'OT' },
-  { label: '스터디', value: 'STUDY' },
-  { label: '세미나', value: 'SEMINAR' },
-  { label: '연합 세미나', value: 'UNITED_SEMINAR' },
-  { label: '컨퍼런스', value: 'CONFERENCE' },
-  { label: 'CTF', value: 'CTF' },
-];
+// API 요청 시 value(한글 description)를 그대로 전송
+const NEWS_CATEGORIES = NEWS_CATEGORY_OPTIONS;
 
 export default function NewNewsForm() {
   const router = useRouter();

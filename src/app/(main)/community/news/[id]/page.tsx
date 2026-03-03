@@ -25,6 +25,7 @@ import {
 import { deleteNews } from '@/lib/api/services/news-services';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { decodeHtmlEntities } from '@/lib/html-utils';
+import { toNewsCategoryEnum } from '@/lib/constants/news-categories';
 import { isCommentEdited } from '@/lib/comment-utils';
 import CreateChatFromPostButton from '@/app/(main)/_components/CreateChatFromPostButton';
 import { ProjectContentRenderer } from '@/components/project/ProjectContentRenderer';
@@ -273,9 +274,9 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
         // 댓글 로드
         await loadComments(newsId, 'DESC', true);
         
-        // 관련 뉴스 로드 (같은 카테고리, 현재 뉴스 제외, 최신순 3개)
+        // 관련 뉴스 로드 (같은 카테고리, 현재 뉴스 제외, 최신순 3개) — Elastic 검색에는 enum 전달
         if (data.category) {
-          await loadRelatedNews(data.category, data.id);
+          await loadRelatedNews(toNewsCategoryEnum(data.category) || data.category, data.id);
         }
       } catch (err) {
         console.error('Error fetching news:', err);

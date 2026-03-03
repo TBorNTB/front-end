@@ -5,6 +5,7 @@ import { ChevronDown, Search, Trash2 } from "lucide-react";
 import ConfirmDeleteDialog from "./ConfirmDeleteDialog";
 import { deleteNews } from "@/lib/api/services/news-services";
 import toast from "react-hot-toast";
+import { NEWS_CATEGORY_OPTIONS, toNewsCategoryEnum } from "@/lib/constants/news-categories";
 
 type ApiNewsItem = {
   id: number;
@@ -46,15 +47,10 @@ type NewsRow = {
 
 const PAGE_SIZE = 20;
 
+// API 검색 시 value(한글 description) 전송
 const categories = [
   { label: "전체", value: "all" },
-  { label: "MT", value: "MT" },
-  { label: "OT", value: "OT" },
-  { label: "STUDY", value: "STUDY" },
-  { label: "SEMINAR", value: "SEMINAR" },
-  { label: "UNITED_SEMINAR", value: "UNITED_SEMINAR" },
-  { label: "CONFERENCE", value: "CONFERENCE" },
-  { label: "CTF", value: "CTF" },
+  ...NEWS_CATEGORY_OPTIONS.map(({ label, value }) => ({ label, value })),
 ];
 
 const sortOptions = ["최신순", "인기순"] as const;
@@ -120,9 +116,9 @@ export default function NewsManagement() {
     const q = searchQuery.trim();
     if (q) params.append("keyword", q);
 
-    // 전체가 아닐 때만 카테고리 전달 (전체일 때는 미전달 → 백엔드에서 전체 뉴스 조회, 프로젝트/CS 관리와 동일)
+    // Elastic-service에는 카테고리를 enum으로 전달 (UNITED_SEMINAR 등)
     if (selectedCategory !== "all") {
-      params.append("category", selectedCategory);
+      params.append("category", toNewsCategoryEnum(selectedCategory));
     }
     params.append("postSortType", sortToApi(sortBy));
     params.append("size", String(PAGE_SIZE));
