@@ -20,7 +20,7 @@ interface ArticleCardHomeProps {
     thumbnailImage: string;
     likes: number;
     views: number;
-    comments: number;
+    comments?: number;
     tags?: string[];
     createdAt?: string;
   };
