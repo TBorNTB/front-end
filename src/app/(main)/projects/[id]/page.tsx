@@ -19,7 +19,7 @@ import {
   updateComment
 } from '@/lib/api/services/user-services';
 import { Menu, Transition } from '@headlessui/react';
-import { ArrowLeft, Eye, Pencil, Plus, Search, ThumbsUp, Trash2, UserPlus, X } from 'lucide-react';
+import { ArrowLeft, Clock, Crown, Eye, MessageCircle, Pencil, Plus, Search, ThumbsUp, Trash2, UserPlus, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -680,12 +680,23 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     setEditingCategories([]);
   };
   const toggleEditingCategory = (name: string) => {
-    setEditingCategories(prev =>
-      prev.includes(name) ? prev.filter(c => c !== name) : [...prev, name]
-    );
+    setEditingCategories(prev => {
+      if (prev.includes(name)) {
+        return prev.filter(c => c !== name);
+      }
+      if (prev.length >= 3) {
+        toast.error('카테고리는 최대 3개까지 선택할 수 있습니다.');
+        return prev;
+      }
+      return [...prev, name];
+    });
   };
   const saveCategoryEdit = async () => {
     if (!projectId || !project) return;
+    if (editingCategories.length > 3) {
+      toast.error('카테고리는 최대 3개까지 선택할 수 있습니다.');
+      return;
+    }
     try {
       setIsSavingCategories(true);
       await updateProjectCategories(projectId, editingCategories);
@@ -1103,6 +1114,17 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     return formatDateText(dateString, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
   };
 
+  const readTime = Math.max(
+    1,
+    Math.ceil(
+      decodeHtmlEntities(project.content || '')
+        .replace(/<[^>]*>/g, ' ')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean).length / 200
+    )
+  );
+
   return (
     <>
       <div className="min-h-screen bg-background">
@@ -1116,7 +1138,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
               {/* Back Navigation */}
                 <Link
                   href="/community"
-                  className="inline-flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors group"
+                  className="mt-4 inline-flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors group"
                 >
                   <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                   <span className="text-sm font-medium">목록으로 돌아가기</span>
@@ -1182,6 +1204,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                     <input
                                       type="checkbox"
                                       checked={editingCategories.includes(cat.name)}
+                                      disabled={!editingCategories.includes(cat.name) && editingCategories.length >= 3}
                                       onChange={() => toggleEditingCategory(cat.name)}
                                       className="w-3 h-3 text-primary-600 border-gray-300 rounded"
                                     />
@@ -1190,6 +1213,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                 ))
                               )}
                             </div>
+                            <p className="text-[11px] text-gray-500">최대 3개까지 선택할 수 있습니다.</p>
                             <div className="flex gap-1">
                               <button type="button" onClick={saveCategoryEdit} disabled={isSavingCategories} className="flex-1 py-1 text-xs text-white bg-primary-500 hover:bg-primary-600 rounded disabled:opacity-50">
                                 {isSavingCategories ? '저장 중...' : '저장'}
@@ -1430,21 +1454,30 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                         .filter((member: any) => member && member.name)
                         .map((member: any, idx: number) => (
                         <div key={member.username ?? idx} className="flex items-center gap-3">
-                          <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                            {member.avatar ? (
-                              <ImageWithFallback
-                                src={member.avatar}
-                                fallbackSrc="/images/placeholder/default-avatar.svg"
-                                alt={member.name || 'Member'}
-                                type="avatar"
-                                width={40}
-                                height={40}
-                                className="w-full h-full object-cover"
+                          <div className="relative w-10 h-10 flex-shrink-0">
+                            <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200">
+                              {member.avatar ? (
+                                <ImageWithFallback
+                                  src={member.avatar}
+                                  fallbackSrc="/images/placeholder/default-avatar.svg"
+                                  alt={member.name || 'Member'}
+                                  type="avatar"
+                                  width={40}
+                                  height={40}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-800">
+                                  {(member.name || 'U').charAt(0).toUpperCase()}
+                                </div>
+                              )}
+                            </div>
+                            {member.role === 'Owner' && (
+                              <Crown
+                                size={12}
+                                className="absolute -top-1 right-0 text-yellow-500 fill-yellow-500 drop-shadow"
+                                style={{ rotate: '20deg' }}
                               />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-800">
-                                {(member.name || 'U').charAt(0).toUpperCase()}
-                              </div>
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -1509,21 +1542,30 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           <div className="space-y-2">
                             {editingTeam.filter((m: any) => m && m.name).map((member: any, idx: number) => (
                               <div key={member.username ?? idx} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50">
-                                <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                                  {member.avatar ? (
-                                    <ImageWithFallback
-                                      src={member.avatar}
-                                      fallbackSrc="/images/placeholder/default-avatar.svg"
-                                      alt={member.name}
-                                      type="avatar"
-                                      width={36}
-                                      height={36}
-                                      className="w-full h-full object-cover"
+                                <div className="relative w-9 h-9 flex-shrink-0">
+                                  <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-200">
+                                    {member.avatar ? (
+                                      <ImageWithFallback
+                                        src={member.avatar}
+                                        fallbackSrc="/images/placeholder/default-avatar.svg"
+                                        alt={member.name}
+                                        type="avatar"
+                                        width={36}
+                                        height={36}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-800">
+                                        {(member.name || 'U').charAt(0).toUpperCase()}
+                                      </div>
+                                    )}
+                                  </div>
+                                  {member.role === 'Owner' && (
+                                    <Crown
+                                      size={11}
+                                      className="absolute -top-1 right-0 text-yellow-500 fill-yellow-500 drop-shadow"
+                                      style={{ rotate: '20deg' }}
                                     />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-800">
-                                      {(member.name || 'U').charAt(0).toUpperCase()}
-                                    </div>
                                   )}
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -1800,15 +1842,25 @@ export default function ProjectPage({ params }: ProjectPageProps) {
             {/* Main Content */}
             <main className="lg:col-span-9">
               <div className="card">
-                {/* Project Header */}
+                              {/* Project Header */}
                 <header className="mb-8">
-                  <h1 className="text-4xl font-bold text-foreground mb-3">
-                    {decodeHtmlEntities(project.title)}
-                  </h1>
+                  {(project.tags || []).length > 0 && (
+                    <div className="mb-3 flex flex-wrap gap-2">
+                      {(project.tags || []).slice(0, 3).map((tag, idx) => (
+                        <span key={`${tag}-${idx}`} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-secondary-100 text-secondary-700">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                    <h1 className="text-4xl font-bold text-foreground">
+                      {decodeHtmlEntities(project.title)}
+                    </h1>
+                  </div>
 
-                  {/* Author & Stats */}
-                  <div className="flex flex-wrap items-center gap-6 text-sm text-gray-800">
-                    <div className="flex items-center gap-2">
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200">
                         {project.author?.avatar ? (
                           <ImageWithFallback
@@ -1826,41 +1878,20 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           </div>
                         )}
                       </div>
-                      <span className="font-medium">{project.author?.name || 'Unknown'}</span>
+
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-gray-900 truncate">{project.author?.name || 'Unknown'}</span>
+                          <Crown className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                        </div>
+                        <div className="mt-0.5 flex items-center gap-1.5 text-sm text-gray-700">
+                          <span>{project.createdAt}</span>
+                          <span className="text-gray-500">·</span>
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>{readTime}분</span>
+                        </div>
+                      </div>
                     </div>
-                    {project.stats?.views !== undefined && (
-                      <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
-                        <Eye className="w-3.5 h-3.5 text-gray-700" />
-                        <span className="text-gray-700">{project.stats.views}</span>
-                      </div>
-                    )}
-                    {project.stats?.likes !== undefined && (
-                      <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
-                        <ThumbsUp className="w-3.5 h-3.5 text-secondary-500 fill-secondary-500" />
-                        <span className="text-gray-700">{project.stats.likes}</span>
-                      </div>
-                    )}
-                    {canEditProject && (
-                      <div className="flex items-center gap-2 ml-auto">
-                        <Link
-                          href={`/projects/${projectId}/edit`}
-                          onClick={(e) => { if (!requireNotGuest(currentUser?.role, 'edit')) e.preventDefault(); }}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors"
-                        >
-                          <Pencil className="w-4 h-4" />
-                          수정
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={handleDeleteProject}
-                          disabled={isDeletingProject}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          {isDeletingProject ? '삭제 중...' : '삭제'}
-                        </button>
-                      </div>
-                    )}
                   </div>
                 </header>
 
@@ -1900,16 +1931,65 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                 )}
 
                 {/* Content */}
-                {project.content && (
-                  <section className="mb-12">
-                    <h2 className="text-2xl font-bold text-foreground mb-4">상세 내용</h2>
+                <section className="mb-12">
+                  <h2 className="text-2xl font-bold text-foreground mb-4">상세 내용</h2>
+                  {project.content ? (
                     <ProjectContentRenderer
                       html={project.content}
                       className="prose prose-lg max-w-none prose-headings:text-foreground prose-p:text-gray-800 prose-a:text-primary-600 prose-strong:text-foreground prose-code:text-primary-600"
                       readOnly
                     />
-                  </section>
-                )}
+                  ) : (
+                    <p className="text-gray-500">등록된 냉용이 없습니다</p>
+                  )}
+                </section>
+
+                <section className="mb-8 border-t border-b border-gray-200 py-5">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-5 text-sm text-gray-700">
+                      {project.stats?.views !== undefined && (
+                        <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
+                          <Eye className="w-3.5 h-3.5 text-gray-700" />
+                          <span>{project.stats.views}</span>
+                        </div>
+                      )}
+                      {project.stats?.likes !== undefined && (
+                        <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
+                          <ThumbsUp className="w-3.5 h-3.5 text-gray-700" />
+                          <span>{project.stats.likes}</span>
+                        </div>
+                      )}
+                      {project.stats?.comments !== undefined && (
+                        <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
+                          <MessageCircle className="w-3.5 h-3.5 text-gray-700" />
+                          <span>{project.stats.comments}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {canEditProject && (
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/projects/${projectId}/edit`}
+                          onClick={(e) => { if (!requireNotGuest(currentUser?.role, 'edit')) e.preventDefault(); }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors border border-primary-300"
+                        >
+                          <Pencil className="w-4 h-4" />
+                          수정
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={handleDeleteProject}
+                          disabled={isDeletingProject}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 border border-red-300"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          {isDeletingProject ? '삭제 중...' : '삭제'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </section>
 
                 {/* Like Button */}
                 <section className="mb-12 flex justify-center py-4">

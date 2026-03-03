@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Calendar, Eye, ThumbsUp, User, Crown, Users } from 'lucide-react';
+import { Calendar, Eye, ThumbsUp, User, Crown, Users, MessageCircle } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { formatDateText } from '@/components/ui/date';
 import { decodeHtmlEntities } from '@/lib/html-utils';
@@ -31,6 +31,7 @@ interface NewsItem {
   updatedAt: string;
   likeCount: number;
   viewCount: number;
+  commentsCount: number;
   category?: string;
 }
 
@@ -49,74 +50,69 @@ const AvatarStack = ({
   participants: { username: string; nickname: string; realname: string; avatar: string }[];
   maxVisible?: number;
 }) => {
-  const visibleParticipants = participants.slice(0, maxVisible);
-  const remainingCount = participants.length - maxVisible;
+  const owner = writer;
+  const collaborators = participants;
+  const visibleContributors = collaborators.slice(0, maxVisible);
+  const remainingCount = collaborators.length - maxVisible;
+  const ownerName = owner?.nickname || owner?.realname || owner?.username || 'Unknown';
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 flex items-center justify-between">
       {/* Owner Section */}
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1.5">
-          <Crown size={14} className="text-yellow-500" />
-          <span className="text-xs font-medium text-gray-700">소유자</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div 
-            className="relative inline-block"
-            title={writer.nickname}
-          >
-            <Image
-              src={writer.avatar}
-              alt={writer.nickname}
-              width={28}
-              height={28}
-              className="w-7 h-7 rounded-full border-2 border-yellow-400 bg-gray-200 hover:z-10 relative shadow-sm"
+      {owner && (
+        <div className="flex items-center gap-2 relative">
+          <div className="relative inline-block" title={ownerName}>
+            <ImageWithFallback
+              src={owner.avatar || ''}
+              fallbackSrc="/images/placeholder/default-avatar.svg"
+              alt={ownerName}
+              width={24}
+              height={24}
+              className="w-6 h-6 rounded-full border-2 border-yellow-400 bg-gray-200 shadow-sm"
+            />
+            <Crown
+              size={12}
+              className="absolute -top-1.5 right-0.5 text-yellow-500 fill-yellow-500 drop-shadow transform"
+              style={{ rotate: '20deg' }}
             />
           </div>
-          <span 
-            className="text-xs text-gray-700 font-medium"
-            title={writer.nickname}
-          >
-            {writer.nickname}
+          <span className="text-xs text-gray-700 font-medium" title={ownerName}>
+            {ownerName}
           </span>
         </div>
-      </div>
+      )}
 
-      {/* Participants Section */}
-      {participants.length > 0 && (
+      {/* Collaborators Section */}
+      {collaborators.length > 0 && (
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5">
-            <Users size={14} className="text-blue-500" />
-            <span className="text-xs font-medium text-gray-700">협력자</span>
-          </div>
+          <Users size={14} className="text-secondary-500" />
           <div className="flex items-center gap-1.5">
             <div className="flex -space-x-2">
-              {visibleParticipants.map((participant, index) => (
-                <div 
-                  key={participant.username || index} 
-                  className="relative inline-block"
-                  title={participant.nickname}
-                >
-                  <Image
-                    src={participant.avatar}
-                    alt={participant.nickname}
+              {visibleContributors.map((contributor, index) => (
+                <div key={index} className="relative inline-block">
+                  <ImageWithFallback
+                    src={contributor.avatar || ''}
+                    fallbackSrc="/images/placeholder/default-avatar.svg"
+                    alt="Collaborator"
                     width={24}
                     height={24}
-                    className="w-6 h-6 rounded-full border-2 border-white bg-gray-200 hover:z-10 relative"
+                    className="w-6 h-6 rounded-full border-2 border-white bg-gray-200"
                   />
                 </div>
               ))}
               {remainingCount > 0 && (
                 <div
                   className="w-6 h-6 rounded-full border-2 border-white bg-gray-300 flex items-center justify-center relative"
-                  title={`+${remainingCount} more participants`}
+                  title={`+${remainingCount} more contributors`}
                 >
-                  <span className="text-xs font-medium text-gray-700">+{remainingCount}</span>
+                  <span className="text-xs font-medium text-gray-700">
+                    +{remainingCount}
+                  </span>
                 </div>
               )}
             </div>
             <span className="text-xs text-gray-700">
-              {participants.length}명
+              {collaborators.length}명
             </span>
           </div>
         </div>
@@ -199,6 +195,10 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
                 <ThumbsUp className="h-3.5 w-3.5" />
                 <span>{news.likeCount || 0}</span>
               </div>
+              <div className="flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 text-gray-700" />
+                <span className="font-medium text-gray-700">{news.commentsCount || 0}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -273,6 +273,10 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
             <div className="flex items-center gap-1">
               <ThumbsUp className="h-3.5 w-3.5" />
               <span>{news.likeCount || 0}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <MessageCircle className="w-4 h-4 text-gray-700" />
+              <span className="font-medium text-gray-700">{news.commentsCount || 0}</span>
             </div>
           </div>
         </div>

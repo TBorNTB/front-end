@@ -523,7 +523,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
               {/* Back Navigation */}
               <Link
                 href="/community"
-                className="inline-flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors group"
+                className="mt-4 inline-flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors group"
               >
                 <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                 <span className="text-sm font-medium">목록으로 돌아가기</span>
