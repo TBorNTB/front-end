@@ -67,11 +67,17 @@ const Footer = () => {
                       ssg@sejong.ac.kr
                     </a>
                   </div>
+                  <div className="flex items-center space-x-1">
+                    <Mail className="h-4 w-4 text-blue-400" />
+                    <a href="mailto:sejong.info.hub@gmail.com" className="hover:text-blue-400 transition-colors duration-200">
+                      sejong.info.hub@gmail.com
+                    </a>
+                  </div>
                   <div className="flex space-x-4 pt-2">
                     <a href="#" className="text-gray-700 hover:text-blue-400 transition duration-200 hover:scale-110">
                       <Github className="h-5 w-5" />
                     </a>
-                    <a href="#" className="text-gray-700 hover:text-blue-400 transition duration-200 hover:scale-110">
+                    <a href="https://www.instagram.com/ssg_sejong/" className="text-gray-700 hover:text-blue-400 transition duration-200 hover:scale-110">
                       <Instagram className="h-5 w-5" />
                     </a>
                     <a href="#" className="text-gray-700 hover:text-blue-400 transition duration-200 hover:scale-110">

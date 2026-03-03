@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ThumbsUp, Eye, Crown, Users } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { decodeHtmlEntities } from '@/lib/html-utils';
+import { getProjectStatusKorean, getProjectStatusColor } from '@/types/services/project';
 
 interface ProjectCardHomeProps {
   project: {
@@ -25,15 +26,6 @@ interface ProjectCardHomeProps {
     thumbnailUrl?: string;
   };
 }
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case '완료': return 'bg-green-100 text-green-700 border-green-300';
-    case '계획중': return 'bg-yellow-100 text-yellow-700 border-yellow-300';
-    case '진행중': return 'bg-blue-100 text-blue-700 border-blue-300';
-    default: return 'bg-gray-100 text-gray-700 border-gray-300';
-  }
-};
 
 // Avatar Stack Component
 const AvatarStack = ({
@@ -146,8 +138,8 @@ export function ProjectCardHome({ project }: ProjectCardHomeProps) {
             </span>
           </div>
           <div className="absolute top-3 right-3">
-            <span className={`px-2 py-1 rounded-full text-xs border ${getStatusColor(project.status)}`}>
-              {decodeHtmlEntities(project.status)}
+            <span className={`px-2 py-1 rounded-full text-xs border font-semibold ${getProjectStatusColor(project.status)}`}>
+              {getProjectStatusKorean(project.status)}
             </span>
           </div>
         </div>

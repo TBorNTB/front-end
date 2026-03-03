@@ -8,6 +8,7 @@ import TitleBanner from '@/components/layout/TitleBanner';
 import ContentFilterBar from '@/components/layout/TopSection';
 import CategoryFilter from '@/components/layout/CategoryFilter';
 import { CategoryHelpers, CategoryType, CategoryDisplayNames } from '@/types/services/category';
+import { getProjectStatusKorean, getProjectStatusColor } from '@/types/services/project';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { categoryService, type CategoryItem } from '@/lib/api/services/category-services';
 import { decodeHtmlEntities } from '@/lib/html-utils';
@@ -156,7 +157,7 @@ const PAGE_SIZE = 6;
 const statusMap: Record<string, string> = {
   '진행중': 'IN_PROGRESS',
   '완료': 'COMPLETED',
-  '계획중': 'ARCHIVED'
+  '기획': 'ARCHIVED'
 };
 
 const sortMap: Record<string, string> = {
@@ -167,14 +168,8 @@ const sortMap: Record<string, string> = {
 const statusToEnglish = (status: string) => statusMap[status] || '';
 const sortToEnglish = (sort: string) => sortMap[sort] || 'LATEST';
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case '완료': return 'bg-green-100 text-green-700 border-green-300';
-    case '계획중': return 'bg-yellow-100 text-yellow-700 border-yellow-300';
-    case '진행중': return 'bg-blue-100 text-blue-700 border-blue-300';
-    default: return 'bg-gray-100 text-gray-700 border-gray-300';
-  }
-};
+// Use shared status color mapping
+const getStatusColor = (status: string) => getProjectStatusColor(status);
 
 const getValidImageUrl = (url: string | null | undefined): string => {
   if (!url || typeof url !== 'string') return '/images/placeholder/project.png';
@@ -410,8 +405,8 @@ export default function ProjectsContent() {
           CategoryHelpers.getSlug(item.projectCategories[0] as CategoryType) : 
           '',
         status: item.projectStatus === 'IN_PROGRESS' ? '진행중' :
-                item.projectStatus === 'COMPLETED' ? '완료' :
-                item.projectStatus === 'ARCHIVED' ? '계획중' : '진행중',
+          item.projectStatus === 'COMPLETED' ? '완료' :
+          item.projectStatus === 'PLANNING' ? '기획중' : '알 수 없음',
         stars: item.likeCount || 0,
         likeCount: item.likeCount || 0,
         viewCount: item.viewCount || 0,
@@ -703,8 +698,8 @@ export default function ProjectsContent() {
                           </span>
                         </div>
                         <div className="absolute top-3 right-3">
-                          <span className={`px-2 py-1 rounded-full text-xs border ${getStatusColor(project.status)}`}>
-                            {decodeHtmlEntities(project.status)}
+                          <span className={`px-2 py-1 rounded-full text-xs border ${getProjectStatusColor(project.status)}`}>
+                            {getProjectStatusKorean(project.status)}
                           </span>
                         </div>
                       </div>

@@ -1,10 +1,43 @@
 import { CategoryType } from'./category';
 
+// 프로젝트 상태 한글 변환 및 색상 매핑
+export const getProjectStatusKorean = (status: string) => {
+  switch (status) {
+    case 'PLANNING':
+    case ProjectStatus.PLANNING:
+      return '기획중';
+    case 'IN_PROGRESS':
+    case ProjectStatus.IN_PROGRESS:
+      return '진행중';
+    case 'COMPLETED':
+    case ProjectStatus.COMPLETED:
+      return '완료';
+    default:
+      return '알수없음';
+  }
+};
+
+export const getProjectStatusColor = (status: string) => {
+  switch (status) {
+    case 'PLANNING':
+    case ProjectStatus.PLANNING:
+      return 'bg-yellow-100 text-yellow-700 border-yellow-300';
+    case 'IN_PROGRESS':
+    case ProjectStatus.IN_PROGRESS:
+      return 'bg-blue-100 text-blue-700 border-blue-300';
+    case 'COMPLETED':
+    case ProjectStatus.COMPLETED:
+      return 'bg-green-100 text-green-700 border-green-300';
+    default:
+      return 'bg-gray-100 text-gray-700 border-gray-300';
+  }
+};
+
 // Enums for project-related constants
 export enum ProjectStatus {
-  PLANNING = 'PLANNING',
-  IN_PROGRESS = 'IN_PROGRESS',
-  COMPLETED = 'COMPLETED',
+  PLANNING = '기획중',
+  IN_PROGRESS = '진행중',
+  COMPLETED = '완료',
 }
 
 export enum DocumentType {

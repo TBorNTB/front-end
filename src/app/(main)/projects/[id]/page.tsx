@@ -25,7 +25,7 @@ import { useRouter } from 'next/navigation';
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
-import { ProjectDetailResponse } from '../../../../types/services/project';
+import { ProjectDetailResponse, getProjectStatusKorean, getProjectStatusColor } from '@/types/services/project';
 import DocumentModal from '../_components/DocumentModal';
 import CreateChatFromPostButton from '../../_components/CreateChatFromPostButton';
 import { decodeHtmlEntities } from '@/lib/html-utils';
@@ -414,13 +414,6 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       }
     };
 
-    // 프로젝트 상태 한글 변환
-    const statusMap: Record<string, string> = {
-      'PLANNING': '기획중',
-      'IN_PROGRESS': '진행중',
-      'COMPLETED': '완료',
-    };
-
     // 기간 계산 (프로젝트 진행 기간: startedAt ~ endedAt)
     const formatDateForPeriod = (date: Date) => {
       if (isNaN(date.getTime())) return 'Unknown';
@@ -507,7 +500,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         })),
       relatedProjects: [], // parentProjectId 있으면 fetchProjectData에서 채움
       parentProjectId: apiData.parentProjectId ?? null,
-      projectStatus: statusMap[apiData.projectStatus] || apiData.projectStatus,
+      projectStatus: getProjectStatusKorean(apiData.projectStatus),
       thumbnailUrl: apiData.thumbnailUrl,
       subGoals: (apiData.subGoalDtos || [])
         .filter((sg: any) => sg && (sg.content != null || sg.id != null))
@@ -1158,14 +1151,10 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     <div className="p-4 space-y-3 text-sm">
                       <div>
                         <p className="text-gray-800 mb-1">상태</p>
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          project.projectStatus === '진행중' 
-                            ? 'bg-green-100 text-green-700'
-                            : project.projectStatus === '완료'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {project.projectStatus}
+                        <span
+                          className={`px-2 py-1 rounded text-xs border ${getProjectStatusColor(project.projectStatus)}`}
+                        >
+                          {getProjectStatusKorean(project.projectStatus)}
                         </span>
                       </div>
                       <div>
