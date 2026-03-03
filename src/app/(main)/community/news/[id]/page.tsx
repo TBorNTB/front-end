@@ -28,6 +28,7 @@ import { decodeHtmlEntities } from '@/lib/html-utils';
 import { toNewsCategoryEnum } from '@/lib/constants/news-categories';
 import { isCommentEdited } from '@/lib/comment-utils';
 import { requireNotGuest } from '@/lib/role-utils';
+import { DateDisplay, formatDateText } from '@/components/ui/date';
 import CreateChatFromPostButton from '@/app/(main)/_components/CreateChatFromPostButton';
 import { ProjectContentRenderer } from '@/components/project/ProjectContentRenderer';
 
@@ -409,9 +410,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    if (Number.isNaN(date.getTime())) return '-';
-    return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\.\s*$/, '');
+    return formatDateText(dateString, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
   };
 
   const isValidImageUrl = (url?: string): string | null => {
@@ -725,9 +724,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                                     <span>·</span>
                                     <span>
                                       {(() => {
-                                        const date = new Date(item.createdAt);
-                                        if (Number.isNaN(date.getTime())) return '-';
-                                        return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\.\s*$/, '');
+                                        return formatDateText(item.createdAt, { year: 'numeric', month: '2-digit', day: '2-digit' });
                                       })()}
                                     </span>
                                   </div>
@@ -812,15 +809,11 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                       </p>
                     </div>
                     <div className="flex items-center gap-3 mt-1">
-                      <p className="text-sm text-gray-700">
-                        {new Date(item.createdAt)
-                          .toLocaleDateString('ko-KR', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                          })
-                          .replace(/\.\s*$/, '')}
-                      </p>
+                      <DateDisplay
+                        value={item.createdAt}
+                        options={{ year: 'numeric', month: 'long', day: 'numeric' }}
+                        className="text-sm text-gray-700"
+                      />
                       <span className="text-gray-700">·</span>
                       <div className="flex items-center gap-1 text-sm text-gray-700">
                         <Clock className="w-3.5 h-3.5" />

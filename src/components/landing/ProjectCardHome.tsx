@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ThumbsUp, Eye, Crown, Users } from 'lucide-react';
+import { ThumbsUp, Eye, Crown, Users, MessageCircle } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { decodeHtmlEntities } from '@/lib/html-utils';
 import { getProjectStatusKorean, getProjectStatusColor } from '@/types/services/project';
@@ -16,6 +16,7 @@ interface ProjectCardHomeProps {
     collaborators: { profileImage: string }[];
     likes: number;
     views?: number;
+    comments?: number;
     techStacks?: string[];
     owner?: {
       username?: string;
@@ -181,15 +182,19 @@ export function ProjectCardHome({ project }: ProjectCardHomeProps) {
           </div>
 
           {/* Stats */}
-          <div className="flex items-center gap-4 mb-3 text-sm">
-            <div className="flex items-center gap-1 text-gray-700 font-medium">
-              <ThumbsUp size={16} className="fill-secondary-500 text-secondary-500" />
-              <span>{project.likes || 0}</span>
-            </div>
-            <div className="flex items-center gap-1 text-gray-700 font-medium">
-              <Eye size={16} className=" text-secondary-500" />
-              <span>{project.views || 0}</span>
-            </div>
+          <div className="flex items-center gap-4 mb-3 text-sm text-gray-700">
+              <div className="flex items-center gap-1">
+                <Eye className="h-3.5 w-3.5" />
+                <span>{project.views || 0}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <ThumbsUp className="h-3.5 w-3.5" />
+                <span>{project.likes || 0}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MessageCircle className="h-3.5 w-3.5" />
+                <span className="font-medium ">{project.comments || 0}</span>
+              </div>
           </div>
         </div>
       </div>

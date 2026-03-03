@@ -3,6 +3,7 @@
 
 import TitleBanner from "@/components/layout/TitleBanner";
 import { Calendar, HelpCircle, Megaphone, Pin, User, Users } from "lucide-react";
+import { DateDisplay } from '@/components/ui/date';
 import { Suspense, useState } from "react";
 import NewsContent from "./_components/NewsContent";
 import QnAContent from "./_components/QnAContent";
@@ -199,7 +200,7 @@ function AnnouncementsSection({ announcements }: AnnouncementsSectionProps) {
               </span>
               <span className="inline-flex items-center gap-1">
                 <Calendar size={14} />
-                {new Date(announcement.date).toLocaleDateString()}
+                <DateDisplay value={announcement.date} />
               </span>
             </footer>
           </article>

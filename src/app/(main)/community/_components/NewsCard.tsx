@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Calendar, Eye, ThumbsUp, User, Crown, Users } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
+import { formatDateText } from '@/components/ui/date';
 import { decodeHtmlEntities } from '@/lib/html-utils';
 
 interface NewsItem {
@@ -126,11 +127,11 @@ const AvatarStack = ({
 
 export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ko-KR', {
+    return formatDateText(dateString, {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
-    }).replace(/\.\s*$/, '');
+    });
   };
 
   // Default writer and participants

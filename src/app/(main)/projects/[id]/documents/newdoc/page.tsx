@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { DateDisplay } from '@/components/ui/date';
 
 interface NewDocumentPageProps {
   params: Promise<{ id: string }>;
@@ -210,7 +211,7 @@ export default function NewDocumentPage({ params }: NewDocumentPageProps) {
               <span>•</span>
               <span>프로젝트: XSS 필터 규칙 테스트</span>
               <span>•</span>
-              <span>{new Date().toLocaleDateString('ko-KR').replace(/\.\s*$/, '')}</span>
+              <DateDisplay value={new Date()} />
             </div>
 
             {/* TipTap Editor */}

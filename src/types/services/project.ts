@@ -42,6 +42,12 @@ export const getProjectStatusColor = (status: string) => {
 
 export type ProjectStatusApiValue = 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED';
 
+export const PROJECT_STATUS_API_OPTIONS: readonly ProjectStatusApiValue[] = [
+  'PLANNING',
+  'IN_PROGRESS',
+  'COMPLETED',
+];
+
 export const PROJECT_STATUS_FILTER_OPTIONS = [
   '전체',
   ProjectStatus.IN_PROGRESS,

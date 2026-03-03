@@ -26,6 +26,7 @@ import TitleBanner from '@/components/layout/TitleBanner';
 import ContentFilterBar from '@/components/layout/TopSection';
 import CategoryFilter from '@/components/layout/CategoryFilter';
 import ArticleCard from './_components/ArticleCard';
+import { formatDateText } from '@/components/ui/date';
 import { searchCSKnowledge, getCSKnowledgeSuggestion, type CSKnowledgeSearchResponse } from '@/lib/api/services/elastic-services';
 import { categoryService, type CategoryItem } from '@/lib/api/services/category-services';
 import { CategoryType, CategoryDisplayNames, CategorySlugs } from '@/types/services/category';
@@ -342,8 +343,8 @@ function ArticlesContent() {
       avatarUrl: item.writer?.profileImageUrl || '',
     },
     date: item.createdAt
-      ? new Date(item.createdAt).toLocaleDateString('ko-KR').replace(/\.\s*$/, '')
-      : new Date().toLocaleDateString('ko-KR').replace(/\.\s*$/, ''),
+      ? formatDateText(item.createdAt)
+      : formatDateText(new Date()),
     readTime: '5분',
     views: item.viewCount || 0,
     likes: item.likeCount || 0,

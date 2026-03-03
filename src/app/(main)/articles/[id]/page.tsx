@@ -6,6 +6,7 @@ import { useState, useEffect, createElement, useRef, JSX, Fragment } from 'react
 import { ThumbsUp, Eye, MessageCircle, Share2, Edit, Clock, ArrowLeft, Code, FileText, Trash2 } from 'lucide-react';
 import { fetchArticleById, deleteArticle, type ArticleResponse } from '@/lib/api/services/article-services';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
+import { DateDisplay, formatDateText } from '@/components/ui/date';
 import { useRouter } from 'next/navigation';
 import TableOfContents from '@/components/editor/TableOfContents';
 import { searchCSKnowledge, searchCSKnowledgeByMember } from '@/lib/api/services/elastic-services';
@@ -975,15 +976,10 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                     <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <span>
-                      {new Date(displayPost.publishedAt)
-                        .toLocaleDateString('ko-KR', {
-                          year: 'numeric',
-                          month: '2-digit',
-                          day: '2-digit',
-                        })
-                        .replace(/\.\s*$/, '')}
-                    </span>
+                    <DateDisplay
+                      value={displayPost.publishedAt}
+                      options={{ year: 'numeric', month: '2-digit', day: '2-digit' }}
+                    />
                   </div>
 
                   {/* Read Time + Category together */}
@@ -996,7 +992,7 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                         </>
                       )}
                       {displayPost.category && (
-                        <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-primary-100 text-primary-700">
+                        <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-primary-50 text-primary-700">
                           {displayPost.category}
                         </span>
                       )}
@@ -1224,15 +1220,11 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                               <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2">
                                   <span className="font-semibold text-gray-900">{displayName}</span>
-                                <span className="text-xs text-gray-700">
-                                  {new Date(comment.createdAt)
-                                    .toLocaleDateString('ko-KR', {
-                                      year: 'numeric',
-                                      month: 'long',
-                                      day: 'numeric',
-                                    })
-                                    .replace(/\.\s*$/, '')}
-                                </span>
+                                <DateDisplay
+                                  value={comment.createdAt}
+                                  options={{ year: 'numeric', month: 'long', day: 'numeric' }}
+                                  className="text-xs text-gray-700"
+                                />
                               </div>
                               <div className="flex items-center gap-2">
                                 {editingCommentId === comment.id ? (
@@ -1356,9 +1348,7 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                                       <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-1">
                                           <span className="font-medium text-gray-900 text-sm">{replyDisplayName}</span>
-                                        <span className="text-xs text-gray-700">
-                                          {new Date(reply.createdAt).toLocaleDateString('ko-KR').replace(/\.\s*$/, '')}
-                                        </span>
+                                        <DateDisplay value={reply.createdAt} className="text-xs text-gray-700" />
                                       </div>
                                       <p className="text-gray-700 text-sm">{reply.content}</p>
                                     </div>
@@ -1439,8 +1429,7 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                       const formatDate = (dateString?: string) => {
                         if (!dateString) return '';
                         try {
-                          const date = new Date(dateString);
-                          return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }).replace(/\.\s*$/, '');
+                          return formatDateText(dateString, { month: 'short', day: 'numeric' }, '');
                         } catch {
                           return '';
                         }

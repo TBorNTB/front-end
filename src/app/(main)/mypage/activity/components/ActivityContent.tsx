@@ -27,6 +27,7 @@ import { ELASTIC_ENDPOINTS, getElasticApiUrl } from '@/lib/api/endpoints/elastic
 import { USER_ENDPOINTS, getUserApiUrl } from '@/lib/api/endpoints/user-endpoints';
 import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
 import { decodeHtmlEntities } from '@/lib/html-utils';
+import { formatDateText } from '@/components/ui/date';
 
 // API Response Types
 interface ProjectResponse {
@@ -209,12 +210,11 @@ export default function ActivityContent() {
   // Format date
   const formatDate = (dateString: string): string => {
     try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('ko-KR', {
+      return formatDateText(dateString, {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
-      }).replace(/\.\s*$/, '').replace(/\./g, '.').replace(/\s/g, '');
+      });
     } catch {
       return dateString;
     }

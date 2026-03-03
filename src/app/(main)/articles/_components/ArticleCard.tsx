@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ThumbsUp, Eye, User, MessageCircle, Clock, Calendar } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
+import { DateDisplay } from '@/components/ui/date';
 import { decodeHtmlEntities } from '@/lib/html-utils';
 
 type Article = {
@@ -135,7 +136,7 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1">
                 <Calendar className="w-3 h-3 text-gray-700" />
-                <span>{article.date}</span>
+                <DateDisplay value={article.date} fallback={article.date} className="text-xs text-gray-700" />
               </div>
               <div className="flex items-center gap-1">
                 <Clock className="w-3 h-3 text-gray-700" />

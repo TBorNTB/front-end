@@ -33,6 +33,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { requireNotGuest } from '@/lib/role-utils';
 import { decodeHtmlEntities } from '@/lib/html-utils';
 import { isCommentEdited } from '@/lib/comment-utils';
+import { formatDateText } from '@/components/ui/date';
 
 interface TechTag {
   id: string;
@@ -251,14 +252,13 @@ export default function QuestionDetailPage() {
     currentRole !== 'guest' && (currentRole === 'admin' || (currentUsername && currentUsername === answer.username));
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ko-KR', { 
+    return formatDateText(dateString, { 
       year: 'numeric', 
       month: 'long', 
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
-    }).replace(/\.\s*$/, '');
+    });
   };
 
 

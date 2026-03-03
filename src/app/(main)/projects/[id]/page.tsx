@@ -32,6 +32,7 @@ import { decodeHtmlEntities } from '@/lib/html-utils';
 import { isCommentEdited } from '@/lib/comment-utils';
 import { requireNotGuest } from '@/lib/role-utils';
 import { ProjectContentRenderer } from '@/components/project/ProjectContentRenderer';
+import { formatDateText } from '@/components/ui/date';
 
 interface ProjectPageProps {
   params: Promise<{ id: string }>;
@@ -408,7 +409,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       try {
         const date = new Date(dateString);
         if (isNaN(date.getTime())) return 'Unknown';
-        return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\.\s*$/, '');
+        return formatDateText(date, { year: 'numeric', month: '2-digit', day: '2-digit' }, 'Unknown');
       } catch {
         return 'Unknown';
       }
@@ -1099,9 +1100,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    if (Number.isNaN(date.getTime())) return '-';
-    return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\.\s*$/, '');
+    return formatDateText(dateString, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
   };
 
   return (

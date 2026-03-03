@@ -10,6 +10,7 @@ import type { LucideIcon } from 'lucide-react';
 import { categoryService, CategoryItem } from '@/lib/api/services/category-services';
 import { CategoryType, CategorySlugs, CategoryDisplayNames, CategoryDescriptions } from '@/types/services/category';
 import { decodeHtmlEntities } from '@/lib/html-utils';
+import { formatDateText } from '@/components/ui/date';
 
 // Icon mapping for each category
 const CategoryIcons: Record<CategoryType, LucideIcon> = {
@@ -249,7 +250,7 @@ export function LearningTopics() {
             description: item.description ?? '',
             category: item.category || currentCategory.name,
             author: item.writer?.nickname || item.writer?.realname || '작성자',
-            publishDate: item.createdAt ? new Date(item.createdAt).toLocaleDateString('ko-KR').replace(/\.\s*$/, '') : '',
+            publishDate: item.createdAt ? formatDateText(item.createdAt, undefined, '') : '',
             readTime: '5분 읽기',
             views: item.viewCount || 0,
             comments: 0,

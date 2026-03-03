@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { ThumbsUp, Eye, Calendar } from 'lucide-react';
+import { ThumbsUp, Eye, Calendar, MessageCircle } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
+import { DateDisplay } from '@/components/ui/date';
 import { decodeHtmlEntities } from '@/lib/html-utils';
 
 interface ArticleCardHomeProps {
@@ -19,19 +20,11 @@ interface ArticleCardHomeProps {
     thumbnailImage: string;
     likes: number;
     views: number;
+    comments: number;
     tags?: string[];
     createdAt?: string;
   };
 }
-
-const formatDate = (dateString?: string) => {
-  if (!dateString) return '';
-  return new Date(dateString).toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  }).replace(/\.\s*$/, '');
-};
 
 export function ArticleCardHome({ article }: ArticleCardHomeProps) {
   const defaultAvatar = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face';
@@ -106,7 +99,11 @@ export function ArticleCardHome({ article }: ArticleCardHomeProps) {
           <div className="border-t border-gray-100 pt-3 flex items-center justify-between text-xs text-gray-700">
             <div className="flex items-center gap-2">
               <Calendar className="h-3.5 w-3.5" />
-              <span>{formatDate(article.createdAt)}</span>
+              <DateDisplay
+                value={article.createdAt}
+                options={{ year: 'numeric', month: 'long', day: 'numeric' }}
+                fallback=""
+              />
             </div>
             
             <div className="flex items-center gap-3">
@@ -117,6 +114,10 @@ export function ArticleCardHome({ article }: ArticleCardHomeProps) {
               <div className="flex items-center gap-1">
                 <ThumbsUp className="h-3.5 w-3.5" />
                 <span>{article.likes || 0}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MessageCircle className="h-3.5 w-3.5" />
+                <span className="font-medium text-gray-700">{article.comments || 0}</span>
               </div>
             </div>
           </div>

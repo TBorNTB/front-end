@@ -15,6 +15,7 @@ import { s3Service } from '@/lib/api/services/s3-services';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { requireNotGuest } from '@/lib/role-utils';
 import { searchProjectsByQuery, fetchLatestProjects, type ProjectSearchItem } from '@/lib/api/services/elastic-services';
+import { PROJECT_STATUS_API_OPTIONS, getProjectStatusKorean, type ProjectStatusApiValue } from '@/types/services/project';
 
 interface FormData {
   title: string;
@@ -25,7 +26,7 @@ interface FormData {
   subGoals: string[];
   projectUrl: string;
   repositoryUrl: string;
-  status: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED';
+  status: ProjectStatusApiValue;
   startDate: string;
   endDate: string;
   collaborators: Array<{ name: string; email: string; role: string }>;
@@ -592,7 +593,7 @@ export default function NewProjectForm() {
       {userLoading && (
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
             <p className="text-gray-700">로딩 중...</p>
           </div>
         </div>
@@ -604,7 +605,7 @@ export default function NewProjectForm() {
           <div className="text-center">
             <p className="text-gray-700 mb-4">프로젝트를 생성하려면 먼저 로그인해주세요.</p>
             <Link href="/login">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button className="bg-primary-600 hover:bg-primary-700 text-white">
                 로그인
               </Button>
             </Link>
@@ -676,7 +677,7 @@ export default function NewProjectForm() {
                               type="checkbox"
                               checked={isSelected}
                               onChange={() => toggleCategory(cat.name)}
-                              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                              className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
                             />
                             <div className="flex-1">
                               <span className="text-sm font-medium text-gray-900">{cat.name}</span>
@@ -698,13 +699,13 @@ export default function NewProjectForm() {
                       {formData.categories.map((categoryName) => (
                         <span
                           key={categoryName}
-                          className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium"
+                          className="inline-flex items-center gap-2 bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium"
                         >
                           {categoryName}
                           <button
                             type="button"
                             onClick={() => toggleCategory(categoryName)}
-                            className="hover:text-blue-900"
+                            className="hover:text-primary-900"
                           >
                             <X className="w-4 h-4" />
                           </button>
@@ -728,11 +729,13 @@ export default function NewProjectForm() {
               name="status"
               value={formData.status}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className=" text-sm w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
-              <option value="PLANNING">계획 중</option>
-              <option value="IN_PROGRESS">진행 중</option>
-              <option value="COMPLETED">완료</option>
+              {PROJECT_STATUS_API_OPTIONS.map((status) => (
+                <option key={status} value={status}>
+                  {getProjectStatusKorean(status)}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -860,7 +863,7 @@ export default function NewProjectForm() {
               <Button
                 type="button"
                 onClick={addTag}
-                className="bg-blue-500 hover:bg-blue-600 text-white"
+                className="bg-primary-500 hover:bg-primary-600 text-white"
               >
                 <Plus className="w-4 h-4" />
               </Button>
@@ -872,13 +875,13 @@ export default function NewProjectForm() {
               {formData.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium"
+                  className="inline-flex items-center gap-2 bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium"
                 >
                   {tag}
                   <button
                     type="button"
                     onClick={() => removeTag(tag)}
-                    className="hover:text-blue-900"
+                    className="hover:text-primary-900"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -908,7 +911,7 @@ export default function NewProjectForm() {
               <Button
                 type="button"
                 onClick={addSubGoal}
-                className="bg-blue-500 hover:bg-blue-600 text-white"
+                className="bg-primary-500 hover:bg-primary-600 text-white"
               >
                 <Plus className="w-4 h-4" />
               </Button>
@@ -947,11 +950,11 @@ export default function NewProjectForm() {
                   {/* 닉네임 검색 */}
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-gray-700 items-center gap-2">
-                      <AtSign className="w-4 h-4 text-blue-500" />
+                      <AtSign className="w-4 h-4 text-primary-500" />
                       닉네임 검색
                     </label>
                     <div className="relative">
-                      <AtSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-blue-500" />
+                      <AtSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary-500" />
                       <Input
                         placeholder="닉네임을 입력하세요"
                         value={nicknameSearch}
@@ -962,7 +965,7 @@ export default function NewProjectForm() {
                             handleSearchUsers();
                           }
                         }}
-                        className="pl-10 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+                        className="pl-10 border-primary-200 focus:border-primary-500 focus:ring-primary-500"
                       />
                     </div>
                   </div>
@@ -997,7 +1000,7 @@ export default function NewProjectForm() {
                     type="button"
                     onClick={handleSearchUsers}
                     disabled={isLoadingUsers}
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-6"
+                    className="bg-primary-500 hover:bg-primary-600 text-white px-6"
                   >
                     {isLoadingUsers ? (
                       <>
@@ -1070,7 +1073,7 @@ export default function NewProjectForm() {
               >
                 {isLoadingUsers ? (
                   <div className="p-8 text-center text-gray-700">
-                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mb-2"></div>
+                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mb-2"></div>
                     <p>{isSearching ? '검색 중...' : '사용자 목록을 불러오는 중...'}</p>
                   </div>
                 ) : filteredUsers.length === 0 ? (
@@ -1099,7 +1102,7 @@ export default function NewProjectForm() {
                               isAlreadyAdded ? 'opacity-50 cursor-not-allowed bg-gray-100' : 'cursor-pointer'
                             }`}
                           >
-                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
                               {user.profileImageUrl ? (
                                 <img
                                   src={user.profileImageUrl}
@@ -1107,7 +1110,7 @@ export default function NewProjectForm() {
                                   className="w-full h-full rounded-full object-cover"
                                 />
                               ) : (
-                                <User className="w-5 h-5 text-blue-600" />
+                                <User className="w-5 h-5 text-primary-600" />
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
@@ -1135,7 +1138,7 @@ export default function NewProjectForm() {
                     {/* Loading more indicator */}
                     {isLoadingMore && (
                       <div className="p-4 text-center text-gray-700">
-                        <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mb-2"></div>
+                        <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600 mb-2"></div>
                         <p className="text-sm">
                           {isSearchMode ? '더 많은 검색 결과를 불러오는 중...' : '더 많은 사용자를 불러오는 중...'}
                         </p>
@@ -1170,7 +1173,7 @@ export default function NewProjectForm() {
                       className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
+                        <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center overflow-hidden">
                           {user?.profileImageUrl ? (
                             <img
                               src={user.profileImageUrl}
@@ -1178,7 +1181,7 @@ export default function NewProjectForm() {
                               className="w-full h-full rounded-full object-cover"
                             />
                           ) : (
-                            <User className="w-4 h-4 text-blue-600" />
+                            <User className="w-4 h-4 text-primary-600" />
                           )}
                         </div>
                         <div>
@@ -1187,7 +1190,7 @@ export default function NewProjectForm() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                        <span className="text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded">
                           {collaborator.role === 'OWNER' ? '소유자' :
                            collaborator.role === 'ADMIN' ? '관리자' :
                            collaborator.role === 'CONTRIBUTOR' ? '기여자' :
@@ -1336,7 +1339,7 @@ export default function NewProjectForm() {
           <Button
             type="submit"
             disabled={loading || isUploadingThumbnail}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="bg-primary-600 hover:bg-primary-700 text-white"
           >
             {loading || isUploadingThumbnail ? '생성 중...' : '프로젝트 생성'}
           </Button>
