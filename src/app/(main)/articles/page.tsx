@@ -34,7 +34,7 @@ import { CategoryType, CategoryDisplayNames, CategorySlugs } from '@/types/servi
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { isGuest, getGuestRestrictionMessage } from '@/lib/role-utils';
 
-const ARTICLES_PER_PAGE = 9;
+const ARTICLES_PER_PAGE = 12;
 
 interface Category {
   name: string;
@@ -494,7 +494,7 @@ function ArticlesContent() {
             <div
               className={
                 viewMode === 'grid'
-                  ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+                  ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'
                   : 'space-y-6'
               }
             >
