@@ -142,8 +142,12 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
                 <Clock className="w-3 h-3 text-gray-700" />
                 <span> {article.readTime}</span>
               </div>
-              
             </div>
+
+            {/* 상세 보기 Button */}
+            <span className="bg-primary text-white px-4 py-1.5 rounded-lg text-xs font-medium hover:bg-primary-700 transition-colors">
+              상세 보기
+            </span>
           </div>
         </div>
       </article>
