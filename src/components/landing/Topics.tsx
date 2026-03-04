@@ -26,6 +26,7 @@ interface Topic {
   type: CategoryType;
   projectCount: number;
   articleCount: number;
+  iconUrl?: string;
 }
 
 // Icon mapping for each category
@@ -138,6 +139,7 @@ const transformApiResponseToTopics = (apiCategories: CategoryItem[]): Topic[] =>
         type: defaultType,
         projectCount: 0, // API에서 제공되지 않으면 기본값 0
         articleCount: 0, // API에서 제공되지 않으면 기본값 0
+        iconUrl: category.iconUrl,
       };
     });
 };
@@ -347,12 +349,19 @@ export default function TopicsSection({
                     {/* Icon and Title Section */}
                     <div className="flex items-center space-x-3 mb-4">
                       <div className={`
-                        w-12 h-12 rounded-xl ${colorClass} 
-                        flex items-center justify-center
+                        relative w-12 h-12 rounded-xl ${colorClass} 
+                        flex items-center justify-center overflow-hidden
                         group-hover:scale-110 transition-transform duration-300
                         shadow-lg group-hover:shadow-xl flex-shrink-0
                       `}>
-                        <IconComponent className="w-6 h-6 text-white" />
+                        {topic.iconUrl ? (
+                          <>
+                            <IconComponent className="absolute inset-0 w-6 h-6 text-white m-auto z-0" />
+                            <img src={topic.iconUrl} alt="" className="w-full h-full object-cover relative z-10" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                          </>
+                        ) : (
+                          <IconComponent className="w-6 h-6 text-white" />
+                        )}
                       </div>
                       <h3 className="text-lg font-bold text-primary-800 group-hover:text-primary-600 transition-colors flex-1 line-clamp-2">
                         {topic.name}

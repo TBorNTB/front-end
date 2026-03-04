@@ -1,7 +1,9 @@
 // src/lib/api/fetch-with-refresh.ts
 // 클라이언트용 fetch wrapper
-// - 401 에러 시 자동으로 토큰 갱신 후 재시도
+// - 401 에러 시 사용자에게 "로그인 유지" 여부를 묻고, 유지 시에만 토큰 재발급 후 재시도
 // - keepSignedIn 여부는 서버(/api/auth/reissue)에서 판단
+
+import { askUserToKeepSession } from '@/lib/api/session-expiry-prompt';
 
 let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
@@ -45,7 +47,13 @@ export async function fetchWithRefresh(
     return response;
   }
 
-  // 토큰 갱신 시도
+  // 사용자에게 로그인 유지 여부 확인 (모달 등)
+  const keepSession = await askUserToKeepSession();
+  if (!keepSession) {
+    return response;
+  }
+
+  // 토큰 재발급 시도
   const refreshed = await tryRefreshToken();
 
   if (refreshed) {

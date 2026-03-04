@@ -60,6 +60,7 @@ interface CategoryDisplayData {
   type: CategoryType;
   description: string;
   content: string;
+  iconUrl?: string;
 }
 
 // 범용 slug 생성 함수 - 어떤 카테고리 이름이 와도 자동으로 처리
@@ -116,6 +117,7 @@ const transformCategoryData = (apiCategory: CategoryItem): CategoryDisplayData |
     type: defaultType,
     description: apiCategory.description || (type ? CategoryDescriptions[type] : apiCategory.description || ''),
     content: (apiCategory.content ?? '').toString(),
+    iconUrl: apiCategory.iconUrl,
   };
 };
 
@@ -291,8 +293,15 @@ export function LearningTopics() {
               onClick={() => handleCategoryClick(category.slug)}
             >
               <div className="flex items-center space-x-4 mb-4">
-                <div className={`w-12 h-12 rounded-xl ${colorClass} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-                  <IconComponent className="w-6 h-6 text-white" />
+                <div className={`relative w-12 h-12 rounded-xl ${colorClass} flex items-center justify-center group-hover:scale-110 transition-transform duration-300 overflow-hidden flex-shrink-0`}>
+                  {category.iconUrl ? (
+                    <>
+                      <IconComponent className="absolute inset-0 w-6 h-6 text-white m-auto z-0" />
+                      <img src={category.iconUrl} alt="" className="w-full h-full object-cover relative z-10" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                    </>
+                  ) : (
+                    <IconComponent className="w-6 h-6 text-white" />
+                  )}
                 </div>
                 <h3 className="text-xl font-bold text-foreground group-hover:text-primary-600 transition-colors">
                   {category.name}
@@ -335,11 +344,21 @@ export function LearningTopics() {
               <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(58,77,161,0.1)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
             </div>
             <div className="relative z-10 flex items-start space-x-4">
-              <div className={`w-16 h-16 rounded-xl ${CategoryColors[cat.type]} flex items-center justify-center flex-shrink-0`}>
-                {(() => {
-                  const Icon = CategoryIcons[cat.type];
-                  return <Icon className="w-8 h-8 text-white" />;
-                })()}
+              <div className={`relative w-16 h-16 rounded-xl ${CategoryColors[cat.type]} flex items-center justify-center flex-shrink-0 overflow-hidden`}>
+                {cat.iconUrl ? (
+                  <>
+                    {(() => {
+                      const Icon = CategoryIcons[cat.type];
+                      return <Icon className="absolute inset-0 w-8 h-8 text-white m-auto z-0" />;
+                    })()}
+                    <img src={cat.iconUrl} alt="" className="w-full h-full object-cover relative z-10" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                  </>
+                ) : (
+                  (() => {
+                    const Icon = CategoryIcons[cat.type];
+                    return <Icon className="w-8 h-8 text-white" />;
+                  })()
+                )}
               </div>
               <div className="flex-1">
                 <h1 className="text-3xl font-bold text-white mb-2">{cat.name}</h1>

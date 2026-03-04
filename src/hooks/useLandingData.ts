@@ -51,6 +51,7 @@ export interface LandingTopic {
   type: CategoryType;
   projectCount: number;
   articleCount: number;
+  iconUrl?: string;
 }
 
 interface LandingDataState {
@@ -73,6 +74,7 @@ const mapCategoriesToTopics = (categories: CategoryItem[]): LandingTopic[] => {
       type,
       projectCount: 0,
       articleCount: 0,
+      iconUrl: cat.iconUrl,
     };
   });
 };
@@ -179,6 +181,7 @@ const fetchCategoriesForTopics = async (): Promise<LandingTopic[]> => {
         type,
         projectCount: 0,
         articleCount: 0,
+        iconUrl: cat.iconUrl,
       };
     });
   } catch (error) {

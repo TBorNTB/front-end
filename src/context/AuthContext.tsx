@@ -11,6 +11,7 @@ import {
   AuthResponse
 } from '@/app/(auth)/types/auth';
 import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
+import SessionExpiryModal from '@/components/auth/SessionExpiryModal';
 
 type UnifiedUser = AuthUser & UserResponse;
 
@@ -177,6 +178,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   return (
     <AuthContext.Provider value={contextValue}>
       {children}
+      <SessionExpiryModal />
     </AuthContext.Provider>
   );
 };
