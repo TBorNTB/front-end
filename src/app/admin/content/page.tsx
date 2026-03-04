@@ -1,30 +1,30 @@
 // src/app/admin/content/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { 
-  FolderOpen, 
-  Tag, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Eye,
+import {
   BookOpen,
-  Newspaper,
-  FileText,
-  Upload,
   Brain,
+  Edit,
+  Eye,
+  FileText,
+  FolderOpen,
+  Newspaper,
+  Plus,
+  Tag,
+  Trash2,
+  Upload,
 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 // Import complex components - REMOVED ArticleManagement
-import ProjectManagement from "./components/ProjectManagement";
-import CSKnowledgeManagement from "./components/CSKnowledgeManagement";
-import NewsManagement from "./components/NewsManagement";
-import { fetchAdminMetaCount } from "@/lib/api/services/meta-services";
 import { categoryService } from "@/lib/api/services/category-services";
 import { uploadRAGDocument } from "@/lib/api/services/elastic-services";
+import { fetchAdminMetaCount } from "@/lib/api/services/meta-services";
 import { s3Service } from "@/lib/api/services/s3-services";
 import toast from "react-hot-toast";
+import CSKnowledgeManagement from "./components/CSKnowledgeManagement";
+import NewsManagement from "./components/NewsManagement";
+import ProjectManagement from "./components/ProjectManagement";
 
 // UPDATED: Removed "articles" from TabType
 type TabType = "overview" | "projects" | "cs-knowledge" | "news" | "categories" | "rag";
@@ -58,7 +58,7 @@ function InlineCategoryManagement() {
   const [isMutating, setIsMutating] = useState(false);
 
   const [editTarget, setEditTarget] = useState<ApiCategory | null>(null);
-  const [editForm, setEditForm] = useState({ nextName: "", description: "", content: "", iconKey: "" });
+  const [editForm, setEditForm] = useState({ description: "", content: "", iconKey: "" });
   const [iconFile, setIconFile] = useState<File | null>(null);
   const [iconPreview, setIconPreview] = useState<string>("");
   const [editIconFile, setEditIconFile] = useState<File | null>(null);
@@ -154,7 +154,6 @@ function InlineCategoryManagement() {
   const openEdit = (category: ApiCategory) => {
     setEditTarget(category);
     setEditForm({
-      nextName: category.name,
       description: category.description || "",
       content: category.content || "",
       iconKey: category.iconKey || category.iconUrl || "",
@@ -166,15 +165,9 @@ function InlineCategoryManagement() {
   const handleUpdate = async () => {
     if (!editTarget) return;
 
-    const prevName = editTarget.name;
-    const nextName = editForm.nextName.trim();
+    const name = editTarget.name;
     const description = editForm.description.trim();
     const content = editForm.content.trim();
-
-    if (!nextName) {
-      toast.error("카테고리 이름을 입력해주세요.");
-      return;
-    }
 
     if (!content) {
       toast.error("자세한 설명을 입력해주세요.");
@@ -192,8 +185,7 @@ function InlineCategoryManagement() {
         uploadedIconKey = editForm.iconKey.trim();
       }
       await categoryService.updateCategory({
-        prevName,
-        nextName,
+        name: name,
         description,
         content,
         ...(uploadedIconKey !== undefined && { iconKey: uploadedIconKey }),
@@ -456,26 +448,13 @@ function InlineCategoryManagement() {
 
             <div className="space-y-4">
               <div className="admin-form-group">
-                <label className="admin-form-label">기존 이름</label>
+                <label className="admin-form-label">카테고리 이름</label>
                 <input
                   type="text"
                   value={editTarget.name}
                   className="admin-form-input"
                   disabled
                 />
-              </div>
-
-              <div className="admin-form-group">
-                <label className="admin-form-label">새 이름</label>
-                <input
-                  type="text"
-                  value={editForm.nextName}
-                  onChange={(e) => setEditForm({ ...editForm, nextName: e.target.value.replace(/\s+/g, "_") })}
-                  placeholder="예: 웹_해킹"
-                  className="admin-form-input"
-                  disabled={isMutating}
-                />
-                <p className="mt-1 text-xs text-gray-500">공백은 반드시 _ 로 붙여집니다.</p>
               </div>
 
               <div className="admin-form-group">

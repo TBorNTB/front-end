@@ -30,8 +30,7 @@ export interface CreateCategoryRequest {
 }
 
 export interface UpdateCategoryRequest {
-  prevName: string;
-  nextName: string;
+  name: string;
   description: string;
   content: string;
   iconKey?: string;
