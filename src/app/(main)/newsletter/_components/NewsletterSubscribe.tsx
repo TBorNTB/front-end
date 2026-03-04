@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from 'react';
-import { Mail, CheckCircle2, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { newsletterService, EmailFrequency } from '@/lib/api/services/newsletter-services';
-import { CategoryType, CategoryDisplayNames } from '@/types/services/category';
+import { Input } from '@/components/ui/input';
+import { CategoryItem, categoryService } from '@/lib/api/services/category-services';
+import { EmailFrequency, newsletterService } from '@/lib/api/services/newsletter-services';
+import { AlertCircle, ArrowLeft, CheckCircle2, Loader2, Mail } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface NewsletterSubscribeProps {
   className?: string;
@@ -24,18 +24,23 @@ export default function NewsletterSubscribe({ className = "" }: NewsletterSubscr
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // 모든 카테고리 목록
-  const allCategories = Object.values(CategoryType);
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+
+  useEffect(() => {
+    categoryService.getCategories()
+    .then(res => setCategories(res.categories))  
+    .catch(() => setCategories([]))
+    .finally(() => setCategoriesLoading(false));
+  }, []);
 
   // 카테고리 토글
-  const toggleCategory = (category: CategoryType) => {
-    setSelectedCategories(prev => {
-      if (prev.includes(category)) {
-        return prev.filter(c => c !== category);
-      } else {
-        return [...prev, category];
-      }
-    });
+  const toggleCategory = (categoryName: string) => {
+    setSelectedCategories(prev => 
+      prev.includes(categoryName)
+        ? prev.filter(c => c !== categoryName)
+        : [...prev, categoryName]
+    );
   };
 
   // 구독 요청
@@ -220,30 +225,34 @@ export default function NewsletterSubscribe({ className = "" }: NewsletterSubscr
                 관심 카테고리 선택 <span className="text-red-500">*</span>
               </label>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {allCategories.map((category) => {
-                  const isSelected = selectedCategories.includes(category);
-                  return (
-                    <label
-                      key={category}
-                      className={`
-                        flex items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all
-                        ${isSelected 
-                          ? 'border-primary-500 bg-primary-50' 
-                          : 'border-gray-200 bg-white hover:border-primary-300 hover:bg-primary-50/50'
-                        }
-                      `}
-                    >
-                      <Checkbox
-                        checked={isSelected}
-                        onCheckedChange={() => toggleCategory(category)}
-                        disabled={loading}
-                      />
-                      <span className="text-sm text-gray-700 font-medium">
-                        {CategoryDisplayNames[category]}
-                      </span>
-                    </label>
-                  );
-                })}
+                { categoriesLoading ? (
+                  <p className="text-sm text-gray-500">카테고리 로딩 중...</p>
+                  ) : (
+                  categories.map((category) => {
+                    const isSelected = selectedCategories.includes(category.name);
+                    return (
+                      <label
+                        key={category.id}
+                        className={`
+                          flex items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all
+                          ${isSelected 
+                            ? 'border-primary-500 bg-primary-50' 
+                            : 'border-gray-200 bg-white hover:border-primary-300 hover:bg-primary-50/50'
+                          }
+                        `}
+                      >
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => toggleCategory(category.name)}
+                          disabled={loading}
+                        />
+                        <span className="text-sm text-gray-700 font-medium">
+                          {category.name}
+                        </span>
+                      </label>
+                    );
+                  })
+                )}
               </div>
               {selectedCategories.length === 0 && (
                 <p className="text-xs text-red-500 mt-2">최소 하나 이상의 카테고리를 선택해주세요.</p>
