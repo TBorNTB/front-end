@@ -54,10 +54,24 @@ export interface LandingTopic {
   iconUrl?: string;
 }
 
+export interface ProjectsPageResponse {
+  content: Project[];
+  totalElements: number;
+  totalPages: number;
+}
+
+export interface ArticlesPageResponse {
+  content: Article[];
+  totalElements: number;
+  totalPages: number;
+}
+
 interface LandingDataState {
   projects: Project[];
   articles: Article[];
   topics: LandingTopic[];
+  totalProjectElements: number;
+  totalArticleElements: number;
   loading: boolean;
   error: string | null;
 }
@@ -79,90 +93,99 @@ const mapCategoriesToTopics = (categories: CategoryItem[]): LandingTopic[] => {
   });
 };
 
-// Fetch latest projects from API
-const fetchLatestProjects = async (): Promise<Project[]> => {
+const PAGE_SIZE_PROJECTS = 10;
+const PAGE_SIZE_ARTICLES = 9;
+
+function mapProjectFromApi(item: any): Project {
+  return {
+    id: String(item.id),
+    title: item.title || '',
+    description: item.description || '',
+    thumbnailUrl: item.thumbnailUrl || '',
+    projectStatus: item.projectStatus || 'PLANNING',
+    projectCategories: item.projectCategories || [],
+    projectTechStacks: item.projectTechStacks || [],
+    createdAt: item.createdAt || new Date().toISOString(),
+    updatedAt: item.updatedAt || new Date().toISOString(),
+    likeCount: item.likeCount || 0,
+    viewCount: item.viewCount || 0,
+    owner: item.owner || null,
+    collaborators: item.collaborators || [],
+  };
+}
+
+/** Fetch projects with pagination (page 0-based). Exported for "load more" on landing. */
+export const fetchProjectsPage = async (page: number, size: number = PAGE_SIZE_PROJECTS): Promise<ProjectsPageResponse> => {
   try {
-    const response = await fetch('/api/projects/search?projectSortType=LATEST&size=5&page=0', {
-      method: 'GET',
-      headers: {
-        'accept': 'application/json',
-      },
-    });
-
+    const response = await fetch(
+      `/api/projects/search?projectSortType=LATEST&size=${size}&page=${page}`,
+      { method: 'GET', headers: { 'accept': 'application/json' } }
+    );
     if (!response.ok) {
-      console.error('Failed to fetch latest projects:', response.status);
-      return [];
+      console.error('Failed to fetch projects:', response.status);
+      return { content: [], totalElements: 0, totalPages: 0 };
     }
-
     const data = await response.json();
-    // Transform API response to Project format
-    return (data.content || []).map((item: any) => ({
-      id: String(item.id),
-      title: item.title || '',
-      description: item.description || '',
-      thumbnailUrl: item.thumbnailUrl || '',
-      projectStatus: item.projectStatus || 'PLANNING',
-      projectCategories: item.projectCategories || [],
-      projectTechStacks: item.projectTechStacks || [],
-      createdAt: item.createdAt || new Date().toISOString(),
-      updatedAt: item.updatedAt || new Date().toISOString(),
-      likeCount: item.likeCount || 0,
-      viewCount: item.viewCount || 0,
-      // Include owner and collaborators information
-      owner: item.owner || null,
-      collaborators: item.collaborators || [],
-    }));
+    const content = (data.content || []).map(mapProjectFromApi);
+    return {
+      content,
+      totalElements: data.totalElements ?? 0,
+      totalPages: data.totalPages ?? 0,
+    };
   } catch (error) {
-    console.error('Error fetching latest projects:', error);
-    return [];
+    console.error('Error fetching projects page:', error);
+    return { content: [], totalElements: 0, totalPages: 0 };
   }
 };
 
-// Fetch latest CS knowledge articles from API
-const fetchLatestArticles = async (): Promise<Article[]> => {
+function mapArticleFromApi(item: any): Article {
+  return {
+    topicSlug: (item.category || '').toLowerCase().replace('_', '-'),
+    id: String(item.id),
+    content: {
+      title: item.title || '',
+      summary: item.description || item.content?.substring(0, 150) || item.content || '',
+      content: item.content || '',
+      category: item.category || '',
+    },
+    thumbnailUrl: item.thumbnailUrl || '',
+    writerId: item.writer?.username || item.writer?.nickname || '',
+    writer: item.writer ? {
+      username: item.writer.username,
+      nickname: item.writer.nickname,
+      realname: item.writer.realname,
+      profileImageUrl: item.writer.profileImageUrl,
+    } : undefined,
+    participantIds: [],
+    tags: [],
+    createdAt: item.createdAt || new Date().toISOString(),
+    updatedAt: item.updatedAt || item.createdAt || new Date().toISOString(),
+    likeCount: item.likeCount || 0,
+    viewCount: item.viewCount || 0,
+  };
+}
+
+/** Fetch articles with pagination (page 0-based). Exported for "load more" on landing. */
+export const fetchArticlesPage = async (page: number, size: number = PAGE_SIZE_ARTICLES): Promise<ArticlesPageResponse> => {
   try {
-    const response = await fetch('/api/articles/search?sortType=LATEST&page=0&size=10', {
-      method: 'GET',
-      headers: {
-        'accept': 'application/json',
-      },
-    });
-
+    const response = await fetch(
+      `/api/articles/search?sortType=LATEST&page=${page}&size=${size}`,
+      { method: 'GET', headers: { 'accept': 'application/json' } }
+    );
     if (!response.ok) {
-      console.error('Failed to fetch latest articles:', response.status);
-      return [];
+      console.error('Failed to fetch articles:', response.status);
+      return { content: [], totalElements: 0, totalPages: 0 };
     }
-
     const data = await response.json();
-    // Transform CS Knowledge API response to Article format
-    // CS Knowledge API returns items with title, content, category, writer, etc.
-    return (data.content || []).map((item: any) => ({
-      topicSlug: (item.category || '').toLowerCase().replace('_', '-'),
-      id: String(item.id),
-      content: {
-        title: item.title || '',
-        summary: item.description || item.content?.substring(0, 150) || item.content || '', // 요약: description 우선
-        content: item.content || '',
-        category: item.category || '',
-      },
-      thumbnailUrl: item.thumbnailUrl || '',
-      writerId: item.writer?.username || item.writer?.nickname || '',
-      writer: item.writer ? {
-        username: item.writer.username,
-        nickname: item.writer.nickname,
-        realname: item.writer.realname,
-        profileImageUrl: item.writer.profileImageUrl,
-      } : undefined,
-      participantIds: [],
-      tags: [],
-      createdAt: item.createdAt || new Date().toISOString(),
-      updatedAt: item.updatedAt || item.createdAt || new Date().toISOString(),
-      likeCount: item.likeCount || 0,
-      viewCount: item.viewCount || 0,
-    }));
+    const content = (data.content || []).map(mapArticleFromApi);
+    return {
+      content,
+      totalElements: data.totalElements ?? 0,
+      totalPages: data.totalPages ?? 0,
+    };
   } catch (error) {
-    console.error('Error fetching latest articles:', error);
-    return [];
+    console.error('Error fetching articles page:', error);
+    return { content: [], totalElements: 0, totalPages: 0 };
   }
 };
 
@@ -195,6 +218,8 @@ export const useLandingData = (): LandingDataState => {
     projects: [],
     articles: [],
     topics: [],
+    totalProjectElements: 0,
+    totalArticleElements: 0,
     loading: true,
     error: null,
   });
@@ -204,26 +229,20 @@ export const useLandingData = (): LandingDataState => {
 
     const load = async () => {
       try {
-        console.log('useLandingData: Starting load...');
         const [projectsRes, articlesRes, topicsRes] = await Promise.all([
-          fetchLatestProjects(),
-          fetchLatestArticles(),
+          fetchProjectsPage(0, PAGE_SIZE_PROJECTS),
+          fetchArticlesPage(0, PAGE_SIZE_ARTICLES),
           fetchCategoriesForTopics(),
         ]);
-
-        console.log('useLandingData: Loaded data', {
-          projects: projectsRes.length,
-          articles: articlesRes.length,
-          topics: topicsRes?.length || 0
-        });
-        console.log('Topics data:', topicsRes);
 
         if (!isMounted) return;
 
         setState({
-          projects: projectsRes,
-          articles: articlesRes,
+          projects: projectsRes.content,
+          articles: articlesRes.content,
           topics: topicsRes,
+          totalProjectElements: projectsRes.totalElements,
+          totalArticleElements: articlesRes.totalElements,
           loading: false,
           error: null,
         });
