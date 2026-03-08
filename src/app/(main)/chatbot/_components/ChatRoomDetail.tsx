@@ -65,6 +65,8 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
   const isUserNearBottomRef = useRef(true);
   const initialHistoryLoadedRef = useRef(false);
   const forceScrollToBottomOnOpenRef = useRef(true);
+  const avatarErrorIdsRef = useRef<Set<string>>(new Set());
+  const [, setAvatarErrorTick] = useState(0);
   const { user: currentUser } = useCurrentUser();
 
   // 채팅방 이름 변경 / 멤버 추가 모달
@@ -416,6 +418,7 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
 
   // roomId 변경 시 상태 초기화 및 초기 히스토리 로드
   useEffect(() => {
+    avatarErrorIdsRef.current.clear();
     setMessages([]);
     pendingOwnMessagesRef.current = [];
     lastHistoryCursorRequestedRef.current = null;
@@ -620,6 +623,8 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
 
     const thumb = (message.senderThumbnailUrl ?? "").trim();
     const hasThumb = thumb.length > 0 && thumb !== "string" && thumb !== "null" && thumb !== "undefined";
+    const avatarFailed = avatarErrorIdsRef.current.has(message.id);
+    const showThumb = hasThumb && !avatarFailed;
     const initial = (message.senderName ?? message.sender ?? "?").trim().charAt(0) || "?";
 
     return (
@@ -630,11 +635,16 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
         {!isOwn && (
           <div className="w-10 flex-shrink-0 flex justify-center">
             {showAvatar ? (
-              hasThumb ? (
+              showThumb ? (
                 <img
                   src={thumb}
                   alt={message.senderName}
                   className="w-8 h-8 rounded-full object-cover border border-gray-200"
+                  onError={() => {
+                    if (avatarErrorIdsRef.current.has(message.id)) return;
+                    avatarErrorIdsRef.current.add(message.id);
+                    setAvatarErrorTick((t) => t + 1);
+                  }}
                 />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-xs text-gray-700">
