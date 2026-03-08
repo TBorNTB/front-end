@@ -8,6 +8,16 @@ import { Message } from "@/types";
 import ChatBotIcon from "./ChatBotIcon";
 import { queryRAG } from "../../../../lib/api/services/chatbot-service";
 import toast from "react-hot-toast";
+import { useFloatingLayer } from "@/context/FloatingLayerContext";
+import { useResize, ResizeHandles, ResizeDirection } from "@/hooks/useResize";
+
+const LAYER_ID = "chatWindow";
+const MIN_W = 320;
+const MIN_H = 400;
+const MAX_W = 900;
+const MAX_H = 900;
+const DEFAULT_W = 384;
+const DEFAULT_H = 650;
 
 interface ChatWindowProps {
   onClose: () => void;
@@ -15,20 +25,28 @@ interface ChatWindowProps {
 }
 
 const ChatWindow = ({ onClose, isMinimized }: ChatWindowProps) => {
+  const { register, bringToFront, getZIndex } = useFloatingLayer(LAYER_ID);
   const [position, setPosition] = useState(() => {
-    // 기본 위치: 화면 오른쪽 하단
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       return {
-        x: window.innerWidth - 400 - 24,
-        y: window.innerHeight - 650 - 24,
+        x: window.innerWidth - DEFAULT_W - 24,
+        y: window.innerHeight - DEFAULT_H - 24,
       };
     }
     return { x: 0, y: 0 };
   });
+  const [size, setSize] = useState({ w: DEFAULT_W, h: DEFAULT_H });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const windowRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
+
+  const { startResize } = useResize(position, size, setPosition, setSize);
+
+  useEffect(() => {
+    register(LAYER_ID);
+    bringToFront(LAYER_ID);
+  }, [register, bringToFront]);
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -47,58 +65,50 @@ const ChatWindow = ({ onClose, isMinimized }: ChatWindowProps) => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
-  // Drag handlers
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging && windowRef.current) {
         const newX = e.clientX - dragOffset.x;
         const newY = e.clientY - dragOffset.y;
-        
-        // 화면 경계 체크
         const maxX = window.innerWidth - windowRef.current.offsetWidth;
         const maxY = window.innerHeight - windowRef.current.offsetHeight;
-        
         setPosition({
           x: Math.max(0, Math.min(newX, maxX)),
           y: Math.max(0, Math.min(newY, maxY)),
         });
       }
     };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-
+    const handleMouseUp = () => setIsDragging(false);
     if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      document.body.style.userSelect = 'none';
-      document.body.style.cursor = 'grabbing';
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+      document.body.style.userSelect = "none";
+      document.body.style.cursor = "grabbing";
     }
-
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.body.style.userSelect = '';
-      document.body.style.cursor = '';
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
     };
   }, [isDragging, dragOffset]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    // 버튼이나 클릭 가능한 요소를 클릭한 경우 드래그 시작하지 않음
     const target = e.target as HTMLElement;
-    if (target.closest('button') || target.closest('a') || target.closest('input') || target.closest('textarea')) {
+    if (target.closest("button") || target.closest("a") || target.closest("input") || target.closest("textarea")) {
       return;
     }
-    
     if (headerRef.current && windowRef.current) {
+      bringToFront(LAYER_ID);
       const rect = windowRef.current.getBoundingClientRect();
-      setDragOffset({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      });
+      setDragOffset({ x: e.clientX - rect.left, y: e.clientY - rect.top });
       setIsDragging(true);
     }
+  };
+
+  const handleResizeStart = (e: React.MouseEvent, dir: ResizeDirection) => {
+    bringToFront(LAYER_ID);
+    startResize(e, dir);
   };
 
   const handleSendMessage = async (content: string) => {
@@ -140,15 +150,22 @@ const ChatWindow = ({ onClose, isMinimized }: ChatWindowProps) => {
     }
   };
 
+  const z = getZIndex(LAYER_ID);
+
   return (
     <div
       ref={windowRef}
-      className="fixed w-[calc(100vw-3rem)] h-[calc(100vh-8rem)] max-h-[calc(100vh-3rem)] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-gray-100 animate-slide-up md:w-96 md:h-[650px] md:max-h-[650px] backdrop-blur-sm cursor-default"
+      className="fixed bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-gray-100 animate-slide-up backdrop-blur-sm cursor-default"
       style={{
-        left: `${position.x}px`,
-        top: `${position.y}px`,
-        zIndex: 50,
+        left: position.x,
+        top: position.y,
+        width: size.w,
+        height: size.h,
+        minWidth: MIN_W,
+        minHeight: MIN_H,
+        zIndex: z,
       }}
+      onClick={() => bringToFront(LAYER_ID)}
     >
       {/* Header - Draggable */}
       <div
@@ -219,7 +236,9 @@ const ChatWindow = ({ onClose, isMinimized }: ChatWindowProps) => {
       <div className="border-t border-gray-200 bg-white/80 backdrop-blur-sm p-4 shadow-sm">
         <ChatInput onSend={handleSendMessage} />
       </div>
-      
+
+      <ResizeHandles onStartResize={handleResizeStart} />
+
       {/* Global styles */}
       <style jsx>{`
         .chat-scrollbar::-webkit-scrollbar {

@@ -14,6 +14,7 @@ import { useChatUnreadCount } from "@/hooks/useChatUnreadCount";
 import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 import { getRoleDisplayLabel, hasAdminAccess } from "@/lib/role-utils";
 import { useChatRoom } from "@/context/ChatContext";
+import { useFloatingLayer } from "@/context/FloatingLayerContext";
 
 const navList = [
   { name: "About", 
@@ -44,6 +45,11 @@ const Header = () => {
   const [isAlarmPopupOpen, setIsAlarmPopupOpen] = useState(false);
   const { user: profileData } = useCurrentUser();
   const { toggleChatRoom } = useChatRoom();
+  const { register: registerAlarmLayer, bringToFront: bringAlarmToFront } = useFloatingLayer("alarm");
+
+  useEffect(() => {
+    registerAlarmLayer("alarm");
+  }, [registerAlarmLayer]);
   const { count: alarmUnreadCount, refresh: refreshAlarmUnread } = useAlarmUnreadCount();
   const { count: chatUnreadCount } = useChatUnreadCount();
   
@@ -241,7 +247,10 @@ const Header = () => {
             {isAuthenticated && (
               <>
                 <button 
-                  onClick={() => setIsAlarmPopupOpen(true)}
+                  onClick={() => {
+                    bringAlarmToFront("alarm");
+                    setIsAlarmPopupOpen(true);
+                  }}
                   className="relative p-2.5 rounded-lg bg-primary-50 hover:bg-primary-100 transition-all duration-200 group cursor-pointer"
                 >
                   <BellIcon className="w-5 h-5 text-primary-600 group-hover:text-primary-700 transition-colors" />

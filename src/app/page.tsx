@@ -7,7 +7,6 @@ import { ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
 
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import ChatBot from '@/app/(main)/chatbot/ChatBot';
 import Topics from '@/components/landing/Topics';
 import { HeroBanner, StatisticsSection, FeaturedProjectCard, ProjectCardHome, ArticleCardHome, QuickActions, FAQsSection } from '@/components/landing';
 import { faqs } from '@/data/faq';
@@ -562,7 +561,6 @@ export default function Home() {
       </div>
 
       <Footer />
-      <ChatBot/>
     </>
   );
 }

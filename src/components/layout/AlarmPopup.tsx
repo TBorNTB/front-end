@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Alarm, AlarmType } from '@/types/services/alarm';
 import { Bell, Heart, MessageSquare, Reply, ThumbsUp, UserPlus, X, Clock, ChevronRight, Loader2, Trash2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { alarmService, mapAlarmApiToAlarm } from '@/lib/api/services/alarm-services';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useFloatingLayer } from '@/context/FloatingLayerContext';
 
 const POPUP_PAGE_SIZE = 5;
 
@@ -84,8 +86,11 @@ interface AlarmPopupProps {
   onRefreshUnread?: () => void;
 }
 
+const LAYER_ID = 'alarm';
+
 export default function AlarmPopup({ isOpen, onClose, onRefreshUnread }: AlarmPopupProps) {
   const { user } = useAuth();
+  const { register, bringToFront, getZIndex } = useFloatingLayer(LAYER_ID);
   const [seenFilter, setSeenFilter] = useState<SeenFilter>('all');
   const [selectedCategory, setSelectedCategory] = useState<AlarmType | 'all'>('all');
   const [alarms, setAlarms] = useState<Alarm[]>([]);
@@ -131,6 +136,13 @@ export default function AlarmPopup({ isOpen, onClose, onRefreshUnread }: AlarmPo
   useEffect(() => {
     if (isOpen) loadAlarms(page);
   }, [isOpen, selectedCategory, seenFilter, page, loadAlarms]);
+
+  useEffect(() => {
+    if (isOpen) {
+      register(LAYER_ID);
+      bringToFront(LAYER_ID);
+    }
+  }, [isOpen, register, bringToFront]);
 
 
   useEffect(() => {
@@ -236,13 +248,16 @@ export default function AlarmPopup({ isOpen, onClose, onRefreshUnread }: AlarmPo
 
   if (!isOpen) return null;
 
-  return (
+  const z = getZIndex(LAYER_ID);
+
+  const popupContent = (
     <>
-      <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/50" style={{ zIndex: z }} onClick={onClose} />
 
       <div
         ref={popupRef}
-        className="fixed top-16 right-4 z-50 w-[480px] max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-2xl border border-gray-200 max-h-[calc(100vh-5rem)] flex flex-col md:top-20 md:right-4"
+        className="fixed top-16 right-4 w-[480px] max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-2xl border border-gray-200 max-h-[calc(100vh-5rem)] flex flex-col md:top-20 md:right-4"
+        style={{ zIndex: z }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex flex-col h-full">
@@ -481,4 +496,7 @@ export default function AlarmPopup({ isOpen, onClose, onRefreshUnread }: AlarmPo
       </div>
     </>
   );
+
+  if (typeof document === 'undefined') return null;
+  return createPortal(popupContent, document.body);
 }
