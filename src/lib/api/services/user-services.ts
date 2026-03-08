@@ -29,6 +29,7 @@ export interface MembersPageResponse {
   size: number;
   page: number;
   totalPage: number;
+  totalElements: number;
 }
 
 export interface GetMembersParams {
@@ -127,12 +128,14 @@ export const memberService = {
       throw new Error(data?.message || data?.error || `멤버 조회 실패 (${response.status})`);
     }
 
+    const totalElements = data.totalElements ?? data.totalElement ?? data.total_elements ?? 0;
     return {
       message: data.message || '',
       data: data.data || [],
       size: data.size || 0,
       page: data.page || 0,
       totalPage: data.totalPage || 0,
+      totalElements,
     };
   },
 

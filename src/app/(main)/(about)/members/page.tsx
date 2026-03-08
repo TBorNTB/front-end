@@ -83,6 +83,7 @@ export default function MembersPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize] = useState(6);
   const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
 
   // 검색어 debounce (300ms)
   useEffect(() => {
@@ -121,10 +122,12 @@ export default function MembersPage() {
 
       setMembers(response.data);
       setTotalPages(response.totalPage);
+      setTotalElements(response.totalElements);
     } catch (err: any) {
       console.error('Failed to load members:', err);
       setError(err.message || '멤버 정보를 불러올 수 없습니다.');
       setMembers([]);
+      setTotalElements(0);
     } finally {
       setIsLoading(false);
     }
@@ -283,7 +286,7 @@ export default function MembersPage() {
             {/* Results Info */}
             <div className="flex items-center justify-between mb-6">
               <p className="text-gray-700">
-                총 <span className="font-semibold text-primary-700">{members.length}</span>명의 멤버
+                총 <span className="font-semibold text-primary-700">{totalElements}</span>명의 멤버
                 {(selectedLevels.length > 0 || debouncedSearchTerm) && (
                   <span className="ml-2 text-sm text-gray-700">
                     (필터 적용됨)
