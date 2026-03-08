@@ -711,7 +711,7 @@ export function LearningTopics() {
 
                   <div className="text-center">
                     <button
-                      onClick={() => router.push(`/articles?topic=${cat?.slug}`)}
+                      onClick={() => router.push('/topics')}
                       className="text-green-600 hover:text-green-700 font-medium flex items-center space-x-2 mx-auto text-sm transition-colors hover:underline"
                     >
                       <span>모든 CS지식 보기</span>

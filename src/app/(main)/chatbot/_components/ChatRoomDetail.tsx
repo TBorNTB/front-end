@@ -46,11 +46,6 @@ const isJoinMarker = (content?: string | null): boolean => {
   return false;
 };
 
-const buildJoinSystemText = (nickname: string): string => {
-  const name = nickname.trim() || "알 수 없는 사용자";
-  return `${name}님이 채팅방에 들어왔습니다.`;
-};
-
 const CHAT_INVITE_ROLES = ["ASSOCIATE_MEMBER", "FULL_MEMBER", "SENIOR", "ADMIN"] as const;
 const MIN_W = 320;
 const MIN_H = 400;
@@ -70,8 +65,6 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
   const isUserNearBottomRef = useRef(true);
   const initialHistoryLoadedRef = useRef(false);
   const forceScrollToBottomOnOpenRef = useRef(true);
-  const lastJoinNoticeRef = useRef<{ key: string; at: number } | null>(null);
-
   const { user: currentUser } = useCurrentUser();
 
   // 채팅방 이름 변경 / 멤버 추가 모달
@@ -181,29 +174,9 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
         return;
       }
 
-      if (message.type === "JOIN" && (message.content ?? "").trim().length > 0) {
-        const nickname = (message.nickname ?? "").trim() || (message.username ?? "").trim() || "알 수 없는 사용자";
-        const text = isJoinMarker(message.content) ? buildJoinSystemText(nickname) : (message.content ?? "");
-        const key = `${message.createdAt}|${message.username}|JOIN`;
-
-        // 중복 JOIN(재연결/개발 StrictMode 등)로 시스템 문구가 여러 번 쌓이는 것 방지
-        const last = lastJoinNoticeRef.current;
-        if (last && last.key === key && Date.now() - last.at < 10_000) {
-          return;
-        }
-        lastJoinNoticeRef.current = { key, at: Date.now() };
-
-        const newMessage: ChatMessage = {
-          id: `system-${message.createdAt}-${message.username}-join`,
-          sender: message.username,
-          senderName: nickname,
-          content: text,
-          timestamp: new Date(message.createdAt),
-          isOwn: false,
-          kind: "system",
-        };
-
-        setMessages((prev) => [...prev, newMessage]);
+      // 입장 알림 메시지는 UI에 표시하지 않음 (요청: "~~님께서 채팅방 들어왔습니다" 비표시)
+      if (message.type === "JOIN") {
+        return;
       }
     },
   });
@@ -364,20 +337,13 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
   }, [roomId, roomName, addMembersSelected, onMembersChange]);
 
   const mapHistoryItemToMessage = useCallback(
-    (item: ChatHistoryItem): ChatMessage => {
+    (item: ChatHistoryItem): ChatMessage | null => {
       const currentUsername = currentUsernameRef.current;
       const senderUsername = item.senderUsername;
 
+      // 입장 알림은 UI에 표시하지 않음
       if (isJoinMarker(item.message)) {
-        return {
-          id: `history-system-${item.createdAt}-${senderUsername}-join`,
-          sender: senderUsername,
-          senderName: item.senderNickname,
-          content: buildJoinSystemText(item.senderNickname),
-          timestamp: new Date(item.createdAt),
-          isOwn: false,
-          kind: "system",
-        };
+        return null;
       }
 
       return {
@@ -412,7 +378,10 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
 
         const res = await getRoomChatHistory(roomId, { cursorId, size: 20 });
 
-        const historyMessages = (res.items || []).map(mapHistoryItemToMessage).sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+        const historyMessages = (res.items || [])
+          .map(mapHistoryItemToMessage)
+          .filter((m): m is ChatMessage => m !== null)
+          .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
         setHistoryNextCursorId(res.nextCursorId);
         setHasMoreHistory(!!res.nextCursorId && res.nextCursorId !== 0);
 
