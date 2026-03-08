@@ -397,15 +397,21 @@ export default function ProjectsContent() {
         page: page,
       });
 
-      const transformedProjects = response.content.map((item: any) => ({
+      const transformedProjects = response.content.map((item: any) => {
+        const raw = item.projectCategories;
+        const rawCategories = Array.isArray(raw) ? raw : (raw != null && raw !== '' ? [raw] : []);
+        const categoryDisplayNames = rawCategories.map((cat: any) => {
+          const value = typeof cat === 'string' ? cat : (cat?.categoryType ?? cat?.name ?? cat);
+          return value ? (CategoryDisplayNames[value as CategoryType] || value) : '';
+        }).filter(Boolean);
+        return {
         id: item.id,
         title: item.title || '제목 없음',
         description: item.description || '',
         image: getValidImageUrl(item.thumbnailUrl),
         tags: item.projectTechStacks || [],
-        category: item.projectCategories?.[0] ? 
-          CategoryDisplayNames[item.projectCategories[0] as CategoryType] || item.projectCategories[0] : 
-          '',
+        category: categoryDisplayNames[0] ?? '',
+        categories: categoryDisplayNames,
         topicSlug: item.projectCategories?.[0] ? 
           CategoryHelpers.getSlug(item.projectCategories[0] as CategoryType) : 
           '',
@@ -435,7 +441,8 @@ export default function ProjectsContent() {
         lastUpdate: item.updatedAt || item.createdAt || '',
         github: '',
         demo: null
-      }));
+      };
+      });
 
       setProjects(transformedProjects);
       setTotalPages(response.totalPages);
@@ -697,10 +704,18 @@ export default function ProjectsContent() {
                           height={viewMode === 'list' ? 224 : 240}
                           className={`w-full object-cover ${viewMode === 'list' ? 'h-full' : 'h-56'} group-hover:scale-105 transition-transform duration-200`}
                         />
-                        <div className="absolute top-3 left-3">
-                          <span className="bg-white/90 backdrop-blur-sm border border-gray-200 text-primary px-2 py-1 rounded-full text-xs font-medium">
-                            {decodeHtmlEntities(project.category)}
-                          </span>
+                        <div className="absolute top-3 left-3 flex flex-wrap gap-1 max-w-[85%]">
+                          {(project.categories && project.categories.length > 0
+                            ? project.categories
+                            : project.category ? [project.category] : []
+                          ).map((cat: string, idx: number) => (
+                            <span
+                              key={idx}
+                              className="bg-white/90 backdrop-blur-sm border border-gray-200 text-primary px-2 py-1 rounded-full text-xs font-medium"
+                            >
+                              {decodeHtmlEntities(cat)}
+                            </span>
+                          ))}
                         </div>
                         <div className="absolute top-3 right-3">
                           <span className={`px-2 py-1 rounded-full text-xs border ${getStatusColor(project.status)}`}>
