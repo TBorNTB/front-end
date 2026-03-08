@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import {Github, Mail, Instagram, Youtube } from "lucide-react";
+import { Mail, Instagram, Facebook } from "lucide-react";
 
 const Footer = () => {
   const scrollToTop = () => {
@@ -68,14 +68,23 @@ const Footer = () => {
                     </a>
                   </div>
                   <div className="flex space-x-4 pt-2">
-                    <a href="#" className="text-gray-700 hover:text-blue-400 transition duration-200 hover:scale-110">
-                      <Github className="h-5 w-5" />
+                    <a
+                      href="https://www.facebook.com/sejongssg/?locale=ko_KR"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-700 hover:text-blue-400 transition duration-200 hover:scale-110"
+                      aria-label="SSG Facebook"
+                    >
+                      <Facebook className="h-5 w-5" />
                     </a>
-                    <a href="#" className="text-gray-700 hover:text-blue-400 transition duration-200 hover:scale-110">
+                    <a
+                      href="https://www.instagram.com/ssg_sejong/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-700 hover:text-blue-400 transition duration-200 hover:scale-110"
+                      aria-label="SSG Instagram"
+                    >
                       <Instagram className="h-5 w-5" />
-                    </a>
-                    <a href="#" className="text-gray-700 hover:text-blue-400 transition duration-200 hover:scale-110">
-                      <Youtube className="h-5 w-5" />
                     </a>
                   </div>
                 </div>
