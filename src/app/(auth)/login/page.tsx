@@ -227,10 +227,10 @@ function LogInPageInner() {
   return (
     <div className="flex h-screen w-full items-center justify-center bg-authentication">
       <div className="absolute top-0 left-0 h-full w-full bg-[radial-gradient(circle_at_center,_rgba(58,_77,_161,_0.08)_0,_transparent_30%)]" />
-      <div className="flex h-[550px] w-[850px] rounded-xl bg-white shadow-xl shadow-primary-500/10 overflow-hidden z-10 border border-gray-200">
-        
-        {/* Left Panel */}
-        <div className="flex flex-col items-center justify-center w-1/3 bg-gradient-to-br from-primary-500 to-primary-700 p-10 text-center">
+      <div className="flex w-full max-w-[850px] mx-4 rounded-xl bg-white shadow-xl shadow-primary-500/10 overflow-hidden z-10 border border-gray-200">
+
+        {/* Left Panel - 모바일에서 숨김 */}
+        <div className="hidden md:flex flex-col items-center justify-center w-1/3 bg-gradient-to-br from-primary-500 to-primary-700 p-10 text-center">
           <Link href="/" className="flex items-center gap-1.5 p-2 font-bold hover:cursor-pointer">
             <Image src="/logo-white.svg" alt="SSG Logo" width={100} height={100} className="filter" />
           </Link>
@@ -245,7 +245,7 @@ function LogInPageInner() {
         </div>
 
         {/* Right Panel */}
-        <div className="flex flex-col justify-center p-10 w-2/3 bg-white relative">
+        <div className="flex flex-col justify-center p-8 md:p-10 w-full md:w-2/3 bg-white relative">
           <button
             type="button"
             onClick={() => router.push("/")}
@@ -385,6 +385,14 @@ function LogInPageInner() {
             <Github className="mr-2 h-4 w-4" />
             {isOAuthLoading ? '리다이렉트 중...' : '깃허브로 간편 로그인'}
           </button>
+
+          {/* 모바일 회원가입 링크 */}
+          <p className="md:hidden mt-6 text-center text-sm text-gray-500">
+            계정이 없으신가요?{" "}
+            <Link href="/signup" className="text-primary-600 font-medium no-underline hover:text-primary-700">
+              회원가입
+            </Link>
+          </p>
         </div>
       </div>
     </div>
