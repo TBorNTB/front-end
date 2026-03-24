@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, X, Upload, Search } from 'lucide-react';
+import { ArrowLeft, X, Upload, Search, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,7 +13,7 @@ import Image from 'next/image';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { requireNotGuest } from '@/lib/role-utils';
 import { fetchCategories } from '@/lib/api/services/project-services';
-import { fetchArticleById, updateArticle } from '@/lib/api/services/article-services';
+import { fetchArticleById, updateArticle, type AttachmentInfo, type AttachmentReq } from '@/lib/api/services/article-services';
 import { s3Service } from '@/lib/api/services/s3-services';
 import { decodeHtmlEntities } from '@/lib/html-utils';
 
@@ -46,6 +46,9 @@ export default function EditArticlePage({ params }: EditPageProps) {
   const [thumbnailKey, setThumbnailKey] = useState<string>('');
   const [contentImageKeys, setContentImageKeys] = useState<string[]>([]);
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
+  const [existingAttachments, setExistingAttachments] = useState<AttachmentInfo[]>([]);
+  const [attachmentKeysToDelete, setAttachmentKeysToDelete] = useState<string[]>([]);
+  const [pendingAttachments, setPendingAttachments] = useState<{ file: File; name: string }[]>([]);
 
   // API data states
   const [categories, setCategories] = useState<Array<{ id: number; name: string; description: string }>>([]);
@@ -111,6 +114,7 @@ export default function EditArticlePage({ params }: EditPageProps) {
           if (articleData.thumbnailUrl) {
             setThumbnailPreview(articleData.thumbnailUrl);
           }
+          setExistingAttachments(articleData.attachments ?? []);
         }
       } catch (error) {
         console.error('Failed to load article:', error);
@@ -239,6 +243,16 @@ export default function EditArticlePage({ params }: EditPageProps) {
         }
       }
 
+      const uploadedAttachments: AttachmentReq[] = [];
+      for (const att of pendingAttachments) {
+        try {
+          const result = await s3Service.uploadFile(att.file, { presignedUrlEndpoint: '/api/cs-knowledge/files/presigned-url' });
+          uploadedAttachments.push({ tempKey: result.key, originalFileName: att.name });
+        } catch (e) {
+          console.error('첨부파일 업로드 실패:', att.name, e);
+        }
+      }
+
       const articleData = {
         title: formData.title,
         content: formData.content,
@@ -246,6 +260,8 @@ export default function EditArticlePage({ params }: EditPageProps) {
         category: formData.category,
         ...(uploadedThumbnailKey && { thumbnailKey: uploadedThumbnailKey }),
         ...(contentImageKeys.length > 0 && { contentImageKeys }),
+        ...(attachmentKeysToDelete.length > 0 && { attachmentKeysToDelete }),
+        ...(uploadedAttachments.length > 0 && { attachments: uploadedAttachments }),
       };
 
       await updateArticle(articleId, articleData);
@@ -513,6 +529,56 @@ export default function EditArticlePage({ params }: EditPageProps) {
                     </div>
                   </label>
                 </div>
+              </div>
+            </div>
+
+            {/* Attachment Section */}
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <div className="w-1 h-8 bg-primary-600 rounded"></div>
+                첨부파일 (선택)
+              </h2>
+              <div className="space-y-2">
+                {existingAttachments.filter(att => !attachmentKeysToDelete.includes(att.fileKey)).map((att) => (
+                  <div key={att.fileKey} className="flex items-center gap-3 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                    <Paperclip className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                    <span className="text-sm text-gray-800 truncate flex-1">{att.originalFileName}</span>
+                    <button
+                      type="button"
+                      onClick={() => setAttachmentKeysToDelete(prev => [...prev, att.fileKey])}
+                      className="text-gray-700 hover:text-red-500 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                {pendingAttachments.map((att, idx) => (
+                  <div key={idx} className="flex items-center gap-3 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+                    <Paperclip className="w-4 h-4 text-gray-700 flex-shrink-0" />
+                    <span className="text-sm text-gray-800 truncate flex-1">{att.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => setPendingAttachments(prev => prev.filter((_, i) => i !== idx))}
+                      className="text-gray-700 hover:text-red-500 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                <label className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-primary-400 transition-colors w-fit">
+                  <input
+                    type="file"
+                    multiple
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files ?? []);
+                      setPendingAttachments(prev => [...prev, ...files.map(f => ({ file: f, name: f.name }))]);
+                      e.target.value = '';
+                    }}
+                    className="hidden"
+                  />
+                  <Upload className="w-4 h-4 text-gray-700" />
+                  <span className="text-sm text-gray-700 font-medium">파일 추가</span>
+                </label>
               </div>
             </div>
 
