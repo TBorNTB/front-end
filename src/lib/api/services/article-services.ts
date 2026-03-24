@@ -11,6 +11,16 @@ export interface WriterProfile {
   profileImageUrl: string;
 }
 
+export interface AttachmentInfo {
+  fileKey: string;
+  originalFileName: string;
+}
+
+export interface AttachmentReq {
+  tempKey: string;
+  originalFileName: string;
+}
+
 export interface ArticleResponse {
   id: number;
   title: string;
@@ -19,6 +29,7 @@ export interface ArticleResponse {
   writerProfile: WriterProfile;
   category: string;
   thumbnailUrl: string;
+  attachments?: AttachmentInfo[];
   createdAt: string;
 }
 
@@ -29,6 +40,7 @@ export interface ArticleCreateRequest {
   category: string;
   thumbnailKey?: string;
   contentImageKeys?: string[];
+  attachments?: AttachmentReq[];
 }
 
 export interface ArticleUpdateRequest {
@@ -38,6 +50,8 @@ export interface ArticleUpdateRequest {
   category: string;
   thumbnailKey?: string;
   contentImageKeys?: string[];
+  attachments?: AttachmentReq[];
+  attachmentKeysToDelete?: string[];
 }
 
 /**
@@ -177,9 +191,28 @@ export const createArticle = async (data: ArticleCreateRequest): Promise<Article
   return response.json();
 };
 
+export const fetchAttachmentDownloadUrl = async (id: string | number, fileKey: string): Promise<string> => {
+  const endpoint = ARTICLE_ENDPOINTS.ARTICLE.ATTACHMENT_DOWNLOAD.replace(':id', String(id));
+  const url = getArticleApiUrl(`${endpoint}?key=${encodeURIComponent(fileKey)}`);
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: { 'accept': 'application/json' },
+    credentials: 'include',
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    throw new Error('다운로드 URL을 가져오는데 실패했습니다.');
+  }
+
+  return response.json();
+};
+
 export const articleService = {
   fetchArticleById,
   createArticle,
   updateArticle,
   deleteArticle,
+  fetchAttachmentDownloadUrl,
 };

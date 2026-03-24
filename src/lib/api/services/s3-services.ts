@@ -14,13 +14,13 @@ export const s3Service = {
    * @param contentType 파일 타입 (MIME type)
    * @returns presigned URL 및 파일 URL
    */
-  getPresignedUrl: async (fileName: string, contentType: string): Promise<{
+  getPresignedUrl: async (fileName: string, contentType: string, endpoint?: string): Promise<{
     presignedUrl: string;
     fileUrl?: string;
     key?: string;
   }> => {
     try {
-      const response = await fetchWithRefresh('/api/s3/presigned-url', {
+      const response = await fetchWithRefresh(endpoint ?? '/api/s3/presigned-url', {
         method: 'POST',
         headers: {
           Accept: 'application/json',
@@ -77,10 +77,10 @@ export const s3Service = {
    * @param file 업로드할 파일
    * @returns 업로드된 파일의 URL과 key
    */
-  uploadFile: async (file: File): Promise<{ url: string; key: string }> => {
+  uploadFile: async (file: File, options?: { presignedUrlEndpoint?: string }): Promise<{ url: string; key: string }> => {
     try {
       // 1. Presigned URL 요청
-      const { presignedUrl, fileUrl, key } = await s3Service.getPresignedUrl(file.name, file.type);
+      const { presignedUrl, fileUrl, key } = await s3Service.getPresignedUrl(file.name, file.type, options?.presignedUrlEndpoint);
 
       if (!presignedUrl) {
         throw new Error('Presigned URL을 받을 수 없습니다.');
