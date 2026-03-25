@@ -127,6 +127,9 @@ async function handleProxy(request: Request, pathParts: string[]) {
   const respContentType = backendResponse.headers.get('content-type');
   if (respContentType && bodyAllowed) responseHeaders.set('content-type', respContentType);
 
+  const contentDisposition = backendResponse.headers.get('content-disposition');
+  if (contentDisposition) responseHeaders.set('content-disposition', contentDisposition);
+
   // Forward Set-Cookie if backend uses it (rare here, but safe)
   const setCookies = backendResponse.headers.getSetCookie?.() ?? [];
   for (const cookie of setCookies) {
