@@ -1033,7 +1033,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                         <span className="text-sm text-gray-800 truncate">{att.originalFileName}</span>
                         <button
                           onClick={() => handleDownloadAttachment(att.fileKey)}
-                          className="flex-shrink-0 flex items-center gap-1 text-sm text-primary-600 hover:text-primary-700 font-medium"
+                          className="flex-shrink-0 flex items-center gap-1 text-sm text-primary-600 hover:text-primary-700 font-medium cursor-pointer"
                         >
                           <Download className="w-4 h-4" />
                           다운로드
