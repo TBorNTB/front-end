@@ -3,8 +3,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, createElement, useRef, JSX } from 'react';
-import { ThumbsUp, Eye, MessageCircle, Edit, Clock, ArrowLeft, Code, FileText, Trash2 } from 'lucide-react';
-import { fetchArticleById, deleteArticle, type ArticleResponse } from '@/lib/api/services/article-services';
+import { ThumbsUp, Eye, MessageCircle, Edit, Clock, ArrowLeft, Code, FileText, Trash2, Paperclip, Download } from 'lucide-react';
+import { fetchArticleById, deleteArticle, fetchAttachmentDownloadUrl, type ArticleResponse, type AttachmentInfo } from '@/lib/api/services/article-services';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { useRouter } from 'next/navigation';
 import TableOfContents from '@/components/editor/TableOfContents';
@@ -154,6 +154,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [isTogglingLike, setIsTogglingLike] = useState(false);
   const [post, setPost] = useState<PostData | null>(null);
+  const [articleAttachments, setArticleAttachments] = useState<AttachmentInfo[]>([]);
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Comment states
@@ -533,6 +534,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
           };
 
           setPost(mappedPost);
+          setArticleAttachments(articleData.attachments ?? []);
           setIsLiked(likeStatusData.status === 'LIKED');
           
           // 댓글은 백그라운드에서 로드 (UI 블로킹하지 않음)
@@ -886,6 +888,15 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
     return elements;
   };
 
+  const handleDownloadAttachment = async (fileKey: string) => {
+    try {
+      const url = await fetchAttachmentDownloadUrl(articleId, fileKey);
+      window.open(url, '_blank');
+    } catch {
+      alert('다운로드에 실패했습니다.');
+    }
+  };
+
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -1007,6 +1018,30 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                   readOnly
                 />
               </div>
+
+              {/* Attachments Section */}
+              {articleAttachments.length > 0 && (
+                <div className="mb-8 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <Paperclip className="w-4 h-4" />
+                    첨부파일 ({articleAttachments.length})
+                  </h3>
+                  <ul className="space-y-2">
+                    {articleAttachments.map((att) => (
+                      <li key={att.fileKey} className="flex items-center justify-between gap-2">
+                        <span className="text-sm text-gray-800 truncate">{att.originalFileName}</span>
+                        <button
+                          onClick={() => handleDownloadAttachment(att.fileKey)}
+                          className="flex-shrink-0 flex items-center gap-1 text-sm text-primary-600 hover:text-primary-700 font-medium"
+                        >
+                          <Download className="w-4 h-4" />
+                          다운로드
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {/* Stats Bar with Action Buttons */}
               <div className="flex items-center justify-between py-5 border-y border-gray-200 mb-8">

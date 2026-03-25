@@ -9,6 +9,8 @@ export const ARTICLE_ENDPOINTS = {
     CREATE: '/project-service/cs-knowledge',
     UPDATE: '/project-service/cs-knowledge/:id',
     DELETE: '/project-service/cs-knowledge/:id',
+    PRESIGNED_URL: '/project-service/cs-knowledge/files/presigned-url',
+    ATTACHMENT_DOWNLOAD: '/project-service/cs-knowledge/:id/attachments/download',
   },
 } as const;
 
