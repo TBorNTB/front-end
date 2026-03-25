@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, createElement, useRef, JSX } from 'react';
 import { ThumbsUp, Eye, MessageCircle, Edit, Clock, ArrowLeft, Code, FileText, Trash2, Paperclip, Download } from 'lucide-react';
-import { fetchArticleById, deleteArticle, fetchAttachmentDownloadUrl, type ArticleResponse, type AttachmentInfo } from '@/lib/api/services/article-services';
+import { fetchArticleById, deleteArticle, getAttachmentDownloadUrl, type ArticleResponse, type AttachmentInfo } from '@/lib/api/services/article-services';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { useRouter } from 'next/navigation';
 import TableOfContents from '@/components/editor/TableOfContents';
@@ -888,13 +888,14 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
     return elements;
   };
 
-  const handleDownloadAttachment = async (fileKey: string) => {
-    try {
-      const url = await fetchAttachmentDownloadUrl(articleId, fileKey);
-      window.open(url, '_blank');
-    } catch {
-      alert('다운로드에 실패했습니다.');
-    }
+  const handleDownloadAttachment = (fileKey: string) => {
+    const url = getAttachmentDownloadUrl(articleId, fileKey);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const scrollToSection = (id: string) => {

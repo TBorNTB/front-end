@@ -191,22 +191,9 @@ export const createArticle = async (data: ArticleCreateRequest): Promise<Article
   return response.json();
 };
 
-export const fetchAttachmentDownloadUrl = async (id: string | number, fileKey: string): Promise<string> => {
+export const getAttachmentDownloadUrl = (id: string | number, fileKey: string): string => {
   const endpoint = ARTICLE_ENDPOINTS.ARTICLE.ATTACHMENT_DOWNLOAD.replace(':id', String(id));
-  const url = getArticleApiUrl(`${endpoint}?key=${encodeURIComponent(fileKey)}`);
-
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: { 'accept': 'application/json' },
-    credentials: 'include',
-    cache: 'no-store',
-  });
-
-  if (!response.ok) {
-    throw new Error('다운로드 URL을 가져오는데 실패했습니다.');
-  }
-
-  return response.json();
+  return getArticleApiUrl(`${endpoint}?key=${encodeURIComponent(fileKey)}`);
 };
 
 export const articleService = {
@@ -214,5 +201,5 @@ export const articleService = {
   createArticle,
   updateArticle,
   deleteArticle,
-  fetchAttachmentDownloadUrl,
+  getAttachmentDownloadUrl,
 };
