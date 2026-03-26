@@ -217,7 +217,6 @@ input::-webkit-credentials-auto-fill-button {
 .tiptap ul li p,
 .tiptap ol li p {
   margin: 0;
-  display: inline;
 }
 
 .tiptap ul,
