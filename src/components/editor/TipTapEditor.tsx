@@ -10,25 +10,50 @@ import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-/** 복붙한 텍스트에서 마크다운(헤딩, 할 일, 코드 블록)을 HTML로 변환 (노션 등 복붙 지원) */
+/** 복붙한 텍스트에서 마크다운(헤딩, 할 일, 불릿/번호 목록, 코드 블록, 인라인 서식)을 HTML로 변환 (노션 등 복붙 지원) */
 function transformPastedMarkdown(text: string): string | null {
   const taskLineRegex = /^\s*-\s*\[( |x|X)\]\s*(.*)$/im;
   const headingRegex = /^(#{1,6})\s+(.*)$/;
   const codeFenceRegex = /^```(\w*)\s*$/;
   const blockquoteLineRegex = /^>\s?(.*)$/;
+  const bulletLineRegex = /^\s*[-*+]\s+(.+)$/;
+  const orderedLineRegex = /^\s*\d+\.\s+(.+)$/;
   const lines = text.split(/\r?\n/);
+
   const escapeHtml = (s: string) =>
     s
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
+
+  // escapeHtml 적용 후 인라인 마크다운(**bold**, *italic*, `code`, ~~strike~~) 변환
+  // * ` ~ 는 escapeHtml이 건드리지 않으므로 escaping 후 적용해도 안전합니다.
+  const applyInlineMd = (s: string): string => {
+    let r = s;
+    // **bold** / __bold__ — *italic* 보다 먼저 처리해야 이중 별표 오인식 방지
+    r = r.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
+    r = r.replace(/__([^_\n]+)__/g, '<strong>$1</strong>');
+    r = r.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+    r = r.replace(/_([^_\n]+)_/g, '<em>$1</em>');
+    r = r.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+    r = r.replace(/~~([^~\n]+)~~/g, '<s>$1</s>');
+    return r;
+  };
+
+  // HTML escape + 인라인 마크다운 변환을 한 번에
+  const inline = (s: string) => applyInlineMd(escapeHtml(s));
+
   const blocks: string[] = [];
   let taskItems: { checked: boolean; content: string }[] = [];
+  let bulletItems: string[] = [];
+  let orderedItems: string[] = [];
   let hasTaskLine = false;
   let hasHeading = false;
   let hasCodeBlock = false;
   let hasBlockquote = false;
+  let hasBulletList = false;
+  let hasOrderedList = false;
   let inCodeBlock = false;
   let codeBlockLang = '';
   let codeBlockLines: string[] = [];
@@ -40,11 +65,27 @@ function transformPastedMarkdown(text: string): string | null {
     const itemsHtml = taskItems
       .map(
         (item) =>
-          `<li data-type="taskItem" data-checked="${item.checked}"><p>${escapeHtml(item.content)}</p></li>`
+          `<li data-type="taskItem" data-checked="${item.checked}"><p>${inline(item.content)}</p></li>`
       )
       .join('');
     blocks.push(`<ul data-type="taskList">${itemsHtml}</ul>`);
     taskItems = [];
+  };
+
+  const flushBulletList = () => {
+    if (bulletItems.length === 0) return;
+    hasBulletList = true;
+    const itemsHtml = bulletItems.map((item) => `<li><p>${inline(item)}</p></li>`).join('');
+    blocks.push(`<ul>${itemsHtml}</ul>`);
+    bulletItems = [];
+  };
+
+  const flushOrderedList = () => {
+    if (orderedItems.length === 0) return;
+    hasOrderedList = true;
+    const itemsHtml = orderedItems.map((item) => `<li><p>${inline(item)}</p></li>`).join('');
+    blocks.push(`<ol>${itemsHtml}</ol>`);
+    orderedItems = [];
   };
 
   const flushCodeBlock = () => {
@@ -60,7 +101,7 @@ function transformPastedMarkdown(text: string): string | null {
   const flushBlockquote = () => {
     if (blockquoteLines.length === 0) return;
     hasBlockquote = true;
-    const inner = blockquoteLines.map((l) => `<p>${escapeHtml(l)}</p>`).join('');
+    const inner = blockquoteLines.map((l) => `<p>${inline(l)}</p>`).join('');
     blocks.push(`<blockquote>${inner}</blockquote>`);
     blockquoteLines = [];
   };
@@ -69,11 +110,13 @@ function transformPastedMarkdown(text: string): string | null {
     const fenceMatch = line.match(codeFenceRegex);
     if (fenceMatch !== null) {
       flushBlockquote();
+      flushTaskList();
+      flushBulletList();
+      flushOrderedList();
       if (inCodeBlock) {
         flushCodeBlock();
         inCodeBlock = false;
       } else {
-        flushTaskList();
         codeBlockLang = (fenceMatch[1] ?? '').trim();
         inCodeBlock = true;
       }
@@ -88,6 +131,8 @@ function transformPastedMarkdown(text: string): string | null {
     const blockquoteMatch = line.match(blockquoteLineRegex);
     if (blockquoteMatch) {
       flushTaskList();
+      flushBulletList();
+      flushOrderedList();
       blockquoteLines.push(blockquoteMatch[1].trim());
       continue;
     }
@@ -95,28 +140,46 @@ function transformPastedMarkdown(text: string): string | null {
 
     const taskMatch = line.match(taskLineRegex);
     const headingMatch = line.match(headingRegex);
+    const bulletMatch = !taskMatch && line.match(bulletLineRegex);
+    const orderedMatch = !taskMatch && !bulletMatch && line.match(orderedLineRegex);
 
     if (taskMatch) {
+      flushBulletList();
+      flushOrderedList();
       taskItems.push({
         checked: taskMatch[1].toLowerCase() === 'x',
         content: taskMatch[2]?.trim() ?? '',
       });
+    } else if (bulletMatch) {
+      flushTaskList();
+      flushOrderedList();
+      bulletItems.push(bulletMatch[1].trim());
+    } else if (orderedMatch) {
+      flushTaskList();
+      flushBulletList();
+      orderedItems.push(orderedMatch[2].trim());
     } else if (headingMatch) {
       flushTaskList();
+      flushBulletList();
+      flushOrderedList();
       hasHeading = true;
       const level = Math.min(headingMatch[1].length, 3);
       const content = headingMatch[2].trim();
-      blocks.push(`<h${level}>${escapeHtml(content)}</h${level}>`);
+      blocks.push(`<h${level}>${inline(content)}</h${level}>`);
     } else {
       flushTaskList();
-      if (line.trim().length > 0) blocks.push(`<p>${escapeHtml(line.trim())}</p>`);
+      flushBulletList();
+      flushOrderedList();
+      if (line.trim().length > 0) blocks.push(`<p>${inline(line.trim())}</p>`);
     }
   }
 
   if (inCodeBlock) flushCodeBlock();
   flushBlockquote();
   flushTaskList();
-  if (!hasTaskLine && !hasHeading && !hasCodeBlock && !hasBlockquote) return null;
+  flushBulletList();
+  flushOrderedList();
+  if (!hasTaskLine && !hasHeading && !hasCodeBlock && !hasBlockquote && !hasBulletList && !hasOrderedList) return null;
   return blocks.length > 0 ? blocks.join('') : null;
 }
 
@@ -156,6 +219,8 @@ export default function TipTapEditor({
 }: TipTapEditorProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  // selection이 변경될 때 리렌더링을 강제해 툴바 활성 상태를 갱신합니다.
+  const [, setSelectionVersion] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editorWrapperRef = useRef<HTMLDivElement>(null);
 
@@ -187,12 +252,12 @@ export default function TipTapEditor({
         },
         bulletList: {
           HTMLAttributes: {
-            class: 'list-disc list-inside',
+            class: 'list-disc',
           },
         },
         orderedList: {
           HTMLAttributes: {
-            class: 'list-decimal list-inside',
+            class: 'list-decimal',
           },
         },
         blockquote: {
@@ -223,6 +288,10 @@ export default function TipTapEditor({
     editable,
     onUpdate: ({ editor }) => {
       onChange?.(editor.getHTML());
+    },
+    onSelectionUpdate: () => {
+      // selection 변경 시 리렌더링해 Bold/Italic 등 툴바 버튼 상태를 최신화합니다.
+      setSelectionVersion((v) => v + 1);
     },
     editorProps: {
       attributes: {
