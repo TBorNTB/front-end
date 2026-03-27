@@ -10,28 +10,59 @@ import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-/** 복붙한 텍스트에서 마크다운(헤딩, 할 일, 불릿/번호 목록, 코드 블록, 인라인 서식)을 HTML로 변환 (노션 등 복붙 지원) */
+/**
+ * 붙여넣은 텍스트에서 마크다운을 HTML로 변환합니다.
+ * 지원: 헤딩, 할 일 목록, 불릿/번호 목록(중첩), 코드 블록, 블록쿼트,
+ *       수평선, GFM 테이블, 인라인 서식(bold/italic/code/strike/link/image),
+ *       Tistory 이미지 태그, HTML 엔티티 이모지
+ */
 function transformPastedMarkdown(text: string): string | null {
-  const taskLineRegex = /^\s*-\s*\[( |x|X)\]\s*(.*)$/im;
-  const headingRegex = /^(#{1,6})\s+(.*)$/;
-  const codeFenceRegex = /^```(\w*)\s*$/;
-  const blockquoteLineRegex = /^>\s?(.*)$/;
-  const bulletLineRegex = /^\s*[-*+]\s+(.+)$/;
-  const orderedLineRegex = /^\s*\d+\.\s+(.+)$/;
+  // ── 0. 사전 처리: HTML 엔티티 디코딩 (&#x1f4da; → 📚, &amp; → & 등) ──────
+  // 붙여넣기 원본에 엔티티가 있을 때 escapeHtml 이전에 실제 문자로 변환합니다.
+  const decodeEntitiesRaw = (s: string): string => {
+    s = s.replace(/&#x([0-9a-fA-F]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)));
+    s = s.replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(parseInt(d, 10)));
+    s = s
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'");
+    return s;
+  };
+  text = decodeEntitiesRaw(text);
+
+  // ── 1. 패턴 정의 ────────────────────────────────────────────────────────────
+  const taskLineRegex    = /^\s*-\s*\[( |x|X)\]\s*(.*)$/im;
+  const headingRegex     = /^(#{1,6})\s+(.*)$/;
+  const codeFenceRegex   = /^```(\w*)\s*$/;
+  const blockquoteRegex  = /^(>+)\s?(.*)$/;
+  // 들여쓰기 지원: 2칸+ 들여쓰기를 중첩으로 처리
+  const bulletLineRegex  = /^(\s*)[-*+]\s+(.+)$/;
+  // 1. 과 1\. 모두 지원 (이스케이프된 번호 목록)
+  const orderedLineRegex = /^(\s*)\d+\\?\.\s+(.+)$/;
+  const hrRegex          = /^\s*(?:---+|\*\*\*+|___+)\s*$/;
+  const tableRowRegex    = /^\|.+\|$/;
+  // Tistory: [##_Image|url|CDM|version|{json}_##]
+  const tistoryRegex     = /^\[##_Image\|.+_##\]$/;
+
   const lines = text.split(/\r?\n/);
 
+  // ── 2. 헬퍼 함수 ────────────────────────────────────────────────────────────
   const escapeHtml = (s: string) =>
-    s
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-  // escapeHtml 적용 후 인라인 마크다운(**bold**, *italic*, `code`, ~~strike~~) 변환
-  // * ` ~ 는 escapeHtml이 건드리지 않으므로 escaping 후 적용해도 안전합니다.
+  // 마크다운 이스케이프 제거: \. \* \[ 등 → . * [
+  const unescapeMd = (s: string) =>
+    s.replace(/\\([\\`*_{}[\]()#+\-.!|@])/g, '$1');
+
   const applyInlineMd = (s: string): string => {
     let r = s;
-    // **bold** / __bold__ — *italic* 보다 먼저 처리해야 이중 별표 오인식 방지
+    // 이미지(![alt](url))를 링크([text](url))보다 먼저 처리
+    r = r.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%">');
+    // 링크
+    r = r.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>');
+    // **bold** / __bold__ — *italic* 보다 먼저 처리
     r = r.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
     r = r.replace(/__([^_\n]+)__/g, '<strong>$1</strong>');
     r = r.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
@@ -41,56 +72,92 @@ function transformPastedMarkdown(text: string): string | null {
     return r;
   };
 
-  // HTML escape + 인라인 마크다운 변환을 한 번에
-  const inline = (s: string) => applyInlineMd(escapeHtml(s));
+  // 마크다운 이스케이프 해제 → HTML 이스케이프 → 인라인 마크다운 변환
+  const inline = (s: string) => applyInlineMd(escapeHtml(unescapeMd(s)));
 
+  // ── 3. 상태 변수 ────────────────────────────────────────────────────────────
   const blocks: string[] = [];
-  let taskItems: { checked: boolean; content: string }[] = [];
-  let bulletItems: string[] = [];
-  let orderedItems: string[] = [];
-  let hasTaskLine = false;
-  let hasHeading = false;
-  let hasCodeBlock = false;
-  let hasBlockquote = false;
-  let hasBulletList = false;
-  let hasOrderedList = false;
-  let inCodeBlock = false;
-  let codeBlockLang = '';
-  let codeBlockLines: string[] = [];
-  let blockquoteLines: string[] = [];
+  /** 마크다운 구조가 하나라도 감지되면 true → 변환 결과를 반환 */
+  let hasAny = false;
 
+  let taskItems:    Array<{ checked: boolean; content: string }> = [];
+  let bulletItems:  Array<{ content: string; indent: number }>   = [];
+  let orderedItems: Array<{ content: string; indent: number }>   = [];
+  let blockquoteLines: string[] = [];
+  let codeBlockLines:  string[] = [];
+  let codeBlockLang  = '';
+  let inCodeBlock    = false;
+
+  // 테이블 상태
+  let tableRows:   string[][] = [];
+  let tableHasSep = false;
+
+  // ── 4. flush 헬퍼 ────────────────────────────────────────────────────────────
   const flushTaskList = () => {
-    if (taskItems.length === 0) return;
-    hasTaskLine = true;
-    const itemsHtml = taskItems
-      .map(
-        (item) =>
-          `<li data-type="taskItem" data-checked="${item.checked}"><p>${inline(item.content)}</p></li>`
-      )
+    if (!taskItems.length) return;
+    hasAny = true;
+    const html = taskItems
+      .map(i => `<li data-type="taskItem" data-checked="${i.checked}"><p>${inline(i.content)}</p></li>`)
       .join('');
-    blocks.push(`<ul data-type="taskList">${itemsHtml}</ul>`);
+    blocks.push(`<ul data-type="taskList">${html}</ul>`);
     taskItems = [];
   };
 
+  /** 들여쓰기 기준(2칸+)으로 최대 2단계 중첩 불릿 생성 */
   const flushBulletList = () => {
-    if (bulletItems.length === 0) return;
-    hasBulletList = true;
-    const itemsHtml = bulletItems.map((item) => `<li><p>${inline(item)}</p></li>`).join('');
-    blocks.push(`<ul>${itemsHtml}</ul>`);
+    if (!bulletItems.length) return;
+    hasAny = true;
+    let html = '<ul>';
+    let i = 0;
+    while (i < bulletItems.length) {
+      const item = bulletItems[i];
+      if (item.indent === 0) {
+        const content = inline(item.content);
+        i++;
+        const nested: string[] = [];
+        while (i < bulletItems.length && bulletItems[i].indent > 0) {
+          nested.push(`<li><p>${inline(bulletItems[i].content)}</p></li>`);
+          i++;
+        }
+        html += `<li><p>${content}</p>${nested.length ? `<ul>${nested.join('')}</ul>` : ''}</li>`;
+      } else {
+        html += `<li><p>${inline(item.content)}</p></li>`;
+        i++;
+      }
+    }
+    blocks.push(html + '</ul>');
     bulletItems = [];
   };
 
+  /** 들여쓰기 기준(2칸+)으로 최대 2단계 중첩 순서 목록 생성 */
   const flushOrderedList = () => {
-    if (orderedItems.length === 0) return;
-    hasOrderedList = true;
-    const itemsHtml = orderedItems.map((item) => `<li><p>${inline(item)}</p></li>`).join('');
-    blocks.push(`<ol>${itemsHtml}</ol>`);
+    if (!orderedItems.length) return;
+    hasAny = true;
+    let html = '<ol>';
+    let i = 0;
+    while (i < orderedItems.length) {
+      const item = orderedItems[i];
+      if (item.indent === 0) {
+        const content = inline(item.content);
+        i++;
+        const nested: string[] = [];
+        while (i < orderedItems.length && orderedItems[i].indent > 0) {
+          nested.push(`<li><p>${inline(orderedItems[i].content)}</p></li>`);
+          i++;
+        }
+        html += `<li><p>${content}</p>${nested.length ? `<ol>${nested.join('')}</ol>` : ''}</li>`;
+      } else {
+        html += `<li><p>${inline(item.content)}</p></li>`;
+        i++;
+      }
+    }
+    blocks.push(html + '</ol>');
     orderedItems = [];
   };
 
   const flushCodeBlock = () => {
-    if (codeBlockLines.length === 0) return;
-    hasCodeBlock = true;
+    if (!codeBlockLines.length) return;
+    hasAny = true;
     const code = codeBlockLines.join('\n');
     const lang = codeBlockLang ? ` class="language-${escapeHtml(codeBlockLang)}"` : '';
     blocks.push(`<pre><code${lang}>${escapeHtml(code)}</code></pre>`);
@@ -99,20 +166,59 @@ function transformPastedMarkdown(text: string): string | null {
   };
 
   const flushBlockquote = () => {
-    if (blockquoteLines.length === 0) return;
-    hasBlockquote = true;
-    const inner = blockquoteLines.map((l) => `<p>${inline(l)}</p>`).join('');
+    if (!blockquoteLines.length) return;
+    hasAny = true;
+    const inner = blockquoteLines.map(l => `<p>${inline(l)}</p>`).join('');
     blocks.push(`<blockquote>${inner}</blockquote>`);
     blockquoteLines = [];
   };
 
+  const parseTableCells = (row: string): string[] =>
+    row.replace(/^\|/, '').replace(/\|$/, '').split('|');
+
+  const isTableSep = (cells: string[]) =>
+    cells.length > 0 && cells.every(c => /^\s*:?-+:?\s*$/.test(c));
+
+  const flushTable = () => {
+    if (!tableRows.length) return;
+    hasAny = true;
+    let html = '<table>';
+    if (tableHasSep && tableRows.length >= 2) {
+      // tableRows[0]=헤더, tableRows[1]=구분자, tableRows[2+]=데이터
+      html += '<thead><tr>' +
+        tableRows[0].map(c => `<th>${inline(c.trim())}</th>`).join('') +
+        '</tr></thead><tbody>';
+      for (let i = 2; i < tableRows.length; i++) {
+        html += '<tr>' + tableRows[i].map(c => `<td>${inline(c.trim())}</td>`).join('') + '</tr>';
+      }
+    } else {
+      html += '<tbody>';
+      for (const row of tableRows) {
+        if (isTableSep(row)) continue;
+        html += '<tr>' + row.map(c => `<td>${inline(c.trim())}</td>`).join('') + '</tr>';
+      }
+    }
+    html += '</tbody></table>';
+    blocks.push(html);
+    tableRows = [];
+    tableHasSep = false;
+  };
+
+  /** 테이블 이외의 구조 변경 시 열려 있는 버퍼를 모두 닫습니다. */
+  const flushAll = () => {
+    flushBlockquote();
+    flushTaskList();
+    flushBulletList();
+    flushOrderedList();
+    flushTable();
+  };
+
+  // ── 5. 줄 단위 처리 ─────────────────────────────────────────────────────────
   for (const line of lines) {
+    // ── 코드 펜스 (```` ``` ````) ─────────────────────────────────────────────
     const fenceMatch = line.match(codeFenceRegex);
     if (fenceMatch !== null) {
-      flushBlockquote();
-      flushTaskList();
-      flushBulletList();
-      flushOrderedList();
+      flushAll();
       if (inCodeBlock) {
         flushCodeBlock();
         inCodeBlock = false;
@@ -122,64 +228,98 @@ function transformPastedMarkdown(text: string): string | null {
       }
       continue;
     }
+    if (inCodeBlock) { codeBlockLines.push(line); continue; }
 
-    if (inCodeBlock) {
-      codeBlockLines.push(line);
+    // ── Tistory 이미지 태그 ([##_Image|...|{json}_##]) ───────────────────────
+    if (tistoryRegex.test(line)) {
+      flushAll();
+      hasAny = true;
+      // "[##_Image|" 접두사와 "_##]" 접미사를 제거한 뒤 | 로 분리
+      const inner = line.slice('[##_Image|'.length, -'_##]'.length);
+      const parts = inner.split('|');
+      const urlOrPath = parts[0]?.trim() ?? '';
+      // 인덱스 3 이후를 재결합하면 JSON(| 포함 시에도 안전)
+      const jsonStr = parts.length >= 4 ? parts.slice(3).join('|') : '{}';
+      let caption = '';
+      try { caption = (JSON.parse(jsonStr) as Record<string, unknown>).caption as string || ''; } catch { /* ignore */ }
+      if (/^https?:\/\//i.test(urlOrPath)) {
+        blocks.push(`<img src="${escapeHtml(urlOrPath)}" alt="${escapeHtml(caption)}" style="max-width:100%">`);
+      }
+      if (caption) blocks.push(`<p><em>${inline(caption)}</em></p>`);
       continue;
     }
 
-    const blockquoteMatch = line.match(blockquoteLineRegex);
-    if (blockquoteMatch) {
-      flushTaskList();
-      flushBulletList();
-      flushOrderedList();
-      blockquoteLines.push(blockquoteMatch[1].trim());
+    // ── 수평선 (---, ***, ___) ────────────────────────────────────────────────
+    if (hrRegex.test(line)) {
+      flushAll();
+      hasAny = true;
+      blocks.push('<hr>');
+      continue;
+    }
+
+    // ── GFM 테이블 ───────────────────────────────────────────────────────────
+    if (tableRowRegex.test(line)) {
+      flushBlockquote(); flushTaskList(); flushBulletList(); flushOrderedList();
+      const cells = parseTableCells(line);
+      if (tableRows.length > 0 && !tableHasSep && isTableSep(cells)) {
+        tableHasSep = true;
+        tableRows.push(cells); // index 1 = 구분자 행
+      } else {
+        tableRows.push(cells);
+      }
+      continue;
+    }
+    flushTable();
+
+    // ── 블록쿼트 (>, >>) ─────────────────────────────────────────────────────
+    const bqMatch = line.match(blockquoteRegex);
+    if (bqMatch) {
+      flushTaskList(); flushBulletList(); flushOrderedList();
+      blockquoteLines.push(bqMatch[2].trim());
       continue;
     }
     flushBlockquote();
 
-    const taskMatch = line.match(taskLineRegex);
-    const headingMatch = line.match(headingRegex);
-    const bulletMatch = !taskMatch && line.match(bulletLineRegex);
+    // ── 태스크 / 불릿 / 순서 목록 / 헤딩 / 단락 ─────────────────────────────
+    const taskMatch    = line.match(taskLineRegex);
+    const headingMatch = !taskMatch && line.match(headingRegex);
+    const bulletMatch  = !taskMatch && line.match(bulletLineRegex);
     const orderedMatch = !taskMatch && !bulletMatch && line.match(orderedLineRegex);
 
     if (taskMatch) {
-      flushBulletList();
-      flushOrderedList();
-      taskItems.push({
-        checked: taskMatch[1].toLowerCase() === 'x',
-        content: taskMatch[2]?.trim() ?? '',
-      });
+      flushBulletList(); flushOrderedList();
+      taskItems.push({ checked: taskMatch[1].toLowerCase() === 'x', content: taskMatch[2]?.trim() ?? '' });
+      hasAny = true;
     } else if (bulletMatch) {
-      flushTaskList();
-      flushOrderedList();
-      bulletItems.push(bulletMatch[1].trim());
+      flushTaskList(); flushOrderedList();
+      // 2칸 이상 들여쓰기 → 중첩
+      bulletItems.push({ content: bulletMatch[2].trim(), indent: bulletMatch[1].length >= 2 ? 1 : 0 });
+      hasAny = true;
     } else if (orderedMatch) {
-      flushTaskList();
-      flushBulletList();
-      orderedItems.push(orderedMatch[2].trim());
+      flushTaskList(); flushBulletList();
+      orderedItems.push({ content: orderedMatch[2].trim(), indent: orderedMatch[1].length >= 2 ? 1 : 0 });
+      hasAny = true;
     } else if (headingMatch) {
-      flushTaskList();
-      flushBulletList();
-      flushOrderedList();
-      hasHeading = true;
+      flushTaskList(); flushBulletList(); flushOrderedList();
+      hasAny = true;
       const level = Math.min(headingMatch[1].length, 3);
-      const content = headingMatch[2].trim();
-      blocks.push(`<h${level}>${inline(content)}</h${level}>`);
+      blocks.push(`<h${level}>${inline(headingMatch[2].trim())}</h${level}>`);
     } else {
-      flushTaskList();
-      flushBulletList();
-      flushOrderedList();
-      if (line.trim().length > 0) blocks.push(`<p>${inline(line.trim())}</p>`);
+      flushTaskList(); flushBulletList(); flushOrderedList();
+      const trimmed = line.trim();
+      if (trimmed.length > 0) {
+        // 인라인 마크다운(링크·이미지·굵게·기울임·코드·취소선)이 있으면 블록 마크다운으로 간주
+        if (/\*\*[^*]+\*\*|__[^_]+__|~~[^~]+~~|`[^`]+`|\[[^\]]+\]\(|!\[/.test(trimmed)) hasAny = true;
+        blocks.push(`<p>${inline(trimmed)}</p>`);
+      }
     }
   }
 
+  // ── 6. 남은 버퍼 flush ───────────────────────────────────────────────────────
   if (inCodeBlock) flushCodeBlock();
-  flushBlockquote();
-  flushTaskList();
-  flushBulletList();
-  flushOrderedList();
-  if (!hasTaskLine && !hasHeading && !hasCodeBlock && !hasBlockquote && !hasBulletList && !hasOrderedList) return null;
+  flushAll();
+
+  if (!hasAny) return null;
   return blocks.length > 0 ? blocks.join('') : null;
 }
 
