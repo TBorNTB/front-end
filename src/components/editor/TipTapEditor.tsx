@@ -2,6 +2,7 @@
 
 import Link from '@tiptap/extension-link';
 import { TaskList, TaskItem } from '@tiptap/extension-list';
+import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table';
 import { ResizableImage } from '@/components/editor/ResizableImage';
 import { GFMBulletToTaskRule } from '@/components/editor/GFMBulletToTaskRule';
 import { GFMTaskListInputRule } from '@/components/editor/GFMTaskListInputRule';
@@ -423,6 +424,10 @@ export default function TipTapEditor({
         },
       }),
       MarkdownShortcuts,
+      Table.configure({ resizable: false }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
     content: typeof document !== 'undefined' ? normalizeTaskListHtml(content) : content,
     editable,
