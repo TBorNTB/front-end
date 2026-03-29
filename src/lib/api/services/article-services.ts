@@ -30,6 +30,8 @@ export interface ArticleResponse {
   category: string;
   thumbnailUrl: string;
   attachments?: AttachmentInfo[];
+  /** 참고 링크 (URL 문자열 또는 탭으로 구분된 `표시이름\\tURL`) */
+  referenceLinks?: string[];
   createdAt: string;
 }
 
@@ -38,6 +40,7 @@ export interface ArticleCreateRequest {
   content: string;
   description: string;
   category: string;
+  referenceLinks?: string[];
   thumbnailKey?: string;
   contentImageKeys?: string[];
   attachments?: AttachmentReq[];
@@ -48,6 +51,7 @@ export interface ArticleUpdateRequest {
   content: string;
   description: string;
   category: string;
+  referenceLinks?: string[];
   thumbnailKey?: string;
   contentImageKeys?: string[];
   attachments?: AttachmentReq[];

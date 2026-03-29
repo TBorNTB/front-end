@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, X, Upload, Search, Paperclip } from 'lucide-react';
+import { ArrowLeft, X, Upload, Search } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,6 +16,14 @@ import { requireNotGuest } from '@/lib/role-utils';
 import { fetchCategories } from '@/lib/api/services/project-services';
 import { createArticle, type AttachmentReq } from '@/lib/api/services/article-services';
 import { s3Service } from '@/lib/api/services/s3-services';
+import ArticleAttachmentsPanel from '@/components/articles/ArticleAttachmentsPanel';
+import {
+  referenceLinkStringsFromForm,
+  validateExternalLinkUrl,
+  MAX_ARTICLE_ATTACHMENT_BYTES,
+  ARTICLE_ATTACHMENT_MAX_LABEL,
+  type ExternalResourceLink,
+} from '@/lib/article-external-links';
 
 interface FormData {
   title: string;
@@ -40,6 +49,7 @@ export default function NewArticleForm() {
   const [contentImageKeys, setContentImageKeys] = useState<string[]>([]);
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<{ file: File; name: string }[]>([]);
+  const [externalLinks, setExternalLinks] = useState<ExternalResourceLink[]>([]);
 
   // API data states
   const [categories, setCategories] = useState<Array<{ id: number; name: string; description: string }>>([]);
@@ -167,6 +177,16 @@ export default function NewArticleForm() {
     setLoading(true);
 
     try {
+      const linksToSave = externalLinks.filter((l) => l.url.trim());
+      for (const l of linksToSave) {
+        const linkErr = validateExternalLinkUrl(l.url);
+        if (linkErr) {
+          toast.error(linkErr);
+          setLoading(false);
+          return;
+        }
+      }
+
       let uploadedThumbnailKey = thumbnailKey;
 
       if (thumbnailFile && !thumbnailKey) {
@@ -187,6 +207,13 @@ export default function NewArticleForm() {
 
       const uploadedAttachments: AttachmentReq[] = [];
       for (const att of pendingAttachments) {
+        if (att.file.size > MAX_ARTICLE_ATTACHMENT_BYTES) {
+          toast.error(
+            `「${att.name}」은(는) 용량이 초과되었습니다. ${ARTICLE_ATTACHMENT_MAX_LABEL} 이하의 파일만 업로드할 수 있습니다.`
+          );
+          setLoading(false);
+          return;
+        }
         try {
           const result = await s3Service.uploadFile(att.file, { presignedUrlEndpoint: '/api/cs-knowledge/files/presigned-url' });
           uploadedAttachments.push({ tempKey: result.key, originalFileName: att.name });
@@ -200,6 +227,7 @@ export default function NewArticleForm() {
         content: formData.content,
         description: formData.excerpt.trim(),
         category: formData.category,
+        referenceLinks: referenceLinkStringsFromForm(linksToSave),
         ...(uploadedThumbnailKey && { thumbnailKey: uploadedThumbnailKey }),
         ...(contentImageKeys.length > 0 && { contentImageKeys }),
         ...(uploadedAttachments.length > 0 && { attachments: uploadedAttachments }),
@@ -473,42 +501,12 @@ export default function NewArticleForm() {
               </div>
             </div>
 
-            {/* Attachment Section */}
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <div className="w-1 h-8 bg-primary-600 rounded"></div>
-                첨부파일 (선택)
-              </h2>
-              <div className="space-y-2">
-                {pendingAttachments.map((att, idx) => (
-                  <div key={idx} className="flex items-center gap-3 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg">
-                    <Paperclip className="w-4 h-4 text-gray-700 flex-shrink-0" />
-                    <span className="text-sm text-gray-800 truncate flex-1">{att.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => setPendingAttachments(prev => prev.filter((_, i) => i !== idx))}
-                      className="text-gray-700 hover:text-red-500 transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-                <label className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-primary-400 transition-colors w-fit">
-                  <input
-                    type="file"
-                    multiple
-                    onChange={(e) => {
-                      const files = Array.from(e.target.files ?? []);
-                      setPendingAttachments(prev => [...prev, ...files.map(f => ({ file: f, name: f.name }))]);
-                      e.target.value = '';
-                    }}
-                    className="hidden"
-                  />
-                  <Upload className="w-4 h-4 text-gray-700" />
-                  <span className="text-sm text-gray-700 font-medium">파일 추가</span>
-                </label>
-              </div>
-            </div>
+            <ArticleAttachmentsPanel
+              pendingAttachments={pendingAttachments}
+              setPendingAttachments={setPendingAttachments}
+              externalLinks={externalLinks}
+              setExternalLinks={setExternalLinks}
+            />
 
             {/* Content Editor Section */}
             <div className="space-y-4" id="form-field-content">

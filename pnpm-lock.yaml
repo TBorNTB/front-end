@@ -45,8 +45,8 @@ importers:
         specifier: ^3.10.8
         version: 3.10.8(@tiptap/core@3.10.8(@tiptap/pm@3.10.8))(@tiptap/pm@3.10.8)
       '@tiptap/extension-table':
-        specifier: ^3.20.5
-        version: 3.20.5(@tiptap/core@3.10.8(@tiptap/pm@3.10.8))(@tiptap/pm@3.10.8)
+        specifier: ^3.10.8
+        version: 3.10.8(@tiptap/core@3.10.8(@tiptap/pm@3.10.8))(@tiptap/pm@3.10.8)
       '@tiptap/react':
         specifier: ^3.10.8
         version: 3.10.8(@floating-ui/dom@1.7.4)(@tiptap/core@3.10.8(@tiptap/pm@3.10.8))(@tiptap/pm@3.10.8)(@types/react-dom@19.1.9(@types/react@19.1.13))(@types/react@19.1.13)(react-dom@19.1.2(react@19.1.2))(react@19.1.2)
@@ -1035,11 +1035,11 @@ packages:
     peerDependencies:
       '@tiptap/core': ^3.10.8
 
-  '@tiptap/extension-table@3.20.5':
-    resolution: {integrity: sha512-YvTB5OfGqjqHqutkSyywplouFvJwlsDTpZAjtAh5TzKfOan42aiVepmHVpteoQP6LH0mSjw69RndFMIYhIGmSQ==}
+  '@tiptap/extension-table@3.10.8':
+    resolution: {integrity: sha512-tvigSdbrHonb/6NJb3+Md3P3DHexgqCQmtUm3/qQGv14VGKmOoPeJpe9mB2m4UO4E9shSV9Mt0tbHiv2AkgWmQ==}
     peerDependencies:
-      '@tiptap/core': ^3.20.5
-      '@tiptap/pm': ^3.20.5
+      '@tiptap/core': ^3.10.8
+      '@tiptap/pm': ^3.10.8
 
   '@tiptap/extension-text@3.10.8':
     resolution: {integrity: sha512-dyadqItdphLAYPnxLal43mOcQr1biriCSh2S0KhLdb5sTV2HWsNxg7DrIdJZ7aRK0PXfBg9g+XF8euCbfq0iYA==}
@@ -3555,7 +3555,7 @@ snapshots:
     dependencies:
       '@tiptap/core': 3.10.8(@tiptap/pm@3.10.8)
 
-  '@tiptap/extension-table@3.20.5(@tiptap/core@3.10.8(@tiptap/pm@3.10.8))(@tiptap/pm@3.10.8)':
+  '@tiptap/extension-table@3.10.8(@tiptap/core@3.10.8(@tiptap/pm@3.10.8))(@tiptap/pm@3.10.8)':
     dependencies:
       '@tiptap/core': 3.10.8(@tiptap/pm@3.10.8)
       '@tiptap/pm': 3.10.8

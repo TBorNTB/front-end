@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, createElement, useRef, JSX } from 'react';
-import { ThumbsUp, Eye, MessageCircle, Edit, Clock, ArrowLeft, Code, FileText, Trash2, Paperclip, Download } from 'lucide-react';
+import { ThumbsUp, Eye, MessageCircle, Edit, Clock, ArrowLeft, Code, FileText, Trash2, Download, ExternalLink, ChevronRight } from 'lucide-react';
 import { fetchArticleById, deleteArticle, getAttachmentDownloadUrl, type ArticleResponse, type AttachmentInfo } from '@/lib/api/services/article-services';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { useRouter } from 'next/navigation';
@@ -11,6 +11,11 @@ import TableOfContents from '@/components/editor/TableOfContents';
 import { ProjectContentRenderer } from '@/components/project/ProjectContentRenderer';
 import { searchCSKnowledge, getCSKnowledgeByUser } from '@/lib/api/services/elastic-services';
 import { decodeHtmlEntities } from '@/lib/html-utils';
+import {
+  stripExternalLinksFromContent,
+  formLinksFromReferenceStrings,
+  type ExternalResourceLink,
+} from '@/lib/article-external-links';
 import { isCommentEdited } from '@/lib/comment-utils';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { requireNotGuest } from '@/lib/role-utils';
@@ -155,6 +160,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
   const [isTogglingLike, setIsTogglingLike] = useState(false);
   const [post, setPost] = useState<PostData | null>(null);
   const [articleAttachments, setArticleAttachments] = useState<AttachmentInfo[]>([]);
+  const [externalResourceLinks, setExternalResourceLinks] = useState<ExternalResourceLink[]>([]);
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Comment states
@@ -508,13 +514,19 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
               likeCount: item.likeCount,
             }));
 
+          const decodedArticleContent = decodeHtmlEntities(articleData.content || '');
+          const { content: contentForDisplay, links: legacyRefLinks } =
+            stripExternalLinksFromContent(decodedArticleContent);
+          const fromApi = formLinksFromReferenceStrings(articleData.referenceLinks);
+          const resourceLinks = fromApi.length > 0 ? fromApi : legacyRefLinks;
+
           // API 응답을 UI 형식으로 변환
           const mappedPost: PostData = {
             id: articleData.id,
             title: articleData.title,
             category: articleData.category,
             description: articleData.description || undefined,
-            content: articleData.content,
+            content: contentForDisplay,
             thumbnail: articleData.thumbnailUrl || null,
             author: {
               username: writerProfile.username || 'unknown',
@@ -535,6 +547,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
           setPost(mappedPost);
           setArticleAttachments(articleData.attachments ?? []);
+          setExternalResourceLinks(resourceLinks);
           setIsLiked(likeStatusData.status === 'LIKED');
           
           // 댓글은 백그라운드에서 로드 (UI 블로킹하지 않음)
@@ -1020,27 +1033,87 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                 />
               </div>
 
-              {/* Attachments Section */}
-              {articleAttachments.length > 0 && (
-                <div className="mb-8 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                    <Paperclip className="w-4 h-4" />
-                    첨부파일 ({articleAttachments.length})
-                  </h3>
-                  <ul className="space-y-2">
-                    {articleAttachments.map((att) => (
-                      <li key={att.fileKey} className="flex items-center justify-between gap-2">
-                        <span className="text-sm text-gray-800 truncate">{att.originalFileName}</span>
-                        <button
-                          onClick={() => handleDownloadAttachment(att.fileKey)}
-                          className="flex-shrink-0 flex items-center gap-1 text-sm text-primary-600 hover:text-primary-700 font-medium cursor-pointer"
-                        >
-                          <Download className="w-4 h-4" />
-                          다운로드
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+              {/* 첨부파일 · 참고 링크 (카드 분리, 컴팩트) */}
+              {(articleAttachments.length > 0 || externalResourceLinks.length > 0) && (
+                <div className="mb-8 space-y-3">
+                  {articleAttachments.length > 0 && (
+                    <section
+                      className="overflow-hidden rounded-xl border border-gray-200/90 bg-white shadow-[0_1px_8px_rgba(15,23,42,0.05)]"
+                      aria-label="첨부파일"
+                    >
+                      <div className="px-4 pt-3 pb-2">
+                        <h3 className="text-base font-extrabold tracking-tight text-gray-950">첨부파일</h3>
+                        <p className="mt-0.5 text-xs font-medium text-gray-700">
+                          파일 {articleAttachments.length}개 · 저장해서 확인할 수 있어요
+                        </p>
+                      </div>
+                      <ul className="border-t border-gray-100">
+                        {articleAttachments.map((att) => (
+                          <li key={att.fileKey} className="border-b border-gray-100 last:border-b-0">
+                            <div className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-gray-50/90">
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-50 to-secondary-50 text-primary-600 ring-1 ring-primary-100/80">
+                                <FileText className="h-4 w-4" strokeWidth={2} />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-bold leading-snug text-gray-950">
+                                  {att.originalFileName}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleDownloadAttachment(att.fileKey)}
+                                className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary-700 active:scale-[0.98]"
+                              >
+                                <Download className="h-3.5 w-3.5" strokeWidth={2.5} />
+                                받기
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+
+                  {externalResourceLinks.length > 0 && (
+                    <section
+                      className="overflow-hidden rounded-xl border border-gray-200/90 bg-white shadow-[0_1px_8px_rgba(15,23,42,0.05)]"
+                      aria-label="참고 링크"
+                    >
+                      <div className="px-4 pt-3 pb-2">
+                        <h3 className="text-base font-extrabold tracking-tight text-gray-950">참고 링크</h3>
+                        <p className="mt-0.5 text-xs font-medium text-gray-700">
+                          외부 페이지로 이동해요 · 새 탭에서 열려요
+                        </p>
+                      </div>
+                      <ul className="border-t border-gray-100">
+                        {externalResourceLinks.map((link, idx) => (
+                          <li key={`${link.url}-${idx}`} className="border-b border-gray-100 last:border-b-0">
+                            <a
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-gray-50/90 active:bg-gray-100/60"
+                            >
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-800 ring-1 ring-gray-200/80 group-hover:bg-secondary-50 group-hover:text-primary-700 group-hover:ring-secondary-100">
+                                <ExternalLink className="h-4 w-4" strokeWidth={2.25} />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-bold leading-snug text-gray-950 group-hover:text-primary-800">
+                                  {link.label || link.url}
+                                </p>
+                                {link.label ? (
+                                  <p className="mt-0.5 truncate text-[11px] font-medium leading-tight text-gray-700">
+                                    {link.url}
+                                  </p>
+                                ) : null}
+                              </div>
+                              <ChevronRight className="h-4 w-4 shrink-0 text-gray-500 transition-colors group-hover:text-gray-700" />
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
                 </div>
               )}
 
