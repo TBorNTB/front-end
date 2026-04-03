@@ -315,6 +315,32 @@ export const profileService = {
       totalCommentCount: data.totalCommentCount || 0,
     };
   },
+
+  /**
+   * 회원 탈퇴 (현재 로그인 사용자)
+   * DELETE /user-service/users
+   */
+  deleteAccount: async (): Promise<UserResponse | null> => {
+    const response = await fetchWithRefresh('/api/gateway/user-service/users', {
+      method: 'DELETE',
+      headers: { accept: 'application/json' },
+    });
+
+    const data = await response.json().catch(() => null as never);
+
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('로그인이 필요합니다. 다시 로그인해주세요.');
+      }
+      throw new Error(data?.message || data?.error || `회원 탈퇴 실패 (${response.status})`);
+    }
+
+    if (data && typeof data === 'object') {
+      return cleanUserResponse(data as UserResponse);
+    }
+
+    return null;
+  },
 };
 
 
