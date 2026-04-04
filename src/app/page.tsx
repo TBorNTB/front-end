@@ -401,7 +401,7 @@ export default function Home() {
         <Header />
 
         {/* Hero */}
-        <div className="w-screen text-center text-3xl text-white sm:h-[250px] md:h-[400px]">
+        <div className="w-full text-center text-3xl text-white sm:h-[250px] md:h-[400px]">
           <HeroBanner />
         </div>
 
