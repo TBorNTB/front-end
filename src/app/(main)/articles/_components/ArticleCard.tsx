@@ -48,11 +48,11 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
     <Wrapper>
       <article
         className={`bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-primary-500 hover:shadow-lg transition-all duration-200 ${
-          viewMode === 'list' ? 'flex gap-4' : ''
+          viewMode === 'list' ? 'flex flex-row gap-4' : 'flex flex-col h-full'
         }`}
       >
         {/* 썸네일 */}
-        <div className={`${viewMode === 'list' ? 'w-64 h-40 flex-shrink-0' : 'w-full h-48'} relative`}>
+        <div className={`${viewMode === 'list' ? 'w-64 h-40 flex-shrink-0' : 'w-full h-40'} relative`}>
           {/* 카테고리 배지 */}
           {article.category && (
             <div className="absolute top-3 right-3 z-10">
@@ -73,13 +73,17 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
         </div>
 
         {/* 내용 */}
-        <div className="p-5 flex-1 flex flex-col">
-          <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
-            {decodeHtmlEntities(article.title)}
-          </h3>
-          <p className="text-sm text-gray-700 mb-4 line-clamp-2">
-            {decodeHtmlEntities(article.excerpt)}
-          </p>
+        <div className="p-4 flex-1 flex flex-col">
+          <div className="h-14 overflow-hidden mb-2">
+            <h3 className="text-lg font-bold text-gray-900 leading-7 line-clamp-2 group-hover:text-primary-600 transition-colors">
+              {decodeHtmlEntities(article.title)}
+            </h3>
+          </div>
+          <div className="h-10 overflow-hidden mb-4">
+            <p className="text-sm text-gray-700 leading-5 line-clamp-2">
+              {decodeHtmlEntities(article.excerpt)}
+            </p>
+          </div>
 
           {/* 통계 + 작성자 한 줄 (좌측 작성자, 우측 통계) */}
           <div className="flex items-center justify-between gap-3 text-sm text-gray-700 mb-3 pt-3 border-t border-gray-200">
@@ -101,7 +105,7 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
                 {article.author.nickname || article.author.realname || '작성자'}
               </span>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <Eye className="w-4 h-4 text-gray-700" />
                 <span className="font-medium text-gray-700">{article.views || 0}</span>

@@ -538,6 +538,7 @@ export default function NewsContent({ createHref = '/community/news/create' }: N
     updatedAt: item.updatedAt,
     likeCount: item.likeCount || 0,
     viewCount: item.viewCount || 0,
+    commentsCount: 0,
     category: item.content.category
   }));
 
