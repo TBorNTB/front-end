@@ -126,10 +126,10 @@ export function ProjectCardHome({ project }: ProjectCard) {
   const remainingCategoryCount = Math.max(0, normalizedCategories.length - visibleCategories.length);
 
   return (
-    <Link href={`/projects/${project.id}`} className="block">
-      <div className="group relative bg-white border border-primary-500 ring-1 ring-gray-200 rounded-xl overflow-hidden shadow-sm hover:border-primary-300 hover:ring-primary-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+    <Link href={`/projects/${project.id}`} className="block h-full">
+      <div className="group relative bg-white border border-primary-500 ring-1 ring-gray-200 rounded-xl overflow-hidden shadow-sm hover:border-primary-300 hover:ring-primary-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 h-full flex flex-col">
         {/* Image */}
-        <div className="relative overflow-hidden h-56">
+        <div className="relative overflow-hidden h-48 flex-shrink-0">
           <ImageWithFallback
             src={project.thumbnailUrl || ''}
             fallbackSrc="/images/placeholder/project.png"
@@ -164,7 +164,18 @@ export function ProjectCardHome({ project }: ProjectCard) {
 
         {/* Content */}
         <div className="p-5 flex-1 flex flex-col bg-white border-t border-primary-200">
-        {/* Tags */}
+          <div className="h-7 overflow-hidden mb-2">
+            <h3 className="font-semibold text-lg leading-7 text-gray-900 line-clamp-1 group-hover:text-primary-600 transition-colors">
+              {decodeHtmlEntities(project.title)}
+            </h3>
+          </div>
+          <div className="h-10 overflow-hidden mb-3">
+            <p className="text-gray-700 leading-5 line-clamp-2 text-sm">
+              {decodeHtmlEntities(project.description)}
+            </p>
+          </div>
+
+          {/* Tech Stacks */}
           {project.techStacks && project.techStacks.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-3">
               {project.techStacks.slice(0, 5).map((tag: string, index: number) => (
@@ -182,12 +193,6 @@ export function ProjectCardHome({ project }: ProjectCard) {
               )}
             </div>
           )}
-          <h3 className="font-semibold text-base text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
-            {decodeHtmlEntities(project.title)}
-          </h3>
-          <p className="text-gray-700 mb-3 leading-relaxed line-clamp-3 text-sm">
-            {decodeHtmlEntities(project.description)}
-          </p>
 
           {/* Contributors */}
           <div className="mb-3">
@@ -198,7 +203,7 @@ export function ProjectCardHome({ project }: ProjectCard) {
           </div>
 
           {/* Stats + 상세 보기 */}
-          <div className="flex items-center justify-between mb-3 pt-3 border-t border-gray-200 text-sm text-gray-700">
+          <div className="mt-auto flex items-center justify-between pt-3 border-t border-gray-200 text-sm text-gray-700">
             {/* Stats */}
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
