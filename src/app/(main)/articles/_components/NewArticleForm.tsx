@@ -304,11 +304,11 @@ export default function NewArticleForm() {
                     value={formData.title}
                     onChange={handleInputChange}
                     placeholder="글의 제목을 입력해주세요"
-                    maxLength={30}
+                    maxLength={50}
                     className={`py-3 pr-16 bg-white ${errors.title ? 'border-red-500 focus:ring-red-500' : 'focus:ring-primary-500'}`}
                   />
                   <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-700 pointer-events-none font-medium">
-                    {formData.title.length}/30
+                    {formData.title.length}/50
                   </span>
                 </div>
                 {errors.title && <p className="text-red-500 text-sm mt-2 flex items-center gap-1">✕ {errors.title}</p>}
@@ -436,7 +436,7 @@ export default function NewArticleForm() {
                       value={formData.excerpt}
                       onChange={handleInputChange}
                       placeholder="글의 내용을 간단히 설명해주세요"
-                      maxLength={100}
+                      maxLength={70}
                       className={`${
                         errors.excerpt
                           ? 'border-red-500 focus-visible:ring-red-500'
@@ -444,7 +444,7 @@ export default function NewArticleForm() {
                       } min-h-24 pr-14`}
                     />
                     <span className="absolute right-3 bottom-2 text-xs text-gray-700 pointer-events-none font-medium">
-                      {formData.excerpt.length}/100
+                      {formData.excerpt.length}/70
                     </span>
                   </div>
                   {errors.excerpt && <p className="text-red-500 text-sm mt-2 flex items-center gap-1">✕ {errors.excerpt}</p>}

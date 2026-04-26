@@ -943,9 +943,15 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
               {/* Post Header */}
               <header className="mb-8">
-                <h1 className="text-4xl font-bold text-foreground mb-4">
+                <h1 className="text-4xl font-bold text-foreground mb-2">
                   {decodeHtmlEntities(displayPost.title)}
                 </h1>
+
+                {displayPost.description && (
+                  <p className="text-base text-gray-800 font-normal mb-4">
+                    {decodeHtmlEntities(displayPost.description)}
+                  </p>
+                )}
 
                 {/* Author, Date, Time, Category in one line */}
                 <div className="flex flex-wrap items-center gap-3 mb-4 text-sm text-gray-700">

@@ -55,8 +55,8 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
         <div className={`${viewMode === 'list' ? 'w-64 h-40 flex-shrink-0' : 'w-full h-40'} relative`}>
           {/* 카테고리 배지 */}
           {article.category && (
-            <div className="absolute top-3 right-3 z-10">
-              <span className="inline-block px-2.5 py-1 rounded-md bg-white/90 backdrop-blur text-primary-700 text-xs font-semibold border border-primary-100 shadow-sm">
+            <div className="absolute top-3 left-3 z-10">
+              <span className="inline-block px-2 py-1 rounded-full bg-primary-50 backdrop-blur-sm border border-primary-200 text-primary text-xs font-medium whitespace-nowrap">
                 {decodeHtmlEntities(article.category)}
               </span>
             </div>
@@ -76,12 +76,12 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
         <div className="p-4 flex-1 flex flex-col">
           <div className="h-14 overflow-hidden mb-2">
             <h3 className="text-lg font-bold text-gray-900 leading-7 line-clamp-2 group-hover:text-primary-600 transition-colors">
-              {decodeHtmlEntities(article.title)}
+              {(() => { const t = decodeHtmlEntities(article.title); return t.length > 70 ? t.slice(0, 70) + '...' : t; })()}
             </h3>
           </div>
           <div className="h-10 overflow-hidden mb-4">
             <p className="text-sm text-gray-700 leading-5 line-clamp-2">
-              {decodeHtmlEntities(article.excerpt)}
+              {(() => { const t = decodeHtmlEntities(article.excerpt); return t.length > 70 ? t.slice(0, 70) + '...' : t; })()}
             </p>
           </div>
 
