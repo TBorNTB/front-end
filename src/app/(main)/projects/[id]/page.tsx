@@ -1161,13 +1161,15 @@ export default function ProjectPage({ params }: ProjectPageProps) {
               <div className="space-y-4">
 
               {/* Back Navigation */}
-                <Link
-                  href="/community"
-                  className="mt-4 inline-flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors group"
-                >
-                  <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                  <span className="text-sm font-medium">목록으로 돌아가기</span>
-                </Link>
+                <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+                  <Link
+                    href="/projects"
+                    className="w-full px-4 py-3 flex items-center gap-2 bg-gray-50 hover:bg-gray-100 transition-colors text-gray-800"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span className="font-bold">목록으로 돌아가기</span>
+                  </Link>
+                </div>
                       
                 {/* Project Info Section */}
                 <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
@@ -1480,7 +1482,11 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                         .map((member: any, idx: number) => (
                         <div key={member.username ?? idx} className="flex items-center gap-3">
                           <div className="relative w-10 h-10 flex-shrink-0">
-                            <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200">
+                            <div
+                              className={`w-10 h-10 rounded-full overflow-hidden bg-gray-200 border-2 ${
+                                member.role === 'Owner' ? 'border-yellow-400' : 'border-transparent'
+                              }`}
+                            >
                               {member.avatar ? (
                                 <ImageWithFallback
                                   src={member.avatar}
@@ -1886,22 +1892,29 @@ export default function ProjectPage({ params }: ProjectPageProps) {
 
                   <div className="mb-4 flex flex-wrap items-center gap-3 text-sm text-gray-700">
                     <div className="flex items-center gap-2">
-                      <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200">
-                        {project.author?.avatar ? (
-                          <ImageWithFallback
-                            src={project.author.avatar}
-                            fallbackSrc="/images/placeholder/default-avatar.svg"
-                            alt={project.author.name || 'Author'}
-                            type="avatar"
-                            width={32}
-                            height={32}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-700">
-                            {(project.author?.name || 'U').charAt(0).toUpperCase()}
-                          </div>
-                        )}
+                      <div className="relative w-8 h-8 flex-shrink-0">
+                        <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 border-2 border-yellow-400">
+                          {project.author?.avatar ? (
+                            <ImageWithFallback
+                              src={project.author.avatar}
+                              fallbackSrc="/images/placeholder/default-avatar.svg"
+                              alt={project.author.name || 'Author'}
+                              type="avatar"
+                              width={32}
+                              height={32}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-700">
+                              {(project.author?.name || 'U').charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                        <Crown
+                          size={12}
+                          className="absolute -top-1 right-0 text-yellow-500 fill-yellow-500 drop-shadow"
+                          style={{ rotate: '20deg' }}
+                        />
                       </div>
                       <span className="font-medium text-gray-900">{project.author?.name || 'Unknown'}</span>
                     </div>
