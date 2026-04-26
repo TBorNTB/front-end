@@ -18,14 +18,17 @@ export default function CategoryFilter({
   onCategoryChange,
   title = "카테고리"
 }: CategoryFilterProps) {
+  const isAllSelected = !selectedCategory || selectedCategory === 'all';
+
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-4">
       <h3 className="text-sm font-semibold text-gray-900 mb-4">{title}</h3>
       <div className="space-y-1">
         <button
+          type="button"
           onClick={() => onCategoryChange('all')}
           className={`w-full flex items-center px-3 py-2 rounded-lg text-sm ${
-            selectedCategory === 'all'
+            isAllSelected
               ? 'bg-primary-600 text-white'
               : 'text-gray-700 hover:bg-gray-50'
           }`}
@@ -38,6 +41,7 @@ export default function CategoryFilter({
           return (
             <button
               key={category.id}
+              type="button"
               onClick={() => onCategoryChange(category.id)}
               className={`w-full flex items-center px-3 py-2 rounded-lg text-sm ${
                 isActive

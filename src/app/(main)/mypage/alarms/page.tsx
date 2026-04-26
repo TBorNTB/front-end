@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { alarmService, mapAlarmApiToAlarm } from '@/lib/api/services/alarm-services';
 import { useAlarmUnreadCount } from '@/hooks/useAlarmUnreadCount';
 import { Checkbox } from '@/components/ui/checkbox';
+import { formatDateText } from '@/components/ui/date';
 
 const PAGE_SIZE = 5;
 
@@ -60,7 +61,7 @@ function formatTimeAgo(dateString: string): string {
   if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}시간 전`;
   if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}일 전`;
 
-  return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+  return formatDateText(date, { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 export default function AlarmsPage() {

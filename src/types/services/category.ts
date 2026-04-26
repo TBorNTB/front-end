@@ -1,46 +1,19 @@
-// Base enum for database operations (English constants)
-export enum CategoryType {
-  SYSTEM_HACKING = 'SYSTEM_HACKING',
-  WEB_HACKING = 'WEB_HACKING',
-  DIGITAL_FORENSICS = 'DIGITAL_FORENSICS',
-  REVERSING = 'REVERSING',
-  CRYPTOGRAPHY = 'CRYPTOGRAPHY',
-  NETWORK_SECURITY = 'NETWORK_SECURITY',
-  IOT_SECURITY = 'IOT_SECURITY'
-}
+// API 데이터 기반 카테고리 타입 (하드코딩 enum 제거)
+export type CategoryType = string;
 
-// Korean display names mapping
-export const CategoryDisplayNames: Record<CategoryType, string> = {
-  [CategoryType.SYSTEM_HACKING]: '시스템 해킹',
-  [CategoryType.WEB_HACKING]: '웹 해킹',
-  [CategoryType.DIGITAL_FORENSICS]: '디지털 포렌식',
-  [CategoryType.REVERSING]: '리버싱',
-  [CategoryType.CRYPTOGRAPHY]: '암호학',
-  [CategoryType.NETWORK_SECURITY]: '네트워크 보안',
-  [CategoryType.IOT_SECURITY]: 'IoT보안'
-} as const;
+// 하드코딩 enum 대체: 어떤 키를 접근해도 키 문자열을 반환하는 동적 객체
+// 예: CategoryType.WEB_HACKING -> 'WEB_HACKING'
+export const CategoryType: Record<string, string> = new Proxy(
+  {},
+  {
+    get: (_target, prop) => String(prop),
+  }
+);
 
-// Slug mapping for URL generation
-export const CategorySlugs: Record<CategoryType, string> = {
-  [CategoryType.SYSTEM_HACKING]: 'system-hacking',
-  [CategoryType.WEB_HACKING]: 'web-hacking',
-  [CategoryType.DIGITAL_FORENSICS]: 'digital-forensics',
-  [CategoryType.REVERSING]: 'reversing',
-  [CategoryType.CRYPTOGRAPHY]: 'cryptography',
-  [CategoryType.NETWORK_SECURITY]: 'network-security',
-  [CategoryType.IOT_SECURITY]: 'iot-security'
-} as const;
-
-// Category descriptions mapping
-export const CategoryDescriptions: Record<CategoryType, string> = {
-  [CategoryType.WEB_HACKING]: 'SQL Injection, XSS, CSRF 등 웹 애플리케이션 보안 취약점 분석 및 대응',
-  [CategoryType.REVERSING]: '바이너리 분석, 역공학 기술을 통한 소프트웨어 구조 분석 및 이해',
-  [CategoryType.SYSTEM_HACKING]: 'Buffer Overflow, ROP 등 시스템 레벨 취약점 분석 및 익스플로잇 개발',
-  [CategoryType.DIGITAL_FORENSICS]: '디지털 증거 수집 및 분석, 사고 대응을 위한 포렌식 기법',
-  [CategoryType.NETWORK_SECURITY]: '네트워크 트래픽 분석, 침입 탐지 및 방화벽 보안 기술',
-  [CategoryType.IOT_SECURITY]: '스마트 기기의 보안 취약점을 분석 및 대응',
-  [CategoryType.CRYPTOGRAPHY]: '현대 암호학 이론, 암호 시스템 분석 및 보안 프로토콜 구현'
-} as const;
+// 서버에서 동적으로 주입/관리 가능한 카테고리 메타 맵
+export const CategoryDisplayNames: Record<string, string> = {};
+export const CategorySlugs: Record<string, string> = {};
+export const CategoryDescriptions: Record<string, string> = {};
 
 // Enhanced Category interface
 export interface Category {
@@ -94,36 +67,42 @@ export interface UpdateCategoryRequest extends Partial<CreateCategoryRequest> {
 // Comprehensive CategoryHelpers utility object
 export const CategoryHelpers = {
   // Basic getters
-  getDisplayName: (type: CategoryType): string => {
-    return CategoryDisplayNames[type];
+  getDisplayName: (type: CategoryType | string): string => {
+    return CategoryDisplayNames[type as CategoryType] || String(type);
   },
 
-  getSlug: (type: CategoryType): string => {
-    return CategorySlugs[type];
+  getSlug: (type: CategoryType | string): string => {
+    const mapped = CategorySlugs[type as CategoryType];
+    if (mapped) return mapped;
+    return String(type)
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/_/g, '-');
   },
 
-  getDescription: (type: CategoryType): string => {
-    return CategoryDescriptions[type];
+  getDescription: (type: CategoryType | string): string => {
+    return CategoryDescriptions[type as CategoryType] || '';
   },
 
   // Reverse lookups
   getTypeBySlug: (slug: string): CategoryType | null => {
     const entry = Object.entries(CategorySlugs).find(([_, value]) => value === slug);
-    return entry ? (entry[0] as CategoryType) : null;
+    return entry ? (entry[0] as CategoryType) : (slug as CategoryType);
   },
 
   getTypeByDisplayName: (displayName: string): CategoryType | null => {
     const entry = Object.entries(CategoryDisplayNames).find(([_, value]) => value === displayName);
-    return entry ? (entry[0] as CategoryType) : null;
+    return entry ? (entry[0] as CategoryType) : (displayName as CategoryType);
   },
 
   // Validation functions
   isValidCategoryType: (value: string): value is CategoryType => {
-    return Object.values(CategoryType).includes(value as CategoryType);
+    return typeof value === 'string' && value.trim().length > 0;
   },
 
   isValidSlug: (slug: string): boolean => {
-    return Object.values(CategorySlugs).includes(slug);
+    return typeof slug === 'string' && slug.trim().length > 0;
   },
 
   // Object creation helpers
@@ -172,7 +151,7 @@ export const CategoryHelpers = {
 
   // Array operations
   getAllCategoryTypes: (): CategoryType[] => {
-    return Object.values(CategoryType);
+    return Object.keys(CategoryDisplayNames) as CategoryType[];
   },
 
   getAllSlugs: (): string[] => {
@@ -247,14 +226,12 @@ export const CategoryHelpers = {
     items: T[]
   ): Record<CategoryType, T[]> => {
     const grouped = {} as Record<CategoryType, T[]>;
-    
-    // Initialize all groups
-    Object.values(CategoryType).forEach(type => {
-      grouped[type] = [];
-    });
 
     // Group items
     items.forEach(item => {
+      if (!grouped[item.type]) {
+        grouped[item.type] = [];
+      }
       grouped[item.type].push(item);
     });
 
@@ -279,14 +256,12 @@ export const CategoryHelpers = {
     items: T[]
   ): Record<CategoryType, { projects: number; articles: number; total: number }> => {
     const stats = {} as Record<CategoryType, { projects: number; articles: number; total: number }>;
-    
-    // Initialize stats for all types
-    Object.values(CategoryType).forEach(type => {
-      stats[type] = { projects: 0, articles: 0, total: 0 };
-    });
 
     // Calculate stats
     items.forEach(item => {
+      if (!stats[item.type]) {
+        stats[item.type] = { projects: 0, articles: 0, total: 0 };
+      }
       stats[item.type].projects += item.projectCount;
       stats[item.type].articles += item.articleCount;
       stats[item.type].total += item.projectCount + item.articleCount;

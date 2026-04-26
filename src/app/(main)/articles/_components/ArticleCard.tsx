@@ -1,9 +1,18 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ThumbsUp, Eye, User } from 'lucide-react';
+import { ThumbsUp, Eye, User, MessageCircle, Clock, Calendar } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
+import { DateDisplay } from '@/components/ui/date';
 import { decodeHtmlEntities } from '@/lib/html-utils';
+import { fetchLikeStatus } from '@/lib/api/services/user-services';
+import {
+  ARTICLE_LIKE_UPDATED_EVENT_NAME,
+  ArticleLikeUpdatedDetail,
+  isArticleLikedFromCache,
+  setArticleLikedInCache,
+} from '@/lib/article-like-sync';
 
 type Article = {
   id: number;
@@ -23,6 +32,8 @@ type Article = {
   readTime: string;
   views: number;
   likes: number;
+  comments: number;
+  isLiked?: boolean;
   tags: string[];
   image: string;
 };
@@ -33,6 +44,49 @@ interface ArticleCardProps {
 }
 
 export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
+  const authorName = article.author.nickname || article.author.realname || article.author.username || '작성자';
+  const [likedState, setLikedState] = useState<boolean>(article.isLiked ?? false);
+
+  useEffect(() => {
+    setLikedState(article.isLiked ?? isArticleLikedFromCache(article.id));
+  }, [article.id, article.isLiked]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    if (article.isLiked || isArticleLikedFromCache(article.id)) return;
+
+    fetchLikeStatus(article.id, 'ARTICLE')
+      .then((res) => {
+        if (!mounted) return;
+        const nextLiked = res.status === 'LIKED';
+        setLikedState(nextLiked);
+        if (nextLiked) {
+          setArticleLikedInCache(article.id, true);
+        }
+      })
+      .catch(() => {
+        // Ignore like-status errors for guest or network issues
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [article.id, article.isLiked]);
+
+  useEffect(() => {
+    const onLikeUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<ArticleLikeUpdatedDetail>;
+      if (String(customEvent.detail.articleId) !== String(article.id)) return;
+      setLikedState(customEvent.detail.isLiked);
+    };
+
+    window.addEventListener(ARTICLE_LIKE_UPDATED_EVENT_NAME, onLikeUpdated as EventListener);
+    return () => {
+      window.removeEventListener(ARTICLE_LIKE_UPDATED_EVENT_NAME, onLikeUpdated as EventListener);
+    };
+  }, [article.id]);
+
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
     <Link
       href={`/articles/${article.id}`}
@@ -46,15 +100,15 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
     <Wrapper>
       <article
         className={`bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-primary-500 hover:shadow-lg transition-all duration-200 ${
-          viewMode === 'list' ? 'flex gap-4' : ''
+          viewMode === 'list' ? 'flex flex-row gap-4' : 'flex flex-col h-full'
         }`}
       >
         {/* 썸네일 */}
-        <div className={`${viewMode === 'list' ? 'w-64 h-40 flex-shrink-0' : 'w-full h-48'} relative`}>
+        <div className={`${viewMode === 'list' ? 'w-64 h-40 flex-shrink-0' : 'w-full h-40'} relative`}>
           {/* 카테고리 배지 */}
           {article.category && (
-            <div className="absolute top-3 right-3 z-10">
-              <span className="inline-block px-2.5 py-1 rounded-md bg-white/90 backdrop-blur text-primary-700 text-xs font-semibold border border-primary-100 shadow-sm">
+            <div className="absolute top-3 left-3 z-10">
+              <span className="inline-block px-2 py-1 rounded-full bg-primary-50 backdrop-blur-sm border border-primary-200 text-primary text-xs font-medium whitespace-nowrap">
                 {decodeHtmlEntities(article.category)}
               </span>
             </div>
@@ -71,18 +125,22 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
         </div>
 
         {/* 내용 */}
-        <div className="p-5 flex-1 flex flex-col">
-          <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
-            {decodeHtmlEntities(article.title)}
-          </h3>
-          <p className="text-sm text-gray-700 mb-4 line-clamp-2">
-            {decodeHtmlEntities(article.excerpt)}
-          </p>
+        <div className="p-4 flex-1 flex flex-col">
+          <div className="h-14 overflow-hidden mb-2">
+            <h3 className="text-lg font-bold text-gray-900 leading-7 line-clamp-2 group-hover:text-primary-600 transition-colors">
+              {(() => { const t = decodeHtmlEntities(article.title); return t.length > 70 ? t.slice(0, 70) + '...' : t; })()}
+            </h3>
+          </div>
+          <div className="h-10 overflow-hidden mb-4">
+            <p className="text-sm text-gray-700 leading-5 line-clamp-2">
+              {(() => { const t = decodeHtmlEntities(article.excerpt); return t.length > 70 ? t.slice(0, 70) + '...' : t; })()}
+            </p>
+          </div>
 
           {/* 통계 + 작성자 한 줄 (좌측 작성자, 우측 통계) */}
           <div className="flex items-center justify-between gap-3 text-sm text-gray-700 mb-3 pt-3 border-t border-gray-200">
             <div className="flex items-center gap-2 flex-shrink-0">
-              <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
+              <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden" title={authorName}>
                 {article.author.avatarUrl ? (
                   <ImageWithFallback
                     src={article.author.avatarUrl}
@@ -90,23 +148,28 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
                     width={28}
                     height={28}
                     className="w-full h-full rounded-full object-cover"
+                    alt={authorName}
                   />
                 ) : (
-                  <User className="w-3.5 h-3.5 text-blue-600" />
+                  <User className="w-3.5 h-3.5 text-secondary-500" />
                 )}
               </div>
-              <span className="text-xs text-gray-700 font-medium">
-                {article.author.nickname || article.author.realname || '작성자'}
+              <span className="text-xs text-gray-700 font-medium" title={authorName}>
+                {authorName}
               </span>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <Eye className="w-4 h-4 text-gray-700" />
                 <span className="font-medium text-gray-700">{article.views || 0}</span>
               </div>
               <div className="flex items-center gap-2">
-                <ThumbsUp className="w-4 h-4 text-gray-700" />
+                <ThumbsUp className={`w-4 h-4 ${likedState ? 'fill-secondary-500 text-secondary-500' : 'text-gray-700'}`} />
                 <span className="font-medium text-gray-700">{article.likes || 0}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 text-gray-700" />
+                <span className="font-medium text-gray-700">{article.comments || 0}</span>
               </div>
             </div>
           </div>
@@ -117,7 +180,7 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
               {article.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-xs hover:bg-gray-200 transition-colors"
+                  className="px-2 py-0.5 rounded-full bg-secondary-100 text-secondary-700 text-xs hover:bg-gray-200 transition-colors"
                 >
                   #{tag}
                 </span>
@@ -128,9 +191,20 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
           {/* 하단 메타 */}
           <div className="mt-auto flex items-center justify-between text-xs text-gray-700 pt-3 border-t border-gray-100">
             <div className="flex items-center gap-2">
-              <span>{article.date}</span>
-              <span>· {article.readTime}</span>
+              <div className="flex items-center gap-1">
+                <Calendar className="w-3 h-3 text-gray-700" />
+                <DateDisplay value={article.date} fallback={article.date} className="text-xs text-gray-700" />
+              </div>
+              <div className="flex items-center gap-1">
+                <Clock className="w-3 h-3 text-gray-700" />
+                <span> {article.readTime}</span>
+              </div>
             </div>
+
+            {/* 읽어 보기 Button */}
+            <span className="bg-primary text-white px-4 py-1.5 rounded-lg text-xs font-medium hover:bg-primary-700 transition-colors">
+              읽어보기
+            </span>
           </div>
         </div>
       </article>

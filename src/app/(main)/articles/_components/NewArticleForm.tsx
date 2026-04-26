@@ -250,7 +250,7 @@ export default function NewArticleForm() {
       {userLoading && (
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-secondary-600 mb-4"></div>
             <p className="text-gray-700">로딩 중...</p>
           </div>
         </div>
@@ -262,7 +262,7 @@ export default function NewArticleForm() {
           <div className="text-center">
             <p className="text-gray-700 mb-4">글을 작성하려면 먼저 로그인해주세요.</p>
             <Link href="/login">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button className="bg-primary-600 hover:bg-primary-700 text-white">
                 로그인
               </Button>
             </Link>
@@ -436,7 +436,7 @@ export default function NewArticleForm() {
                       value={formData.excerpt}
                       onChange={handleInputChange}
                       placeholder="글의 내용을 간단히 설명해주세요"
-                      maxLength={100}
+                      maxLength={70}
                       className={`${
                         errors.excerpt
                           ? 'border-red-500 focus-visible:ring-red-500'
@@ -444,7 +444,7 @@ export default function NewArticleForm() {
                       } min-h-24 pr-14`}
                     />
                     <span className="absolute right-3 bottom-2 text-xs text-gray-700 pointer-events-none font-medium">
-                      {formData.excerpt.length}/100
+                      {formData.excerpt.length}/70
                     </span>
                   </div>
                   {errors.excerpt && <p className="text-red-500 text-sm mt-2 flex items-center gap-1">✕ {errors.excerpt}</p>}

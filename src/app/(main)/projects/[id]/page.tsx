@@ -19,19 +19,26 @@ import {
   updateComment
 } from '@/lib/api/services/user-services';
 import { Menu, Transition } from '@headlessui/react';
-import { ArrowLeft, Pencil, Plus, Search, Trash2, UserPlus, X } from 'lucide-react';
+import { ArrowLeft, Clock, Crown, Eye, Pencil, Plus, Search, ThumbsUp, Trash2, UserPlus, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
-import { ProjectDetailResponse } from '../../../../types/services/project';
+import { ProjectDetailResponse, getProjectStatusKorean, getProjectStatusColor } from '@/types/services/project';
 import DocumentModal from '../_components/DocumentModal';
 import CreateChatFromPostButton from '../../_components/CreateChatFromPostButton';
 import { decodeHtmlEntities } from '@/lib/html-utils';
 import { isCommentEdited } from '@/lib/comment-utils';
 import { requireNotGuest } from '@/lib/role-utils';
 import { ProjectContentRenderer } from '@/components/project/ProjectContentRenderer';
+import { formatDateText } from '@/components/ui/date';
+import StatsActionBar from '@/components/layout/StatsActionBar';
+import {
+  isProjectLikedFromCache,
+  notifyProjectLikeUpdated,
+  setProjectLikedInCache,
+} from '@/lib/article-like-sync';
 
 interface ProjectPageProps {
   params: Promise<{ id: string }>;
@@ -408,23 +415,20 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       try {
         const date = new Date(dateString);
         if (isNaN(date.getTime())) return 'Unknown';
-        return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        return formatDateText(date, { year: 'numeric', month: '2-digit', day: '2-digit' }, 'Unknown');
       } catch {
         return 'Unknown';
       }
     };
 
-    // 프로젝트 상태 한글 변환
-    const statusMap: Record<string, string> = {
-      'PLANNING': '기획중',
-      'IN_PROGRESS': '진행중',
-      'COMPLETED': '완료',
-    };
-
     // 기간 계산 (프로젝트 진행 기간: startedAt ~ endedAt)
     const formatDateForPeriod = (date: Date) => {
       if (isNaN(date.getTime())) return 'Unknown';
-      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      const hour = date.getHours();
+      const meridiem = hour < 12 ? '오전' : '오후';
+      const hour12 = hour % 12 || 12;
+      const minute = String(date.getMinutes()).padStart(2, '0');
+      return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 ${meridiem} ${String(hour12).padStart(2, '0')}:${minute}`;
     };
     const startedDate = apiData.startedAt ? new Date(apiData.startedAt) : (apiData.createdAt ? new Date(apiData.createdAt) : null);
     const endedDate = apiData.endedAt ? new Date(apiData.endedAt) : null;
@@ -507,7 +511,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         })),
       relatedProjects: [], // parentProjectId 있으면 fetchProjectData에서 채움
       parentProjectId: apiData.parentProjectId ?? null,
-      projectStatus: statusMap[apiData.projectStatus] || apiData.projectStatus,
+      projectStatus: getProjectStatusKorean(apiData.projectStatus),
       thumbnailUrl: apiData.thumbnailUrl,
       subGoals: (apiData.subGoalDtos || [])
         .filter((sg: any) => sg && (sg.content != null || sg.id != null))
@@ -571,7 +575,9 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       }
 
       setProject(mappedData);
-      setIsLiked(likeStatusData.status === 'LIKED');
+      const nextLiked = likeStatusData.status === 'LIKED' || isProjectLikedFromCache(id);
+      setIsLiked(nextLiked);
+      setProjectLikedInCache(id, nextLiked);
     } catch (error) {
       console.error('Error fetching project details:', error);
       setProject((prev) => prev); // keep whatever was set above
@@ -587,7 +593,14 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     setIsTogglingLike(true);
     try {
       const response = await toggleLike(projectId, 'PROJECT');
-      setIsLiked(response.status === 'LIKED');
+      const nextLiked = response.status === 'LIKED';
+      setIsLiked(nextLiked);
+      setProjectLikedInCache(projectId, nextLiked);
+      notifyProjectLikeUpdated({
+        projectId: String(projectId),
+        isLiked: nextLiked,
+        likeCount: response.likeCount,
+      });
       
       // Update project stats
       if (project) {
@@ -653,7 +666,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
             </p>
             <Link
               href="/projects"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               목록으로 돌아가기
@@ -686,12 +699,23 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     setEditingCategories([]);
   };
   const toggleEditingCategory = (name: string) => {
-    setEditingCategories(prev =>
-      prev.includes(name) ? prev.filter(c => c !== name) : [...prev, name]
-    );
+    setEditingCategories(prev => {
+      if (prev.includes(name)) {
+        return prev.filter(c => c !== name);
+      }
+      if (prev.length >= 3) {
+        toast.error('카테고리는 최대 3개까지 선택할 수 있습니다.');
+        return prev;
+      }
+      return [...prev, name];
+    });
   };
   const saveCategoryEdit = async () => {
     if (!projectId || !project) return;
+    if (editingCategories.length > 3) {
+      toast.error('카테고리는 최대 3개까지 선택할 수 있습니다.');
+      return;
+    }
     try {
       setIsSavingCategories(true);
       await updateProjectCategories(projectId, editingCategories);
@@ -1107,34 +1131,46 @@ export default function ProjectPage({ params }: ProjectPageProps) {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    if (Number.isNaN(date.getTime())) return '-';
-    return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    if (isNaN(date.getTime())) return dateString;
+    const hour = date.getHours();
+    const meridiem = hour < 12 ? '오전' : '오후';
+    const hour12 = hour % 12 || 12;
+    const minute = String(date.getMinutes()).padStart(2, '0');
+    return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 ${meridiem} ${String(hour12).padStart(2, '0')}:${minute}`;
   };
+
+  const readTime = Math.max(
+    1,
+    Math.ceil(
+      decodeHtmlEntities(project.content || '')
+        .replace(/<[^>]*>/g, ' ')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean).length / 200
+    )
+  );
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50">
-        {/* Back Navigation */}
-        <div className="bg-white border-b border-gray-200">
-          <div className="container py-6">
-            <Link
-              href="/projects"
-              className="flex items-center gap-2 text-gray-800 hover:text-gray-900 transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              <span className="text-sm">프로젝트 목록</span>
-            </Link>
-          </div>
-        </div>
-
+      <div className="min-h-screen bg-background">
         <div className="container py-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left Sidebar */}
             <aside className="lg:col-span-3">
+
               <div className="space-y-4">
-                
+
+              {/* Back Navigation */}
+                <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+                  <Link
+                    href="/projects"
+                    className="w-full px-4 py-3 flex items-center gap-2 bg-gray-50 hover:bg-gray-100 transition-colors text-gray-800"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span className="font-bold">목록으로 돌아가기</span>
+                  </Link>
+                </div>
+                      
                 {/* Project Info Section */}
                 <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
                   <button
@@ -1158,14 +1194,10 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     <div className="p-4 space-y-3 text-sm">
                       <div>
                         <p className="text-gray-800 mb-1">상태</p>
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          project.projectStatus === '진행중' 
-                            ? 'bg-green-100 text-green-700'
-                            : project.projectStatus === '완료'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {project.projectStatus}
+                        <span
+                          className={`px-2 py-1 rounded text-xs border ${getProjectStatusColor(project.projectStatus)}`}
+                        >
+                          {getProjectStatusKorean(project.projectStatus)}
                         </span>
                       </div>
                       <div>
@@ -1199,16 +1231,18 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                     <input
                                       type="checkbox"
                                       checked={editingCategories.includes(cat.name)}
+                                      disabled={!editingCategories.includes(cat.name) && editingCategories.length >= 3}
                                       onChange={() => toggleEditingCategory(cat.name)}
-                                      className="w-3 h-3 text-blue-600 border-gray-300 rounded"
+                                      className="w-3 h-3 text-primary-600 border-gray-300 rounded"
                                     />
                                     <span className="text-xs text-gray-900">{cat.name}</span>
                                   </label>
                                 ))
                               )}
                             </div>
+                            <p className="text-[11px] text-gray-500">최대 3개까지 선택할 수 있습니다.</p>
                             <div className="flex gap-1">
-                              <button type="button" onClick={saveCategoryEdit} disabled={isSavingCategories} className="flex-1 py-1 text-xs text-white bg-blue-500 hover:bg-blue-600 rounded disabled:opacity-50">
+                              <button type="button" onClick={saveCategoryEdit} disabled={isSavingCategories} className="flex-1 py-1 text-xs text-white bg-primary-500 hover:bg-primary-600 rounded disabled:opacity-50">
                                 {isSavingCategories ? '저장 중...' : '저장'}
                               </button>
                               <button type="button" onClick={cancelEditingCategory} className="flex-1 py-1 text-xs text-gray-700 bg-gray-100 hover:bg-gray-200 rounded">취소</button>
@@ -1218,7 +1252,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           <div className="flex flex-wrap gap-1">
                             {(project.tags || []).length > 0 ? (
                               (project.tags || []).map((tag: string, idx: number) => (
-                                <span key={idx} className="px-2 py-0.5 rounded text-xs bg-purple-100 text-purple-700">#{tag}</span>
+                                <span key={idx} className="px-2 py-0.5 rounded text-xs bg-secondary-100 text-secondary-700">#{tag}</span>
                               ))
                             ) : (
                               <span className="text-xs text-gray-400">카테고리가 없습니다</span>
@@ -1239,7 +1273,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           <div className="space-y-2">
                             <div className="flex flex-wrap gap-1 min-h-[28px]">
                               {editingTechStacks.map((tech) => (
-                                <span key={tech} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-700">
+                                <span key={tech} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-primary-100 text-primary-700">
                                   {tech}
                                   <button type="button" onClick={() => removeEditingTechStack(tech)} className="hover:text-red-500"><X className="w-3 h-3" /></button>
                                 </span>
@@ -1252,12 +1286,12 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                 onChange={(e) => setTechStackInput(e.target.value)}
                                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addEditingTechStack(); } }}
                                 placeholder="기술 입력..."
-                                className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-primary-400"
                               />
                               <button type="button" onClick={addEditingTechStack} className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded"><Plus className="w-3 h-3" /></button>
                             </div>
                             <div className="flex gap-1">
-                              <button type="button" onClick={saveTechStackEdit} disabled={isSavingTechStacks} className="flex-1 py-1 text-xs text-white bg-blue-500 hover:bg-blue-600 rounded disabled:opacity-50">
+                              <button type="button" onClick={saveTechStackEdit} disabled={isSavingTechStacks} className="flex-1 py-1 text-xs text-white bg-primary-500 hover:bg-primary-600 rounded disabled:opacity-50">
                                 {isSavingTechStacks ? '저장 중...' : '저장'}
                               </button>
                               <button type="button" onClick={cancelEditingTechStack} className="flex-1 py-1 text-xs text-gray-700 bg-gray-100 hover:bg-gray-200 rounded">취소</button>
@@ -1439,16 +1473,6 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </button>
-                    {currentUser && project && (project.author?.username === currentUser.username || (project.team || []).some((m: any) => m?.username === currentUser.username)) && (
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); openCollaboratorModal(); }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors"
-                      >
-                        <UserPlus className="w-4 h-4" />
-                        협력자 변경
-                      </button>
-                    )}
                   </div>
                   
                   {openSections.team && (
@@ -1457,21 +1481,34 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                         .filter((member: any) => member && member.name)
                         .map((member: any, idx: number) => (
                         <div key={member.username ?? idx} className="flex items-center gap-3">
-                          <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                            {member.avatar ? (
-                              <ImageWithFallback
-                                src={member.avatar}
-                                fallbackSrc="/images/placeholder/default-avatar.svg"
-                                alt={member.name || 'Member'}
-                                type="avatar"
-                                width={40}
-                                height={40}
-                                className="w-full h-full object-cover"
+                          <div className="relative w-10 h-10 flex-shrink-0">
+                            <div
+                              className={`w-10 h-10 rounded-full overflow-hidden bg-gray-200 border-2 ${
+                                member.role === 'Owner' ? 'border-yellow-400' : 'border-transparent'
+                              }`}
+                            >
+                              {member.avatar ? (
+                                <ImageWithFallback
+                                  src={member.avatar}
+                                  fallbackSrc="/images/placeholder/default-avatar.svg"
+                                  alt={member.name || 'Member'}
+                                  type="avatar"
+                                  width={40}
+                                  height={40}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-800">
+                                  {(member.name || 'U').charAt(0).toUpperCase()}
+                                </div>
+                              )}
+                            </div>
+                            {member.role === 'Owner' && (
+                              <Crown
+                                size={12}
+                                className="absolute -top-1 right-0 text-yellow-500 fill-yellow-500 drop-shadow"
+                                style={{ rotate: '20deg' }}
                               />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-800">
-                                {(member.name || 'U').charAt(0).toUpperCase()}
-                              </div>
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -1484,15 +1521,27 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           </div>
                         </div>
                       ))}
-                      <CreateChatFromPostButton
-                        type="project"
-                        title={decodeHtmlEntities(project.title)}
-                        members={(project.team || [])
-                          .filter((m: any) => m && m.username)
-                          .map((m: any) => ({ username: m.username, displayName: m.name || m.username }))}
-                        chatRoomId={project.chatRoomId ?? undefined}
-                        className="pt-2 border-t border-gray-200"
-                      />
+                      <div className="pt-2 border-t border-gray-200 flex items-center gap-2">
+                        <CreateChatFromPostButton
+                          type="project"
+                          title={decodeHtmlEntities(project.title)}
+                          members={(project.team || [])
+                            .filter((m: any) => m && m.username)
+                            .map((m: any) => ({ username: m.username, displayName: m.name || m.username }))}
+                          chatRoomId={project.chatRoomId ?? undefined}
+                          className="flex-1"
+                        />
+                        {canEditProject && (
+                          <button
+                            type="button"
+                            onClick={openCollaboratorModal}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors whitespace-nowrap"
+                          >
+                            <UserPlus className="w-4 h-4" />
+                            협력자 변경
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1524,21 +1573,30 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           <div className="space-y-2">
                             {editingTeam.filter((m: any) => m && m.name).map((member: any, idx: number) => (
                               <div key={member.username ?? idx} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50">
-                                <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                                  {member.avatar ? (
-                                    <ImageWithFallback
-                                      src={member.avatar}
-                                      fallbackSrc="/images/placeholder/default-avatar.svg"
-                                      alt={member.name}
-                                      type="avatar"
-                                      width={36}
-                                      height={36}
-                                      className="w-full h-full object-cover"
+                                <div className="relative w-9 h-9 flex-shrink-0">
+                                  <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-200">
+                                    {member.avatar ? (
+                                      <ImageWithFallback
+                                        src={member.avatar}
+                                        fallbackSrc="/images/placeholder/default-avatar.svg"
+                                        alt={member.name}
+                                        type="avatar"
+                                        width={36}
+                                        height={36}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-800">
+                                        {(member.name || 'U').charAt(0).toUpperCase()}
+                                      </div>
+                                    )}
+                                  </div>
+                                  {member.role === 'Owner' && (
+                                    <Crown
+                                      size={11}
+                                      className="absolute -top-1 right-0 text-yellow-500 fill-yellow-500 drop-shadow"
+                                      style={{ rotate: '20deg' }}
                                     />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-800">
-                                      {(member.name || 'U').charAt(0).toUpperCase()}
-                                    </div>
                                   )}
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -1760,7 +1818,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                           </svg>
-                          도큐멘트 추가
+                          새 도큐멘트 착성
                         </button>
                       </div>
                     </div>
@@ -1793,9 +1851,9 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           <Link
                             key={related.id}
                             href={`/projects/${related.id}`}
-                            className="block p-2 rounded-lg border border-purple-100 hover:bg-purple-50 transition-colors"
+                            className="block p-2 rounded-lg border border-secondary-100 hover:bg-secondary-50 transition-colors"
                           >
-                            <p className="text-xs text-purple-500 mb-0.5">{decodeHtmlEntities(related.version)}</p>
+                            <p className="text-xs text-secondary-500 mb-0.5">{decodeHtmlEntities(related.version)}</p>
                             <p className="text-sm font-medium text-gray-900">
                               {decodeHtmlEntities(related.title)}
                             </p>
@@ -1815,59 +1873,68 @@ export default function ProjectPage({ params }: ProjectPageProps) {
             {/* Main Content */}
             <main className="lg:col-span-9">
               <div className="card">
-                {/* Project Header */}
+                              {/* Project Header */}
                 <header className="mb-8">
-                  <h1 className="text-4xl font-bold text-foreground mb-3">
-                    {decodeHtmlEntities(project.title)}
-                  </h1>
-                  <p className="text-lg text-gray-800 mb-4">
-                    {decodeHtmlEntities(project.subtitle)}
-                  </p>
-
-                  {/* Author & Stats */}
-                  <div className="flex flex-wrap items-center gap-6 text-sm text-gray-800">
-                    <div className="flex items-center gap-2">
-                      <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200">
-                        {project.author?.avatar ? (
-                          <ImageWithFallback
-                            src={project.author.avatar}
-                            fallbackSrc="/images/placeholder/default-avatar.svg"
-                            alt={project.author.name || 'Author'}
-                            type="avatar"
-                            width={32}
-                            height={32}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-800">
-                            {(project.author?.name || 'U').charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                      </div>
-                      <span className="font-medium">{project.author?.name || 'Unknown'}</span>
+                  {(project.tags || []).length > 0 && (
+                    <div className="mb-3 flex flex-wrap gap-2">
+                      {(project.tags || []).slice(0, 3).map((tag, idx) => (
+                        <span key={`${tag}-${idx}`} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-secondary-100 text-secondary-700">
+                          {tag}
+                        </span>
+                      ))}
                     </div>
-                    <span>👁 {project.stats?.views || 0}</span>
-                    <span>❤️ {project.stats?.likes || 0}</span>
-                    {canEditProject && (
-                      <div className="flex items-center gap-2 ml-auto">
-                        <Link
-                          href={`/projects/${projectId}/edit`}
-                          onClick={(e) => { if (!requireNotGuest(currentUser?.role, 'edit')) e.preventDefault(); }}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors"
-                        >
-                          <Pencil className="w-4 h-4" />
-                          수정
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={handleDeleteProject}
-                          disabled={isDeletingProject}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          {isDeletingProject ? '삭제 중...' : '삭제'}
-                        </button>
+                  )}
+                  <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                    <h1 className="text-4xl font-bold text-foreground">
+                      {decodeHtmlEntities(project.title)}
+                    </h1>
+                  </div>
+
+                  <div className="mb-4 flex flex-wrap items-center gap-3 text-sm text-gray-700">
+                    <div className="flex items-center gap-2">
+                      <div className="relative w-8 h-8 flex-shrink-0">
+                        <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 border-2 border-yellow-400">
+                          {project.author?.avatar ? (
+                            <ImageWithFallback
+                              src={project.author.avatar}
+                              fallbackSrc="/images/placeholder/default-avatar.svg"
+                              alt={project.author.name || 'Author'}
+                              type="avatar"
+                              width={32}
+                              height={32}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-700">
+                              {(project.author?.name || 'U').charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                        <Crown
+                          size={12}
+                          className="absolute -top-1 right-0 text-yellow-500 fill-yellow-500 drop-shadow"
+                          style={{ rotate: '20deg' }}
+                        />
                       </div>
+                      <span className="font-medium text-gray-900">{project.author?.name || 'Unknown'}</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-gray-700">
+                      <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span>{project.createdAt}</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-gray-700">
+                      <Clock className="w-4 h-4 text-gray-700" />
+                      <span>{readTime}분</span>
+                    </div>
+
+                    {(project.tags || []).length > 0 && (
+                      <span className="px-2 py-1 rounded-full bg-primary-50 border border-primary-200 text-primary text-xs font-medium whitespace-nowrap">
+                        {project.tags[0]}
+                      </span>
                     )}
                   </div>
                 </header>
@@ -1890,7 +1957,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                       </div>
-                      <p className="text-gray-800">프로젝트 스크린샷</p>
+                      <p className="text-gray-800">프로젝트 썸네일 이미지</p>
                     </div>
                   </div>
                 )}
@@ -1908,16 +1975,61 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                 )}
 
                 {/* Content */}
-                {project.content && (
-                  <section className="mb-12">
-                    <h2 className="text-2xl font-bold text-foreground mb-4">상세 내용</h2>
+                <section className="mb-12">
+                  <h2 className="text-2xl font-bold text-foreground mb-4">상세 내용</h2>
+                  {project.content ? (
                     <ProjectContentRenderer
                       html={project.content}
                       className="prose prose-lg max-w-none prose-headings:text-foreground prose-p:text-gray-800 prose-a:text-primary-600 prose-strong:text-foreground prose-code:text-primary-600"
                       readOnly
                     />
-                  </section>
-                )}
+                  ) : (
+                    <p className="text-gray-500">등록된 냉용이 없습니다</p>
+                  )}
+                </section>
+
+                <StatsActionBar
+                  statsClassName="gap-6"
+                  stats={
+                    <>
+                      {project.stats?.views !== undefined && (
+                        <div className="flex items-center gap-2 text-gray-700">
+                          <Eye className="w-5 h-5 text-gray-700" />
+                          <span className="text-base font-medium">{project.stats.views}</span>
+                        </div>
+                      )}
+                      {project.stats?.likes !== undefined && (
+                        <div className="flex items-center gap-2 text-gray-700">
+                          <ThumbsUp className={`w-5 h-5 ${isLiked ? 'fill-secondary-500 text-secondary-500' : 'text-gray-700'}`} />
+                          <span className="text-base font-medium">{project.stats.likes}</span>
+                        </div>
+                      )}
+                    </>
+                  }
+                  actions={
+                    canEditProject ? (
+                      <>
+                        <Link
+                          href={`/projects/${projectId}/edit`}
+                          onClick={(e) => { if (!requireNotGuest(currentUser?.role, 'edit')) e.preventDefault(); }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors border border-primary-300"
+                        >
+                          <Pencil className="w-4 h-4" />
+                          수정
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={handleDeleteProject}
+                          disabled={isDeletingProject}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 border border-red-300"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          {isDeletingProject ? '삭제 중...' : '삭제'}
+                        </button>
+                      </>
+                    ) : undefined
+                  }
+                />
 
                 {/* Like Button */}
                 <section className="mb-12 flex justify-center py-4">
@@ -1926,14 +2038,14 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     disabled={isTogglingLike}
                     className={`flex flex-col items-center gap-2 px-8 py-4 rounded-full border-2 transition-colors group ${
                       isLiked 
-                        ? 'border-red-500 bg-red-50 hover:bg-red-100' 
+                        ? 'border-secondary-500 bg-secondary-50 hover:bg-secondary-100' 
                         : 'border-gray-300 hover:border-primary-500 hover:bg-primary-50'
                     } ${isTogglingLike ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                   >
                     <svg 
                       className={`w-8 h-8 transition-colors ${
                         isLiked 
-                          ? 'text-red-500 fill-red-500' 
+                          ? 'text-secondary-500 fill-secondary-500' 
                           : 'text-gray-800 group-hover:text-primary-600'
                       }`} 
                       fill={isLiked ? 'currentColor' : 'none'} 
@@ -1944,7 +2056,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     </svg>
                     <span className={`text-2xl font-bold transition-colors ${
                       isLiked 
-                        ? 'text-red-600' 
+                        ? 'text-secondary-600' 
                         : 'text-gray-900 group-hover:text-primary-600'
                     }`}>
                       {project.stats?.likes || 0}
@@ -1958,9 +2070,9 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                 {/* Comments Section */}
                 <section>
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-foreground">
+                    <h3 className="text-2xl font-bold text-foreground">
                       댓글 {comments.length > 0 && `(${comments.length}${hasNextComments ? '+' : ''})`}
-                    </h2>
+                    </h3>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setCommentSortDirection('DESC')}

@@ -109,34 +109,27 @@ const ChatBot = () => {
     <>
       {/* Floating Chat Bot Button Only */}
       {!isOpen && !isChatRoomOpen && openChatRooms.length === 0 && (
-        <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
-          {/* Chat Bot Button */}
-          <div className="flex flex-col items-end gap-2">
-            {/* Tooltip */}
-            {isHovered && (
-              <div className="animate-fade-in bg-gray-900 text-white text-sm px-3 py-2 rounded-lg whitespace-nowrap shadow-lg">
-                SSG봇에게 물어보기
-              </div>
-            )}
+        <div className="fixed bottom-24 right-6 z-[9999]">
+          {/* Tooltip */}
+          {isHovered && (
+            <div className="absolute bottom-full right-0 mb-2 animate-fade-in bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap shadow-lg">
+              SSG봇에게 물어보기
+            </div>
+          )}
 
-            <button
-              onClick={toggleChat}
-              onMouseEnter={() => setIsHovered(true)}
-              onMouseLeave={() => setIsHovered(false)}
-              className="relative w-20 h-20 bg-white rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 flex items-center justify-center group hover:scale-110 border-4 border-gray-200"
-              aria-label="Open chat"
-            >
-              {/* Animated background glow */}
-              <div className="absolute inset-0 rounded-full bg-primary-400 opacity-0 group-hover:opacity-20 blur-lg transition-opacity duration-300"></div>
-
-              <div className="relative z-10 flex items-center justify-center">
-                <ChatBotIcon size={64} className="group-hover:scale-100 transition-transform duration-300" animated showBubble={false} />
-              </div>
-
-              {/* Status indicator */}
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse border-2 border-white shadow-lg"></div>
-            </button>
-          </div>
+          <button
+            onClick={toggleChat}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            className="relative w-[68px] h-[68px] bg-transparent rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group hover:scale-110"
+            aria-label="Open chat"
+          >
+            <div className="relative z-10 flex items-center justify-center">
+              <ChatBotIcon size={68} className="group-hover:scale-100 transition-transform duration-300" animated showBubble={false} />
+            </div>
+            {/* Status indicator */}
+            <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse border-2 border-white transition-opacity duration-200 group-hover:opacity-0"></div>
+          </button>
         </div>
       )}
 

@@ -2,20 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, ArrowRight, Code, Search, Lock, Shield, Wifi, Cpu, Key } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { categoryService, CategoryItem } from '@/lib/api/services/category-services';
-
-// Define CategoryType enum inline
-enum CategoryType {
-  WEB_HACKING = 'WEB_HACKING',
-  REVERSING = 'REVERSING',
-  SYSTEM_HACKING = 'SYSTEM_HACKING',
-  DIGITAL_FORENSICS = 'DIGITAL_FORENSICS',
-  NETWORK_SECURITY = 'NETWORK_SECURITY',
-  IOT_SECURITY = 'IOT_SECURITY',
-  CRYPTOGRAPHY = 'CRYPTOGRAPHY',
-}
 
 // Define Topic interface inline
 interface Topic {
@@ -23,96 +11,31 @@ interface Topic {
   name: string;
   slug: string;
   description: string;
-  type: CategoryType;
+  type: string;
   projectCount: number;
   articleCount: number;
   iconUrl?: string;
 }
 
-// Icon mapping for each category
-const CategoryIcons: Record<CategoryType, LucideIcon> = {
-  [CategoryType.WEB_HACKING]: Code,
-  [CategoryType.REVERSING]: Search,
-  [CategoryType.SYSTEM_HACKING]: Lock,
-  [CategoryType.DIGITAL_FORENSICS]: Shield,
-  [CategoryType.NETWORK_SECURITY]: Wifi,
-  [CategoryType.IOT_SECURITY]: Cpu,
-  [CategoryType.CRYPTOGRAPHY]: Key,
-};
+const createSlugFromName = (name: string): string => {
+  const koreanToSlugMap: Record<string, string> = {
+    '웹 해킹': 'web-hacking',
+    '리버싱': 'reversing',
+    '시스템 해킹': 'system-hacking',
+    '디지털 포렌식': 'digital-forensics',
+    '네트워크 보안': 'network-security',
+    'IoT보안': 'iot-security',
+    '암호학': 'cryptography',
+  };
 
-// Color mapping for each category
-const CategoryColors: Record<CategoryType, string> = {
-  [CategoryType.WEB_HACKING]: 'bg-blue-500',
-  [CategoryType.REVERSING]: 'bg-purple-500',
-  [CategoryType.SYSTEM_HACKING]: 'bg-red-500',
-  [CategoryType.DIGITAL_FORENSICS]: 'bg-green-500',
-  [CategoryType.NETWORK_SECURITY]: 'bg-indigo-500',
-  [CategoryType.IOT_SECURITY]: 'bg-orange-500',
-  [CategoryType.CRYPTOGRAPHY]: 'bg-yellow-500',
-};
-
-// Category Helpers inline
-const CategoryHelpers = {
-  getDisplayName: (type: CategoryType): string => {
-    const displayNames: Record<CategoryType, string> = {
-      [CategoryType.WEB_HACKING]: '웹 해킹',
-      [CategoryType.REVERSING]: '리버싱',
-      [CategoryType.SYSTEM_HACKING]: '시스템 해킹',
-      [CategoryType.DIGITAL_FORENSICS]: '디지털 포렌식',
-      [CategoryType.NETWORK_SECURITY]: '네트워크 보안',
-      [CategoryType.IOT_SECURITY]: 'IoT보안',
-      [CategoryType.CRYPTOGRAPHY]: '암호학',
-    };
-    return displayNames[type];
-  },
-
-  getSlug: (type: CategoryType): string => {
-    const slugs: Record<CategoryType, string> = {
-      [CategoryType.WEB_HACKING]: 'web-hacking',
-      [CategoryType.REVERSING]: 'reversing',
-      [CategoryType.SYSTEM_HACKING]: 'system-hacking',
-      [CategoryType.DIGITAL_FORENSICS]: 'digital-forensics',
-      [CategoryType.NETWORK_SECURITY]: 'network-security',
-      [CategoryType.IOT_SECURITY]: 'iot-security',
-      [CategoryType.CRYPTOGRAPHY]: 'cryptography',
-    };
-    return slugs[type];
-  },
-
-  // 카테고리 이름으로 CategoryType 찾기
-  getTypeByName: (name: string): CategoryType | null => {
-    const displayNames: Record<CategoryType, string> = {
-      [CategoryType.WEB_HACKING]: '웹 해킹',
-      [CategoryType.REVERSING]: '리버싱',
-      [CategoryType.SYSTEM_HACKING]: '시스템 해킹',
-      [CategoryType.DIGITAL_FORENSICS]: '디지털 포렌식',
-      [CategoryType.NETWORK_SECURITY]: '네트워크 보안',
-      [CategoryType.IOT_SECURITY]: 'IoT보안',
-      [CategoryType.CRYPTOGRAPHY]: '암호학',
-    };
-    
-    const entry = Object.entries(displayNames).find(([_, displayName]) => displayName === name);
-    return entry ? (entry[0] as CategoryType) : null;
-  },
-};
-
-// Helper function to generate slug from category name
-const generateSlugFromName = (name: string): string => {
-  // 먼저 CategoryHelpers를 사용해 한글 카테고리 이름을 slug로 변환
-  const type = CategoryHelpers.getTypeByName(name);
-  if (type) {
-    return CategoryHelpers.getSlug(type);
+  if (koreanToSlugMap[name]) {
+    return koreanToSlugMap[name];
   }
 
-  // 영문/숫자만 있는 경우: 공백을 하이픈으로, 소문자 변환
   if (/^[a-zA-Z0-9\s-]+$/.test(name)) {
-    return name
-      .toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9-]/g, '');
+    return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
   }
 
-  // 그 외의 경우: 공백을 제거하고 소문자로 변환
   return name.toLowerCase().replace(/\s+/g, '-');
 };
 
@@ -120,23 +43,14 @@ const generateSlugFromName = (name: string): string => {
 const transformApiResponseToTopics = (apiCategories: CategoryItem[]): Topic[] => {
   return apiCategories
     .map((category) => {
-      // API 응답의 name을 제목으로 직접 사용
-      const type = CategoryHelpers.getTypeByName(category.name);
-      
-      // 타입을 찾지 못해도 기본값으로 처리 (name은 API에서 받은 값 사용)
-      const defaultType = type || CategoryType.WEB_HACKING; // 기본값
-      
-      // slug 생성: 타입이 있으면 해당 slug, 없으면 name 기반으로 생성
-      const slug = type 
-        ? CategoryHelpers.getSlug(type)
-        : generateSlugFromName(category.name);
+      const slug = createSlugFromName(category.name);
 
       return {
         id: `topic-${category.id}`,
         name: category.name, // API 응답의 name을 제목으로 사용
         slug: slug,
-        description: category.description || (type ? getCategoryDescription(type) : category.description || ''),
-        type: defaultType,
+        description: category.description || '',
+        type: category.name,
         projectCount: 0, // API에서 제공되지 않으면 기본값 0
         articleCount: 0, // API에서 제공되지 않으면 기본값 0
         iconUrl: category.iconUrl,
@@ -144,46 +58,24 @@ const transformApiResponseToTopics = (apiCategories: CategoryItem[]): Topic[] =>
     });
 };
 
-// Fallback: 목 데이터 (API 실패 시 사용)
-const getTopicsData = (): Topic[] => {
-  const baseTopics: Array<{
-    type: CategoryType;
-    projectCount: number;
-    articleCount: number;
-  }> = [
-    { type: CategoryType.WEB_HACKING, projectCount: 24, articleCount: 18 },
-    { type: CategoryType.SYSTEM_HACKING, projectCount: 31, articleCount: 22 },
-    { type: CategoryType.CRYPTOGRAPHY, projectCount: 19, articleCount: 15 },
-    { type: CategoryType.DIGITAL_FORENSICS, projectCount: 16, articleCount: 12 },
-    { type: CategoryType.NETWORK_SECURITY, projectCount: 28, articleCount: 20 },
-    { type: CategoryType.IOT_SECURITY, projectCount: 21, articleCount: 17 },
-    { type: CategoryType.REVERSING, projectCount: 18, articleCount: 14 }
-  ];
+const normalizeTopics = (topics: any[]): Topic[] => {
+  return topics.map((topic) => {
+    const name = typeof topic?.name === 'string' ? topic.name : '';
+    const slug = typeof topic?.slug === 'string' && topic.slug.trim() !== ''
+      ? topic.slug
+      : createSlugFromName(name);
 
-  return baseTopics.map((topic, index) => ({
-    id: `topic-${index + 1}`,
-    name: CategoryHelpers.getDisplayName(topic.type),
-    slug: CategoryHelpers.getSlug(topic.type),
-    description: getCategoryDescription(topic.type),
-    type: topic.type,
-    projectCount: topic.projectCount,
-    articleCount: topic.articleCount
-  }));
-};
-
-// Korean descriptions for each category
-const getCategoryDescription = (type: CategoryType): string => {
-  const descriptions: Record<CategoryType, string> = {
-    [CategoryType.WEB_HACKING]: 'SQL Injection, XSS, CSRF 등 웹 애플리케이션 보안 취약점 분석 및 대응',
-    [CategoryType.REVERSING]: '바이너리 분석, 역공학 기술을 통한 소프트웨어 구조 분석 및 이해',
-    [CategoryType.SYSTEM_HACKING]: 'Buffer Overflow, ROP 등 시스템 레벨 취약점 분석 및 익스플로잇 개발',
-    [CategoryType.DIGITAL_FORENSICS]: '디지털 증거 수집 및 분석, 사고 대응을 위한 포렌식 기법',
-    [CategoryType.NETWORK_SECURITY]: '네트워크 트래픽 분석, 침입 탐지 및 방화벽 보안 기술',
-    [CategoryType.IOT_SECURITY]: '스마트 기기의 보안 취약점을 분석 및 대응',
-    [CategoryType.CRYPTOGRAPHY]: '현대 암호학 이론, 암호 시스템 분석 및 보안 프로토콜 구현'
-  };
-  
-  return descriptions[type];
+    return {
+      id: String(topic?.id ?? `topic-${slug || name}`),
+      name,
+      slug,
+      description: typeof topic?.description === 'string' ? topic.description : '',
+      type: typeof topic?.type === 'string' ? topic.type : name,
+      projectCount: typeof topic?.projectCount === 'number' ? topic.projectCount : 0,
+      articleCount: typeof topic?.articleCount === 'number' ? topic.articleCount : 0,
+      iconUrl: typeof topic?.iconUrl === 'string' ? topic.iconUrl : undefined,
+    };
+  });
 };
 
 interface TopicsSectionProps {
@@ -211,8 +103,7 @@ export default function TopicsSection({
     // 외부에서 topics가 전달되면 사용
     if (externalTopics && Array.isArray(externalTopics) && externalTopics.length > 0) {
       console.log('Using external topics with length:', externalTopics.length);
-      // Cast to Topic (same structure)
-      setTopicsData(externalTopics as Topic[]);
+      setTopicsData(normalizeTopics(externalTopics));
       setLoading(false);
       return;
     }
@@ -225,9 +116,8 @@ export default function TopicsSection({
         const transformedTopics = transformApiResponseToTopics(response.categories);
         setTopicsData(transformedTopics);
       } catch (error) {
-        console.error('Failed to fetch categories, using fallback data:', error);
-        // API 실패 시 목 데이터 사용
-        setTopicsData(getTopicsData());
+        console.error('Failed to fetch categories:', error);
+        setTopicsData([]);
       } finally {
         setLoading(false);
       }
@@ -271,8 +161,9 @@ export default function TopicsSection({
     setIsAutoPlaying(false);
   };
 
-  const handleTopicClick = (slug: string) => {
-    router.push(`/topics?category=${slug}`);
+  const handleTopicClick = (slug: string, topicName: string) => {
+    const safeSlug = slug?.trim() ? slug : createSlugFromName(topicName);
+    router.push(`/topics?category=${safeSlug}`);
   };
 
   const getCurrentItems = (): Topic[] => {
@@ -333,37 +224,23 @@ export default function TopicsSection({
             onMouseEnter={() => setIsAutoPlaying(false)}
             onMouseLeave={() => setIsAutoPlaying(true)}
           >
-            {getCurrentItems().map((topic) => {
-              const IconComponent = CategoryIcons[topic.type];
-              const colorClass = CategoryColors[topic.type];
-              
-              return (
+            {getCurrentItems().map((topic) => (
                 <div
                   key={topic.id}
                   className="group cursor-pointer transform transition-all duration-300 hover:scale-105"
-                  onClick={() => handleTopicClick(topic.slug)}
+                  onClick={() => handleTopicClick(topic.slug, topic.name)}
                 >
                   {/* Card Container */}
                   <div className="card bg-white hover:shadow-xl hover:shadow-primary-500/20 border border-primary-100 hover:border-primary-300 transition-all duration-300 h-full">
-                    
+
                     {/* Icon and Title Section */}
                     <div className="flex items-center space-x-3 mb-4">
-                      <div className={`
-                        relative w-12 h-12 rounded-xl ${colorClass} 
-                        flex items-center justify-center overflow-hidden
-                        group-hover:scale-110 transition-transform duration-300
-                        shadow-lg group-hover:shadow-xl flex-shrink-0
-                      `}>
-                        {topic.iconUrl ? (
-                          <>
-                            <IconComponent className="absolute inset-0 w-6 h-6 text-white m-auto z-0" />
-                            <img src={topic.iconUrl} alt="" className="w-full h-full object-cover relative z-10" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-                          </>
-                        ) : (
-                          <IconComponent className="w-6 h-6 text-white" />
+                      <div className="relative w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+                        {topic.iconUrl && (
+                          <img src={topic.iconUrl} alt="" className="w-full h-full object-cover" />
                         )}
                       </div>
-                      <h3 className="text-lg font-bold text-primary-800 group-hover:text-primary-600 transition-colors flex-1 line-clamp-2">
+                      <h3 className="text-lg font-bold text-primary group-hover:text-primary-800 transition-colors flex-1 line-clamp-2">
                         {topic.name}
                       </h3>
                     </div>
@@ -398,8 +275,7 @@ export default function TopicsSection({
                     </div>
                   </div>
                 </div>
-              );
-            })}
+            ))}
           </div>
 
           {/* Navigation Arrows - Only show if more than one page */}

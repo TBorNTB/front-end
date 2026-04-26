@@ -36,6 +36,8 @@ export interface CSKnowledgeItem {
   createdAt: string;
   likeCount: number;
   viewCount: number;
+  commentCount?: number;
+  comments?: number;
   writer: CSKnowledgeWriter;
   thumbnailUrl?: string;
 }

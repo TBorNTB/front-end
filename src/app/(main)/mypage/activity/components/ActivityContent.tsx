@@ -27,6 +27,7 @@ import { ELASTIC_ENDPOINTS, getElasticApiUrl } from '@/lib/api/endpoints/elastic
 import { USER_ENDPOINTS, getUserApiUrl } from '@/lib/api/endpoints/user-endpoints';
 import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
 import { decodeHtmlEntities } from '@/lib/html-utils';
+import { formatDateText } from '@/components/ui/date';
 
 // API Response Types
 interface ProjectResponse {
@@ -209,12 +210,11 @@ export default function ActivityContent() {
   // Format date
   const formatDate = (dateString: string): string => {
     try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('ko-KR', {
+      return formatDateText(dateString, {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
-      }).replace(/\./g, '.').replace(/\s/g, '');
+      });
     } catch {
       return dateString;
     }
@@ -722,7 +722,7 @@ export default function ActivityContent() {
       case 'news':
         return <Newspaper className="h-5 w-5" />;
       case 'like':
-        return <ThumbsUp className="h-5 w-5" />;
+        return <ThumbsUp className="h-5 w-5 text-gray-500" />;
       case 'comment':
         return <MessageCircle className="h-5 w-5" />;
       default:
@@ -1087,7 +1087,7 @@ export default function ActivityContent() {
                           )}
                           {activity.likes !== undefined && (
                             <div className="flex items-center gap-1">
-                              <ThumbsUp className="h-3 w-3" />
+                              <ThumbsUp className="h-3 w-3 text-gray-500" />
                               <span>{activity.likes}</span>
                             </div>
                           )}
@@ -1158,7 +1158,7 @@ export default function ActivityContent() {
                           )}
                           {activity.likes !== undefined && (
                             <div className="flex items-center gap-1">
-                              <ThumbsUp className="h-3 w-3" />
+                              <ThumbsUp className="h-3 w-3 text-gray-500" />
                               <span>{activity.likes}</span>
                             </div>
                           )}

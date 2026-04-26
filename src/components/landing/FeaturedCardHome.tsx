@@ -1,9 +1,17 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ThumbsUp, Eye, Crown, Users } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { decodeHtmlEntities } from '@/lib/html-utils';
+import { fetchLikeStatus } from '@/lib/api/services/user-services';
+import {
+  PROJECT_LIKE_UPDATED_EVENT_NAME,
+  ProjectLikeUpdatedDetail,
+  isProjectLikedFromCache,
+  setProjectLikedInCache,
+} from '@/lib/article-like-sync';
 
 interface FeaturedProjectCardProps {
   project: {
@@ -33,6 +41,48 @@ interface FeaturedProjectCardProps {
 }
 
 export function FeaturedProjectCard({ project }: FeaturedProjectCardProps) {
+  const [likedState, setLikedState] = useState<boolean>(false);
+
+  useEffect(() => {
+    setLikedState(isProjectLikedFromCache(project.id));
+  }, [project.id]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    if (isProjectLikedFromCache(project.id)) return;
+
+    fetchLikeStatus(project.id, 'PROJECT')
+      .then((res) => {
+        if (!mounted) return;
+        const nextLiked = res.status === 'LIKED';
+        setLikedState(nextLiked);
+        if (nextLiked) {
+          setProjectLikedInCache(project.id, true);
+        }
+      })
+      .catch(() => {
+        // Ignore like-status failures for guests/network issues
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [project.id]);
+
+  useEffect(() => {
+    const onLikeUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<ProjectLikeUpdatedDetail>;
+      if (String(customEvent.detail.projectId) !== String(project.id)) return;
+      setLikedState(customEvent.detail.isLiked);
+    };
+
+    window.addEventListener(PROJECT_LIKE_UPDATED_EVENT_NAME, onLikeUpdated as EventListener);
+    return () => {
+      window.removeEventListener(PROJECT_LIKE_UPDATED_EVENT_NAME, onLikeUpdated as EventListener);
+    };
+  }, [project.id]);
+
   return (
     <div className="relative overflow-hidden rounded-2xl shadow-lg group">
       {/* Background Image */}
@@ -59,7 +109,7 @@ export function FeaturedProjectCard({ project }: FeaturedProjectCardProps) {
             <div className="flex items-center gap-3">
               {project.likes !== undefined && (
                 <div className="flex items-center gap-1 px-3 py-1 bg-red-500/80 backdrop-blur-sm text-white text-sm rounded-full font-medium">
-                  <ThumbsUp className="w-4 h-4 fill-white" />
+                  <ThumbsUp className={`w-4 h-4 ${likedState ? 'fill-white text-white' : 'text-gray-200'}`} />
                   <span>{project.likes}</span>
                 </div>
               )}
@@ -102,7 +152,10 @@ export function FeaturedProjectCard({ project }: FeaturedProjectCardProps) {
                 <div className="flex items-center gap-2">
                   <Crown size={14} className="text-yellow-400" />
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full overflow-hidden border-2 border-yellow-400 bg-gray-200">
+                    <div
+                      className="w-6 h-6 rounded-full overflow-hidden border-2 border-yellow-400 bg-gray-200"
+                      title={project.owner.nickname || project.owner.realname || project.owner.username || '소유자'}
+                    >
                       <ImageWithFallback
                         src={project.owner.profileImageUrl || ''}
                         fallbackSrc="/images/placeholder/default-avatar.svg"
@@ -112,7 +165,10 @@ export function FeaturedProjectCard({ project }: FeaturedProjectCardProps) {
                         className="w-full h-full object-cover"
                       />
                     </div>
-                    <span className="text-white text-xs font-medium">
+                    <span
+                      className="text-white text-xs font-medium"
+                      title={project.owner.nickname || project.owner.realname || project.owner.username || '소유자'}
+                    >
                       {project.owner.nickname || project.owner.realname || project.owner.username || '소유자'}
                     </span>
                   </div>
@@ -129,11 +185,12 @@ export function FeaturedProjectCard({ project }: FeaturedProjectCardProps) {
                         <div 
                           key={index}
                           className="w-6 h-6 rounded-full overflow-hidden border-2 border-white/50 bg-gray-200"
+                          title={collab.nickname || collab.realname || collab.username || '협력자'}
                         >
                           <ImageWithFallback
                             src={collab.profileImageUrl || ''}
                             fallbackSrc="/images/placeholder/default-avatar.svg"
-                            alt={collab.nickname || collab.realname || 'Collaborator'}
+                            alt={collab.nickname || collab.realname || collab.username || '협력자'}
                             width={24}
                             height={24}
                             className="w-full h-full object-cover"

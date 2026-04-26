@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, useRef, Fragment } from 'react';
-import { ThumbsUp, Eye, Clock, ArrowLeft, Crown, Users, Calendar, Tag, ChevronDown, Edit, Trash2 } from 'lucide-react';
+import { ThumbsUp, Eye, Clock, ArrowLeft, Crown, Users, Calendar, Tag, ChevronDown, Edit, Trash2, MessageCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Menu, Transition } from '@headlessui/react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
@@ -28,8 +28,10 @@ import { decodeHtmlEntities } from '@/lib/html-utils';
 import { toNewsCategoryEnum } from '@/lib/constants/news-categories';
 import { isCommentEdited } from '@/lib/comment-utils';
 import { requireNotGuest } from '@/lib/role-utils';
+import { DateDisplay, formatDateText } from '@/components/ui/date';
 import CreateChatFromPostButton from '@/app/(main)/_components/CreateChatFromPostButton';
 import { ProjectContentRenderer } from '@/components/project/ProjectContentRenderer';
+import StatsActionBar from '@/components/layout/StatsActionBar';
 
 interface NewsDetailPageProps {
   params: Promise<{ id: string }>;
@@ -409,9 +411,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    if (Number.isNaN(date.getTime())) return '-';
-    return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    return formatDateText(dateString, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
   };
 
   const isValidImageUrl = (url?: string): string | null => {
@@ -472,7 +472,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
   // 뉴스가 없거나 에러가 있는 경우 삭제된 게시글 메시지 표시
   if ((error && !news) || (!isLoading && !news)) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="text-center max-w-md mx-auto px-4">
           <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm">
             <div className="mb-4">
@@ -512,26 +512,23 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
   const readTime = Math.ceil((item.content?.length || 0) / 500);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Back Navigation */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="container py-4">
-          <Link
-            href="/community"
-            className="inline-flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors group"
-          >
-            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-            <span className="text-sm font-medium">목록으로 돌아가기</span>
-          </Link>
-        </div>
-      </div>
+    <div className="min-h-screen bg-background">
 
       {/* Main Content */}
       <div className="container py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left Sidebar */}
           <aside className="lg:col-span-3">
+            
             <div className="lg:sticky lg:top-8 space-y-4">
+              {/* Back Navigation */}
+              <Link
+                href="/community"
+                className="mt-4 inline-flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors group"
+              >
+                <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                <span className="text-sm font-medium">목록으로 돌아가기</span>
+              </Link>
               {/* News Info Section */}
               <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
                 <button
@@ -725,9 +722,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                                     <span>·</span>
                                     <span>
                                       {(() => {
-                                        const date = new Date(item.createdAt);
-                                        if (Number.isNaN(date.getTime())) return '-';
-                                        return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+                                        return formatDateText(item.createdAt, { year: 'numeric', month: '2-digit', day: '2-digit' });
                                       })()}
                                     </span>
                                   </div>
@@ -737,7 +732,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                                       <span>{item.viewCount.toLocaleString()}</span>
                                     </div>
                                     <div className="flex items-center gap-1">
-                                      <ThumbsUp className="w-3 h-3" />
+                                      <ThumbsUp className="w-3 h-3 text-gray-500" />
                                       <span>{item.likeCount.toLocaleString()}</span>
                                     </div>
                                   </div>
@@ -812,13 +807,11 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                       </p>
                     </div>
                     <div className="flex items-center gap-3 mt-1">
-                      <p className="text-sm text-gray-700">
-                        {new Date(item.createdAt).toLocaleDateString('ko-KR', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
-                      </p>
+                      <DateDisplay
+                        value={item.createdAt}
+                        options={{ year: 'numeric', month: 'long', day: 'numeric' }}
+                        className="text-sm text-gray-700"
+                      />
                       <span className="text-gray-700">·</span>
                       <div className="flex items-center gap-1 text-sm text-gray-700">
                         <Clock className="w-3.5 h-3.5" />
@@ -828,40 +821,47 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                   </div>
                 </div>
 
-                {/* Stats Bar */}
-                <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
-                  <div className="flex items-center gap-8">
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <ThumbsUp className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-                      <span className="text-sm font-semibold">{likeCount}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <Eye className="w-5 h-5" />
-                      <span className="text-sm font-semibold">{viewCount.toLocaleString()}</span>
-                    </div>
-                  </div>
-                  
-                  {/* Edit/Delete Buttons - Only show for owner */}
-                  {isOwner && (
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={handleEdit}
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        <Edit className="w-4 h-4" />
-                        수정
-                      </button>
-                      <button
-                        onClick={handleDelete}
-                        disabled={isDeleting}
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        {isDeleting ? '삭제 중...' : '삭제'}
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <StatsActionBar
+                  className="mt-6"
+                  statsClassName="gap-8"
+                  stats={
+                    <>
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <ThumbsUp className={`w-5 h-5 ${isLiked ? 'fill-secondary-500 text-secondary-500' : 'text-gray-700'}`} />
+                        <span className="text-sm font-semibold">{likeCount}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <Eye className="w-5 h-5" />
+                        <span className="text-sm font-semibold">{viewCount.toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <MessageCircle className="w-5 h-5" />
+                        <span className="text-sm font-semibold">{comments.length}</span>
+                      </div>
+                    </>
+                  }
+                  actions={
+                    isOwner ? (
+                      <>
+                        <button
+                          onClick={handleEdit}
+                          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          <Edit className="w-4 h-4" />
+                          수정
+                        </button>
+                        <button
+                          onClick={handleDelete}
+                          disabled={isDeleting}
+                          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          {isDeleting ? '삭제 중...' : '삭제'}
+                        </button>
+                      </>
+                    ) : undefined
+                  }
+                />
               </header>
 
               {/* Thumbnail Image */}
@@ -1050,30 +1050,20 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                     disabled={isTogglingLike}
                     className={`flex flex-col items-center gap-2 px-8 py-4 rounded-full border-2 transition-colors group ${
                       isLiked
-                        ? 'border-red-500 bg-red-50 hover:bg-red-100'
+                        ? 'border-secondary-500 bg-secondary-50 hover:bg-secondary-100'
                         : 'border-gray-300 hover:border-primary-500 hover:bg-primary-50'
                     } ${isTogglingLike ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                   >
-                    <svg
+                    <ThumbsUp
                       className={`w-8 h-8 transition-colors ${
                         isLiked
-                          ? 'text-red-500 fill-red-500'
-                          : 'text-gray-700 group-hover:text-primary-600'
+                          ? 'text-secondary-500 fill-secondary-500'
+                          : 'text-gray-700 group-hover:text-gray-500'
                       }`}
-                      fill={isLiked ? 'currentColor' : 'none'}
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"
-                      />
-                    </svg>
+                    />
                     <span
                       className={`text-2xl font-bold transition-colors ${
-                        isLiked ? 'text-red-600' : 'text-gray-900 group-hover:text-primary-600'
+                        isLiked ? 'text-secondary-600' : 'text-gray-900 group-hover:text-primary-600'
                       }`}
                     >
                       {likeCount}

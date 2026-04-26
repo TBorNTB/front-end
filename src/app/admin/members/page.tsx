@@ -18,6 +18,7 @@ import { getApiUrl } from "@/lib/api/config";
 import { USER_ENDPOINTS } from "@/lib/api/endpoints/user-endpoints";
 import toast from "react-hot-toast";
 import { getRoleBadgeColor, getRoleColor, getRoleDescription, getRoleDisplayLabel } from "@/lib/role-utils";
+import { formatDateText } from '@/components/ui/date';
 
 interface Member {
   id: number;
@@ -726,8 +727,7 @@ export default function AdminMembersContent() {
 
   // 날짜 포맷팅
   const formatRoleChangeDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ko-KR', {
+    return formatDateText(dateString, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -748,8 +748,7 @@ export default function AdminMembersContent() {
 
   // 날짜 포맷팅
   const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ko-KR', {
+    return formatDateText(dateString, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit'

@@ -144,11 +144,16 @@ export default function Home() {
     likeCount: number;
     viewCount: number;
     owner?: { username?: string; nickname?: string; realname?: string; profileImageUrl?: string } | null;
-    collaborators?: Array<{ profileImageUrl?: string }>;
+    collaborators?: Array<{ username?: string; nickname?: string; realname?: string; profileImageUrl?: string }>;
   };
 
   const mapProjectToCard = (p: ProjectFromApi): ProjectCardData => {
-    const collaboratorsList = (p.collaborators || []).map((c) => ({ profileImage: c.profileImageUrl || '' }));
+    const collaboratorsList = (p.collaborators || []).map((c) => ({
+      profileImage: c.profileImageUrl || '',
+      username: c.username,
+      nickname: c.nickname,
+      realname: c.realname,
+    }));
     return {
       id: p.id,
       title: p.title,

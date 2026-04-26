@@ -541,7 +541,7 @@ export function LearningTopics() {
                               <div className="flex items-center justify-between flex-wrap gap-2 mt-auto">
                                 <div className="flex items-center space-x-3 text-xs text-gray-600">
                                   <div className="flex items-center space-x-1">
-                                    <ThumbsUp size={12} />
+                                    <ThumbsUp size={12} className="text-gray-500" />
                                     <span>{project.likeCount ?? 0}</span>
                                   </div>
                                   <div className="flex items-center space-x-1">
@@ -659,7 +659,7 @@ export function LearningTopics() {
                                     <span>{article.readTime}</span>
                                   </div>
                                   <div className="flex items-center space-x-1">
-                                    <ThumbsUp size={12} />
+                                    <ThumbsUp size={12} className="text-gray-500" />
                                     <span>{article.likeCount ?? 0}</span>
                                   </div>
                                   <div className="flex items-center space-x-1">

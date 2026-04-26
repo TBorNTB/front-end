@@ -15,12 +15,21 @@ export async function GET(request: NextRequest) {
       queryParams.append('query', query.trim());
     }
     
-    // Project status: append each separately if provided
-    const projectStatuses = searchParams.getAll('projectStatus');
-    projectStatuses.forEach(status => {
-      if (status && status.trim()) {
-        queryParams.append('projectStatus', status.trim());
-      }
+    // Project status: accept both projectStatus/status and comma-separated values
+    const rawStatuses = [
+      ...searchParams.getAll('projectStatus'),
+      ...searchParams.getAll('status'),
+    ];
+
+    const normalizedStatuses = rawStatuses
+      .flatMap(value => value.split(','))
+      .map(value => value.trim())
+      .filter(Boolean);
+
+    normalizedStatuses.forEach(status => {
+      // Keep both keys for compatibility with elastic-service versions
+      queryParams.append('projectStatus', status);
+      queryParams.append('status', status);
     });
     
     // Categories: append each separately if provided

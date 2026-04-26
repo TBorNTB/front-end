@@ -213,232 +213,251 @@ export default function ProjectEditPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4" />
-          <p className="text-gray-700">불러오는 중...</p>
+      <div className="min-h-screen py-12 px-4">
+        <div className="w-full px-3 sm:px-4 lg:px-10">
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="text-center">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
+              <p className="text-gray-700">불러오는 중...</p>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="flex items-center gap-4 mb-8">
-        <Link href={`/projects/${projectId}`} className="text-gray-700 hover:text-gray-900">
-          <ArrowLeft className="w-5 h-5" />
-        </Link>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">프로젝트 수정</h1>
-          <p className="text-gray-700 mt-1">프로젝트 정보를 수정하고 저장하세요.</p>
-        </div>
-      </div>
-
-      {errorMessage && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-          {errorMessage}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* 기본 정보 */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
-          <h2 className="text-xl font-semibold text-gray-900">기본 정보</h2>
-
-          <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-              프로젝트 이름 <span className="text-red-500">*</span>
-            </label>
-            <Input
-              id="title"
-              value={form.title}
-              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-              placeholder="프로젝트 이름을 입력해주세요."
-              required
-              className="w-full"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-              상태
-            </label>
-            <select
-              id="status"
-              value={form.projectStatus}
-              onChange={(e) => setForm((f) => ({ ...f, projectStatus: e.target.value as UpdateProjectRequestBody['projectStatus'] }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="PLANNING">계획 중</option>
-              <option value="IN_PROGRESS">진행 중</option>
-              <option value="COMPLETED">완료</option>
-            </select>
-          </div>
-        </div>
-
-        {/* 썸네일 이미지 */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">썸네일 이미지</h2>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              프로젝트 썸네일
-            </label>
-            <div className="flex items-center gap-4">
-              {thumbnailPreview && (
-                <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-gray-300">
-                  <Image
-                    src={thumbnailPreview}
-                    alt="썸네일 미리보기"
-                    fill
-                    className="object-cover"
-                    unoptimized={thumbnailPreview.startsWith('data:')}
-                  />
-                </div>
-              )}
-              <label className="cursor-pointer">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleThumbnailChange}
-                  className="hidden"
-                />
-                <div className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg border border-gray-300">
-                  <Upload className="w-4 h-4" />
-                  <span>이미지 업로드</span>
-                </div>
-              </label>
+    <div className="min-h-screen py-12 px-4">
+      <div className="w-full px-3 sm:px-4 lg:px-10">
+        <div className="bg-white rounded-2xl shadow-lg p-8">
+          <div className="mb-8 pb-6 border-b border-gray-200">
+            <div className="flex items-center gap-4 mb-2">
+              <Link href={`/projects/${projectId}`} className="inline-flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 text-gray-700 hover:text-gray-900 transition-colors">
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <h1 className="text-4xl font-bold text-gray-900">프로젝트 수정하기</h1>
             </div>
-          </div>
-        </div>
-
-        {/* 설명 */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">설명</h2>
-
-          <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-              한 줄 설명 <span className="text-red-500">*</span>
-            </label>
-            <Input
-              id="description"
-              value={form.description}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              placeholder="프로젝트를 간단히 설명해주세요."
-              required
-              className="w-full"
-            />
+            <p className="text-lg text-gray-700 ml-14">내용을 수정하고 업데이트해주세요</p>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              상세 설명
-            </label>
-            <div className="border border-gray-300 rounded-lg overflow-hidden">
-              <TipTapEditor
-                content={form.content}
-                onChange={handleEditorChange}
-                onImageUpload={handleEditorImageUpload}
-                placeholder="프로젝트에 대해 자세히 설명해주세요..."
-              />
+          {errorMessage && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              {errorMessage}
             </div>
-            <p className="text-gray-700 text-sm mt-1">리치 텍스트 에디터를 사용하여 작성해주세요.</p>
-          </div>
-        </div>
+          )}
 
-        {/* 계승 프로젝트 */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900">계승 프로젝트</h2>
-            <p className="text-sm text-gray-500 mt-1">이 프로젝트가 계승하는 원본 프로젝트를 선택하세요. (선택 사항)</p>
-          </div>
+          <form onSubmit={handleSubmit} className="space-y-8">
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <div className="w-1 h-8 bg-primary-600 rounded"></div>
+                기본 정보
+              </h2>
 
-          {parentProjectId ? (
-            <div className="flex items-center gap-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-purple-900">{parentProjectTitle}</p>
-                <p className="text-xs text-purple-600">ID: {parentProjectId}</p>
-              </div>
-              <button type="button" onClick={clearParentProject} className="text-purple-400 hover:text-purple-600">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          ) : (
-            <div className="relative" ref={parentSearchRef}>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  value={parentQuery}
-                  onChange={handleParentQueryChange}
-                  onFocus={() => { setShowParentDropdown(true); if (!parentQuery.trim()) loadParentProjects(0); }}
-                  placeholder="프로젝트 이름으로 검색..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+              <div>
+                <label htmlFor="title" className="block text-sm font-semibold text-gray-900 mb-2">
+                  프로젝트 이름 <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  id="title"
+                  value={form.title}
+                  onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                  placeholder="프로젝트 이름을 입력해주세요."
+                  required
+                  className="py-3 bg-white focus:ring-primary-500"
                 />
               </div>
 
-              {showParentDropdown && (
-                <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
-                  {isLoadingParent ? (
-                    <div className="p-4 text-center text-sm text-gray-500">
-                      <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-purple-500 mb-1" />
-                      <p>불러오는 중...</p>
+              <div>
+                <label htmlFor="status" className="block text-sm font-semibold text-gray-900 mb-2">
+                  상태
+                </label>
+                <select
+                  id="status"
+                  value={form.projectStatus}
+                  onChange={(e) => setForm((f) => ({ ...f, projectStatus: e.target.value as UpdateProjectRequestBody['projectStatus'] }))}
+                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                >
+                  <option value="PLANNING">계획 중</option>
+                  <option value="IN_PROGRESS">진행 중</option>
+                  <option value="COMPLETED">완료</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="description" className="block text-sm font-semibold text-gray-900 mb-2">
+                  한 줄 설명 <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  id="description"
+                  value={form.description}
+                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                  placeholder="프로젝트를 간단히 설명해주세요."
+                  required
+                  className="py-3 bg-white focus:ring-primary-500"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <div className="w-1 h-8 bg-primary-600 rounded"></div>
+                썸네일 (선택)
+              </h2>
+
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-primary-400 transition-colors">
+                <div className="flex flex-col items-center gap-4">
+                  {thumbnailPreview && (
+                    <div className="relative w-full max-w-xs h-40 rounded-lg overflow-hidden border-2 border-white shadow-lg">
+                      <Image
+                        src={thumbnailPreview}
+                        alt="썸네일 미리보기"
+                        fill
+                        className="object-cover"
+                        unoptimized={thumbnailPreview.startsWith('data:')}
+                      />
                     </div>
-                  ) : parentResults.length === 0 ? (
-                    <p className="p-4 text-sm text-gray-500 text-center">결과가 없습니다.</p>
-                  ) : (
-                    <>
-                      {parentResults.map((project) => (
-                        <button
-                          key={project.id}
-                          type="button"
-                          onClick={() => selectParentProject(project)}
-                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-purple-50 text-left transition-colors"
-                        >
-                          {project.thumbnailUrl ? (
-                            <img src={project.thumbnailUrl} alt={project.title} className="w-8 h-8 rounded object-cover flex-shrink-0" />
-                          ) : (
-                            <div className="w-8 h-8 rounded bg-gray-100 flex-shrink-0" />
+                  )}
+                  <label className="cursor-pointer flex flex-col items-center gap-2 w-full">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleThumbnailChange}
+                      className="hidden"
+                    />
+                    <div className="flex items-center justify-center w-12 h-12 bg-primary-100 rounded-lg">
+                      <Upload className="w-6 h-6 text-primary-600" />
+                    </div>
+                    <div className="text-center">
+                      <p className="font-semibold text-gray-900">클릭하여 이미지 업로드</p>
+                      <p className="text-sm text-gray-700 mt-1">프로젝트 썸네일을 등록해주세요</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4" id="form-field-content">
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <div className="w-1 h-8 bg-primary-600 rounded"></div>
+                상세 내용
+              </h2>
+              <div className="border-2 border-gray-200 rounded-lg overflow-hidden shadow-sm min-h-[500px] w-full">
+                <TipTapEditor
+                  content={form.content}
+                  onChange={handleEditorChange}
+                  onImageUpload={handleEditorImageUpload}
+                  placeholder="프로젝트에 대해 자세히 설명해주세요..."
+                />
+              </div>
+              <p className="text-gray-700 text-sm">리치 텍스트 에디터를 사용하여 작성해주세요.</p>
+            </div>
+
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <div className="w-1 h-8 bg-primary-600 rounded"></div>
+                계승 프로젝트
+              </h2>
+              <p className="text-sm text-gray-500">이 프로젝트가 계승하는 원본 프로젝트를 선택하세요. (선택 사항)</p>
+
+              {parentProjectId ? (
+                <div className="flex items-center gap-3 p-3 bg-primary-50 border border-primary-200 rounded-lg">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-primary-900">{parentProjectTitle}</p>
+                    <p className="text-xs text-primary-700">ID: {parentProjectId}</p>
+                  </div>
+                  <button type="button" onClick={clearParentProject} className="text-primary-400 hover:text-primary-600">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="relative" ref={parentSearchRef}>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      value={parentQuery}
+                      onChange={handleParentQueryChange}
+                      onFocus={() => { setShowParentDropdown(true); if (!parentQuery.trim()) loadParentProjects(0); }}
+                      placeholder="프로젝트 이름으로 검색..."
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {showParentDropdown && (
+                    <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                      {isLoadingParent ? (
+                        <div className="p-4 text-center text-sm text-gray-500">
+                          <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-primary-500 mb-1" />
+                          <p>불러오는 중...</p>
+                        </div>
+                      ) : parentResults.length === 0 ? (
+                        <p className="p-4 text-sm text-gray-500 text-center">결과가 없습니다.</p>
+                      ) : (
+                        <>
+                          {parentResults.map((project) => (
+                            <button
+                              key={project.id}
+                              type="button"
+                              onClick={() => selectParentProject(project)}
+                              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-primary-50 text-left transition-colors"
+                            >
+                              {project.thumbnailUrl ? (
+                                <img src={project.thumbnailUrl} alt={project.title} className="w-8 h-8 rounded object-cover flex-shrink-0" />
+                              ) : (
+                                <div className="w-8 h-8 rounded bg-gray-100 flex-shrink-0" />
+                              )}
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">{project.title}</p>
+                                <p className="text-xs text-gray-500 truncate">{project.description}</p>
+                              </div>
+                            </button>
+                          ))}
+                          {!parentQuery.trim() && parentHasNext && (
+                            <button
+                              type="button"
+                              onClick={() => loadParentProjects(parentPage + 1)}
+                              disabled={isLoadingParent}
+                              className="w-full py-2 text-xs text-primary-600 hover:bg-primary-50 text-center disabled:opacity-50"
+                            >
+                              더 보기
+                            </button>
                           )}
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">{project.title}</p>
-                            <p className="text-xs text-gray-500 truncate">{project.description}</p>
-                          </div>
-                        </button>
-                      ))}
-                      {!parentQuery.trim() && parentHasNext && (
-                        <button
-                          type="button"
-                          onClick={() => loadParentProjects(parentPage + 1)}
-                          disabled={isLoadingParent}
-                          className="w-full py-2 text-xs text-purple-600 hover:bg-purple-50 text-center disabled:opacity-50"
-                        >
-                          더 보기
-                        </button>
+                        </>
                       )}
-                    </>
+                    </div>
                   )}
                 </div>
               )}
             </div>
-          )}
-        </div>
 
-        {/* 폼 액션 */}
-        <div className="flex gap-4 justify-end">
-          <Link href={`/projects/${projectId}`}>
-            <Button type="button" variant="outline" className="text-gray-700">
-              취소
-            </Button>
-          </Link>
-          <Button
-            type="submit"
-            disabled={isSubmitting || isUploadingThumbnail}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            {isSubmitting || isUploadingThumbnail ? '저장 중...' : '수정 완료'}
-          </Button>
+            <div className="flex gap-3 justify-end pt-6 border-t border-gray-200">
+              <Link href={`/projects/${projectId}`}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="px-6 py-3 font-semibold text-gray-700 hover:bg-gray-100"
+                >
+                  취소
+                </Button>
+              </Link>
+              <Button
+                type="submit"
+                disabled={isSubmitting || isUploadingThumbnail}
+                className="px-8 py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting || isUploadingThumbnail ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    수정 중...
+                  </div>
+                ) : (
+                  '프로젝트 수정하기'
+                )}
+              </Button>
+            </div>
+          </form>
         </div>
-      </form>
+      </div>
     </div>
   );
 }

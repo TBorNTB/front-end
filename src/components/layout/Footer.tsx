@@ -5,9 +5,6 @@ import Image from "next/image";
 import { Mail, Instagram, Facebook } from "lucide-react";
 
 const Footer = () => {
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
 
   return (
     <footer className="bg-foreground text-white relative">
@@ -90,21 +87,6 @@ const Footer = () => {
                 </div>
               </div>
 
-              {/* Back to Top Button */}
-              <button
-                onClick={scrollToTop}
-                className="p-2 rounded-lg transition duration-200 hover:bg-white/10 hover:opacity-90 active:opacity-95"
-                aria-label="Back to top"
-              >
-                <Image
-                  src="/icon/BacktoTop.svg"
-                  alt="Back to top"
-                  width={38}
-                  height={38}
-                  className="filter brightness-0 invert"
-                  unoptimized
-                />
-              </button>
             </div>
           </div>
         </div>

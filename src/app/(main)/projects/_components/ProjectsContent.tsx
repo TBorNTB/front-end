@@ -14,6 +14,14 @@ import { decodeHtmlEntities } from '@/lib/html-utils';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { isGuest, getGuestRestrictionMessage } from '@/lib/role-utils';
 import { getSafeApiErrorMessage } from '@/lib/api/helpers';
+import { ProjectCardHome } from './ProjectCard';
+import { fetchLikeStatus } from '@/lib/api/services/user-services';
+import {
+  PROJECT_LIKE_UPDATED_EVENT_NAME,
+  ProjectLikeUpdatedDetail,
+  isProjectLikedFromCache,
+  setProjectLikedInCache,
+} from '@/lib/article-like-sync';
 
 interface Project {
   id: string;
@@ -39,6 +47,57 @@ interface Project {
     realname?: string;
     profileImageUrl?: string;
   }>;
+}
+
+function ProjectLikeIndicator({ projectId, likeCount }: { projectId: string; likeCount: number }) {
+  const [likedState, setLikedState] = useState(false);
+
+  useEffect(() => {
+    setLikedState(isProjectLikedFromCache(projectId));
+  }, [projectId]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    if (isProjectLikedFromCache(projectId)) return;
+
+    fetchLikeStatus(projectId, 'PROJECT')
+      .then((res) => {
+        if (!mounted) return;
+        const nextLiked = res.status === 'LIKED';
+        setLikedState(nextLiked);
+        if (nextLiked) {
+          setProjectLikedInCache(projectId, true);
+        }
+      })
+      .catch(() => {
+        // Ignore like-status failures for guests/network issues
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [projectId]);
+
+  useEffect(() => {
+    const onLikeUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<ProjectLikeUpdatedDetail>;
+      if (String(customEvent.detail.projectId) !== String(projectId)) return;
+      setLikedState(customEvent.detail.isLiked);
+    };
+
+    window.addEventListener(PROJECT_LIKE_UPDATED_EVENT_NAME, onLikeUpdated as EventListener);
+    return () => {
+      window.removeEventListener(PROJECT_LIKE_UPDATED_EVENT_NAME, onLikeUpdated as EventListener);
+    };
+  }, [projectId]);
+
+  return (
+    <div className="flex items-center gap-1 text-gray-700 font-medium">
+      <ThumbsUp size={16} className={likedState ? 'fill-secondary-500 text-secondary-500' : 'text-gray-500'} />
+      <span>{likeCount}</span>
+    </div>
+  );
 }
 
 // ============================================================================
@@ -409,18 +468,23 @@ export default function ProjectsContent() {
         title: item.title || '제목 없음',
         description: item.description || '',
         image: getValidImageUrl(item.thumbnailUrl),
+        thumbnailUrl: getValidImageUrl(item.thumbnailUrl),
         tags: item.projectTechStacks || [],
+        techStacks: item.projectTechStacks || [],
         category: categoryDisplayNames[0] ?? '',
         categories: categoryDisplayNames,
-        topicSlug: item.projectCategories?.[0] ? 
-          CategoryHelpers.getSlug(item.projectCategories[0] as CategoryType) : 
+        topicSlug: item.projectCategories?.[0] ?
+          CategoryHelpers.getSlug(item.projectCategories[0] as CategoryType) :
           '',
         status: item.projectStatus === 'IN_PROGRESS' ? '진행중' :
                 item.projectStatus === 'COMPLETED' ? '완료' :
                 item.projectStatus === 'ARCHIVED' ? '계획중' : '진행중',
         stars: item.likeCount || 0,
+        likes: item.likeCount || 0,
         likeCount: item.likeCount || 0,
+        views: item.viewCount || 0,
         viewCount: item.viewCount || 0,
+        comments: 0,
         creator: item.owner ? {
           username: item.owner.username || '',
           nickname: item.owner.nickname || 'Unknown',
@@ -432,11 +496,20 @@ export default function ProjectsContent() {
           realname: '',
           avatar: '/images/placeholder/default-avatar.svg'
         },
+        owner: item.owner ? {
+          username: item.owner.username || '',
+          nickname: item.owner.nickname || 'Unknown',
+          realname: item.owner.realname || '',
+          profileImageUrl: getValidProfileImageUrl(item.owner.profileImageUrl),
+        } : undefined,
         contributors: (item.collaborators || []).map((collab: any) => ({
           username: collab.username || '',
           nickname: collab.nickname || 'Unknown',
           realname: collab.realname || '',
           avatar: getValidProfileImageUrl(collab.profileImageUrl)
+        })),
+        collaborators: (item.collaborators || []).map((collab: any) => ({
+          profileImage: getValidProfileImageUrl(collab.profileImageUrl)
         })),
         lastUpdate: item.updatedAt || item.createdAt || '',
         github: '',
@@ -685,15 +758,16 @@ export default function ProjectsContent() {
 
             {/* Projects Grid/List */}
             {!isLoading && (
-              <div className={viewMode === 'grid' 
-                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" 
+              <div className={viewMode === 'grid'
+                ? "grid grid-cols-1 md:grid-cols-2 gap-6"
                 : "space-y-6"
               }>
                 {projects.map((project) => (
-                  <div key={project.id} className={`group ${viewMode === 'list' ? 'flex gap-6' : ''}`}>
-                    <div className={`bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-primary hover:shadow-lg transition-all duration-200 hover:-translate-y-1 ${
-                      viewMode === 'list' ? 'flex flex-1' : ''
-                    }`}>
+                  viewMode === 'grid' ? (
+                    <ProjectCardHome key={project.id} project={project} />
+                  ) : (
+                  <div key={project.id} className="group flex gap-6">
+                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-primary hover:shadow-lg transition-all duration-200 hover:-translate-y-1 flex flex-1">
                       {/* Image */}
                       <div className={`relative ${viewMode === 'list' ? 'w-56 flex-shrink-0 overflow-hidden' : 'overflow-hidden'}`}>
                         <ImageWithFallback
@@ -766,10 +840,7 @@ export default function ProjectsContent() {
 
                         {/* Stats */}
                         <div className="flex items-center gap-4 mb-3 text-sm">
-                          <div className="flex items-center gap-1 text-gray-700 font-medium">
-                            <ThumbsUp size={16} className="text-red-500 fill-red-500" />
-                            <span>{project.likeCount || 0}</span>
-                          </div>
+                          <ProjectLikeIndicator projectId={project.id} likeCount={project.likeCount || 0} />
                           <div className="flex items-center gap-1 text-gray-700 font-medium">
                             <Eye size={16} className="text-blue-600" />
                             <span>{project.viewCount || 0}</span>
@@ -813,6 +884,7 @@ export default function ProjectsContent() {
                       </div>
                     </div>
                   </div>
+                  )
                 ))}
               </div>
             )}

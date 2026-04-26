@@ -57,10 +57,13 @@ export const s3Service = {
 
       // 응답이 객체인 경우
       if (typeof responseData === 'object') {
+        const nestedData = (responseData as any).data;
+        const payload = nestedData && typeof nestedData === 'object' ? nestedData : responseData;
+
         return {
-          presignedUrl: responseData.uploadUrl || responseData.presignedUrl || responseData.url || '',
-          fileUrl: responseData.downloadUrl || responseData.fileUrl || responseData.presignedUrl?.split('?')[0],
-          key: responseData.key || '',
+          presignedUrl: (payload as any).uploadUrl || (payload as any).presignedUrl || (payload as any).url || '',
+          fileUrl: (payload as any).downloadUrl || (payload as any).fileUrl || (payload as any).presignedUrl?.split('?')[0],
+          key: (payload as any).key || '',
         };
       }
 
@@ -96,6 +99,8 @@ export const s3Service = {
       formData.append('presignedUrl', presignedUrl);
       formData.append('file', file);
 
+      let uploadError: Error | null = null;
+
       const uploadResponse = await fetch('/api/s3/upload-proxy', {
         method: 'POST',
         body: formData,
@@ -104,17 +109,49 @@ export const s3Service = {
       if (!uploadResponse.ok) {
         if (process.env.NODE_ENV === 'development') {
           const errorData = await uploadResponse.json().catch(() => ({}));
-          console.error('[s3] upload error', uploadResponse.status, errorData);
+          console.error('[s3] upload-proxy error', uploadResponse.status, errorData);
         }
-        throw new Error(getSafeApiErrorMessage(uploadResponse, '파일'));
+        uploadError = new Error(getSafeApiErrorMessage(uploadResponse, '파일'));
+      }
+
+      // 프록시 업로드 실패 시, presigned URL로 직접 업로드 한 번 더 시도
+      if (uploadError) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[s3] upload-proxy failed, trying direct upload fallback');
+        }
+
+        const directHeaders: HeadersInit = {};
+        if (file.type) {
+          directHeaders['Content-Type'] = file.type;
+        }
+
+        const directUploadResponse = await fetch(presignedUrl, {
+          method: 'PUT',
+          headers: directHeaders,
+          body: file,
+        });
+
+        if (!directUploadResponse.ok) {
+          if (process.env.NODE_ENV === 'development') {
+            const directErrorText = await directUploadResponse.text().catch(() => '');
+            console.error('[s3] direct upload error', directUploadResponse.status, directErrorText);
+          }
+          throw uploadError;
+        }
       }
 
       console.log('✅ S3 업로드 성공:', fileUrl);
 
       // 3. 업로드된 파일 URL과 key 반환
+      const derivedKey =
+        key ||
+        fileUrl?.split('.amazonaws.com/')[1] ||
+        presignedUrl.split('?')[0].split('.amazonaws.com/')[1] ||
+        '';
+
       return {
         url: fileUrl || presignedUrl.split('?')[0],
-        key: key || '',
+        key: derivedKey,
       };
     } catch (error: any) {
       console.error('❌ S3 파일 업로드 실패:', error);
