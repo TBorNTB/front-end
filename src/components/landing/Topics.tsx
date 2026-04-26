@@ -2,8 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, ArrowRight, Shield } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { categoryService, CategoryItem } from '@/lib/api/services/category-services';
 
 // Define Topic interface inline
@@ -74,6 +73,7 @@ const normalizeTopics = (topics: any[]): Topic[] => {
       type: typeof topic?.type === 'string' ? topic.type : name,
       projectCount: typeof topic?.projectCount === 'number' ? topic.projectCount : 0,
       articleCount: typeof topic?.articleCount === 'number' ? topic.articleCount : 0,
+      iconUrl: typeof topic?.iconUrl === 'string' ? topic.iconUrl : undefined,
     };
   });
 };
@@ -224,11 +224,7 @@ export default function TopicsSection({
             onMouseEnter={() => setIsAutoPlaying(false)}
             onMouseLeave={() => setIsAutoPlaying(true)}
           >
-            {getCurrentItems().map((topic) => {
-              const IconComponent: LucideIcon = Shield;
-              const colorClass = 'bg-primary';
-              
-              return (
+            {getCurrentItems().map((topic) => (
                 <div
                   key={topic.id}
                   className="group cursor-pointer transform transition-all duration-300 hover:scale-105"
@@ -236,22 +232,12 @@ export default function TopicsSection({
                 >
                   {/* Card Container */}
                   <div className="card bg-white hover:shadow-xl hover:shadow-primary-500/20 border border-primary-100 hover:border-primary-300 transition-all duration-300 h-full">
-                    
+
                     {/* Icon and Title Section */}
                     <div className="flex items-center space-x-3 mb-4">
-                      <div className={`
-                        relative w-12 h-12 rounded-xl ${colorClass} 
-                        flex items-center justify-center overflow-hidden
-                        group-hover:scale-110 transition-transform duration-300
-                        shadow-lg group-hover:shadow-xl flex-shrink-0
-                      `}>
-                        {topic.iconUrl ? (
-                          <>
-                            <IconComponent className="absolute inset-0 w-6 h-6 text-white m-auto z-0" />
-                            <img src={topic.iconUrl} alt="" className="w-full h-full object-cover relative z-10" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-                          </>
-                        ) : (
-                          <IconComponent className="w-6 h-6 text-white" />
+                      <div className="relative w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+                        {topic.iconUrl && (
+                          <img src={topic.iconUrl} alt="" className="w-full h-full object-cover" />
                         )}
                       </div>
                       <h3 className="text-lg font-bold text-primary group-hover:text-primary-800 transition-colors flex-1 line-clamp-2">
@@ -289,8 +275,7 @@ export default function TopicsSection({
                     </div>
                   </div>
                 </div>
-              );
-            })}
+            ))}
           </div>
 
           {/* Navigation Arrows - Only show if more than one page */}
