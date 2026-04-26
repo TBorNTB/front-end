@@ -22,10 +22,15 @@ const ChatBotIcon = ({
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
-      {/* Chatbot Icon - embedded as foreignObject */}
-      <foreignObject x="-5" y="-10" width="130" height="130">
-        <img src="/icon/chatbot.svg" alt="Chatbot" style={{ width: '100%', height: '100%' }} />
-      </foreignObject>
+      {/* Use native SVG image for stable transparent rendering across browsers */}
+      <image
+        href="/icon/chatbot.svg"
+        x="-5"
+        y="-10"
+        width="130"
+        height="130"
+        preserveAspectRatio="xMidYMid meet"
+      />
 
       {/* Speech bubble - ✅ Only show if showBubble is true */}
       {showBubble && (

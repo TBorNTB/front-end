@@ -192,7 +192,7 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
                 <span>{news.viewCount || 0}</span>
               </div>
               <div className="flex items-center gap-1">
-                <ThumbsUp className="h-3.5 w-3.5" />
+                <ThumbsUp className="h-3.5 w-3.5 text-secondary-500" />
                 <span>{news.likeCount || 0}</span>
               </div>
               <div className="flex items-center gap-2">
@@ -271,7 +271,7 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
               <span>{news.viewCount || 0}</span>
             </div>
             <div className="flex items-center gap-1">
-              <ThumbsUp className="h-3.5 w-3.5" />
+              <ThumbsUp className="h-3.5 w-3.5 text-secondary-500" />
               <span>{news.likeCount || 0}</span>
             </div>
             <div className="flex items-center gap-2">

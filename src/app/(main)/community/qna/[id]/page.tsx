@@ -860,7 +860,7 @@ export default function QuestionDetailPage() {
                 <ThumbsUp
                   className={
                     question.hasUpvoted
-                      ? 'w-5 h-5 text-primary-600 fill-primary-600'
+                      ? 'w-5 h-5 text-secondary-500 fill-secondary-500'
                       : 'w-5 h-5 text-gray-700'
                   }
                 />
@@ -1294,11 +1294,11 @@ export default function QuestionDetailPage() {
                     onClick={() => handleUpvoteAnswer(answer.id)}
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
                       answer.hasUpvoted
-                        ? 'bg-primary-100 text-primary-700'
+                        ? 'bg-secondary-100 text-secondary-700'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    <ThumbsUp className={`w-4 h-4 ${answer.hasUpvoted ? 'fill-primary-700' : ''}`} />
+                    <ThumbsUp className={`w-4 h-4 ${answer.hasUpvoted ? 'fill-secondary-500 text-secondary-500' : 'text-gray-700'}`} />
                     <span className="font-medium">{answer.upvotes}</span>
                   </button>
                 </div>

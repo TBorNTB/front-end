@@ -211,7 +211,7 @@ export function ProjectCardHome({ project }: ProjectCard) {
                 <span>{project.views || 0}</span>
               </div>
               <div className="flex items-center gap-1">
-                <ThumbsUp className="h-3.5 w-3.5" />
+                <ThumbsUp className="h-3.5 w-3.5 text-secondary-500" />
                 <span>{project.likes || 0}</span>
               </div>
               <div className="flex items-center gap-2">

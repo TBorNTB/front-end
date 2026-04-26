@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import ChatBot from "@/app/(main)/chatbot/ChatBot";
+import ScrollToTop from "@/components/layout/ScrollToTop";
 import { FloatingLayerProvider } from "@/context/FloatingLayerContext";
 
 export default function RootLayoutClient({
@@ -18,6 +19,7 @@ export default function RootLayoutClient({
   return (
     <FloatingLayerProvider>
       <main className="flex-grow w-full">{children}</main>
+      <ScrollToTop />
       {shouldShowChatBot && <ChatBot />}
     </FloatingLayerProvider>
   );

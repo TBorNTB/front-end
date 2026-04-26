@@ -111,7 +111,7 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
                 <span className="font-medium text-gray-700">{article.views || 0}</span>
               </div>
               <div className="flex items-center gap-2">
-                <ThumbsUp className="w-4 h-4 text-gray-700" />
+                <ThumbsUp className="w-4 h-4 text-secondary-500" />
                 <span className="font-medium text-gray-700">{article.likes || 0}</span>
               </div>
               <div className="flex items-center gap-2">
