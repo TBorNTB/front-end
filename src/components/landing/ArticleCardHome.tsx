@@ -28,6 +28,7 @@ interface ArticleCardHomeProps {
 
 export function ArticleCardHome({ article }: ArticleCardHomeProps) {
   const defaultAvatar = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face';
+  const authorName = article.author.name || '작성자';
 
   return (
     <Link href={`/articles/${article.id}`}>
@@ -79,18 +80,18 @@ export function ArticleCardHome({ article }: ArticleCardHomeProps) {
           {/* Author */}
           <div className="mb-3">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full overflow-hidden border-2 border-white bg-gray-200">
+              <div className="w-7 h-7 rounded-full overflow-hidden border-2 border-white bg-gray-200" title={authorName}>
                 <ImageWithFallback
                   src={article.author.profileImage}
                   fallbackSrc="/images/placeholder/default-avatar.svg"
-                  alt={article.author.name}
+                  alt={authorName}
                   width={28}
                   height={28}
                   className="w-full h-full object-cover"
                 />
               </div>
-              <span className="text-xs text-gray-700 font-medium">
-                {article.author.name}
+              <span className="text-xs text-gray-700 font-medium" title={authorName}>
+                {authorName}
               </span>
             </div>
           </div>
@@ -112,7 +113,7 @@ export function ArticleCardHome({ article }: ArticleCardHomeProps) {
                 <span>{article.views || 0}</span>
               </div>
               <div className="flex items-center gap-1">
-                <ThumbsUp className="h-3.5 w-3.5" />
+                <ThumbsUp className="h-3.5 w-3.5 text-gray-600" />
                 <span>{article.likes || 0}</span>
               </div>
               <div className="flex items-center gap-2">

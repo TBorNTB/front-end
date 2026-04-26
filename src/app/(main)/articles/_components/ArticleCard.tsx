@@ -35,6 +35,8 @@ interface ArticleCardProps {
 }
 
 export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
+  const authorName = article.author.nickname || article.author.realname || article.author.username || '작성자';
+
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
     <Link
       href={`/articles/${article.id}`}
@@ -88,7 +90,7 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
           {/* 통계 + 작성자 한 줄 (좌측 작성자, 우측 통계) */}
           <div className="flex items-center justify-between gap-3 text-sm text-gray-700 mb-3 pt-3 border-t border-gray-200">
             <div className="flex items-center gap-2 flex-shrink-0">
-              <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
+              <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden" title={authorName}>
                 {article.author.avatarUrl ? (
                   <ImageWithFallback
                     src={article.author.avatarUrl}
@@ -96,13 +98,14 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
                     width={28}
                     height={28}
                     className="w-full h-full rounded-full object-cover"
+                    alt={authorName}
                   />
                 ) : (
                   <User className="w-3.5 h-3.5 text-secondary-500" />
                 )}
               </div>
-              <span className="text-xs text-gray-700 font-medium">
-                {article.author.nickname || article.author.realname || '작성자'}
+              <span className="text-xs text-gray-700 font-medium" title={authorName}>
+                {authorName}
               </span>
             </div>
             <div className="flex items-center gap-3">
@@ -111,7 +114,7 @@ export default function ArticleCard({ article, viewMode }: ArticleCardProps) {
                 <span className="font-medium text-gray-700">{article.views || 0}</span>
               </div>
               <div className="flex items-center gap-2">
-                <ThumbsUp className="w-4 h-4 text-secondary-500" />
+                <ThumbsUp className="w-4 h-4 text-gray-700" />
                 <span className="font-medium text-gray-700">{article.likes || 0}</span>
               </div>
               <div className="flex items-center gap-2">

@@ -31,7 +31,12 @@ export interface ProjectCardData {
   status: string;
   category: string;
   categories?: string[];
-  collaborators: { profileImage: string }[];
+  collaborators: {
+    profileImage: string;
+    username?: string;
+    nickname?: string;
+    realname?: string;
+  }[];
   likes: number;
   views?: number;
   techStacks?: string[];

@@ -722,7 +722,7 @@ export default function ActivityContent() {
       case 'news':
         return <Newspaper className="h-5 w-5" />;
       case 'like':
-        return <ThumbsUp className="h-5 w-5" />;
+        return <ThumbsUp className="h-5 w-5 text-gray-500" />;
       case 'comment':
         return <MessageCircle className="h-5 w-5" />;
       default:
@@ -1087,7 +1087,7 @@ export default function ActivityContent() {
                           )}
                           {activity.likes !== undefined && (
                             <div className="flex items-center gap-1">
-                              <ThumbsUp className="h-3 w-3" />
+                              <ThumbsUp className="h-3 w-3 text-gray-500" />
                               <span>{activity.likes}</span>
                             </div>
                           )}
@@ -1158,7 +1158,7 @@ export default function ActivityContent() {
                           )}
                           {activity.likes !== undefined && (
                             <div className="flex items-center gap-1">
-                              <ThumbsUp className="h-3 w-3" />
+                              <ThumbsUp className="h-3 w-3 text-gray-500" />
                               <span>{activity.likes}</span>
                             </div>
                           )}

@@ -59,7 +59,7 @@ export function FeaturedProjectCard({ project }: FeaturedProjectCardProps) {
             <div className="flex items-center gap-3">
               {project.likes !== undefined && (
                 <div className="flex items-center gap-1 px-3 py-1 bg-red-500/80 backdrop-blur-sm text-white text-sm rounded-full font-medium">
-                  <ThumbsUp className="w-4 h-4 fill-white" />
+                  <ThumbsUp className="w-4 h-4 text-gray-200" />
                   <span>{project.likes}</span>
                 </div>
               )}
@@ -102,7 +102,10 @@ export function FeaturedProjectCard({ project }: FeaturedProjectCardProps) {
                 <div className="flex items-center gap-2">
                   <Crown size={14} className="text-yellow-400" />
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full overflow-hidden border-2 border-yellow-400 bg-gray-200">
+                    <div
+                      className="w-6 h-6 rounded-full overflow-hidden border-2 border-yellow-400 bg-gray-200"
+                      title={project.owner.nickname || project.owner.realname || project.owner.username || '소유자'}
+                    >
                       <ImageWithFallback
                         src={project.owner.profileImageUrl || ''}
                         fallbackSrc="/images/placeholder/default-avatar.svg"
@@ -112,7 +115,10 @@ export function FeaturedProjectCard({ project }: FeaturedProjectCardProps) {
                         className="w-full h-full object-cover"
                       />
                     </div>
-                    <span className="text-white text-xs font-medium">
+                    <span
+                      className="text-white text-xs font-medium"
+                      title={project.owner.nickname || project.owner.realname || project.owner.username || '소유자'}
+                    >
                       {project.owner.nickname || project.owner.realname || project.owner.username || '소유자'}
                     </span>
                   </div>
@@ -129,11 +135,12 @@ export function FeaturedProjectCard({ project }: FeaturedProjectCardProps) {
                         <div 
                           key={index}
                           className="w-6 h-6 rounded-full overflow-hidden border-2 border-white/50 bg-gray-200"
+                          title={collab.nickname || collab.realname || collab.username || '협력자'}
                         >
                           <ImageWithFallback
                             src={collab.profileImageUrl || ''}
                             fallbackSrc="/images/placeholder/default-avatar.svg"
-                            alt={collab.nickname || collab.realname || 'Collaborator'}
+                            alt={collab.nickname || collab.realname || collab.username || '협력자'}
                             width={24}
                             height={24}
                             className="w-full h-full object-cover"

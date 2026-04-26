@@ -89,11 +89,15 @@ const AvatarStack = ({
           <div className="flex items-center gap-1.5">
             <div className="flex -space-x-2">
               {visibleContributors.map((contributor, index) => (
-                <div key={index} className="relative inline-block">
+                <div
+                  key={index}
+                  className="relative inline-block"
+                  title={contributor.nickname || contributor.realname || contributor.username || '참여자'}
+                >
                   <ImageWithFallback
                     src={contributor.avatar || ''}
                     fallbackSrc="/images/placeholder/default-avatar.svg"
-                    alt="Collaborator"
+                    alt={contributor.nickname || contributor.realname || contributor.username || '참여자'}
                     width={24}
                     height={24}
                     className="w-6 h-6 rounded-full border-2 border-white bg-gray-200"
@@ -192,7 +196,7 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
                 <span>{news.viewCount || 0}</span>
               </div>
               <div className="flex items-center gap-1">
-                <ThumbsUp className="h-3.5 w-3.5 text-secondary-500" />
+                <ThumbsUp className="h-3.5 w-3.5 text-gray-500" />
                 <span>{news.likeCount || 0}</span>
               </div>
               <div className="flex items-center gap-2">
@@ -271,7 +275,7 @@ export function NewsCard({ news, variant = 'grid' }: NewsCardProps) {
               <span>{news.viewCount || 0}</span>
             </div>
             <div className="flex items-center gap-1">
-              <ThumbsUp className="h-3.5 w-3.5 text-secondary-500" />
+              <ThumbsUp className="h-3.5 w-3.5 text-gray-500" />
               <span>{news.likeCount || 0}</span>
             </div>
             <div className="flex items-center gap-2">

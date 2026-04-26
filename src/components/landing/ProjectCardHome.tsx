@@ -35,7 +35,7 @@ const AvatarStack = ({
   maxVisible = 3
 }: {
   owner?: { username?: string; nickname?: string; realname?: string; profileImageUrl?: string };
-  collaborators: { profileImage: string }[];
+  collaborators: { profileImage: string; username?: string; nickname?: string; realname?: string }[];
   maxVisible?: number;
 }) => {
   const visibleContributors = collaborators.slice(0, maxVisible);
@@ -81,11 +81,15 @@ const AvatarStack = ({
       <div className="flex items-center gap-1.5">
         <div className="flex -space-x-2">
           {visibleContributors.map((contributor, index) => (
-            <div key={index} className="relative inline-block">
+            <div
+              key={index}
+              className="relative inline-block"
+              title={contributor.nickname || contributor.realname || contributor.username || '협력자'}
+            >
               <ImageWithFallback
                 src={contributor.profileImage || ''}
                 fallbackSrc="/images/placeholder/default-avatar.svg"
-                alt="Collaborator"
+                alt={contributor.nickname || contributor.realname || contributor.username || '협력자'}
                 width={24}
                 height={24}
                 className="w-6 h-6 rounded-full border-2 border-white bg-gray-200"
@@ -182,7 +186,7 @@ export function ProjectCardHome({ project }: ProjectCardHomeProps) {
                 <span>{project.views || 0}</span>
               </div>
               <div className="flex items-center gap-1">
-                <ThumbsUp className="h-3.5 w-3.5" />
+                <ThumbsUp className="h-3.5 w-3.5 text-gray-600" />
                 <span>{project.likes || 0}</span>
               </div>
               <div className="flex items-center gap-2">

@@ -1175,7 +1175,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                     className={`w-8 h-8 transition-colors ${
                       isLiked
                         ? 'text-secondary-500 fill-secondary-500'
-                        : 'text-gray-700 group-hover:text-secondary-500'
+                        : 'text-gray-700 group-hover:text-gray-500'
                     }`}
                   />
                   <span className={`text-2xl font-bold transition-colors ${
@@ -1465,7 +1465,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                                 )}
                                 {article.likeCount !== undefined && (
                                   <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
-                                    <ThumbsUp className="w-3.5 h-3.5 text-secondary-500" />
+                                    <ThumbsUp className="w-3.5 h-3.5 text-gray-500" />
                                     <span className="text-gray-700">{article.likeCount}</span>
                                   </div>
                                 )}

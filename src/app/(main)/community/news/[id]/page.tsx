@@ -732,7 +732,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                                       <span>{item.viewCount.toLocaleString()}</span>
                                     </div>
                                     <div className="flex items-center gap-1">
-                                      <ThumbsUp className="w-3 h-3 text-secondary-500" />
+                                      <ThumbsUp className="w-3 h-3 text-gray-500" />
                                       <span>{item.likeCount.toLocaleString()}</span>
                                     </div>
                                   </div>
@@ -1058,7 +1058,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
                       className={`w-8 h-8 transition-colors ${
                         isLiked
                           ? 'text-secondary-500 fill-secondary-500'
-                          : 'text-gray-700 group-hover:text-secondary-500'
+                          : 'text-gray-700 group-hover:text-gray-500'
                       }`}
                     />
                     <span

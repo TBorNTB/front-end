@@ -935,7 +935,7 @@ export default function QuestionDetailPage() {
                   <span className="text-sm font-medium">{question.views}</span>
                 </div>
                 <div className="flex items-center gap-2 text-gray-700">
-                  <ThumbsUp className="w-4 h-4" />
+                  <ThumbsUp className="w-4 h-4 text-gray-500" />
                   <span className="text-sm font-medium">{question.upvotes}</span>
                 </div>
                 <div className="flex items-center gap-2 text-gray-700">
