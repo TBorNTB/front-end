@@ -19,7 +19,7 @@ import {
   updateComment
 } from '@/lib/api/services/user-services';
 import { Menu, Transition } from '@headlessui/react';
-import { ArrowLeft, Clock, Crown, Eye, MessageCircle, Pencil, Plus, Search, ThumbsUp, Trash2, UserPlus, X } from 'lucide-react';
+import { ArrowLeft, Clock, Crown, Eye, Pencil, Plus, Search, ThumbsUp, Trash2, UserPlus, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -424,7 +424,11 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     // 기간 계산 (프로젝트 진행 기간: startedAt ~ endedAt)
     const formatDateForPeriod = (date: Date) => {
       if (isNaN(date.getTime())) return 'Unknown';
-      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      const hour = date.getHours();
+      const meridiem = hour < 12 ? '오전' : '오후';
+      const hour12 = hour % 12 || 12;
+      const minute = String(date.getMinutes()).padStart(2, '0');
+      return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 ${meridiem} ${String(hour12).padStart(2, '0')}:${minute}`;
     };
     const startedDate = apiData.startedAt ? new Date(apiData.startedAt) : (apiData.createdAt ? new Date(apiData.createdAt) : null);
     const endedDate = apiData.endedAt ? new Date(apiData.endedAt) : null;
@@ -1126,7 +1130,13 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   };
 
   const formatDate = (dateString: string) => {
-    return formatDateText(dateString, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    const hour = date.getHours();
+    const meridiem = hour < 12 ? '오전' : '오후';
+    const hour12 = hour % 12 || 12;
+    const minute = String(date.getMinutes()).padStart(2, '0');
+    return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 ${meridiem} ${String(hour12).padStart(2, '0')}:${minute}`;
   };
 
   const readTime = Math.max(
@@ -1874,8 +1884,8 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     </h1>
                   </div>
 
-                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="mb-4 flex flex-wrap items-center gap-3 text-sm text-gray-700">
+                    <div className="flex items-center gap-2">
                       <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200">
                         {project.author?.avatar ? (
                           <ImageWithFallback
@@ -1888,25 +1898,31 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-800">
+                          <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-700">
                             {(project.author?.name || 'U').charAt(0).toUpperCase()}
                           </div>
                         )}
                       </div>
-
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-semibold text-gray-900 truncate">{project.author?.name || 'Unknown'}</span>
-                          <Crown className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
-                        </div>
-                        <div className="mt-0.5 flex items-center gap-1.5 text-sm text-gray-700">
-                          <span>{project.createdAt}</span>
-                          <span className="text-gray-500">·</span>
-                          <Clock className="w-3.5 h-3.5" />
-                          <span>{readTime}분</span>
-                        </div>
-                      </div>
+                      <span className="font-medium text-gray-900">{project.author?.name || 'Unknown'}</span>
                     </div>
+
+                    <div className="flex items-center gap-1.5 text-gray-700">
+                      <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span>{project.createdAt}</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-gray-700">
+                      <Clock className="w-4 h-4 text-gray-700" />
+                      <span>{readTime}분</span>
+                    </div>
+
+                    {(project.tags || []).length > 0 && (
+                      <span className="px-2 py-1 rounded-full bg-primary-50 border border-primary-200 text-primary text-xs font-medium whitespace-nowrap">
+                        {project.tags[0]}
+                      </span>
+                    )}
                   </div>
                 </header>
 
@@ -1960,25 +1976,19 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                 </section>
 
                 <StatsActionBar
-                  statsClassName="gap-5"
+                  statsClassName="gap-6"
                   stats={
                     <>
                       {project.stats?.views !== undefined && (
-                        <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
-                          <Eye className="w-3.5 h-3.5 text-gray-700" />
-                          <span>{project.stats.views}</span>
+                        <div className="flex items-center gap-2 text-gray-700">
+                          <Eye className="w-5 h-5 text-gray-700" />
+                          <span className="text-base font-medium">{project.stats.views}</span>
                         </div>
                       )}
                       {project.stats?.likes !== undefined && (
-                        <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
-                          <ThumbsUp className={`w-3.5 h-3.5 ${isLiked ? 'fill-secondary-500 text-secondary-500' : 'text-gray-700'}`} />
-                          <span>{project.stats.likes}</span>
-                        </div>
-                      )}
-                      {project.stats?.comments !== undefined && (
-                        <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
-                          <MessageCircle className="w-3.5 h-3.5 text-gray-700" />
-                          <span>{project.stats.comments}</span>
+                        <div className="flex items-center gap-2 text-gray-700">
+                          <ThumbsUp className={`w-5 h-5 ${isLiked ? 'fill-secondary-500 text-secondary-500' : 'text-gray-700'}`} />
+                          <span className="text-base font-medium">{project.stats.likes}</span>
                         </div>
                       )}
                     </>
