@@ -1,10 +1,18 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ThumbsUp, Eye, Crown, Users, MessageCircle } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { decodeHtmlEntities } from '@/lib/html-utils';
+import { fetchLikeStatus } from '@/lib/api/services/user-services';
 import { getProjectStatusKorean, getProjectStatusColor } from '@/types/services/project';
+import {
+  PROJECT_LIKE_UPDATED_EVENT_NAME,
+  ProjectLikeUpdatedDetail,
+  isProjectLikedFromCache,
+  setProjectLikedInCache,
+} from '@/lib/article-like-sync';
 
 interface ProjectCardHomeProps {
   project: {
@@ -13,7 +21,7 @@ interface ProjectCardHomeProps {
     description: string;
     status: string;
     category: string;
-    collaborators: { profileImage: string }[];
+    collaborators: { profileImage: string; username?: string; nickname?: string; realname?: string }[];
     likes: number;
     views?: number;
     comments?: number;
@@ -118,6 +126,48 @@ const AvatarStack = ({
 };
 
 export function ProjectCardHome({ project }: ProjectCardHomeProps) {
+  const [likedState, setLikedState] = useState<boolean>(false);
+
+  useEffect(() => {
+    setLikedState(isProjectLikedFromCache(project.id));
+  }, [project.id]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    if (isProjectLikedFromCache(project.id)) return;
+
+    fetchLikeStatus(project.id, 'PROJECT')
+      .then((res) => {
+        if (!mounted) return;
+        const nextLiked = res.status === 'LIKED';
+        setLikedState(nextLiked);
+        if (nextLiked) {
+          setProjectLikedInCache(project.id, true);
+        }
+      })
+      .catch(() => {
+        // Ignore like-status failures for guests/network issues
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [project.id]);
+
+  useEffect(() => {
+    const onLikeUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<ProjectLikeUpdatedDetail>;
+      if (String(customEvent.detail.projectId) !== String(project.id)) return;
+      setLikedState(customEvent.detail.isLiked);
+    };
+
+    window.addEventListener(PROJECT_LIKE_UPDATED_EVENT_NAME, onLikeUpdated as EventListener);
+    return () => {
+      window.removeEventListener(PROJECT_LIKE_UPDATED_EVENT_NAME, onLikeUpdated as EventListener);
+    };
+  }, [project.id]);
+
   return (
     <Link href={`/projects/${project.id}`} className="block">
       <div className="group relative bg-white border border-gray-300 ring-1 ring-gray-200 rounded-xl overflow-hidden shadow-sm hover:border-primary-300 hover:ring-primary-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
@@ -186,7 +236,7 @@ export function ProjectCardHome({ project }: ProjectCardHomeProps) {
                 <span>{project.views || 0}</span>
               </div>
               <div className="flex items-center gap-1">
-                <ThumbsUp className="h-3.5 w-3.5 text-gray-600" />
+                <ThumbsUp className={`h-3.5 w-3.5 ${likedState ? 'fill-secondary-500 text-secondary-500' : 'text-gray-600'}`} />
                 <span>{project.likes || 0}</span>
               </div>
               <div className="flex items-center gap-2">

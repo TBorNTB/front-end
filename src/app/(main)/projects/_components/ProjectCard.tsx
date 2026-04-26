@@ -1,10 +1,18 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ThumbsUp, Eye, Crown, Users, MessageCircle } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { decodeHtmlEntities } from '@/lib/html-utils';
+import { fetchLikeStatus } from '@/lib/api/services/user-services';
 import { getProjectStatusKorean, getProjectStatusColor, getProjectStatusApiValue } from '@/types/services/project';
+import {
+  PROJECT_LIKE_UPDATED_EVENT_NAME,
+  ProjectLikeUpdatedDetail,
+  isProjectLikedFromCache,
+  setProjectLikedInCache,
+} from '@/lib/article-like-sync';
 
 interface ProjectCard {
   project: {
@@ -14,7 +22,7 @@ interface ProjectCard {
     status: string;
     category: string;
     categories?: string[];
-    collaborators: { profileImage: string }[];
+    collaborators: { profileImage: string; username?: string; nickname?: string; realname?: string }[];
     likes: number;
     views?: number;
     comments?: number;
@@ -119,6 +127,7 @@ const AvatarStack = ({
 };
 
 export function ProjectCardHome({ project }: ProjectCard) {
+  const [likedState, setLikedState] = useState<boolean>(false);
   const status = getProjectStatusApiValue(project.status) ?? project.status;
   const normalizedCategories = (project.categories && project.categories.length > 0
     ? project.categories
@@ -128,6 +137,46 @@ export function ProjectCardHome({ project }: ProjectCard) {
     .filter((category, index, array) => category.length > 0 && array.indexOf(category) === index);
   const visibleCategories = normalizedCategories.slice(0, 3);
   const remainingCategoryCount = Math.max(0, normalizedCategories.length - visibleCategories.length);
+
+  useEffect(() => {
+    setLikedState(isProjectLikedFromCache(project.id));
+  }, [project.id]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    if (isProjectLikedFromCache(project.id)) return;
+
+    fetchLikeStatus(project.id, 'PROJECT')
+      .then((res) => {
+        if (!mounted) return;
+        const nextLiked = res.status === 'LIKED';
+        setLikedState(nextLiked);
+        if (nextLiked) {
+          setProjectLikedInCache(project.id, true);
+        }
+      })
+      .catch(() => {
+        // Ignore like-status failures for guests/network issues
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [project.id]);
+
+  useEffect(() => {
+    const onLikeUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<ProjectLikeUpdatedDetail>;
+      if (String(customEvent.detail.projectId) !== String(project.id)) return;
+      setLikedState(customEvent.detail.isLiked);
+    };
+
+    window.addEventListener(PROJECT_LIKE_UPDATED_EVENT_NAME, onLikeUpdated as EventListener);
+    return () => {
+      window.removeEventListener(PROJECT_LIKE_UPDATED_EVENT_NAME, onLikeUpdated as EventListener);
+    };
+  }, [project.id]);
 
   return (
     <Link href={`/projects/${project.id}`} className="block h-full">
@@ -215,7 +264,7 @@ export function ProjectCardHome({ project }: ProjectCard) {
                 <span>{project.views || 0}</span>
               </div>
               <div className="flex items-center gap-1">
-                <ThumbsUp className="h-3.5 w-3.5 text-gray-700" />
+                <ThumbsUp className={`h-3.5 w-3.5 ${likedState ? 'fill-secondary-500 text-secondary-500' : 'text-gray-700'}`} />
                 <span>{project.likes || 0}</span>
               </div>
               <div className="flex items-center gap-2">

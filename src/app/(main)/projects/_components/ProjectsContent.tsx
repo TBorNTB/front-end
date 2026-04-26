@@ -15,6 +15,13 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { isGuest, getGuestRestrictionMessage } from '@/lib/role-utils';
 import { getSafeApiErrorMessage } from '@/lib/api/helpers';
 import { ProjectCardHome } from './ProjectCard';
+import { fetchLikeStatus } from '@/lib/api/services/user-services';
+import {
+  PROJECT_LIKE_UPDATED_EVENT_NAME,
+  ProjectLikeUpdatedDetail,
+  isProjectLikedFromCache,
+  setProjectLikedInCache,
+} from '@/lib/article-like-sync';
 
 interface Project {
   id: string;
@@ -40,6 +47,57 @@ interface Project {
     realname?: string;
     profileImageUrl?: string;
   }>;
+}
+
+function ProjectLikeIndicator({ projectId, likeCount }: { projectId: string; likeCount: number }) {
+  const [likedState, setLikedState] = useState(false);
+
+  useEffect(() => {
+    setLikedState(isProjectLikedFromCache(projectId));
+  }, [projectId]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    if (isProjectLikedFromCache(projectId)) return;
+
+    fetchLikeStatus(projectId, 'PROJECT')
+      .then((res) => {
+        if (!mounted) return;
+        const nextLiked = res.status === 'LIKED';
+        setLikedState(nextLiked);
+        if (nextLiked) {
+          setProjectLikedInCache(projectId, true);
+        }
+      })
+      .catch(() => {
+        // Ignore like-status failures for guests/network issues
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [projectId]);
+
+  useEffect(() => {
+    const onLikeUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<ProjectLikeUpdatedDetail>;
+      if (String(customEvent.detail.projectId) !== String(projectId)) return;
+      setLikedState(customEvent.detail.isLiked);
+    };
+
+    window.addEventListener(PROJECT_LIKE_UPDATED_EVENT_NAME, onLikeUpdated as EventListener);
+    return () => {
+      window.removeEventListener(PROJECT_LIKE_UPDATED_EVENT_NAME, onLikeUpdated as EventListener);
+    };
+  }, [projectId]);
+
+  return (
+    <div className="flex items-center gap-1 text-gray-700 font-medium">
+      <ThumbsUp size={16} className={likedState ? 'fill-secondary-500 text-secondary-500' : 'text-gray-500'} />
+      <span>{likeCount}</span>
+    </div>
+  );
 }
 
 // ============================================================================
@@ -782,10 +840,7 @@ export default function ProjectsContent() {
 
                         {/* Stats */}
                         <div className="flex items-center gap-4 mb-3 text-sm">
-                          <div className="flex items-center gap-1 text-gray-700 font-medium">
-                            <ThumbsUp size={16} className="text-gray-500" />
-                            <span>{project.likeCount || 0}</span>
-                          </div>
+                          <ProjectLikeIndicator projectId={project.id} likeCount={project.likeCount || 0} />
                           <div className="flex items-center gap-1 text-gray-700 font-medium">
                             <Eye size={16} className="text-blue-600" />
                             <span>{project.viewCount || 0}</span>

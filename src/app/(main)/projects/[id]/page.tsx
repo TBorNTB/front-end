@@ -34,6 +34,11 @@ import { requireNotGuest } from '@/lib/role-utils';
 import { ProjectContentRenderer } from '@/components/project/ProjectContentRenderer';
 import { formatDateText } from '@/components/ui/date';
 import StatsActionBar from '@/components/layout/StatsActionBar';
+import {
+  isProjectLikedFromCache,
+  notifyProjectLikeUpdated,
+  setProjectLikedInCache,
+} from '@/lib/article-like-sync';
 
 interface ProjectPageProps {
   params: Promise<{ id: string }>;
@@ -566,7 +571,9 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       }
 
       setProject(mappedData);
-      setIsLiked(likeStatusData.status === 'LIKED');
+      const nextLiked = likeStatusData.status === 'LIKED' || isProjectLikedFromCache(id);
+      setIsLiked(nextLiked);
+      setProjectLikedInCache(id, nextLiked);
     } catch (error) {
       console.error('Error fetching project details:', error);
       setProject((prev) => prev); // keep whatever was set above
@@ -582,7 +589,14 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     setIsTogglingLike(true);
     try {
       const response = await toggleLike(projectId, 'PROJECT');
-      setIsLiked(response.status === 'LIKED');
+      const nextLiked = response.status === 'LIKED';
+      setIsLiked(nextLiked);
+      setProjectLikedInCache(projectId, nextLiked);
+      notifyProjectLikeUpdated({
+        projectId: String(projectId),
+        isLiked: nextLiked,
+        likeCount: response.likeCount,
+      });
       
       // Update project stats
       if (project) {
@@ -1957,7 +1971,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                       )}
                       {project.stats?.likes !== undefined && (
                         <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
-                          <ThumbsUp className="w-3.5 h-3.5 text-gray-700" />
+                          <ThumbsUp className={`w-3.5 h-3.5 ${isLiked ? 'fill-secondary-500 text-secondary-500' : 'text-gray-700'}`} />
                           <span>{project.stats.likes}</span>
                         </div>
                       )}

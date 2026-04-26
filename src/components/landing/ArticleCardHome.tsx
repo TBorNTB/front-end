@@ -1,10 +1,18 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ThumbsUp, Eye, Calendar, MessageCircle } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { DateDisplay } from '@/components/ui/date';
 import { decodeHtmlEntities } from '@/lib/html-utils';
+import { fetchLikeStatus } from '@/lib/api/services/user-services';
+import {
+  ARTICLE_LIKE_UPDATED_EVENT_NAME,
+  ArticleLikeUpdatedDetail,
+  isArticleLikedFromCache,
+  setArticleLikedInCache,
+} from '@/lib/article-like-sync';
 
 interface ArticleCardHomeProps {
   article: {
@@ -19,6 +27,7 @@ interface ArticleCardHomeProps {
     category: string;
     thumbnailImage: string;
     likes: number;
+    isLiked?: boolean;
     views: number;
     comments?: number;
     tags?: string[];
@@ -29,6 +38,47 @@ interface ArticleCardHomeProps {
 export function ArticleCardHome({ article }: ArticleCardHomeProps) {
   const defaultAvatar = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face';
   const authorName = article.author.name || '작성자';
+  const [likedState, setLikedState] = useState<boolean>(article.isLiked ?? false);
+
+  useEffect(() => {
+    setLikedState(article.isLiked ?? isArticleLikedFromCache(article.id));
+  }, [article.id, article.isLiked]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    if (article.isLiked || isArticleLikedFromCache(article.id)) return;
+
+    fetchLikeStatus(article.id, 'ARTICLE')
+      .then((res) => {
+        if (!mounted) return;
+        const nextLiked = res.status === 'LIKED';
+        setLikedState(nextLiked);
+        if (nextLiked) {
+          setArticleLikedInCache(article.id, true);
+        }
+      })
+      .catch(() => {
+        // Ignore like-status errors for guest or network issues
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [article.id, article.isLiked]);
+
+  useEffect(() => {
+    const onLikeUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<ArticleLikeUpdatedDetail>;
+      if (String(customEvent.detail.articleId) !== String(article.id)) return;
+      setLikedState(customEvent.detail.isLiked);
+    };
+
+    window.addEventListener(ARTICLE_LIKE_UPDATED_EVENT_NAME, onLikeUpdated as EventListener);
+    return () => {
+      window.removeEventListener(ARTICLE_LIKE_UPDATED_EVENT_NAME, onLikeUpdated as EventListener);
+    };
+  }, [article.id]);
 
   return (
     <Link href={`/articles/${article.id}`}>
@@ -113,7 +163,7 @@ export function ArticleCardHome({ article }: ArticleCardHomeProps) {
                 <span>{article.views || 0}</span>
               </div>
               <div className="flex items-center gap-1">
-                <ThumbsUp className="h-3.5 w-3.5 text-gray-600" />
+                <ThumbsUp className={`h-3.5 w-3.5 ${likedState ? 'fill-secondary-500 text-secondary-500' : 'text-gray-600'}`} />
                 <span>{article.likes || 0}</span>
               </div>
               <div className="flex items-center gap-2">

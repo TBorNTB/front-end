@@ -19,6 +19,11 @@ import {
 import { isCommentEdited } from '@/lib/comment-utils';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { requireNotGuest } from '@/lib/role-utils';
+import {
+  isArticleLikedFromCache,
+  notifyArticleLikeUpdated,
+  setArticleLikedInCache,
+} from '@/lib/article-like-sync';
 import { 
   fetchViewCount,
   incrementViewCount,
@@ -298,7 +303,14 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
     setIsTogglingLike(true);
     try {
       const response = await toggleLike(articleId, 'ARTICLE');
-      setIsLiked(response.status === 'LIKED');
+      const nextLiked = response.status === 'LIKED';
+      setIsLiked(nextLiked);
+      setArticleLikedInCache(articleId, nextLiked);
+      notifyArticleLikeUpdated({
+        articleId: String(articleId),
+        isLiked: nextLiked,
+        likeCount: response.likeCount,
+      });
       
       // Update post stats
       if (post) {
@@ -548,7 +560,9 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
           setPost(mappedPost);
           setArticleAttachments(articleData.attachments ?? []);
           setExternalResourceLinks(resourceLinks);
-          setIsLiked(likeStatusData.status === 'LIKED');
+          const nextLiked = likeStatusData.status === 'LIKED' || isArticleLikedFromCache(articleId);
+          setIsLiked(nextLiked);
+          setArticleLikedInCache(articleId, nextLiked);
           
           // 댓글은 백그라운드에서 로드 (UI 블로킹하지 않음)
           loadComments(articleId, 'DESC', true);
@@ -1465,7 +1479,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                                 )}
                                 {article.likeCount !== undefined && (
                                   <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
-                                    <ThumbsUp className="w-3.5 h-3.5 text-gray-500" />
+                                    <ThumbsUp className={`w-3.5 h-3.5 ${isArticleLikedFromCache(article.id) ? 'fill-secondary-500 text-secondary-500' : 'text-gray-500'}`} />
                                     <span className="text-gray-700">{article.likeCount}</span>
                                   </div>
                                 )}
