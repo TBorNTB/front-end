@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 // 날짜 포맷팅 헬퍼
 const formatDate = (dateString: string) => {
@@ -62,6 +63,7 @@ const isValidExternalLink = (url?: string | null) => {
 const displayValue = (value?: string | null) => (isPlaceholder(value) ? '-' : value!.trim());
 
 export default function MembersPage() {
+  const router = useRouter();
   const [members, setMembers] = useState<UserResponse[]>([]);
   const [availableRoles, setAvailableRoles] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -81,6 +83,7 @@ export default function MembersPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize] = useState(6);
   const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
 
   // 검색어 debounce (300ms)
   useEffect(() => {
@@ -119,10 +122,12 @@ export default function MembersPage() {
 
       setMembers(response.data);
       setTotalPages(response.totalPage);
+      setTotalElements(response.totalElements);
     } catch (err: any) {
       console.error('Failed to load members:', err);
       setError(err.message || '멤버 정보를 불러올 수 없습니다.');
       setMembers([]);
+      setTotalElements(0);
     } finally {
       setIsLoading(false);
     }
@@ -161,8 +166,15 @@ export default function MembersPage() {
       const data = await profileService.getProfileByUsername(username);
       setProfile(data);
     } catch (err) {
+      const message = err instanceof Error ? err.message : '프로필 조회에 실패했습니다.';
+      const isAuthError = /토큰이 필요|Bearer|로그인이 필요|unauthorized|401/i.test(message);
+      if (isAuthError) {
+        closeProfile();
+        router.push('/login');
+        return;
+      }
       setProfile(null);
-      setProfileError(err instanceof Error ? err.message : '프로필 조회에 실패했습니다.');
+      setProfileError(message);
     } finally {
       setProfileLoading(false);
     }
@@ -274,7 +286,7 @@ export default function MembersPage() {
             {/* Results Info */}
             <div className="flex items-center justify-between mb-6">
               <p className="text-gray-700">
-                총 <span className="font-semibold text-primary-700">{members.length}</span>명의 멤버
+                총 <span className="font-semibold text-primary-700">{totalElements}</span>명의 멤버
                 {(selectedLevels.length > 0 || debouncedSearchTerm) && (
                   <span className="ml-2 text-sm text-gray-700">
                     (필터 적용됨)
@@ -423,9 +435,6 @@ export default function MembersPage() {
             <div className="flex items-start justify-between gap-4 border-b px-5 py-4">
               <div>
                 <h2 className="text-lg font-bold text-foreground">멤버 프로필</h2>
-                <p className="text-sm text-gray-700">
-                  {profile ? (displayValue(profile.nickname) || displayValue(profile.realName) || profile.username) : (profileUsername ? `@${profileUsername}` : '-')}
-                </p>
               </div>
               <button
                 type="button"

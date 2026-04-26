@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import ChatBot from "@/app/(main)/chatbot/ChatBot";
+import { FloatingLayerProvider } from "@/context/FloatingLayerContext";
 
 export default function RootLayoutClient({
   children,
@@ -15,9 +16,9 @@ export default function RootLayoutClient({
   const shouldShowChatBot = !isLoginOrSignup;
 
   return (
-    <>
+    <FloatingLayerProvider>
       <main className="flex-grow w-full">{children}</main>
       {shouldShowChatBot && <ChatBot />}
-    </>
+    </FloatingLayerProvider>
   );
 }

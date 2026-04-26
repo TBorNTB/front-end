@@ -3,15 +3,41 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Users, Clock, ArrowRight, Shield } from 'lucide-react';
+import { Clock, ArrowRight, Shield, Code, Lock, Search, Wifi, Cpu, Key, ChevronLeft, ChevronRight, ThumbsUp, Eye } from 'lucide-react';
 import TitleBanner from '@/components/layout/TitleBanner';
 import CategoryFilter from '@/components/layout/CategoryFilter';
 import type { LucideIcon } from 'lucide-react';
 import { categoryService, CategoryItem } from '@/lib/api/services/category-services';
 import { CategoryType, CategorySlugs, CategoryDisplayNames, CategoryDescriptions } from '@/types/services/category';
-import { getProjectStatusColor, getProjectStatusKorean, getProjectStatusApiValue } from '@/types/services/project';
 import { decodeHtmlEntities } from '@/lib/html-utils';
-import { formatDateText } from '@/components/ui/date';
+import { normalizeImageUrl } from '@/lib/landing-utils';
+
+const getAvatarUrl = (url: string | null | undefined): string => {
+  if (!url || typeof url !== 'string' || url.trim() === '') return '/images/placeholder/default-avatar.svg';
+  return url.trim();
+};
+
+// Icon mapping for each category
+const CategoryIcons: Record<CategoryType, LucideIcon> = {
+  [CategoryType.WEB_HACKING]: Code,
+  [CategoryType.REVERSING]: Search,
+  [CategoryType.SYSTEM_HACKING]: Lock,
+  [CategoryType.DIGITAL_FORENSICS]: Shield,
+  [CategoryType.NETWORK_SECURITY]: Wifi,
+  [CategoryType.IOT_SECURITY]: Cpu,
+  [CategoryType.CRYPTOGRAPHY]: Key,
+};
+
+// Color mapping for each category
+const CategoryColors: Record<CategoryType, string> = {
+  [CategoryType.WEB_HACKING]: 'bg-blue-500',
+  [CategoryType.REVERSING]: 'bg-purple-500',
+  [CategoryType.SYSTEM_HACKING]: 'bg-red-500',
+  [CategoryType.DIGITAL_FORENSICS]: 'bg-green-500',
+  [CategoryType.NETWORK_SECURITY]: 'bg-indigo-500',
+  [CategoryType.IOT_SECURITY]: 'bg-orange-500',
+  [CategoryType.CRYPTOGRAPHY]: 'bg-yellow-500',
+};
 
 // 카테고리 이름으로 CategoryType을 찾는 헬퍼 함수
 const getCategoryTypeByName = (name: string): CategoryType | null => {
@@ -40,10 +66,7 @@ interface CategoryDisplayData {
   type: CategoryType;
   description: string;
   content: string;
-}
-
-interface SearchTotalResponse {
-  totalElements?: number;
+  iconUrl?: string;
 }
 
 // 범용 slug 생성 함수 - 어떤 카테고리 이름이 와도 자동으로 처리
@@ -100,57 +123,26 @@ const transformCategoryData = (apiCategory: CategoryItem): CategoryDisplayData |
     type: defaultType,
     description: apiCategory.description || (type ? CategoryDescriptions[type] : apiCategory.description || ''),
     content: (apiCategory.content ?? '').toString(),
+    iconUrl: apiCategory.iconUrl,
   };
 };
 
-const fetchCategoryProjectCount = async (categoryName: string): Promise<number> => {
-  try {
-    const projectParams = new URLSearchParams();
-    projectParams.append('categories', categoryName);
-    projectParams.append('size', '1');
-    projectParams.append('page', '0');
-    projectParams.append('projectSortType', 'LATEST');
-
-    const projectResponse = await fetch(`/api/projects/search?${projectParams.toString()}`);
-    if (!projectResponse.ok) {
-      return 0;
-    }
-
-    const projectData: SearchTotalResponse = await projectResponse.json();
-    return Number(projectData.totalElements ?? 0);
-  } catch {
-    return 0;
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'Completed': return 'bg-green-100 text-green-700 border-green-300';
+    case 'Planning': return 'bg-yellow-100 text-yellow-700 border-yellow-300';
+    case 'In Progress': return 'bg-blue-100 text-blue-700 border-blue-300';
+    default: return 'bg-gray-100 text-gray-700 border-gray-300';
   }
 };
 
-const fetchCategoryArticleCount = async (categoryName: string): Promise<number> => {
-  try {
-    const articleParams = new URLSearchParams();
-    articleParams.append('category', categoryName);
-    articleParams.append('size', '1');
-    articleParams.append('page', '0');
-    articleParams.append('sortType', 'LATEST');
-
-    const articleResponse = await fetch(`/api/articles/search?${articleParams.toString()}`);
-    if (!articleResponse.ok) {
-      return 0;
-    }
-
-    const articleData: SearchTotalResponse = await articleResponse.json();
-    return Number(articleData.totalElements ?? 0);
-  } catch {
-    return 0;
+const getStatusText = (status: string) => {
+  switch (status) {
+    case 'Completed': return '완료';
+    case 'Planning': return '계획중';
+    case 'In Progress': return '진행중';
+    default: return status;
   }
-};
-
-const getArticleReadTime = (item: any): string => {
-  if (typeof item?.readTime === 'string' && item.readTime.trim()) {
-    return item.readTime;
-  }
-
-  const text = (item?.content ?? item?.description ?? '').toString();
-  const minutes = Math.max(1, Math.ceil(text.length / 500));
-  return `${minutes}분 읽기`;
 };
 
 export function LearningTopics() {
@@ -178,6 +170,14 @@ export function LearningTopics() {
   const [filteredArticles, setFilteredArticles] = useState<any[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [loadingArticles, setLoadingArticles] = useState(false);
+  const [projectPage, setProjectPage] = useState(0);
+  const [articlePage, setArticlePage] = useState(0);
+  const [projectTotalPages, setProjectTotalPages] = useState(0);
+  const [articleTotalPages, setArticleTotalPages] = useState(0);
+  const [projectTotalElements, setProjectTotalElements] = useState(0);
+  const [articleTotalElements, setArticleTotalElements] = useState(0);
+  const [projectThumbFail, setProjectThumbFail] = useState<Record<string, boolean>>({});
+  const [articleThumbFail, setArticleThumbFail] = useState<Record<string, boolean>>({});
 
   // Load categories on mount
   useEffect(() => {
@@ -189,23 +189,7 @@ export function LearningTopics() {
         const transformedCategories = response.categories
           .map(transformCategoryData)
           .filter((cat): cat is CategoryDisplayData => cat !== null);
-
-        const categoriesWithCounts = await Promise.all(
-          transformedCategories.map(async (category) => {
-            const [projects, articles] = await Promise.all([
-              fetchCategoryProjectCount(category.name),
-              fetchCategoryArticleCount(category.name),
-            ]);
-
-            return {
-              ...category,
-              projects,
-              articles,
-            };
-          })
-        );
-
-        setCategories(categoriesWithCounts);
+        setCategories(transformedCategories);
       } catch (err) {
         console.error('Failed to fetch categories:', err);
         setError('카테고리를 불러오는데 실패했습니다.');
@@ -217,55 +201,86 @@ export function LearningTopics() {
     fetchCategories();
   }, []);
 
-  // Fetch projects and articles when category is selected
+  // Fetch projects when category or project page changes
   useEffect(() => {
     if (!selectedCategory || !currentCategory) {
       setFilteredProjects([]);
-      setFilteredArticles([]);
+      setProjectTotalPages(0);
+      setProjectTotalElements(0);
       return;
     }
 
-    const fetchProjectsAndArticles = async () => {      
-      // Fetch projects
+    const fetchProjects = async () => {
       setLoadingProjects(true);
       try {
         const projectParams = new URLSearchParams();
-        projectParams.append('categories', currentCategory.name); // API는 한글 카테고리 이름을 받음
-        projectParams.append('size', '5');
-        projectParams.append('page', '0');
+        projectParams.append('categories', currentCategory.name);
+        projectParams.append('size', '4');
+        projectParams.append('page', String(projectPage));
         projectParams.append('projectSortType', 'LATEST');
 
         const projectResponse = await fetch(`/api/projects/search?${projectParams.toString()}`);
         if (projectResponse.ok) {
           const projectData = await projectResponse.json();
-          const transformedProjects = (projectData.content || []).map((item: any) => ({
-            id: String(item.id),
-            title: item.title || '제목 없음',
-            description: item.description || '',
-            category: item.projectCategories?.[0] || currentCategory.name,
-            status: item.projectStatus || 'IN_PROGRESS',
-            tags: item.projectTechStacks || [],
-            contributors: (item.collaborators || []).length + (item.owner ? 1 : 0),
-            categorySlug: selectedCategory
-          }));
+          const transformedProjects = (projectData.content || []).map((item: any) => {
+            const owner = item.owner ? { nickname: item.owner.nickname || item.owner.realname || 'Unknown', avatar: getAvatarUrl(item.owner.profileImageUrl) } : null;
+            const collaborators = (item.collaborators || []).map((c: any) => ({ nickname: c.nickname || c.realname || 'Unknown', avatar: getAvatarUrl(c.profileImageUrl) }));
+            const teamMembers = owner ? [owner, ...collaborators] : collaborators;
+            return {
+              id: String(item.id),
+              title: item.title || '제목 없음',
+              description: item.description || '',
+              category: item.projectCategories?.[0] || currentCategory.name,
+              projectCategories: Array.isArray(item.projectCategories) ? item.projectCategories : [item.projectCategories].filter(Boolean),
+              status: item.projectStatus === 'IN_PROGRESS' ? 'In Progress' :
+                      item.projectStatus === 'COMPLETED' ? 'Completed' :
+                      item.projectStatus === 'PLANNING' ? 'Planning' : 'In Progress',
+              tags: item.projectTechStacks || [],
+              contributors: (item.collaborators || []).length + (item.owner ? 1 : 0),
+              teamMembers,
+              categorySlug: selectedCategory,
+              thumbnailUrl: item.thumbnailUrl ? normalizeImageUrl(item.thumbnailUrl) : '',
+              likeCount: item.likeCount ?? 0,
+              viewCount: item.viewCount ?? 0,
+            };
+          });
           setFilteredProjects(transformedProjects);
+          setProjectTotalPages(projectData.totalPages ?? 0);
+          setProjectTotalElements(projectData.totalElements ?? 0);
         } else {
           setFilteredProjects([]);
+          setProjectTotalPages(0);
+          setProjectTotalElements(0);
         }
       } catch (error) {
         console.error('Failed to fetch projects:', error);
         setFilteredProjects([]);
+        setProjectTotalPages(0);
+        setProjectTotalElements(0);
       } finally {
         setLoadingProjects(false);
       }
+    };
 
-      // Fetch articles (CS Knowledge)
+    fetchProjects();
+  }, [selectedCategory, currentCategory, projectPage]);
+
+  // Fetch articles when category or article page changes
+  useEffect(() => {
+    if (!selectedCategory || !currentCategory) {
+      setFilteredArticles([]);
+      setArticleTotalPages(0);
+      setArticleTotalElements(0);
+      return;
+    }
+
+    const fetchArticles = async () => {
       setLoadingArticles(true);
       try {
         const articleParams = new URLSearchParams();
-        articleParams.append('category', currentCategory.name); // API는 한글 카테고리 이름을 받음
-        articleParams.append('size', '5');
-        articleParams.append('page', '0');
+        articleParams.append('category', currentCategory.name);
+        articleParams.append('size', '4');
+        articleParams.append('page', String(articlePage));
         articleParams.append('sortType', 'LATEST');
 
         const articleResponse = await fetch(`/api/articles/search?${articleParams.toString()}`);
@@ -276,27 +291,45 @@ export function LearningTopics() {
             title: item.title || '제목 없음',
             description: item.description ?? '',
             category: item.category || currentCategory.name,
+            articleCategories: Array.isArray(item.categories) ? item.categories : (item.category ? [item.category] : [currentCategory.name]),
             author: item.writer?.nickname || item.writer?.realname || '작성자',
-            publishDate: item.createdAt ? formatDateText(item.createdAt, undefined, '') : '',
-            readTime: getArticleReadTime(item),
-            views: item.viewCount || 0,
+            authorAvatar: getAvatarUrl(item.writer?.profileImageUrl),
+            publishDate: item.createdAt ? new Date(item.createdAt).toLocaleDateString('ko-KR') : '',
+            readTime: '5분 읽기',
+            views: item.viewCount ?? 0,
+            likeCount: item.likeCount ?? 0,
             comments: 0,
-            categorySlug: selectedCategory
+            categorySlug: selectedCategory,
+            thumbnailUrl: item.thumbnailUrl ? normalizeImageUrl(item.thumbnailUrl) : '',
           }));
           setFilteredArticles(transformedArticles);
+          setArticleTotalPages(articleData.totalPages ?? 0);
+          setArticleTotalElements(articleData.totalElements ?? 0);
         } else {
           setFilteredArticles([]);
+          setArticleTotalPages(0);
+          setArticleTotalElements(0);
         }
       } catch (error) {
         console.error('Failed to fetch articles:', error);
         setFilteredArticles([]);
+        setArticleTotalPages(0);
+        setArticleTotalElements(0);
       } finally {
         setLoadingArticles(false);
       }
     };
 
-    fetchProjectsAndArticles();
-  }, [selectedCategory, currentCategory]);
+    fetchArticles();
+  }, [selectedCategory, currentCategory, articlePage]);
+
+  // Reset pagination and thumb fallback when category changes
+  useEffect(() => {
+    setProjectPage(0);
+    setArticlePage(0);
+    setProjectThumbFail({});
+    setArticleThumbFail({});
+  }, [selectedCategory]);
   
   // 선택된 카테고리가 없으면 상세 페이지를 표시하지 않음
   if (selectedCategory && !currentCategory) {
@@ -308,8 +341,9 @@ export function LearningTopics() {
       {/* Categories Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {categories.map((category) => {
-          const IconComponent = Shield;
-          const colorClass = 'bg-primary';
+          // 알 수 없는 카테고리도 기본 아이콘/색상 사용 (확장성 고려)
+          const IconComponent = CategoryIcons[category.type] || Shield;
+          const colorClass = CategoryColors[category.type] || 'bg-gray-500';
           
           return (
             <div 
@@ -318,10 +352,17 @@ export function LearningTopics() {
               onClick={() => handleCategoryClick(category.slug)}
             >
               <div className="flex items-center space-x-4 mb-4">
-                <div className={`w-12 h-12 rounded-xl ${colorClass} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-                  <IconComponent className="w-6 h-6 text-white" />
+                <div className={`relative w-12 h-12 rounded-xl ${colorClass} flex items-center justify-center group-hover:scale-110 transition-transform duration-300 overflow-hidden flex-shrink-0`}>
+                  {category.iconUrl ? (
+                    <>
+                      <IconComponent className="absolute inset-0 w-6 h-6 text-white m-auto z-0" />
+                      <img src={category.iconUrl} alt="" className="w-full h-full object-cover relative z-10" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                    </>
+                  ) : (
+                    <IconComponent className="w-6 h-6 text-white" />
+                  )}
                 </div>
-                <h3 className="text-xl font-bold text-primary group-hover:text-primary-800 transition-colors">
+                <h3 className="text-xl font-bold text-foreground group-hover:text-primary-600 transition-colors">
                   {category.name}
                 </h3>
               </div>
@@ -362,8 +403,21 @@ export function LearningTopics() {
               <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(58,77,161,0.1)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
             </div>
             <div className="relative z-10 flex items-start space-x-4">
-              <div className="w-16 h-16 rounded-xl bg-primary-600 flex items-center justify-center flex-shrink-0">
-                <Shield className="w-8 h-8 text-white" />
+              <div className={`relative w-16 h-16 rounded-xl ${CategoryColors[cat.type]} flex items-center justify-center flex-shrink-0 overflow-hidden`}>
+                {cat.iconUrl ? (
+                  <>
+                    {(() => {
+                      const Icon = CategoryIcons[cat.type];
+                      return <Icon className="absolute inset-0 w-8 h-8 text-white m-auto z-0" />;
+                    })()}
+                    <img src={cat.iconUrl} alt="" className="w-full h-full object-cover relative z-10" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                  </>
+                ) : (
+                  (() => {
+                    const Icon = CategoryIcons[cat.type];
+                    return <Icon className="w-8 h-8 text-white" />;
+                  })()
+                )}
               </div>
               <div className="flex-1">
                 <h1 className="text-3xl font-bold text-white mb-2">{cat.name}</h1>
@@ -409,12 +463,12 @@ export function LearningTopics() {
                 selectedCategory={selectedCategory}
                 onCategoryChange={(slug) => {
                   if (slug === 'all') {
-                    router.replace('/topics');
+                    router.push('/topics');
                   } else {
                     router.push(`/topics?category=${slug}`);
                   }
                 }}
-                title="카테고리"
+                title="전체 카테고리"
               />
             </div>
           </div>
@@ -429,7 +483,7 @@ export function LearningTopics() {
                   <div className="flex items-center justify-between">
                     <h2 className="text-xl font-bold text-foreground">프로젝트</h2>
                     <span className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium">
-                      {filteredProjects.length}개
+                      {projectTotalElements}개
                     </span>
                   </div>
 
@@ -441,41 +495,68 @@ export function LearningTopics() {
                       </div>
                     ) : filteredProjects.length > 0 ? (
                       filteredProjects.map((project) => (
-                        <div key={project.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-200 ">
-                          {(() => {
-                            const status = getProjectStatusApiValue(project.status) || project.status;
-                            return (
-                          <div className="flex items-start justify-between mb-3">
-                            <h3 className="text-base font-bold text-foreground flex-1">{decodeHtmlEntities(project.title)}</h3>
-                            <span className={`px-2 py-1 rounded-full text-xs border ml-3 flex-shrink-0 ${getProjectStatusColor(status)}`}>
-                              {getProjectStatusKorean(status)}
-                            </span>
-                          </div>
-                            );
-                          })()}
-                          <p className="text-gray-700 text-sm mb-4">{decodeHtmlEntities(project.description)}</p>
-                          <div className="flex items-center space-x-2 mb-4">
-                            {project.tags && project.tags.length > 0 ? (
-                              project.tags.slice(0, 3).map((tag: string, index: number) => (
-                                <span key={index} className="bg-secondary-50 text-secondary-700 px-2 py-1 rounded text-xs border border-secondary-200">
-                                  {tag}
+                        <div key={project.id} className="bg-gray-50 rounded-lg overflow-hidden border border-gray-200 hover:shadow-md transition-all duration-200 topic-card">
+                          <div className="flex gap-4 p-4 min-h-[180px]">
+                            <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-gray-200 flex items-center justify-center">
+                              {project.thumbnailUrl && !projectThumbFail[project.id] ? (
+                                <img
+                                  src={project.thumbnailUrl}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                  onError={() => setProjectThumbFail((prev) => ({ ...prev, [project.id]: true }))}
+                                />
+                              ) : (
+                                <span className="text-2xl font-bold text-gray-400">P</span>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0 flex flex-col">
+                              <div className="flex items-start justify-between mb-2">
+                                <h3 className="text-base font-bold text-foreground flex-1 line-clamp-1">{decodeHtmlEntities(project.title)}</h3>
+                                <span className={`px-2 py-1 rounded-full text-xs border ml-2 flex-shrink-0 ${getStatusColor(project.status)}`}>
+                                  {getStatusText(project.status)}
                                 </span>
-                              ))
-                            ) : null}
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3 text-xs text-gray-700">
-                              <div className="flex items-center space-x-1">
-                                <Users size={12} />
-                                <span>{project.contributors}</span>
+                              </div>
+                              {project.projectCategories && project.projectCategories.length > 0 ? (
+                                <div className="flex flex-wrap gap-1 mb-2">
+                                  {project.projectCategories.map((catName: string, idx: number) => (
+                                    <span key={idx} className="bg-primary-50 text-primary-700 px-2 py-0.5 rounded text-xs border border-primary-200">
+                                      {catName}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : null}
+                              <p className="text-gray-700 text-sm mb-2 line-clamp-2">{decodeHtmlEntities(project.description)}</p>
+                              {project.teamMembers && project.teamMembers.length > 0 ? (
+                                <div className="flex items-center gap-1 mb-2">
+                                  <div className="flex -space-x-2">
+                                    {project.teamMembers.slice(0, 5).map((member: { nickname: string; avatar: string }, idx: number) => (
+                                      <div key={idx} className="w-6 h-6 rounded-full border-2 border-white overflow-hidden bg-gray-200 flex-shrink-0" title={member.nickname}>
+                                        <img src={member.avatar} alt="" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = '/images/placeholder/default-avatar.svg'; }} />
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <span className="text-xs text-gray-600 ml-1">팀원 {project.teamMembers.length}명</span>
+                                </div>
+                              ) : null}
+                              <div className="flex items-center justify-between flex-wrap gap-2 mt-auto">
+                                <div className="flex items-center space-x-3 text-xs text-gray-600">
+                                  <div className="flex items-center space-x-1">
+                                    <ThumbsUp size={12} />
+                                    <span>{project.likeCount ?? 0}</span>
+                                  </div>
+                                  <div className="flex items-center space-x-1">
+                                    <Eye size={12} />
+                                    <span>{project.viewCount ?? 0}</span>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => router.push(`/projects/${project.id}`)}
+                                  className="text-primary-600 hover:text-primary-700 text-sm font-medium transition-colors hover:underline"
+                                >
+                                  자세히 보기 →
+                                </button>
                               </div>
                             </div>
-                            <button 
-                              onClick={() => router.push(`/projects/${project.id}`)}
-                              className="text-primary-600 hover:text-primary-700 text-sm font-medium transition-colors hover:underline"
-                            >
-                              상세 보기 →
-                            </button>
                           </div>
                         </div>
                       ))
@@ -485,6 +566,30 @@ export function LearningTopics() {
                       </div>
                     )}
                   </div>
+
+                  {projectTotalPages > 1 && (
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setProjectPage((p) => Math.max(0, p - 1))}
+                        disabled={projectPage === 0}
+                        className="p-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none"
+                      >
+                        <ChevronLeft size={18} />
+                      </button>
+                      <span className="text-sm text-gray-600">
+                        {projectPage + 1} / {projectTotalPages}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setProjectPage((p) => Math.min(projectTotalPages - 1, p + 1))}
+                        disabled={projectPage >= projectTotalPages - 1}
+                        className="p-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none"
+                      >
+                        <ChevronRight size={18} />
+                      </button>
+                    </div>
+                  )}
 
                   <div className="text-center">
                     <button
@@ -501,8 +606,8 @@ export function LearningTopics() {
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <h2 className="text-xl font-bold text-foreground">아티클</h2>
-                    <span className="bg-secondary-100 text-secondary-700 px-3 py-1 rounded-full text-sm font-medium">
-                      {filteredArticles.length}개
+                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+                      {articleTotalElements}개
                     </span>
                   </div>
 
@@ -514,26 +619,62 @@ export function LearningTopics() {
                       </div>
                     ) : filteredArticles.length > 0 ? (
                       filteredArticles.map((article) => (
-                        <div key={article.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-200">
-                          <h3 className="text-base font-bold text-foreground mb-2">{decodeHtmlEntities(article.title)}</h3>
-                          <p className="text-gray-700 text-sm mb-4">{decodeHtmlEntities(article.description)}</p>
-                          <div className="flex items-center justify-between text-xs text-gray-700 mb-3">
-                            <span>by {article.author}</span>
-                            <span>{article.publishDate}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4 text-xs text-gray-700">
-                              <div className="flex items-center space-x-1">
-                                <Clock size={12} />
-                                <span>{article.readTime}</span>
+                        <div key={article.id} className="bg-gray-50 rounded-lg overflow-hidden border border-gray-200 hover:shadow-md transition-all duration-200 topic-card">
+                          <div className="flex gap-4 p-4 min-h-[180px]">
+                            <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-gray-200 flex items-center justify-center">
+                              {article.thumbnailUrl && !articleThumbFail[article.id] ? (
+                                <img
+                                  src={article.thumbnailUrl}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                  onError={() => setArticleThumbFail((prev) => ({ ...prev, [article.id]: true }))}
+                                />
+                              ) : (
+                                <span className="text-2xl font-bold text-gray-400">A</span>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0 flex flex-col">
+                              <h3 className="text-base font-bold text-foreground mb-2 line-clamp-1">{decodeHtmlEntities(article.title)}</h3>
+                              {article.articleCategories && article.articleCategories.length > 0 ? (
+                                <div className="flex flex-wrap gap-1 mb-2">
+                                  {article.articleCategories.map((catName: string, idx: number) => (
+                                    <span key={idx} className="bg-green-50 text-green-700 px-2 py-0.5 rounded text-xs border border-green-200">
+                                      {catName}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : null}
+                              <p className="text-gray-700 text-sm mb-2 line-clamp-2">{decodeHtmlEntities(article.description)}</p>
+                              <div className="flex items-center gap-2 text-xs text-gray-600 mb-2">
+                                <div className="w-6 h-6 rounded-full border-2 border-white overflow-hidden bg-gray-200 flex-shrink-0" title={article.author}>
+                                  <img src={article.authorAvatar} alt="" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = '/images/placeholder/default-avatar.svg'; }} />
+                                </div>
+                                <span className="font-medium text-foreground">작성: {article.author}</span>
+                                <span>{article.publishDate}</span>
+                              </div>
+                              <div className="flex items-center justify-between mt-auto">
+                                <div className="flex items-center space-x-3 text-xs text-gray-600">
+                                  <div className="flex items-center space-x-1">
+                                    <Clock size={12} />
+                                    <span>{article.readTime}</span>
+                                  </div>
+                                  <div className="flex items-center space-x-1">
+                                    <ThumbsUp size={12} />
+                                    <span>{article.likeCount ?? 0}</span>
+                                  </div>
+                                  <div className="flex items-center space-x-1">
+                                    <Eye size={12} />
+                                    <span>{article.views ?? 0}</span>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => router.push(`/articles/${article.id}`)}
+                                  className="text-primary-600 hover:text-primary-700 text-sm font-medium transition-colors hover:underline"
+                                >
+                                  읽어보기 →
+                                </button>
                               </div>
                             </div>
-                            <button 
-                              onClick={() => router.push(`/community/news/${article.id}`)}
-                              className="text-primary-600 hover:text-primary-700 text-sm font-medium transition-colors hover:underline"
-                            >
-                              읽어보기 →
-                            </button>
                           </div>
                         </div>
                       ))
@@ -544,10 +685,34 @@ export function LearningTopics() {
                     )}
                   </div>
 
+                  {articleTotalPages > 1 && (
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setArticlePage((p) => Math.max(0, p - 1))}
+                        disabled={articlePage === 0}
+                        className="p-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none"
+                      >
+                        <ChevronLeft size={18} />
+                      </button>
+                      <span className="text-sm text-gray-600">
+                        {articlePage + 1} / {articleTotalPages}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setArticlePage((p) => Math.min(articleTotalPages - 1, p + 1))}
+                        disabled={articlePage >= articleTotalPages - 1}
+                        className="p-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none"
+                      >
+                        <ChevronRight size={18} />
+                      </button>
+                    </div>
+                  )}
+
                   <div className="text-center">
                     <button
-                      onClick={() => router.push(`/articles?topic=${cat?.slug}`)}
-                      className="text-secondary-600 hover:text-secondary-700 font-medium flex items-center space-x-2 mx-auto text-sm transition-colors hover:underline"
+                      onClick={() => router.push('/topics')}
+                      className="text-green-600 hover:text-green-700 font-medium flex items-center space-x-2 mx-auto text-sm transition-colors hover:underline"
                     >
                       <span>모든 CS지식 보기</span>
                       <ArrowRight size={16} />

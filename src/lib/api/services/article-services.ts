@@ -11,6 +11,16 @@ export interface WriterProfile {
   profileImageUrl: string;
 }
 
+export interface AttachmentInfo {
+  fileKey: string;
+  originalFileName: string;
+}
+
+export interface AttachmentReq {
+  tempKey: string;
+  originalFileName: string;
+}
+
 export interface ArticleResponse {
   id: number;
   title: string;
@@ -19,6 +29,9 @@ export interface ArticleResponse {
   writerProfile: WriterProfile;
   category: string;
   thumbnailUrl: string;
+  attachments?: AttachmentInfo[];
+  /** 참고 링크 (URL 문자열 또는 탭으로 구분된 `표시이름\\tURL`) */
+  referenceLinks?: string[];
   createdAt: string;
 }
 
@@ -27,8 +40,10 @@ export interface ArticleCreateRequest {
   content: string;
   description: string;
   category: string;
+  referenceLinks?: string[];
   thumbnailKey?: string;
   contentImageKeys?: string[];
+  attachments?: AttachmentReq[];
 }
 
 export interface ArticleUpdateRequest {
@@ -36,8 +51,11 @@ export interface ArticleUpdateRequest {
   content: string;
   description: string;
   category: string;
+  referenceLinks?: string[];
   thumbnailKey?: string;
   contentImageKeys?: string[];
+  attachments?: AttachmentReq[];
+  attachmentKeysToDelete?: string[];
 }
 
 /**
@@ -177,9 +195,15 @@ export const createArticle = async (data: ArticleCreateRequest): Promise<Article
   return response.json();
 };
 
+export const getAttachmentDownloadUrl = (id: string | number, fileKey: string): string => {
+  const endpoint = ARTICLE_ENDPOINTS.ARTICLE.ATTACHMENT_DOWNLOAD.replace(':id', String(id));
+  return getArticleApiUrl(`${endpoint}?key=${encodeURIComponent(fileKey)}`);
+};
+
 export const articleService = {
   fetchArticleById,
   createArticle,
   updateArticle,
   deleteArticle,
+  getAttachmentDownloadUrl,
 };

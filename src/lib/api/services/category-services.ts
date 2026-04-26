@@ -13,6 +13,9 @@ export interface CategoryItem {
   name: string;
   description: string;
   content?: string;
+  iconKey?: string;
+  /** API 응답: 카테고리 아이콘 이미지 URL */
+  iconUrl?: string;
 }
 
 export interface CategoryResponse {
@@ -23,13 +26,14 @@ export interface CreateCategoryRequest {
   name: string;
   description: string;
   content: string;
+  iconKey?: string;
 }
 
 export interface UpdateCategoryRequest {
-  prevName: string;
-  nextName: string;
+  name: string;
   description: string;
   content: string;
+  iconKey?: string;
 }
 
 export interface DeleteCategoryRequest {
@@ -67,7 +71,7 @@ export const categoryService = {
       });
 
       if (!response.ok) {
-        if (process.env.NODE_ENV === 'development') {
+        if (process.env.NODE_ENV === 'development' && response.status < 500) {
           const errorText = await response.text().catch(() => '');
           console.error('[category] getCategories error', response.status, errorText);
         }
@@ -77,7 +81,9 @@ export const categoryService = {
       const data: CategoryResponse = await response.json();
       return data;
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[category] getCategories failed:', error instanceof Error ? error.message : 'Unknown error');
+      }
       throw error;
     }
   },

@@ -29,6 +29,7 @@ export interface MembersPageResponse {
   size: number;
   page: number;
   totalPage: number;
+  totalElements: number;
 }
 
 export interface GetMembersParams {
@@ -127,12 +128,14 @@ export const memberService = {
       throw new Error(data?.message || data?.error || `멤버 조회 실패 (${response.status})`);
     }
 
+    const totalElements = data.totalElements ?? data.totalElement ?? data.total_elements ?? 0;
     return {
       message: data.message || '',
       data: data.data || [],
       size: data.size || 0,
       page: data.page || 0,
       totalPage: data.totalPage || 0,
+      totalElements,
     };
   },
 
@@ -311,6 +314,32 @@ export const profileService = {
       totalLikeCount: data.totalLikeCount || 0,
       totalCommentCount: data.totalCommentCount || 0,
     };
+  },
+
+  /**
+   * 회원 탈퇴 (현재 로그인 사용자)
+   * DELETE /user-service/users
+   */
+  deleteAccount: async (): Promise<UserResponse | null> => {
+    const response = await fetchWithRefresh('/api/gateway/user-service/users', {
+      method: 'DELETE',
+      headers: { accept: 'application/json' },
+    });
+
+    const data = await response.json().catch(() => null as never);
+
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('로그인이 필요합니다. 다시 로그인해주세요.');
+      }
+      throw new Error(data?.message || data?.error || `회원 탈퇴 실패 (${response.status})`);
+    }
+
+    if (data && typeof data === 'object') {
+      return cleanUserResponse(data as UserResponse);
+    }
+
+    return null;
   },
 };
 

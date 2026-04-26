@@ -2,15 +2,23 @@
 'use client';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState, useEffect, createElement, useRef, JSX, Fragment } from 'react';
-import { ThumbsUp, Eye, MessageCircle, Share2, Edit, Clock, ArrowLeft, Code, FileText, Trash2 } from 'lucide-react';
-import { fetchArticleById, deleteArticle, type ArticleResponse } from '@/lib/api/services/article-services';
+import { useState, useEffect, createElement, useRef, JSX } from 'react';
+import { ThumbsUp, Eye, MessageCircle, Edit, Clock, ArrowLeft, Code, FileText, Trash2, Download, ExternalLink, ChevronRight } from 'lucide-react';
+import { fetchArticleById, deleteArticle, getAttachmentDownloadUrl, type ArticleResponse, type AttachmentInfo } from '@/lib/api/services/article-services';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
-import { DateDisplay, formatDateText } from '@/components/ui/date';
 import { useRouter } from 'next/navigation';
 import TableOfContents from '@/components/editor/TableOfContents';
-import StatsActionBar from '@/components/layout/StatsActionBar';
-import { searchCSKnowledge, searchCSKnowledgeByMember } from '@/lib/api/services/elastic-services';
+import { ProjectContentRenderer } from '@/components/project/ProjectContentRenderer';
+import { searchCSKnowledge, getCSKnowledgeByUser } from '@/lib/api/services/elastic-services';
+import { decodeHtmlEntities } from '@/lib/html-utils';
+import {
+  stripExternalLinksFromContent,
+  formLinksFromReferenceStrings,
+  type ExternalResourceLink,
+} from '@/lib/article-external-links';
+import { isCommentEdited } from '@/lib/comment-utils';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { requireNotGuest } from '@/lib/role-utils';
 import { 
   fetchViewCount,
   incrementViewCount,
@@ -27,7 +35,7 @@ import {
   CommentListResponse
 } from '@/lib/api/services/user-services';
 
-interface ArticlePostPageProps {
+interface BlogPostPageProps {
   params: Promise<{ id: string }>;
 }
 
@@ -60,6 +68,42 @@ const addHeadingIds = (content: string) => {
     return `<h${level}${attrs} id="${id}">`;
   });
 };
+
+/** 댓글 입력 폼 - 로컬 state만 사용해 타이핑 시 상위 리렌더 방지(화면 흔들림 방지) */
+function ArticleCommentForm({
+  onSubmit,
+  disabled,
+}: {
+  onSubmit: (content: string) => void;
+  disabled: boolean;
+}) {
+  const [content, setContent] = useState('');
+  const handleSubmit = () => {
+    const trimmed = content.trim();
+    if (!trimmed || disabled) return;
+    onSubmit(trimmed);
+    setContent('');
+  };
+  return (
+    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 mb-6">
+      <textarea
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        placeholder="댓글을 입력하세요..."
+        className="w-full min-h-[100px] p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-300 resize-none"
+      />
+      <div className="flex justify-end mt-3">
+        <button
+          onClick={handleSubmit}
+          disabled={!content.trim() || disabled}
+          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          댓글 작성
+        </button>
+      </div>
+    </div>
+  );
+}
 
 interface PostData {
   id: string | number;
@@ -105,8 +149,9 @@ interface PostData {
   }>;
 }
 
-export default function ArticlePostPage({ params }: ArticlePostPageProps) {
+export default function BlogPostPage({ params }: BlogPostPageProps) {
   const router = useRouter();
+  const { user: currentUser } = useCurrentUser();
   const [articleId, setArticleId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -114,12 +159,13 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [isTogglingLike, setIsTogglingLike] = useState(false);
   const [post, setPost] = useState<PostData | null>(null);
+  const [articleAttachments, setArticleAttachments] = useState<AttachmentInfo[]>([]);
+  const [externalResourceLinks, setExternalResourceLinks] = useState<ExternalResourceLink[]>([]);
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Comment states
   const [comments, setComments] = useState<Comment[]>([]);
   const commentsRef = useRef<Comment[]>([]); // 현재 댓글 목록 추적용
-  const [commentContent, setCommentContent] = useState('');
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [isLoadingMoreComments, setIsLoadingMoreComments] = useState(false);
   const [commentSortDirection, setCommentSortDirection] = useState<'ASC' | 'DESC'>('DESC');
@@ -132,6 +178,8 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
   const [editContent, setEditContent] = useState('');
   const [replyingToId, setReplyingToId] = useState<number | null>(null);
   const [replyContent, setReplyContent] = useState('');
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [submittingReplyParentId, setSubmittingReplyParentId] = useState<number | null>(null);
 
   // ✅ Next.js 15: params는 Promise라 언랩 필요
   useEffect(() => {
@@ -280,6 +328,7 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
 
   // 아티클 삭제
   const handleDeleteArticle = async () => {
+    if (!requireNotGuest(currentUser?.role, 'delete')) return;
     if (!articleId) return;
     
     if (!confirm('정말로 이 아티클을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
@@ -297,22 +346,25 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
   };
 
   // 댓글 작성
-  const handleCreateComment = async () => {
-    if (!commentContent.trim() || !articleId) return;
-
+  const handleCreateComment = async (content: string) => {
+    if (!requireNotGuest(currentUser?.role, 'create')) return;
+    if (!content.trim() || !articleId || isSubmittingComment) return;
+    setIsSubmittingComment(true);
     try {
-      await createComment(articleId, 'ARTICLE', { content: commentContent });
-      setCommentContent('');
+      await createComment(articleId, 'ARTICLE', { content });
       // 댓글 목록 새로고침 (reset: true로 처음부터 다시 로드)
       await loadComments(articleId, commentSortDirection, true);
     } catch (error) {
       console.error('Error creating comment:', error);
       alert('댓글 작성에 실패했습니다.');
+    } finally {
+      setIsSubmittingComment(false);
     }
   };
 
   // 댓글 수정
   const handleUpdateComment = async (commentId: number) => {
+    if (!requireNotGuest(currentUser?.role, 'edit')) return;
     if (!editContent.trim()) return;
 
     try {
@@ -329,6 +381,7 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
 
   // 댓글 삭제
   const handleDeleteComment = async (commentId: number) => {
+    if (!requireNotGuest(currentUser?.role, 'delete')) return;
     if (!confirm('댓글을 삭제하시겠습니까?')) return;
 
     try {
@@ -343,8 +396,9 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
 
   // 대댓글 작성
   const handleCreateReply = async (parentId: number) => {
-    if (!replyContent.trim() || !articleId) return;
-
+    if (!requireNotGuest(currentUser?.role, 'create')) return;
+    if (!replyContent.trim() || !articleId || submittingReplyParentId !== null) return;
+    setSubmittingReplyParentId(parentId);
     try {
       await createReply(articleId, parentId, 'ARTICLE', { content: replyContent });
       setReplyingToId(null);
@@ -357,6 +411,8 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
     } catch (error) {
       console.error('Error creating reply:', error);
       alert('대댓글 작성에 실패했습니다.');
+    } finally {
+      setSubmittingReplyParentId(null);
     }
   };
 
@@ -420,12 +476,11 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
             profileImageUrl: '',
           };
 
-          // 저자의 다른 글 조회 (nickname 기반으로 직접 조회 - 추가 API 호출 제거)
-          const authorArticlesResponse = await searchCSKnowledgeByMember({ 
-            name: writerProfile.nickname || writerProfile.realName, 
-            page: 0, 
-            size: 4 // 현재 글 제외하고 3개 필요하므로 4개 가져옴
-          }).catch(() => ({ content: [], page: 0, size: 4, totalElements: 0, totalPages: 0 }));
+          // 저자의 다른 글 조회 (username 기준 API 사용 - /csknowledge/user/:username)
+          const authorUsername = writerProfile.username || '';
+          const authorArticlesResponse = authorUsername
+            ? await getCSKnowledgeByUser(authorUsername, 0, 4).catch(() => ({ content: [], page: 0, size: 4, totalElements: 0, totalPages: 0 }))
+            : { content: [], page: 0, size: 4, totalElements: 0, totalPages: 0 };
 
           // 인기 아티클 매핑 (현재 아티클 제외)
           const popularArticles = popularArticlesResponse.content
@@ -459,13 +514,19 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
               likeCount: item.likeCount,
             }));
 
+          const decodedArticleContent = decodeHtmlEntities(articleData.content || '');
+          const { content: contentForDisplay, links: legacyRefLinks } =
+            stripExternalLinksFromContent(decodedArticleContent);
+          const fromApi = formLinksFromReferenceStrings(articleData.referenceLinks);
+          const resourceLinks = fromApi.length > 0 ? fromApi : legacyRefLinks;
+
           // API 응답을 UI 형식으로 변환
           const mappedPost: PostData = {
             id: articleData.id,
             title: articleData.title,
             category: articleData.category,
             description: articleData.description || undefined,
-            content: articleData.content,
+            content: contentForDisplay,
             thumbnail: articleData.thumbnailUrl || null,
             author: {
               username: writerProfile.username || 'unknown',
@@ -479,12 +540,14 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
               likes: likeStatusData.likeCount || likeCountData.likedCount,
               comments: 0, // 댓글 수는 댓글 로드 후 업데이트
             },
-            tags: ['React', 'Next.js', 'TypeScript', '웹 개발', 'Frontend'],
+            tags: [], // 태그 목데이터 제거
             relatedArticles: authorArticles,
             popularArticles: popularArticles,
           };
 
           setPost(mappedPost);
+          setArticleAttachments(articleData.attachments ?? []);
+          setExternalResourceLinks(resourceLinks);
           setIsLiked(likeStatusData.status === 'LIKED');
           
           // 댓글은 백그라운드에서 로드 (UI 블로킹하지 않음)
@@ -533,7 +596,7 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
       likes: 89,
       comments: 12,
     },
-    tags: ['시스템 해킹', '보안', 'CS 지식', '메모리', '버퍼 오버플로우'],
+    tags: [], // 태그 목데이터 제거
     relatedArticles: [
       {
         id: '2',
@@ -643,53 +706,11 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
     let inCodeBlock = false;
     let codeBlockContent: string[] = [];
     let codeBlockLanguage = '';
-    let currentList: { type: 'ol' | 'ul'; items: React.ReactNode[] } | null = null;
-    let listItemBuffer: string[] = [];
-    let inNumberedList = false;
-
-    const flushList = () => {
-      if (currentList) {
-        if (currentList.type === 'ol') {
-          elements.push(
-            <ol key={`ol-${elements.length}`} className="list-decimal ml-6 mb-4">
-              {currentList.items}
-            </ol>
-          );
-        } else {
-          elements.push(
-            <ul key={`ul-${elements.length}`} className="list-disc ml-6 mb-4">
-              {currentList.items}
-            </ul>
-          );
-        }
-        currentList = null;
-      }
-    };
-
-    const flushListItemBuffer = (index: number) => {
-      if (listItemBuffer.length > 0 && currentList && currentList.type === 'ol') {
-        currentList.items.push(
-          <li key={`li-${index}-${currentList.items.length}`} className="text-gray-700 mb-2">
-            {listItemBuffer.map((line, i) => (
-              <Fragment key={i}>{line}<br /></Fragment>
-            ))}
-          </li>
-        );
-        listItemBuffer = [];
-      }
-    };
 
     lines.forEach((line, index) => {
       // 코드 블록 시작/끝 감지
       const codeBlockMatch = line.match(/^```(\w+)?$/);
       if (codeBlockMatch) {
-        if (inNumberedList) {
-          flushListItemBuffer(index);
-          flushList();
-          inNumberedList = false;
-        } else {
-          flushList();
-        }
         if (inCodeBlock) {
           // 코드 블록 종료
           if (currentParagraph) {
@@ -742,13 +763,6 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
 
       const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
       if (headingMatch) {
-        if (inNumberedList) {
-          flushListItemBuffer(index);
-          flushList();
-          inNumberedList = false;
-        } else {
-          flushList();
-        }
         if (currentParagraph) {
           elements.push(
             <p
@@ -782,91 +796,9 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
             text,
           ),
         );
-      } else if (/^\d+\.$/.test(line.trim())) {
-        // Numbered list item (with blank line after number)
-        if (!inNumberedList) {
-          flushList();
-          currentList = { type: 'ol', items: [] };
-          inNumberedList = true;
-        } else {
-          flushListItemBuffer(index);
-        }
-        // Start new list item buffer
-        listItemBuffer = [];
       } else if (/^\d+\.\s+/.test(line.trim())) {
-        // Numbered list item (number and content on same line)
-        if (!inNumberedList) {
-          flushList();
-          currentList = { type: 'ol', items: [] };
-          inNumberedList = true;
-        } else {
-          flushListItemBuffer(index);
-        }
-        const match = line.trim().match(/^\d+\.\s+(.*)$/);
-        listItemBuffer = [match ? match[1] : ''];
-      } else if (inNumberedList && (line.trim() === '' || !/^\d+\./.test(line.trim()))) {
-        // Inside numbered list, add to buffer (blank or content line)
-        if (line.trim() !== '') {
-          listItemBuffer.push(line);
-        }
-      } else {
-        if (inNumberedList) {
-          flushListItemBuffer(index);
-          flushList();
-          inNumberedList = false;
-        } else {
-          flushList();
-        }
-        // ...existing code for bullets, inline code, paragraphs...
-        if (line.trim().startsWith('•') || line.trim().startsWith('-')) {
-          if (currentParagraph) {
-            elements.push(
-              <p
-                key={`p-${index}`}
-                className="text-gray-700 leading-relaxed mb-4"
-              >
-                {currentParagraph.trim()}
-              </p>,
-            );
-            currentParagraph = '';
-          }
-          const item = line.replace(/^[•\-]\s*/, '').trim();
-          if (item) {
-            if (!currentList || currentList.type !== 'ul') {
-              flushList();
-              currentList = { type: 'ul', items: [] };
-            }
-            currentList.items.push(
-              <li key={`li-${index}`} className="text-gray-700 mb-2">
-                {item}
-              </li>
-            );
-          }
-        } else if (line.trim().startsWith('`') && line.trim().endsWith('`') && line.trim().length > 2) {
-          // 인라인 코드
-          if (currentParagraph) {
-            elements.push(
-              <p
-                key={`p-${index}`}
-                className="text-gray-700 leading-relaxed mb-4"
-              >
-                {currentParagraph.trim()}
-              </p>,
-            );
-            currentParagraph = '';
-          }
-          const codeText = line.trim().slice(1, -1);
-          elements.push(
-            <code
-              key={`inline-code-${index}`}
-              className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm font-mono"
-            >
-              {codeText}
-            </code>,
-          );
-        } else if (line.trim()) {
-          currentParagraph += line + ' ';
-        } else if (currentParagraph) {
+        // Numbered list item
+        if (currentParagraph) {
           elements.push(
             <p
               key={`p-${index}`}
@@ -877,16 +809,73 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
           );
           currentParagraph = '';
         }
+        const match = line.trim().match(/^(\d+)\.\s+(.*)$/);
+        if (match) {
+          const number = match[1];
+          const item = match[2];
+          elements.push(
+            <li key={`li-${index}`} className="text-gray-700 ml-6 mb-2 list-decimal">
+              <span className="mr-2 font-bold">{number}.</span>{item}
+            </li>,
+          );
+        }
+      } else if (line.trim().startsWith('•') || line.trim().startsWith('-')) {
+        // Bullet list item
+        if (currentParagraph) {
+          elements.push(
+            <p
+              key={`p-${index}`}
+              className="text-gray-700 leading-relaxed mb-4"
+            >
+              {currentParagraph.trim()}
+            </p>,
+          );
+          currentParagraph = '';
+        }
+        const item = line.replace(/^[•\-]\s*/, '').trim();
+        if (item) {
+          elements.push(
+            <li key={`li-${index}`} className="text-gray-700 ml-6 mb-2 list-disc">
+              {item}
+            </li>,
+          );
+        }
+      } else if (line.trim().startsWith('`') && line.trim().endsWith('`') && line.trim().length > 2) {
+        // 인라인 코드
+        if (currentParagraph) {
+          elements.push(
+            <p
+              key={`p-${index}`}
+              className="text-gray-700 leading-relaxed mb-4"
+            >
+              {currentParagraph.trim()}
+            </p>,
+          );
+          currentParagraph = '';
+        }
+        const codeText = line.trim().slice(1, -1);
+        elements.push(
+          <code
+            key={`inline-code-${index}`}
+            className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm font-mono"
+          >
+            {codeText}
+          </code>,
+        );
+      } else if (line.trim()) {
+        currentParagraph += line + ' ';
+      } else if (currentParagraph) {
+        elements.push(
+          <p
+            key={`p-${index}`}
+            className="text-gray-700 leading-relaxed mb-4"
+          >
+            {currentParagraph.trim()}
+          </p>,
+        );
+        currentParagraph = '';
       }
     });
-
-    if (inNumberedList) {
-      flushListItemBuffer(lines.length);
-      flushList();
-      inNumberedList = false;
-    } else {
-      flushList();
-    }
 
     if (inCodeBlock && codeBlockContent.length > 0) {
       elements.push(
@@ -910,6 +899,16 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
     }
 
     return elements;
+  };
+
+  const handleDownloadAttachment = (fileKey: string) => {
+    const url = getAttachmentDownloadUrl(articleId, fileKey);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const scrollToSection = (id: string) => {
@@ -945,12 +944,11 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
               {/* Post Header */}
               <header className="mb-8">
                 <h1 className="text-4xl font-bold text-foreground mb-4">
-                  {displayPost.title}
+                  {decodeHtmlEntities(displayPost.title)}
                 </h1>
 
                 {/* Author, Date, Time, Category in one line */}
                 <div className="flex flex-wrap items-center gap-3 mb-4 text-sm text-gray-700">
-                  {/* Author */}
                   <div className="flex items-center gap-2">
                     <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200">
                       {displayPost.author.avatar ? (
@@ -971,34 +969,30 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                     </div>
                     <span className="font-medium text-gray-900">{displayPost.author.name}</span>
                   </div>
-
-                  {/* Published Date */}
+                  
                   <div className="flex items-center gap-1.5 text-gray-700">
                     <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <DateDisplay
-                      value={displayPost.publishedAt}
-                      options={{ year: 'numeric', month: '2-digit', day: '2-digit' }}
-                    />
+                    <span>
+                      {new Date(displayPost.publishedAt).toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                      })}
+                    </span>
                   </div>
 
-                  {/* Read Time + Category together */}
-                  {(displayPost.readTime || displayPost.category) && (
-                    <div className="flex items-center gap-2 text-gray-700">
-                      {displayPost.readTime && (
-                        <>
-                          <Clock className="w-4 h-4 text-gray-700" />
-                          <span>{displayPost.readTime}</span>
-                        </>
-                      )}
-                      {displayPost.category && (
-                        <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-primary-50 text-primary-700">
-                          {displayPost.category}
-                        </span>
-                      )}
+                  {displayPost.readTime && (
+                    <div className="flex items-center gap-1.5 text-gray-700">
+                      <Clock className="w-4 h-4 text-gray-700" />
+                      <span>{displayPost.readTime}</span>
                     </div>
                   )}
+
+                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                    {decodeHtmlEntities(displayPost.category)}
+                  </span>
                 </div>
 
                 {/* Tags below metadata */}
@@ -1007,9 +1001,9 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                     {displayPost.tags.map((tag, index) => (
                       <span
                         key={index}
-                        className="px-2.5 py-1 rounded-full text-xs font-semibold bg-secondary-100 text-secondary-700 border border-secondary-200"
+                        className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200"
                       >
-                        #{tag}
+                        #{decodeHtmlEntities(tag)}
                       </span>
                     ))}
                 </div>
@@ -1022,7 +1016,7 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                   <ImageWithFallback
                     src={displayPost.thumbnail}
                     fallbackSrc="/images/placeholder/article.png"
-                    alt={displayPost.title}
+                    alt={decodeHtmlEntities(displayPost.title)}
                     type="article"
                     fill
                     className="object-cover"
@@ -1031,66 +1025,139 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
               )}
 
               {/* Post Content */}
-              <div
-                ref={contentRef}
-                className="prose prose-slate prose-lg max-w-none mb-12"
-                dangerouslySetInnerHTML={{ __html: addHeadingIds(displayPost.content) }}
-              />
+              <div ref={contentRef} className="mb-12">
+                <ProjectContentRenderer
+                  html={addHeadingIds(displayPost.content)}
+                  className="prose prose-slate prose-lg max-w-none prose-headings:text-foreground prose-p:text-gray-800 prose-a:text-primary-600 prose-strong:text-foreground prose-code:text-primary-600"
+                  readOnly
+                />
+              </div>
 
-              <StatsActionBar
-                statsClassName="gap-6"
-                stats={
-                  <>
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <Eye className="w-5 h-5" />
-                      <span className="text-base font-medium">
-                        {displayPost.stats.views.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <svg 
-                        className={`w-5 h-5 ${isLiked ? 'fill-secondary-500 text-secondary-500' : ''}`} 
-                        fill={isLiked ? 'currentColor' : 'none'} 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
-                      </svg>
-                      <span className="text-base font-medium">
-                        {displayPost.stats.likes}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <MessageCircle className="w-5 h-5" />
-                      <span className="text-base font-medium">
-                        {displayPost.stats.comments}
-                      </span>
-                    </div>
-                  </>
-                }
-                actions={
-                  <>
-                    <button 
-                      onClick={() => router.push(`/articles/${articleId}/edit`)}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-white text-primary-600 rounded-lg hover:bg-primary-50 transition-colors font-medium text-sm border border-primary-500 cursor-pointer"
+              {/* 첨부파일 · 참고 링크 (카드 분리, 컴팩트) */}
+              {(articleAttachments.length > 0 || externalResourceLinks.length > 0) && (
+                <div className="mb-8 space-y-3">
+                  {articleAttachments.length > 0 && (
+                    <section
+                      className="overflow-hidden rounded-xl border border-gray-200/90 bg-white shadow-[0_1px_8px_rgba(15,23,42,0.05)]"
+                      aria-label="첨부파일"
                     >
-                      <Edit className="w-4 h-4" />
-                      수정
-                    </button>
-                    <button 
-                      onClick={handleDeleteArticle}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-white text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium text-sm border border-red-300 cursor-pointer"
+                      <div className="px-4 pt-3 pb-2">
+                        <h3 className="text-base font-extrabold tracking-tight text-gray-950">첨부파일</h3>
+                        <p className="mt-0.5 text-xs font-medium text-gray-700">
+                          파일 {articleAttachments.length}개 · 저장해서 확인할 수 있어요
+                        </p>
+                      </div>
+                      <ul className="border-t border-gray-100">
+                        {articleAttachments.map((att) => (
+                          <li key={att.fileKey} className="border-b border-gray-100 last:border-b-0">
+                            <div className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-gray-50/90">
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-50 to-secondary-50 text-primary-600 ring-1 ring-primary-100/80">
+                                <FileText className="h-4 w-4" strokeWidth={2} />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-bold leading-snug text-gray-950">
+                                  {att.originalFileName}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleDownloadAttachment(att.fileKey)}
+                                className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary-700 active:scale-[0.98]"
+                              >
+                                <Download className="h-3.5 w-3.5" strokeWidth={2.5} />
+                                받기
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+
+                  {externalResourceLinks.length > 0 && (
+                    <section
+                      className="overflow-hidden rounded-xl border border-gray-200/90 bg-white shadow-[0_1px_8px_rgba(15,23,42,0.05)]"
+                      aria-label="참고 링크"
                     >
-                      <Trash2 className="w-4 h-4" />
-                      삭제
-                    </button>
-                    <button className="inline-flex items-center gap-2 px-4 py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm border border-gray-300 cursor-pointer">
-                      <Share2 className="w-4 h-4" />
-                      공유
-                    </button>
-                  </>
-                }
-              />
+                      <div className="px-4 pt-3 pb-2">
+                        <h3 className="text-base font-extrabold tracking-tight text-gray-950">참고 링크</h3>
+                        <p className="mt-0.5 text-xs font-medium text-gray-700">
+                          외부 페이지로 이동해요 · 새 탭에서 열려요
+                        </p>
+                      </div>
+                      <ul className="border-t border-gray-100">
+                        {externalResourceLinks.map((link, idx) => (
+                          <li key={`${link.url}-${idx}`} className="border-b border-gray-100 last:border-b-0">
+                            <a
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-gray-50/90 active:bg-gray-100/60"
+                            >
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-800 ring-1 ring-gray-200/80 group-hover:bg-secondary-50 group-hover:text-primary-700 group-hover:ring-secondary-100">
+                                <ExternalLink className="h-4 w-4" strokeWidth={2.25} />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-bold leading-snug text-gray-950 group-hover:text-primary-800">
+                                  {link.label || link.url}
+                                </p>
+                                {link.label ? (
+                                  <p className="mt-0.5 truncate text-[11px] font-medium leading-tight text-gray-700">
+                                    {link.url}
+                                  </p>
+                                ) : null}
+                              </div>
+                              <ChevronRight className="h-4 w-4 shrink-0 text-gray-500 transition-colors group-hover:text-gray-700" />
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+                </div>
+              )}
+
+              {/* Stats Bar with Action Buttons */}
+              <div className="flex items-center justify-between py-5 border-y border-gray-200 mb-8">
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <Eye className="w-5 h-5" />
+                    <span className="text-base font-medium">
+                      {displayPost.stats.views.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <svg 
+                      className={`w-5 h-5 ${isLiked ? 'fill-secondary-500 text-secondary-500' : ''}`} 
+                      fill={isLiked ? 'currentColor' : 'none'} 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                    </svg>
+                    <span className="text-base font-medium">
+                      {displayPost.stats.likes}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={() => { if (requireNotGuest(currentUser?.role, 'edit')) router.push(`/articles/${articleId}/edit`); }}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-white text-primary-600 rounded-lg hover:bg-primary-50 transition-colors font-medium text-sm border border-primary-500 cursor-pointer"
+                  >
+                    <Edit className="w-4 h-4" />
+                    수정
+                  </button>
+                  <button 
+                    onClick={handleDeleteArticle}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-white text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium text-sm border border-red-300 cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    삭제
+                  </button>
+                </div>
+              </div>
 
               {/* Like Button */}
               <section className="mb-12 flex justify-center py-4">
@@ -1130,28 +1197,22 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
 
               {/* Comments Section */}
               <div className="mb-8">
-              {/* 댓글 입력 */}
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 mb-6">
-                  <textarea
-                    value={commentContent}
-                    onChange={(e) => setCommentContent(e.target.value)}
-                    placeholder="댓글을 입력하세요..."
-                    className="w-full min-h-[100px] p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-300 resize-none"
-                  />
-                  <div className="flex justify-end mt-3">
-                    <button
-                      onClick={handleCreateComment}
-                      disabled={!commentContent.trim() || isLoadingComments}
-                      className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      댓글 작성
-                    </button>
-                  </div>
-                </div>
+              {/* 댓글 입력 - 로컬 state로 타이핑 시 화면 흔들림 방지 */}
+                <ArticleCommentForm
+                  onSubmit={handleCreateComment}
+                  disabled={isLoadingComments || isSubmittingComment}
+                />
 
                 <div className="flex items-center justify-between mb-6"> 
-                  <h3 className="text-2xl font-bold text-foreground">
-                      댓글 {comments.length > 0 && `(${comments.length}${hasNextComments ? '+' : ''})`}
+                  <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                    <span className="relative inline-flex items-center justify-center mr-2">
+                      <MessageCircle className="w-6 h-6 text-primary-700" />
+                      <span className="absolute -top-1 -right-2 min-w-[22px] px-1 text-[10px] leading-5 text-white bg-primary-600 rounded-full border border-white shadow-sm text-center">
+                        {displayedCommentCount}
+                        {hasNextComments ? '+' : ''}
+                      </span>
+                    </span>
+                    <span>댓글</span>
                   </h3>
                   <div className="flex gap-2">
                     <button
@@ -1179,7 +1240,7 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                 {/* 댓글 목록 */}
                 {isLoadingComments ? (
                   <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                     <p className="text-gray-700 mt-2 text-sm">댓글을 불러오는 중...</p>
                   </div>
                 ) : displayedComments.length === 0 ? (
@@ -1187,7 +1248,7 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                     아직 댓글이 없습니다. 첫 댓글을 작성해보세요!
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="divide-y divide-gray-200">
                     {displayedComments.map((comment) => {
                       const getDisplayName = (user?: { nickname?: string; realName?: string }): string => {
                         if (!user || (!user.nickname && !user.realName)) {
@@ -1200,169 +1261,119 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                       const initial = displayName.charAt(0).toUpperCase();
 
                       return (
-                        <div key={comment.id} className="bg-white rounded-lg p-4 border border-gray-200">
-                          <div className="flex items-start gap-3">
-                            <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                              {profileImageUrl ? (
-                                <ImageWithFallback
-                                  src={profileImageUrl}
-                                  fallbackSrc="/images/placeholder/default-avatar.svg"
-                                  alt={displayName}
-                                  type="avatar"
-                                  width={40}
-                                  height={40}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-sm font-semibold text-gray-700">
-                                  {initial}
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-gray-900">{displayName}</span>
-                                <DateDisplay
-                                  value={comment.createdAt}
-                                  options={{ year: 'numeric', month: 'long', day: 'numeric' }}
-                                  className="text-xs text-gray-700"
-                                />
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {editingCommentId === comment.id ? (
-                                  <>
-                                    <button
-                                      onClick={() => handleUpdateComment(comment.id)}
-                                      className="text-xs text-blue-600 hover:text-blue-700"
-                                    >
-                                      저장
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        setEditingCommentId(null);
-                                        setEditContent('');
-                                      }}
-                                      className="text-xs text-gray-700 hover:text-gray-800"
-                                    >
-                                      취소
-                                    </button>
-                                  </>
+                        <div key={comment.id} className="flex gap-3 py-4 first:pt-0">
+                            <div className="flex-shrink-0">
+                              <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-200">
+                                {profileImageUrl ? (
+                                  <ImageWithFallback
+                                    src={profileImageUrl}
+                                    fallbackSrc="/images/placeholder/default-avatar.svg"
+                                    alt={displayName}
+                                    type="avatar"
+                                    width={36}
+                                    height={36}
+                                    className="w-full h-full object-cover"
+                                  />
                                 ) : (
-                                  <>
-                                    <button
-                                      onClick={() => {
-                                        setEditingCommentId(comment.id);
-                                        setEditContent(comment.content);
-                                      }}
-                                      className="text-xs text-gray-700 hover:text-gray-800"
-                                    >
-                                      수정
-                                    </button>
-                                    <button
-                                      onClick={() => handleDeleteComment(comment.id)}
-                                      className="text-xs text-red-500 hover:text-red-700"
-                                    >
-                                      삭제
-                                    </button>
-                                  </>
+                                  <div className="w-full h-full flex items-center justify-center text-sm font-semibold text-gray-600">
+                                    {initial}
+                                  </div>
                                 )}
                               </div>
                             </div>
-                            {editingCommentId === comment.id ? (
-                              <div className="space-y-2">
-                                <textarea
-                                  value={editContent}
-                                  onChange={(e) => setEditContent(e.target.value)}
-                                  className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                                />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                                <span className="font-semibold text-gray-900">{displayName}</span>
+                                <span className="text-xs text-gray-500">
+                                  {new Date(comment.createdAt).toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                                {isCommentEdited(comment.createdAt, comment.updatedAt) && (
+                                  <span className="text-xs text-gray-500">(수정됨)</span>
+                                )}
                               </div>
-                            ) : (
-                              <p className="text-gray-700 text-sm whitespace-pre-wrap">{comment.content}</p>
-                            )}
-                            {comment.replyCount > 0 && (
-                              <button
-                                onClick={() => loadReplies(comment.id)}
-                                className="mt-2 text-xs text-primary-600 hover:text-primary-700"
-                              >
-                                {expandedReplies.has(comment.id) ? '답글 숨기기' : `답글 ${comment.replyCount}개 보기`}
-                              </button>
-                            )}
-                            {replyingToId === comment.id ? (
-                              <div className="mt-3 space-y-2">
-                                <textarea
-                                  value={replyContent}
-                                  onChange={(e) => setReplyContent(e.target.value)}
-                                  placeholder="답글을 입력하세요..."
-                                  className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm"
-                                />
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => handleCreateReply(comment.id)}
-                                    className="px-3 py-1 bg-primary-600 text-white rounded text-xs hover:bg-primary-700"
-                                  >
-                                    작성
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      setReplyingToId(null);
-                                      setReplyContent('');
-                                    }}
-                                    className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300"
-                                  >
-                                    취소
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => setReplyingToId(comment.id)}
-                                className="mt-2 text-xs text-primary-600 hover:text-primary-700"
-                              >
-                                답글 달기
-                              </button>
-                            )}
-                            {expandedReplies.has(comment.id) && replies[comment.id] && (
-                              <div className="mt-4 ml-4 space-y-3 border-l-2 border-gray-200 pl-4">
-                                {replies[comment.id].map((reply) => {
-                                  const replyDisplayName = reply.user ? getDisplayName(reply.user) : reply.username;
-                                  const replyProfileImageUrl = reply.user?.profileImageUrl;
-                                  const replyInitial = replyDisplayName.charAt(0).toUpperCase();
-
-                                  return (
-                                    <div key={reply.id} className="flex items-start gap-2">
-                                      <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                                        {replyProfileImageUrl ? (
-                                          <ImageWithFallback
-                                            src={replyProfileImageUrl}
-                                            fallbackSrc="/images/placeholder/default-avatar.svg"
-                                            alt={replyDisplayName}
-                                            type="avatar"
-                                            width={32}
-                                            height={32}
-                                            className="w-full h-full object-cover"
-                                          />
-                                        ) : (
-                                          <div className="w-full h-full flex items-center justify-center text-xs font-semibold text-gray-700">
-                                            {replyInitial}
-                                          </div>
-                                        )}
-                                      </div>
-                                      <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-1">
-                                          <span className="font-medium text-gray-900 text-sm">{replyDisplayName}</span>
-                                        <DateDisplay value={reply.createdAt} className="text-xs text-gray-700" />
-                                      </div>
-                                      <p className="text-gray-700 text-sm">{reply.content}</p>
-                                    </div>
+                              {editingCommentId === comment.id ? (
+                                <div className="mt-1">
+                                  <textarea
+                                    value={editContent}
+                                    onChange={(e) => setEditContent(e.target.value)}
+                                    className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm"
+                                    rows={3}
+                                  />
+                                  <div className="flex gap-2 mt-2">
+                                    <button onClick={() => handleUpdateComment(comment.id)} className="text-sm text-blue-600 hover:text-blue-700 font-medium">저장</button>
+                                    <button onClick={() => { setEditingCommentId(null); setEditContent(''); }} className="text-sm text-gray-600 hover:text-gray-800">취소</button>
                                   </div>
-                                  );
-                                })}
+                                </div>
+                              ) : (
+                                <p className="text-gray-800 text-sm whitespace-pre-wrap mt-0.5">{decodeHtmlEntities(comment.content)}</p>
+                              )}
+                              <div className="flex items-center gap-3 mt-1">
+                                {editingCommentId !== comment.id && (
+                                  <>
+                                    <button
+                                      onClick={() => setReplyingToId(replyingToId === comment.id ? null : comment.id)}
+                                      className="text-xs font-medium text-gray-600 hover:text-gray-900"
+                                    >
+                                      답글
+                                    </button>
+                                    <button onClick={() => { setEditingCommentId(comment.id); setEditContent(decodeHtmlEntities(comment.content)); }} className="text-xs text-gray-600 hover:text-gray-800">수정</button>
+                                    <button onClick={() => handleDeleteComment(comment.id)} className="text-xs text-red-500 hover:text-red-700">삭제</button>
+                                  </>
+                                )}
                               </div>
-                            )}
+                              {comment.replyCount > 0 && (
+                                <button
+                                  onClick={() => loadReplies(comment.id)}
+                                  className="mt-2 text-xs font-medium text-gray-600 hover:text-gray-900"
+                                >
+                                  {expandedReplies.has(comment.id) ? '답글 숨기기' : `답글 ${comment.replyCount}개`}
+                                </button>
+                              )}
+                              {replyingToId === comment.id && (
+                                <div className="mt-3 flex gap-2">
+                                  <textarea
+                                    value={replyContent}
+                                    onChange={(e) => setReplyContent(e.target.value)}
+                                    placeholder="답글을 입력하세요..."
+                                    className="flex-1 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm"
+                                    rows={2}
+                                  />
+                                  <div className="flex flex-col gap-1">
+                                    <button onClick={() => handleCreateReply(comment.id)} disabled={submittingReplyParentId !== null} className="px-3 py-1.5 bg-primary-600 text-white rounded-lg text-xs hover:bg-primary-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed">{submittingReplyParentId === comment.id ? '등록 중...' : '작성'}</button>
+                                    <button onClick={() => { setReplyingToId(null); setReplyContent(''); }} className="px-3 py-1 text-gray-600 hover:text-gray-800 text-xs">취소</button>
+                                  </div>
+                                </div>
+                              )}
+                              {expandedReplies.has(comment.id) && replies[comment.id] && (
+                                <div className="mt-4 ml-4 pl-4 border-l-2 border-gray-200 space-y-4">
+                                  {replies[comment.id].map((reply) => {
+                                    const replyDisplayName = reply.user ? getDisplayName(reply.user) : reply.username;
+                                    const replyProfileImageUrl = reply.user?.profileImageUrl;
+                                    const replyInitial = replyDisplayName.charAt(0).toUpperCase();
+                                    return (
+                                      <div key={reply.id} className="flex gap-3 rounded-2xl p-3 -mx-3 transition-shadow hover:shadow-[0_8px_28px_8px_rgba(0,0,0,0.18)]">
+                                        <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                                          {replyProfileImageUrl ? (
+                                            <ImageWithFallback src={replyProfileImageUrl} fallbackSrc="/images/placeholder/default-avatar.svg" alt={replyDisplayName} type="avatar" width={32} height={32} className="w-full h-full object-cover" />
+                                          ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-xs font-semibold text-gray-600">{replyInitial}</div>
+                                          )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex flex-wrap items-center gap-x-2 text-sm">
+                                            <span className="font-medium text-gray-900">{replyDisplayName}</span>
+                                            <span className="text-xs text-gray-500">{new Date(reply.createdAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                                            {isCommentEdited(reply.createdAt, reply.updatedAt) && <span className="text-xs text-gray-500">(수정됨)</span>}
+                                          </div>
+                                          <p className="text-gray-800 text-sm whitespace-pre-wrap mt-0.5">{decodeHtmlEntities(reply.content)}</p>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </div>
                       );
                     })}
                     {hasNextComments && (
@@ -1420,10 +1431,10 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                 </div>
               )}
 
-              {/* More from Author */}
+              {/* 저자의 다른 글 */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <Code className="w-5 h-5 text-secondary-600" />
+                  <Code className="w-5 h-5 text-purple-600" />
                   저자의 다른 글
                 </h3>
                 <div className="space-y-3">
@@ -1432,7 +1443,8 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                       const formatDate = (dateString?: string) => {
                         if (!dateString) return '';
                         try {
-                          return formatDateText(dateString, { month: 'short', day: 'numeric' }, '');
+                          const date = new Date(dateString);
+                          return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
                         } catch {
                           return '';
                         }
@@ -1441,12 +1453,12 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                         <Link
                           key={article.id}
                           href={`/articles/${article.slug}`}
-                          className="block group p-4 rounded-xl border border-gray-200 hover:border-secondary-300 hover:shadow-md transition-all duration-200 cursor-pointer bg-white hover:bg-secondary-50/30"
+                          className="block group p-4 rounded-xl border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all duration-200 cursor-pointer bg-white hover:bg-purple-50/30"
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-secondary-100 text-secondary-700 whitespace-nowrap">
+                                <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-purple-100 text-purple-700 whitespace-nowrap">
                                   {article.category}
                                 </span>
                                 {article.viewCount !== undefined && (
@@ -1457,13 +1469,13 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                                 )}
                                 {article.likeCount !== undefined && (
                                   <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
-                                    <ThumbsUp className="w-3.5 h-3.5 text-secondary-500 fill-secondary-500" />
+                                    <ThumbsUp className="w-3.5 h-3.5 text-red-500 fill-red-500" />
                                     <span className="text-gray-700">{article.likeCount}</span>
                                   </div>
                                 )}
                               </div>
-                              <h4 className="text-sm font-bold text-gray-900 group-hover:text-secondary-600 transition-colors mb-1.5 line-clamp-2 leading-snug">
-                                {article.title}
+                              <h4 className="text-sm font-bold text-gray-900 group-hover:text-purple-600 transition-colors mb-1.5 line-clamp-2 leading-snug">
+                                {decodeHtmlEntities(article.title)}
                               </h4>
                               <div className="flex items-center gap-2 text-xs text-gray-700">
                                 <span className="font-medium">{article.author}</span>
@@ -1476,7 +1488,7 @@ export default function ArticlePostPage({ params }: ArticlePostPageProps) {
                               </div>
                             </div>
                             <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <svg className="w-5 h-5 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                               </svg>
                             </div>

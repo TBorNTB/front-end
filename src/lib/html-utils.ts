@@ -21,12 +21,13 @@ export function decodeHtmlEntities(text: string): string {
   for (const [entity, char] of Object.entries(entities)) {
     result = result.replace(new RegExp(entity, 'g'), char);
   }
-  // 숫자 엔티티 &#123; 또는 &#x7B;
+  // 숫자 엔티티 &#123; 또는 &#x7B; — 이모지 등 surrogate pair가 필요한 문자(>0xFFFF)는
+  // String.fromCharCode가 깨지므로 String.fromCodePoint를 사용합니다.
   result = result.replace(/&#(\d+);/g, (_, num) =>
-    String.fromCharCode(parseInt(num, 10))
+    String.fromCodePoint(parseInt(num, 10))
   );
   result = result.replace(/&#x([0-9a-fA-F]+);/g, (_, hex) =>
-    String.fromCharCode(parseInt(hex, 16))
+    String.fromCodePoint(parseInt(hex, 16))
   );
   return result;
 }

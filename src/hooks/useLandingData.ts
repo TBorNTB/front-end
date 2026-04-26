@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { categoryService, type CategoryItem } from '@/lib/api/services/category-services';
-import { CategoryType, CategoryDescriptions, CategoryHelpers } from '@/types/services/category';
+import { CategoryType, CategorySlugs, CategoryDescriptions, CategoryHelpers } from '@/types/services/category';
 
 type Project = {
   id: string;
@@ -51,98 +51,35 @@ export interface LandingTopic {
   type: CategoryType;
   projectCount: number;
   articleCount: number;
+  iconUrl?: string;
+}
+
+export interface ProjectsPageResponse {
+  content: Project[];
+  totalElements: number;
+  totalPages: number;
+}
+
+export interface ArticlesPageResponse {
+  content: Article[];
+  totalElements: number;
+  totalPages: number;
 }
 
 interface LandingDataState {
   projects: Project[];
   articles: Article[];
   topics: LandingTopic[];
+  totalProjectElements: number;
+  totalArticleElements: number;
   loading: boolean;
   error: string | null;
 }
 
-interface SearchTotalResponse {
-  totalElements?: number;
-}
-
-const createSlugFromName = (name: string): string => {
-  const koreanToSlugMap: Record<string, string> = {
-    '웹 해킹': 'web-hacking',
-    '리버싱': 'reversing',
-    '시스템 해킹': 'system-hacking',
-    '디지털 포렌식': 'digital-forensics',
-    '네트워크 보안': 'network-security',
-    'IoT보안': 'iot-security',
-    '암호학': 'cryptography',
-  };
-
-  if (koreanToSlugMap[name]) {
-    return koreanToSlugMap[name];
-  }
-
-  if (/^[a-zA-Z0-9\s-]+$/.test(name)) {
-    return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-  }
-
-  return name.toLowerCase().replace(/\s+/g, '-');
-};
-
-const fetchCategoryProjectCount = async (categoryName: string): Promise<number> => {
-  try {
-    const queryParams = new URLSearchParams();
-    queryParams.append('categories', categoryName);
-    queryParams.append('projectSortType', 'LATEST');
-    queryParams.append('size', '1');
-    queryParams.append('page', '0');
-
-    const response = await fetch(`/api/projects/search?${queryParams.toString()}`, {
-      method: 'GET',
-      headers: {
-        accept: 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      return 0;
-    }
-
-    const data: SearchTotalResponse = await response.json();
-    return Number(data.totalElements ?? 0);
-  } catch {
-    return 0;
-  }
-};
-
-const fetchCategoryArticleCount = async (categoryName: string): Promise<number> => {
-  try {
-    const queryParams = new URLSearchParams();
-    queryParams.append('category', categoryName);
-    queryParams.append('sortType', 'LATEST');
-    queryParams.append('size', '1');
-    queryParams.append('page', '0');
-
-    const response = await fetch(`/api/articles/search?${queryParams.toString()}`, {
-      method: 'GET',
-      headers: {
-        accept: 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      return 0;
-    }
-
-    const data: SearchTotalResponse = await response.json();
-    return Number(data.totalElements ?? 0);
-  } catch {
-    return 0;
-  }
-};
-
 const mapCategoriesToTopics = (categories: CategoryItem[]): LandingTopic[] => {
   return categories.map((cat) => {
     const type = CategoryHelpers.getTypeByDisplayName(cat.name) || CategoryType.WEB_HACKING;
-    const slug = createSlugFromName(cat.name);
+    const slug = CategorySlugs[type];
     return {
       id: `topic-${cat.id}`,
       name: cat.name,
@@ -151,94 +88,104 @@ const mapCategoriesToTopics = (categories: CategoryItem[]): LandingTopic[] => {
       type,
       projectCount: 0,
       articleCount: 0,
+      iconUrl: cat.iconUrl,
     };
   });
 };
 
-// Fetch latest projects from API
-const fetchLatestProjects = async (): Promise<Project[]> => {
+const PAGE_SIZE_PROJECTS = 10;
+const PAGE_SIZE_ARTICLES = 9;
+
+function mapProjectFromApi(item: any): Project {
+  return {
+    id: String(item.id),
+    title: item.title || '',
+    description: item.description || '',
+    thumbnailUrl: item.thumbnailUrl || '',
+    projectStatus: item.projectStatus || 'PLANNING',
+    projectCategories: item.projectCategories || [],
+    projectTechStacks: item.projectTechStacks || [],
+    createdAt: item.createdAt || new Date().toISOString(),
+    updatedAt: item.updatedAt || new Date().toISOString(),
+    likeCount: item.likeCount || 0,
+    viewCount: item.viewCount || 0,
+    owner: item.owner || null,
+    collaborators: item.collaborators || [],
+  };
+}
+
+/** Fetch projects with pagination (page 0-based). Exported for "load more" on landing. */
+export const fetchProjectsPage = async (page: number, size: number = PAGE_SIZE_PROJECTS): Promise<ProjectsPageResponse> => {
   try {
-    const response = await fetch('/api/projects/search?projectSortType=LATEST&size=5&page=0', {
-      method: 'GET',
-      headers: {
-        'accept': 'application/json',
-      },
-    });
-
+    const response = await fetch(
+      `/api/projects/search?projectSortType=LATEST&size=${size}&page=${page}`,
+      { method: 'GET', headers: { 'accept': 'application/json' } }
+    );
     if (!response.ok) {
-      console.error('Failed to fetch latest projects:', response.status);
-      return [];
+      console.error('Failed to fetch projects:', response.status);
+      return { content: [], totalElements: 0, totalPages: 0 };
     }
-
     const data = await response.json();
-    // Transform API response to Project format
-    return (data.content || []).map((item: any) => ({
-      id: String(item.id),
-      title: item.title || '',
-      description: item.description || '',
-      thumbnailUrl: item.thumbnailUrl || '',
-      projectStatus: item.projectStatus || 'PLANNING',
-      projectCategories: item.projectCategories || [],
-      projectTechStacks: item.projectTechStacks || [],
-      createdAt: item.createdAt || new Date().toISOString(),
-      updatedAt: item.updatedAt || new Date().toISOString(),
-      likeCount: item.likeCount || 0,
-      viewCount: item.viewCount || 0,
-      // Include owner and collaborators information
-      owner: item.owner || null,
-      collaborators: item.collaborators || [],
-    }));
+    const content = (data.content || []).map(mapProjectFromApi);
+    return {
+      content,
+      totalElements: data.totalElements ?? 0,
+      totalPages: data.totalPages ?? 0,
+    };
   } catch (error) {
-    console.error('Error fetching latest projects:', error);
-    return [];
+    console.error('Error fetching projects page:', error);
+    return { content: [], totalElements: 0, totalPages: 0 };
   }
 };
 
-// Fetch latest CS knowledge articles from API
-const fetchLatestArticles = async (): Promise<Article[]> => {
+function mapArticleFromApi(item: any): Article {
+  return {
+    topicSlug: (item.category || '').toLowerCase().replace('_', '-'),
+    id: String(item.id),
+    content: {
+      title: item.title || '',
+      summary: item.description || item.content?.substring(0, 150) || item.content || '',
+      content: item.content || '',
+      category: item.category || '',
+    },
+    thumbnailUrl: item.thumbnailUrl || '',
+    writerId: item.writer?.username || item.writer?.nickname || '',
+    writer: item.writer ? {
+      username: item.writer.username,
+      nickname: item.writer.nickname,
+      realname: item.writer.realname,
+      profileImageUrl: item.writer.profileImageUrl,
+    } : undefined,
+    participantIds: [],
+    tags: [],
+    createdAt: item.createdAt || new Date().toISOString(),
+    updatedAt: item.updatedAt || item.createdAt || new Date().toISOString(),
+    likeCount: item.likeCount || 0,
+    viewCount: item.viewCount || 0,
+  };
+}
+
+/** Fetch articles with pagination (page 0-based). Exported for "load more" on landing. */
+export const fetchArticlesPage = async (page: number, size: number = PAGE_SIZE_ARTICLES): Promise<ArticlesPageResponse> => {
   try {
-    const response = await fetch('/api/articles/search?sortType=LATEST&page=0&size=10', {
-      method: 'GET',
-      headers: {
-        'accept': 'application/json',
-      },
-    });
-
+    const response = await fetch(
+      `/api/articles/search?sortType=LATEST&page=${page}&size=${size}`,
+      { method: 'GET', headers: { 'accept': 'application/json' } }
+    );
     if (!response.ok) {
-      console.error('Failed to fetch latest articles:', response.status);
-      return [];
+      console.error('Failed to fetch articles:', response.status);
+      return { content: [], totalElements: 0, totalPages: 0 };
     }
-
     const data = await response.json();
-    // Transform CS Knowledge API response to Article format
-    // CS Knowledge API returns items with title, content, category, writer, etc.
-    return (data.content || []).map((item: any) => ({
-      topicSlug: (item.category || '').toLowerCase().replace('_', '-'),
-      id: String(item.id),
-      content: {
-        title: item.title || '',
-        summary: item.description || item.content?.substring(0, 150) || item.content || '', // 요약: description 우선
-        content: item.content || '',
-        category: item.category || '',
-      },
-      thumbnailUrl: item.thumbnailUrl || '',
-      writerId: item.writer?.username || item.writer?.nickname || '',
-      writer: item.writer ? {
-        username: item.writer.username,
-        nickname: item.writer.nickname,
-        realname: item.writer.realname,
-        profileImageUrl: item.writer.profileImageUrl,
-      } : undefined,
-      participantIds: [],
-      tags: [],
-      createdAt: item.createdAt || new Date().toISOString(),
-      updatedAt: item.updatedAt || item.createdAt || new Date().toISOString(),
-      likeCount: item.likeCount || 0,
-      viewCount: item.viewCount || 0,
-    }));
+    const content = (data.content || []).map(mapArticleFromApi);
+    return {
+      content,
+      totalElements: data.totalElements ?? 0,
+      totalPages: data.totalPages ?? 0,
+    };
   } catch (error) {
-    console.error('Error fetching latest articles:', error);
-    return [];
+    console.error('Error fetching articles page:', error);
+    return { content: [], totalElements: 0, totalPages: 0 };
   }
 };
 
@@ -246,30 +193,20 @@ const fetchLatestArticles = async (): Promise<Article[]> => {
 const fetchCategoriesForTopics = async (): Promise<LandingTopic[]> => {
   try {
     const response = await categoryService.getCategories();
-
-    const topics = await Promise.all(
-      response.categories.map(async (cat) => {
-        const type = CategoryHelpers.getTypeByDisplayName(cat.name) || CategoryType.WEB_HACKING;
-        const slug = createSlugFromName(cat.name);
-
-        const [projectCount, articleCount] = await Promise.all([
-          fetchCategoryProjectCount(cat.name),
-          fetchCategoryArticleCount(cat.name),
-        ]);
-
-        return {
-          id: `topic-${cat.id}`,
-          name: cat.name,
-          slug,
-          description: cat.description || CategoryDescriptions[type],
-          type,
-          projectCount,
-          articleCount,
-        };
-      })
-    );
-
-    return topics;
+    return response.categories.map((cat) => {
+      const type = CategoryHelpers.getTypeByDisplayName(cat.name) || CategoryType.WEB_HACKING;
+      const slug = CategorySlugs[type];
+      return {
+        id: `topic-${cat.id}`,
+        name: cat.name,
+        slug,
+        description: cat.description || CategoryDescriptions[type],
+        type,
+        projectCount: 0,
+        articleCount: 0,
+        iconUrl: cat.iconUrl,
+      };
+    });
   } catch (error) {
     console.error('Error fetching categories for topics:', error);
     return [];
@@ -281,6 +218,8 @@ export const useLandingData = (): LandingDataState => {
     projects: [],
     articles: [],
     topics: [],
+    totalProjectElements: 0,
+    totalArticleElements: 0,
     loading: true,
     error: null,
   });
@@ -290,26 +229,20 @@ export const useLandingData = (): LandingDataState => {
 
     const load = async () => {
       try {
-        console.log('useLandingData: Starting load...');
         const [projectsRes, articlesRes, topicsRes] = await Promise.all([
-          fetchLatestProjects(),
-          fetchLatestArticles(),
+          fetchProjectsPage(0, PAGE_SIZE_PROJECTS),
+          fetchArticlesPage(0, PAGE_SIZE_ARTICLES),
           fetchCategoriesForTopics(),
         ]);
-
-        console.log('useLandingData: Loaded data', {
-          projects: projectsRes.length,
-          articles: articlesRes.length,
-          topics: topicsRes?.length || 0
-        });
-        console.log('Topics data:', topicsRes);
 
         if (!isMounted) return;
 
         setState({
-          projects: projectsRes,
-          articles: articlesRes,
+          projects: projectsRes.content,
+          articles: articlesRes.content,
           topics: topicsRes,
+          totalProjectElements: projectsRes.totalElements,
+          totalArticleElements: articlesRes.totalElements,
           loading: false,
           error: null,
         });

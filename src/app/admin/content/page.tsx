@@ -1,29 +1,30 @@
 // src/app/admin/content/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { 
-  FolderOpen, 
-  Tag, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Eye,
+import {
   BookOpen,
-  Newspaper,
-  FileText,
-  Upload,
   Brain,
+  Edit,
+  Eye,
+  FileText,
+  FolderOpen,
+  Newspaper,
+  Plus,
+  Tag,
+  Trash2,
+  Upload,
 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 // Import complex components - REMOVED ArticleManagement
-import ProjectManagement from "./components/ProjectManagement";
-import CSKnowledgeManagement from "./components/CSKnowledgeManagement";
-import NewsManagement from "./components/NewsManagement";
-import { fetchAdminMetaCount } from "@/lib/api/services/meta-services";
 import { categoryService } from "@/lib/api/services/category-services";
 import { uploadRAGDocument } from "@/lib/api/services/elastic-services";
+import { fetchAdminMetaCount } from "@/lib/api/services/meta-services";
+import { s3Service } from "@/lib/api/services/s3-services";
 import toast from "react-hot-toast";
+import CSKnowledgeManagement from "./components/CSKnowledgeManagement";
+import NewsManagement from "./components/NewsManagement";
+import ProjectManagement from "./components/ProjectManagement";
 
 // UPDATED: Removed "articles" from TabType
 type TabType = "overview" | "projects" | "cs-knowledge" | "news" | "categories" | "rag";
@@ -33,6 +34,8 @@ type ApiCategory = {
   name: string;
   description: string;
   content?: string;
+  iconKey?: string;
+  iconUrl?: string;
 };
 
 const badgeColors = [
@@ -47,7 +50,7 @@ const badgeColors = [
 // Inline Category Management Component
 function InlineCategoryManagement() {
   const [isCreating, setIsCreating] = useState(false);
-  const [newCategory, setNewCategory] = useState({ name: "", description: "", content: "" });
+  const [newCategory, setNewCategory] = useState({ name: "", description: "", content: "", iconKey: "" });
 
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,7 +58,11 @@ function InlineCategoryManagement() {
   const [isMutating, setIsMutating] = useState(false);
 
   const [editTarget, setEditTarget] = useState<ApiCategory | null>(null);
-  const [editForm, setEditForm] = useState({ nextName: "", description: "", content: "" });
+  const [editForm, setEditForm] = useState({ description: "", content: "", iconKey: "" });
+  const [iconFile, setIconFile] = useState<File | null>(null);
+  const [iconPreview, setIconPreview] = useState<string>("");
+  const [editIconFile, setEditIconFile] = useState<File | null>(null);
+  const [editIconPreview, setEditIconPreview] = useState<string>("");
   const [deleteTarget, setDeleteTarget] = useState<ApiCategory | null>(null);
   const [viewTarget, setViewTarget] = useState<ApiCategory | null>(null);
 
@@ -119,9 +126,21 @@ function InlineCategoryManagement() {
     setIsMutating(true);
 
     try {
-      await categoryService.createCategory({ name, description, content });
+      let uploadedIconKey: string | undefined;
+      if (iconFile) {
+        const result = await s3Service.uploadFile(iconFile);
+        uploadedIconKey = result.key || result.url;
+      }
+      await categoryService.createCategory({
+        name,
+        description,
+        content,
+        ...(uploadedIconKey && { iconKey: uploadedIconKey }),
+      });
       toast.success("카테고리가 생성되었습니다.");
-      setNewCategory({ name: "", description: "", content: "" });
+      setNewCategory({ name: "", description: "", content: "", iconKey: "" });
+      setIconFile(null);
+      setIconPreview("");
       setIsCreating(false);
       await reload();
     } catch (err) {
@@ -135,24 +154,20 @@ function InlineCategoryManagement() {
   const openEdit = (category: ApiCategory) => {
     setEditTarget(category);
     setEditForm({
-      nextName: category.name,
       description: category.description || "",
       content: category.content || "",
+      iconKey: category.iconKey || category.iconUrl || "",
     });
+    setEditIconFile(null);
+    setEditIconPreview("");
   };
 
   const handleUpdate = async () => {
     if (!editTarget) return;
 
-    const prevName = editTarget.name;
-    const nextName = editForm.nextName.trim();
+    const name = editTarget.name;
     const description = editForm.description.trim();
     const content = editForm.content.trim();
-
-    if (!nextName) {
-      toast.error("카테고리 이름을 입력해주세요.");
-      return;
-    }
 
     if (!content) {
       toast.error("자세한 설명을 입력해주세요.");
@@ -162,7 +177,19 @@ function InlineCategoryManagement() {
     setIsMutating(true);
 
     try {
-      await categoryService.updateCategory({ prevName, nextName, description, content });
+      let uploadedIconKey: string | undefined;
+      if (editIconFile) {
+        const result = await s3Service.uploadFile(editIconFile);
+        uploadedIconKey = result.key || result.url || undefined;
+      } else if (editForm.iconKey.trim()) {
+        uploadedIconKey = editForm.iconKey.trim();
+      }
+      await categoryService.updateCategory({
+        name: name,
+        description,
+        content,
+        ...(uploadedIconKey !== undefined && { iconKey: uploadedIconKey }),
+      });
       toast.success("카테고리가 수정되었습니다.");
       setEditTarget(null);
       await reload();
@@ -243,6 +270,55 @@ function InlineCategoryManagement() {
             </div>
 
             <div className="admin-form-group md:col-span-2">
+              <label className="admin-form-label">아이콘 이미지</label>
+              <div className="flex items-center gap-4">
+                {iconPreview && (
+                  <div className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-300 bg-gray-50 flex-shrink-0">
+                    <img
+                      src={iconPreview}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIconFile(null);
+                        setIconPreview("");
+                      }}
+                      className="absolute top-1 right-1 p-1 bg-black/50 hover:bg-black/70 rounded text-white text-xs"
+                      disabled={isMutating}
+                    >
+                      삭제
+                    </button>
+                  </div>
+                )}
+                <label className="cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={isMutating}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setIconFile(file);
+                        const reader = new FileReader();
+                        reader.onloadend = () => setIconPreview(reader.result as string);
+                        reader.readAsDataURL(file);
+                      }
+                      e.target.value = "";
+                    }}
+                  />
+                  <div className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg border border-gray-300">
+                    <Upload className="w-4 h-4" />
+                    <span>이미지 업로드</span>
+                  </div>
+                </label>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">카테고리 아이콘으로 표시할 이미지를 선택하세요. (선택)</p>
+            </div>
+
+            <div className="admin-form-group md:col-span-2">
               <label className="admin-form-label">자세한 설명</label>
               <textarea
                 value={newCategory.content}
@@ -258,7 +334,9 @@ function InlineCategoryManagement() {
             <button
               onClick={() => {
                 setIsCreating(false);
-                setNewCategory({ name: "", description: "", content: "" });
+                setNewCategory({ name: "", description: "", content: "", iconKey: "" });
+                setIconFile(null);
+                setIconPreview("");
               }}
               className="admin-btn-secondary"
               disabled={isMutating}
@@ -279,8 +357,15 @@ function InlineCategoryManagement() {
             불러오는 중...
           </div>
         ) : error ? (
-          <div className="admin-card col-span-full py-10 text-center text-sm text-red-600">
-            {error}
+          <div className="admin-card col-span-full py-10 text-center">
+            <p className="text-sm text-red-600 mb-3">{error}</p>
+            <button
+              type="button"
+              onClick={() => reload()}
+              className="admin-btn-cta text-sm py-2 px-4"
+            >
+              다시 시도
+            </button>
           </div>
         ) : categories.length === 0 ? (
           <div className="admin-card col-span-full py-10 text-center text-sm text-gray-700">
@@ -293,8 +378,18 @@ function InlineCategoryManagement() {
             return (
               <div key={category.id} className="admin-card hover:shadow-lg">
                 <div className="flex justify-between items-start mb-3">
-                  <div className={`px-3 py-1 rounded-full text-sm font-medium ${color}`}>
-                    {category.name}
+                  <div className="flex items-center gap-2">
+                    {(category.iconUrl || category.iconKey) ? (
+                      <img
+                        src={category.iconUrl || category.iconKey}
+                        alt=""
+                        className="w-8 h-8 rounded object-cover bg-gray-100"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                      />
+                    ) : null}
+                    <div className={`px-3 py-1 rounded-full text-sm font-medium ${color}`}>
+                      {category.name}
+                    </div>
                   </div>
                   <div className="flex space-x-1">
                     <button
@@ -353,26 +448,13 @@ function InlineCategoryManagement() {
 
             <div className="space-y-4">
               <div className="admin-form-group">
-                <label className="admin-form-label">기존 이름</label>
+                <label className="admin-form-label">카테고리 이름</label>
                 <input
                   type="text"
                   value={editTarget.name}
                   className="admin-form-input"
                   disabled
                 />
-              </div>
-
-              <div className="admin-form-group">
-                <label className="admin-form-label">새 이름</label>
-                <input
-                  type="text"
-                  value={editForm.nextName}
-                  onChange={(e) => setEditForm({ ...editForm, nextName: e.target.value.replace(/\s+/g, "_") })}
-                  placeholder="예: 웹_해킹"
-                  className="admin-form-input"
-                  disabled={isMutating}
-                />
-                <p className="mt-1 text-xs text-gray-500">공백은 반드시 _ 로 붙여집니다.</p>
               </div>
 
               <div className="admin-form-group">
@@ -383,6 +465,57 @@ function InlineCategoryManagement() {
                   className="admin-form-input min-h-[96px]"
                   disabled={isMutating}
                 />
+              </div>
+
+              <div className="admin-form-group">
+                <label className="admin-form-label">아이콘 이미지</label>
+                <div className="flex items-center gap-4">
+                  {(editIconPreview || editForm.iconKey) && (
+                    <div className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-300 bg-gray-50 flex-shrink-0">
+                      <img
+                        src={editIconPreview || editForm.iconKey}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditIconFile(null);
+                          setEditIconPreview("");
+                          setEditForm((prev) => ({ ...prev, iconKey: "" }));
+                        }}
+                        className="absolute top-1 right-1 p-1 bg-black/50 hover:bg-black/70 rounded text-white text-xs"
+                        disabled={isMutating}
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  )}
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={isMutating}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setEditIconFile(file);
+                          const reader = new FileReader();
+                          reader.onloadend = () => setEditIconPreview(reader.result as string);
+                          reader.readAsDataURL(file);
+                        }
+                        e.target.value = "";
+                      }}
+                    />
+                    <div className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg border border-gray-300">
+                      <Upload className="w-4 h-4" />
+                      <span>{editIconPreview || editForm.iconKey ? "이미지 변경" : "이미지 업로드"}</span>
+                    </div>
+                  </label>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">선택 시 기존 아이콘을 대체합니다.</p>
               </div>
 
               <div className="admin-form-group">
@@ -465,6 +598,21 @@ function InlineCategoryManagement() {
                 <label className="admin-form-label">이름</label>
                 <input type="text" value={viewTarget.name} className="admin-form-input" disabled />
               </div>
+
+              {(viewTarget.iconUrl || viewTarget.iconKey) ? (
+                <div className="admin-form-group">
+                  <label className="admin-form-label">아이콘 이미지</label>
+                  <div className="mt-1">
+                    <img
+                      src={viewTarget.iconUrl || viewTarget.iconKey}
+                      alt=""
+                      className="w-12 h-12 rounded object-cover bg-gray-100"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    />
+                    <p className="mt-1 text-xs text-gray-500 break-all">{viewTarget.iconUrl || viewTarget.iconKey}</p>
+                  </div>
+                </div>
+              ) : null}
 
               <div className="admin-form-group">
                 <label className="admin-form-label">요약</label>

@@ -14,19 +14,6 @@ export default function HeroBanner() {
 
       {/* Main content */}
       <div className="relative z-10">
-        {/* Security icons floating */}
-        <div className="absolute -top-16 -left-16 opacity-30 animate-pulse text-primary-500">
-          <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
-        </div>
-        
-        <div className="absolute -top-8 -right-20 opacity-20 animate-bounce text-primary-500" style={{ animationDelay: '1s' }}>
-          <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-          </svg>
-        </div>
-   
         {/* Security badge with fitted border */}
         <div className="inline-flex bg-black/50 backdrop-blur-sm rounded-full px-3 py-1.5 mb-4 border border-primary-500">
           <span className="text-xs flex items-center gap-2 whitespace-nowrap text-secondary-300">
@@ -54,7 +41,7 @@ export default function HeroBanner() {
 
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 justify-center mb-4">
-          <Link 
+          <Link
             href="/topics"
             className="text-black px-6 py-3 rounded-lg font-bold text-base transition-all shadow-lg glow-button flex items-center justify-center space-x-2 bg-gradient-to-r from-primary-500 to-secondary-300 hover:from-primary-600 hover:to-secondary-200  shadow-primary-500/30 hover:shadow-primary-500/50"
           >
@@ -62,8 +49,8 @@ export default function HeroBanner() {
             <span>학습 보기</span>
             <ArrowRight size={16} />
           </Link>
-          
-          <Link 
+
+          <Link
             href="https://ssg.sejong.ac.kr/apply/#contact"
             className="bg-black/70 px-6 py-3 rounded-lg font-bold text-base transition-all shadow-lg glow-button-secondary flex items-center justify-center space-x-2 border-2 border-primary-500 text-secondary-300 shadow-primary-500/20 hover:bg-black/50 hover:border-primary-600 hover:shadow-primary-500/40"
           >
@@ -72,20 +59,6 @@ export default function HeroBanner() {
           </Link>
         </div>
       </div>
-
-      {/* Additional floating elements */}
-      <div className="absolute top-1/2 left-8 opacity-20 animate-pulse text-primary-500" style={{ animationDelay: '2s' }}>
-        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      </div>
-      
-      <div className="absolute bottom-1/3 right-12 opacity-15 animate-bounce text-primary-500" style={{ animationDelay: '3s' }}>
-        <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clipRule="evenodd" />
-        </svg>
-      </div>
-      
     </section>
   );
 }

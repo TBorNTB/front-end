@@ -9,6 +9,8 @@ import { memberService } from "@/lib/api/services/user-services";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useAuth } from "@/context/AuthContext";
 import { UserRole } from "@/types/core";
+import { useFloatingLayer } from "@/context/FloatingLayerContext";
+import { useResize, ResizeHandles, ResizeDirection } from "@/hooks/useResize";
 
 interface ChatRoomWindowProps {
   onClose: () => void;
@@ -42,10 +44,85 @@ interface ChatRoom {
   memberCount?: number;
 }
 
+const LAYER_ID = "chatRoomList";
+const MIN_W = 320;
+const MIN_H = 400;
+const MAX_W = 900;
+const MAX_H = 900;
+const DEFAULT_W = 384;
+const DEFAULT_H = 650;
+
 const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowProps) => {
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, user: authUser, loading: authLoading } = useAuth();
+  const { register, bringToFront, getZIndex } = useFloatingLayer(LAYER_ID);
+
+  const [position, setPosition] = useState(() => {
+    if (typeof window !== "undefined") {
+      return {
+        x: window.innerWidth - DEFAULT_W - 24,
+        y: window.innerHeight - DEFAULT_H - 24,
+      };
+    }
+    return { x: 0, y: 0 };
+  });
+  const [size, setSize] = useState({ w: DEFAULT_W, h: DEFAULT_H });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const windowRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  const { startResize } = useResize(position, size, setPosition, setSize);
+
+  useEffect(() => {
+    register(LAYER_ID);
+    bringToFront(LAYER_ID);
+  }, [register, bringToFront]);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging && windowRef.current) {
+        const newX = e.clientX - dragOffset.x;
+        const newY = e.clientY - dragOffset.y;
+        const maxX = window.innerWidth - windowRef.current.offsetWidth;
+        const maxY = window.innerHeight - windowRef.current.offsetHeight;
+        setPosition({
+          x: Math.max(0, Math.min(newX, maxX)),
+          y: Math.max(0, Math.min(newY, maxY)),
+        });
+      }
+    };
+    const handleMouseUp = () => setIsDragging(false);
+    if (isDragging) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+      document.body.style.userSelect = "none";
+      document.body.style.cursor = "grabbing";
+    }
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
+    };
+  }, [isDragging, dragOffset]);
+
+  const handleHeaderMouseDown = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest("button") || target.closest("a") || target.closest("input")) return;
+    if (headerRef.current && windowRef.current) {
+      bringToFront(LAYER_ID);
+      const rect = windowRef.current.getBoundingClientRect();
+      setDragOffset({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      setIsDragging(true);
+    }
+  };
+
+  const handleResizeStart = (e: React.MouseEvent, dir: ResizeDirection) => {
+    bringToFront(LAYER_ID);
+    startResize(e, dir);
+  };
 
   const [activeTab, setActiveTab] = useState<"users" | "rooms">("users");
   const [searchQuery, setSearchQuery] = useState("");
@@ -380,10 +457,29 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
     }
   };
 
+  const z = getZIndex(LAYER_ID);
+
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-[calc(100vw-3rem)] h-[calc(100vh-8rem)] max-h-[calc(100vh-3rem)] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-gray-100 animate-slide-up md:w-96 md:h-[650px] md:max-h-[650px] backdrop-blur-sm">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-secondary-600 via-secondary-600 to-secondary-700 text-white px-5 py-4 flex items-center justify-between shadow-md">
+    <div
+      ref={windowRef}
+      className="fixed bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-gray-100 animate-slide-up backdrop-blur-sm cursor-default"
+      style={{
+        left: position.x,
+        top: position.y,
+        width: size.w,
+        height: size.h,
+        minWidth: MIN_W,
+        minHeight: MIN_H,
+        zIndex: z,
+      }}
+      onClick={() => bringToFront(LAYER_ID)}
+    >
+      {/* Header - Draggable */}
+      <div
+        ref={headerRef}
+        onMouseDown={handleHeaderMouseDown}
+        className={`bg-gradient-to-r from-secondary-600 via-secondary-600 to-secondary-700 text-white px-5 py-4 flex items-center justify-between shadow-md ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
+      >
         <div className="flex items-center gap-3">
           <div className="relative">
             <MessageSquare className="w-8 h-8 text-white" />
@@ -682,6 +778,8 @@ const ChatRoomWindow = ({ onClose, isMinimized, onSelectRoom }: ChatRoomWindowPr
           </div>
         )}
       </div>
+
+      <ResizeHandles onStartResize={handleResizeStart} />
 
       {/* Create Group Chat Modal */}
       {showCreateGroupModal && (

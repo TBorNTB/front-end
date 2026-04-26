@@ -23,30 +23,30 @@ interface Announcement {
 const announcements: Announcement[] = [
   {
     id: 1,
-    title: "Winter Festival: December 22",
+    title: "SSG Hub 오픈 안내",
     content:
-      "Join us for our annual Winter Festival! There will be food, music, and lots of fun activities. Don't miss out!",
-    author: "Admin Team",
-    date: "2024-12-15",
+      "SSG 공식 허브 사이트가 오픈되었습니다. 앞으로 동아리 운영•학습자료 프로젝트 관리 가이 사이트를 통해 이루어질 예정이니, 회원가입 및 프로필 설정 부탁드립니다.",
+    author: "SSG 운영진",
+    date: "2026-03-16",
     isPinned: true,
   },
-  {
-    id: 2,
-    title: "Meeting Postponed to January 5",
-    content:
-      "Due to scheduling conflicts, our next meeting has been moved to January 5th at 3 PM. Please mark your calendars.",
-    author: "Club Organizer",
-    date: "2024-12-20",
-    isPinned: true,
-  },
-  {
-    id: 3,
-    title: "New Member Orientation - January 10",
-    content:
-      "We're welcoming new members! Join us for orientation where we'll introduce you to our community and activities.",
-    author: "Membership Team",
-    date: "2024-12-18",
-  },
+  // {
+  //   id: 2,
+  //   title: "Meeting Postponed to January 5",
+  //   content:
+  //     "Due to scheduling conflicts, our next meeting has been moved to January 5th at 3 PM. Please mark your calendars.",
+  //   author: "Club Organizer",
+  //   date: "2024-12-20",
+  //   isPinned: true,
+  // },
+  // {
+  //   id: 3,
+  //   title: "New Member Orientation - January 10",
+  //   content:
+  //     "We're welcoming new members! Join us for orientation where we'll introduce you to our community and activities.",
+  //   author: "Membership Team",
+  //   date: "2024-12-18",
+  // },
 ];
 
 export default function CommunityPage() {

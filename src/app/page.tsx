@@ -7,11 +7,10 @@ import { ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
 
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import ChatBot from '@/app/(main)/chatbot/ChatBot';
 import Topics from '@/components/landing/Topics';
 import { HeroBanner, StatisticsSection, FeaturedProjectCard, ProjectCardHome, ArticleCardHome, QuickActions, FAQsSection } from '@/components/landing';
 import { faqs } from '@/data/faq';
-import { useLandingData } from '@/hooks/useLandingData';
+import { useLandingData, fetchProjectsPage, fetchArticlesPage } from '@/hooks/useLandingData';
 import { convertStatus, normalizeImageUrl } from '@/lib/landing-utils';
 import { useAuth } from '@/context/AuthContext';
 import { fetchWithRefresh } from '@/lib/api/fetch-with-refresh';
@@ -23,7 +22,15 @@ import type {
 } from '@/types/landing-types';
 
 export default function Home() {
-  const { projects, articles, topics, loading: landingLoading, error: landingError } = useLandingData();
+  const {
+    projects,
+    articles,
+    topics,
+    totalProjectElements,
+    totalArticleElements,
+    loading: landingLoading,
+    error: landingError,
+  } = useLandingData();
   const { login, loadUser } = useAuth();
   const oauthProcessedRef = useRef(false);
   const [oauthSignupComplete, setOauthSignupComplete] = useState(false);
@@ -97,147 +104,220 @@ export default function Home() {
   }, [login, loadUser]);
 
   const [featuredProject, setFeaturedProject] = useState<FeaturedProject | null>(null);
-  const [allProjects, setAllProjects] = useState<ProjectCardData[]>([]);
+  const [gridProjects, setGridProjects] = useState<ProjectCardData[]>([]);
   const [currentProjectIndex, setCurrentProjectIndex] = useState(0);
+  const [currentProjectPage, setCurrentProjectPage] = useState(0);
   const [projectError, setProjectError] = useState<string | null>(null);
+  const [loadingProjectPage, setLoadingProjectPage] = useState(false);
 
-  const [allArticles, setAllArticles] = useState<ArticleCardData[]>([]);
+  const [gridArticles, setGridArticles] = useState<ArticleCardData[]>([]);
   const [articleIndex, setArticleIndex] = useState(0);
+  const [currentArticlePage, setCurrentArticlePage] = useState(0);
   const [articlesLoading, setArticlesLoading] = useState(false);
   const [articlesError, setArticlesError] = useState<string | null>(null);
+  const [loadingArticlePage, setLoadingArticlePage] = useState(false);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
-  // Derive project data from hook
-  useEffect(() => {
-    if (landingError) {
-      setProjectError('프로젝트를 불러오는 중 오류가 발생했습니다.');
-    }
+  const projectPrevRef = useRef(false);
+  const articlePrevRef = useRef(false);
 
+  const PAGE_SIZE_PROJECTS = 10;
+  const PAGE_SIZE_ARTICLES = 9;
+
+  // totalPages는 API totalPages가 아니라 totalElements로만 계산 (totalElements / pageSize 올림)
+  const totalProjectPages = totalProjectElements === 0 ? 0 : Math.max(1, Math.ceil(totalProjectElements / PAGE_SIZE_PROJECTS));
+  const totalArticlePages = totalArticleElements === 0 ? 0 : Math.max(1, Math.ceil(totalArticleElements / PAGE_SIZE_ARTICLES));
+
+  const canGoNextProjectPage = currentProjectPage < totalProjectPages - 1;
+  const canGoPrevProjectPage = currentProjectPage > 0;
+  const canGoNextArticlePage = currentArticlePage < totalArticlePages - 1;
+  const canGoPrevArticlePage = currentArticlePage > 0;
+
+  type ProjectFromApi = {
+    id: string;
+    title: string;
+    description: string;
+    thumbnailUrl: string;
+    projectStatus: string;
+    projectCategories?: string[];
+    projectTechStacks?: string[];
+    likeCount: number;
+    viewCount: number;
+    owner?: { username?: string; nickname?: string; realname?: string; profileImageUrl?: string } | null;
+    collaborators?: Array<{ profileImageUrl?: string }>;
+  };
+
+  const mapProjectToCard = (p: ProjectFromApi): ProjectCardData => {
+    const collaboratorsList = (p.collaborators || []).map((c) => ({ profileImage: c.profileImageUrl || '' }));
+    return {
+      id: p.id,
+      title: p.title,
+      description: p.description,
+      status: convertStatus(p.projectStatus as any),
+      category: p.projectCategories?.[0] || '프로젝트',
+      collaborators: collaboratorsList,
+      likes: p.likeCount || 0,
+      views: p.viewCount,
+      techStacks: p.projectTechStacks || [],
+      owner: p.owner || undefined,
+      thumbnailUrl: normalizeImageUrl(p.thumbnailUrl),
+    };
+  };
+
+  type ArticleFromApi = {
+    id: string;
+    content: { title: string; summary: string; content: string; category: string };
+    thumbnailUrl: string;
+    writer?: { nickname?: string; realname?: string; profileImageUrl?: string };
+    writerId: string;
+    likeCount: number;
+    viewCount: number;
+    tags?: string[];
+    createdAt: string;
+  };
+
+  const getValidProfileImageUrl = (url: string | null | undefined): string => {
+    if (!url || typeof url !== 'string') return '/images/placeholder/default-avatar.svg';
+    const trimmed = url.trim();
+    if (trimmed === '' || trimmed === 'string' || trimmed === 'null' || trimmed === 'undefined') return '/images/placeholder/default-avatar.svg';
+    if (trimmed.startsWith('/')) return trimmed;
+    try {
+      new URL(trimmed);
+      return trimmed;
+    } catch {
+      return '/images/placeholder/default-avatar.svg';
+    }
+  };
+
+  const mapArticleToCard = (a: ArticleFromApi): ArticleCardData => {
+    const contentStr = typeof a.content?.content === 'string' ? a.content.content : '';
+    const description = a.content?.summary || (contentStr ? contentStr.substring(0, 150) : '') || '';
+    return {
+      id: a.id,
+      title: a.content?.title ?? '',
+      description,
+      author: {
+        name: a.writer?.nickname || a.writer?.realname || a.writerId || '작성자',
+        profileImage: getValidProfileImageUrl(a.writer?.profileImageUrl),
+      },
+      category: a.content?.category || '기타',
+      thumbnailImage: normalizeImageUrl(a.thumbnailUrl) || '',
+      likes: a.likeCount || 0,
+      views: a.viewCount || 0,
+      tags: a.tags || [],
+      createdAt: a.createdAt,
+    };
+  };
+
+  // 프로젝트: 페이지 0은 훅 데이터, 페이지 1+ 는 해당 페이지 fetch
+  useEffect(() => {
+    if (landingError) setProjectError('프로젝트를 불러오는 중 오류가 발생했습니다.');
     if (landingLoading) return;
 
     if (!projects || projects.length === 0) {
       setFeaturedProject(null);
-      setAllProjects([]);
+      if (currentProjectPage === 0) setGridProjects([]);
       return;
     }
 
-    const first = projects[0];
-    const thumbnail = normalizeImageUrl(first.thumbnailUrl);
-
-    setFeaturedProject({
-      id: first.id,
-      title: first.title,
-      description: first.description,
-      category: first.projectCategories?.[0] || '프로젝트',
-      status: 'LATEST PROJECT',
-      technologies: first.projectTechStacks || [],
-      thumbnailImage: thumbnail,
-      viewText: '자세히 보기',
-      likes: first.likeCount,
-      views: first.viewCount,
-      owner: first.owner || undefined,
-      collaborators: first.collaborators || [],
-    });
-
-    const rest: ProjectCardData[] = projects.slice(1, 10).map((p) => {
-      // Build collaborators array (excluding owner, as owner is shown separately)
-      const collaboratorsList: { profileImage: string }[] = [];
-      
-      // Add collaborators (not owner)
-      if (p.collaborators && p.collaborators.length > 0) {
-        p.collaborators.forEach((collab) => {
-          collaboratorsList.push({
-            profileImage: collab.profileImageUrl || '',
-          });
-        });
+    if (currentProjectPage === 0) {
+      const first = projects[0];
+      setFeaturedProject({
+        id: first.id,
+        title: first.title,
+        description: first.description,
+        category: first.projectCategories?.[0] || '프로젝트',
+        status: 'LATEST PROJECT',
+        technologies: first.projectTechStacks || [],
+        thumbnailImage: normalizeImageUrl(first.thumbnailUrl),
+        viewText: '자세히 보기',
+        likes: first.likeCount,
+        views: first.viewCount,
+        owner: first.owner || undefined,
+        collaborators: first.collaborators || [],
+      });
+      const grid = projects.slice(1).map((p) => mapProjectToCard(p));
+      setGridProjects(grid);
+      if (projectPrevRef.current) {
+        projectPrevRef.current = false;
+        const lastGroup = Math.floor((grid.length - 1) / 3) * 3;
+        setCurrentProjectIndex(Math.max(0, lastGroup));
+      } else {
+        setCurrentProjectIndex(0);
       }
-      
-      // Normalize thumbnail URL like the first project
-      const thumbnail = normalizeImageUrl(p.thumbnailUrl);
-      
-      return {
-        id: p.id,
-        title: p.title,
-        description: p.description,
-        status: convertStatus(p.projectStatus),
-        category: p.projectCategories?.[0] || '프로젝트',
-        categories: p.projectCategories || [],
-        collaborators: collaboratorsList,
-        likes: p.likeCount || 0,
-        views: p.viewCount,
-        techStacks: p.projectTechStacks || [],
-        owner: p.owner || undefined,
-        thumbnailUrl: thumbnail,
-      };
-    });
+    }
+  }, [projects, landingLoading, landingError, currentProjectPage]);
 
-    setAllProjects(rest);
-    setCurrentProjectIndex(0);
-  }, [projects, landingLoading, landingError]);
+  useEffect(() => {
+    if (currentProjectPage < 1 || landingLoading) return;
+    let cancelled = false;
+    setGridProjects([]);
+    setLoadingProjectPage(true);
+    fetchProjectsPage(currentProjectPage, PAGE_SIZE_PROJECTS)
+      .then((res) => {
+        if (!cancelled) {
+          const grid = res.content.map(mapProjectToCard);
+          setGridProjects(grid);
+          if (projectPrevRef.current) {
+            projectPrevRef.current = false;
+            const lastGroup = Math.floor((grid.length - 1) / 3) * 3;
+            setCurrentProjectIndex(Math.max(0, lastGroup));
+          } else {
+            setCurrentProjectIndex(0);
+          }
+        }
+      })
+      .finally(() => { if (!cancelled) setLoadingProjectPage(false); });
+    return () => { cancelled = true; };
+  }, [currentProjectPage]);
 
-  // Derive article data from hook
+  // 아티클: 페이지 0은 훅 데이터, 페이지 1+ 는 해당 페이지 fetch
   useEffect(() => {
     if (landingLoading) {
       setArticlesLoading(true);
       return;
     }
-
     setArticlesLoading(false);
-    
-    if (landingError) {
-      setArticlesError('아티클을 불러오는 중 오류가 발생했습니다.');
-    }
-
+    if (landingError) setArticlesError('아티클을 불러오는 중 오류가 발생했습니다.');
     if (!articles || articles.length === 0) {
-      setAllArticles([]);
+      if (currentArticlePage === 0) setGridArticles([]);
       return;
     }
+    if (currentArticlePage === 0) {
+      const grid = articles.map((a) => mapArticleToCard(a as ArticleFromApi));
+      setGridArticles(grid);
+      if (articlePrevRef.current) {
+        articlePrevRef.current = false;
+        const lastGroup = Math.floor((grid.length - 1) / 3) * 3;
+        setArticleIndex(Math.max(0, lastGroup));
+      } else {
+        setArticleIndex(0);
+      }
+    }
+  }, [articles, landingLoading, currentArticlePage]);
 
-    const mapped: ArticleCardData[] = articles.map((a) => {
-      // Safely extract content string
-      const contentStr = typeof a.content.content === 'string' 
-        ? a.content.content 
-        : '';
-      const description = a.content.summary || 
-        (contentStr ? contentStr.substring(0, 150) : '') || 
-        '';
-      
-      // 프로필 이미지 URL 검증 함수
-      const getValidProfileImageUrl = (url: string | null | undefined): string => {
-        if (!url || typeof url !== 'string') return '/images/placeholder/default-avatar.svg';
-        const trimmed = url.trim();
-        if (trimmed === '' || trimmed === 'string' || trimmed === 'null' || trimmed === 'undefined') {
-          return '/images/placeholder/default-avatar.svg';
+  useEffect(() => {
+    if (currentArticlePage < 1 || landingLoading) return;
+    let cancelled = false;
+    setGridArticles([]);
+    setLoadingArticlePage(true);
+    fetchArticlesPage(currentArticlePage, PAGE_SIZE_ARTICLES)
+      .then((res) => {
+        if (!cancelled) {
+          const grid = res.content.map(mapArticleToCard);
+          setGridArticles(grid);
+          if (articlePrevRef.current) {
+            articlePrevRef.current = false;
+            const lastGroup = Math.floor((grid.length - 1) / 3) * 3;
+            setArticleIndex(Math.max(0, lastGroup));
+          } else {
+            setArticleIndex(0);
+          }
         }
-        if (trimmed.startsWith('/')) return trimmed;
-        try {
-          new URL(trimmed);
-          return trimmed;
-        } catch {
-          return '/images/placeholder/default-avatar.svg';
-        }
-      };
-
-      return {
-        id: a.id,
-        title: a.content.title,
-        description,
-        author: {
-          name: a.writer?.nickname || a.writer?.realname || a.writerId || '작성자',
-          profileImage: getValidProfileImageUrl(a.writer?.profileImageUrl),
-        },
-        category: a.content.category || '기타',
-        thumbnailImage: normalizeImageUrl(a.thumbnailUrl) || '',
-        likes: a.likeCount || 0,
-        views: a.viewCount || 0,
-        tags: a.tags || [],
-        createdAt: a.createdAt,
-      };
-    });
-
-    setAllArticles(mapped);
-    setArticleIndex(0);
-  }, [articles, landingLoading]);
+      })
+      .finally(() => { if (!cancelled) setLoadingArticlePage(false); });
+    return () => { cancelled = true; };
+  }, [currentArticlePage]);
 
   // Scroll to section if URL has hash
   useEffect(() => {
@@ -257,43 +337,51 @@ export default function Home() {
     }, 300);
   }, []);
 
-  // Project pagination
-  const visibleProjects = allProjects.slice(currentProjectIndex, currentProjectIndex + 3);
-  const canGoNextProjects = currentProjectIndex + 3 < allProjects.length;
-  const canGoPrevProjects = currentProjectIndex > 0;
+  // Project: totalElements로 계산한 totalProjectPages 기준으로 렌더
+  const visibleProjects = gridProjects.slice(currentProjectIndex, currentProjectIndex + 3);
+  const canGoNextWithinProjectPage = currentProjectIndex + 3 < gridProjects.length;
+  const canGoPrevWithinProjectPage = currentProjectIndex > 0;
 
   const goNextProjects = () => {
-    const next = currentProjectIndex + 3;
-    setCurrentProjectIndex(next < allProjects.length ? next : 0);
+    if (canGoNextWithinProjectPage) {
+      setCurrentProjectIndex((i) => i + 3);
+      return;
+    }
+    if (canGoNextProjectPage) setCurrentProjectPage((p) => p + 1);
   };
 
   const goPrevProjects = () => {
-    const prev = currentProjectIndex - 3;
-    if (prev >= 0) {
-      setCurrentProjectIndex(prev);
-    } else {
-      const lastPage = Math.floor((allProjects.length - 1) / 3) * 3;
-      setCurrentProjectIndex(lastPage);
+    if (canGoPrevWithinProjectPage) {
+      setCurrentProjectIndex((i) => Math.max(0, i - 3));
+      return;
+    }
+    if (canGoPrevProjectPage) {
+      projectPrevRef.current = true;
+      setCurrentProjectPage((p) => p - 1);
     }
   };
 
-  // Article pagination
-  const visibleArticles = allArticles.slice(articleIndex, articleIndex + 4);
-  const canGoNextArticles = articleIndex + 4 < allArticles.length;
-  const canGoPrevArticles = articleIndex > 0;
+  // Article: totalElements로 계산한 totalArticlePages 기준으로 렌더
+  const visibleArticles = gridArticles.slice(articleIndex, articleIndex + 3);
+  const canGoNextWithinArticlePage = articleIndex + 3 < gridArticles.length;
+  const canGoPrevWithinArticlePage = articleIndex > 0;
 
   const goNextArticles = () => {
-    const next = articleIndex + 4;
-    setArticleIndex(next < allArticles.length ? next : 0);
+    if (canGoNextWithinArticlePage) {
+      setArticleIndex((i) => i + 3);
+      return;
+    }
+    if (canGoNextArticlePage) setCurrentArticlePage((p) => p + 1);
   };
 
   const goPrevArticles = () => {
-    const prev = articleIndex - 4;
-    if (prev >= 0) {
-      setArticleIndex(prev);
-    } else {
-      const lastPage = Math.floor((allArticles.length - 1) / 4) * 4;
-      setArticleIndex(Math.max(0, lastPage));
+    if (canGoPrevWithinArticlePage) {
+      setArticleIndex((i) => Math.max(0, i - 3));
+      return;
+    }
+    if (canGoPrevArticlePage) {
+      articlePrevRef.current = true;
+      setCurrentArticlePage((p) => p - 1);
     }
   };
 
@@ -313,7 +401,7 @@ export default function Home() {
         <Header />
 
         {/* Hero */}
-        <div className="w-screen text-center text-3xl text-white sm:h-[250px] md:h-[400px]">
+        <div className="w-full text-center text-3xl text-white sm:h-[250px] md:h-[400px]">
           <HeroBanner />
         </div>
 
@@ -347,12 +435,9 @@ export default function Home() {
                       최신의 보안 기술과 오픈소스를 활용한<br />
                       실무에 적용 가능한 솔루션입니다.
                     </p>
-                    <Link href="/projects">
-                      <button className="btn btn-primary btn-lg">
-                        프로젝트 더보기
-                      </button>
-                    </Link>
-
+                    <button className="btn btn-primary btn-lg">
+                      프로젝트 더보기
+                    </button>
                   </div>
 
                   {/* Right Side - Featured Project Card */}
@@ -363,86 +448,47 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Projects Grid */}
-                {allProjects.length > 0 && (
+                {/* Projects Grid - totalElements 기준 totalProjectPages로 렌더 */}
+                {(gridProjects.length > 0 || loadingProjectPage) && (
                   <div className="mt-16">
                     <div className="relative px-12 lg:px-16">
-                      {/* Navigation Buttons - Desktop */}
-                      {allProjects.length > 3 && (
+                      {(totalProjectPages > 1 || gridProjects.length > 3) && (
                         <>
-                          {/* Previous Button */}
                           <button
                             onClick={goPrevProjects}
-                            className="hidden lg:flex absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white border border-primary-300 items-center justify-center hover:bg-primary-50 hover:border-primary-500 transition-all shadow-sm hover:shadow-md z-10"
+                            disabled={(!canGoPrevWithinProjectPage && !canGoPrevProjectPage) || loadingProjectPage}
+                            className="hidden lg:flex absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white border border-primary-300 items-center justify-center hover:bg-primary-50 hover:border-primary-500 transition-all shadow-sm hover:shadow-md z-10 disabled:opacity-50 disabled:pointer-events-none"
                             aria-label="이전 프로젝트 보기"
                           >
                             <ChevronLeft className="w-6 h-6 text-primary-600" />
                           </button>
-                          
-                          {/* Next Button */}
                           <button
                             onClick={goNextProjects}
-                            className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white border border-primary-300 items-center justify-center hover:bg-primary-50 hover:border-primary-500 transition-all shadow-sm hover:shadow-md z-10"
+                            disabled={(!canGoNextWithinProjectPage && !canGoNextProjectPage) || loadingProjectPage}
+                            className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white border border-primary-300 items-center justify-center hover:bg-primary-50 hover:border-primary-500 transition-all shadow-sm hover:shadow-md z-10 disabled:opacity-50 disabled:pointer-events-none"
                             aria-label="다음 프로젝트 보기"
                           >
-                            <ChevronRight className="w-6 h-6 text-primary-600" />
+                            {loadingProjectPage ? (
+                              <span className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-primary-500 border-t-transparent" />
+                            ) : (
+                              <ChevronRight className="w-6 h-6 text-primary-600" />
+                            )}
                           </button>
                         </>
                       )}
                       
-                      {/* Projects Grid */}
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {visibleProjects.map((project) => (
-                          <ProjectCardHome key={project.id} project={project} />
-                        ))}
+                        {loadingProjectPage && gridProjects.length === 0 ? (
+                          <div className="col-span-full flex justify-center py-12">
+                            <span className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-primary-500 border-t-transparent" />
+                          </div>
+                        ) : (
+                          visibleProjects.map((project) => (
+                            <ProjectCardHome key={project.id} project={project} />
+                          ))
+                        )}
                       </div>
                     </div>
-                    
-                    {/* Page Indicator */}
-                    {allProjects.length > 3 && (
-                      <div className="mt-8 flex justify-center items-center gap-3">
-                        <button
-                          onClick={goPrevProjects}
-                          disabled={!canGoPrevProjects}
-                          className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all ${
-                            canGoPrevProjects
-                              ? 'bg-white border-primary-300 hover:bg-primary-50 hover:border-primary-500 cursor-pointer'
-                              : 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-50'
-                          }`}
-                          aria-label="이전"
-                        >
-                          <ChevronLeft className={`w-5 h-5 ${canGoPrevProjects ? 'text-primary-600' : 'text-gray-700'}`} />
-                        </button>
-                        
-                        <div className="flex gap-2">
-                          {Array.from({ length: Math.ceil(allProjects.length / 3) }).map((_, index) => (
-                            <button
-                              key={index}
-                              onClick={() => setCurrentProjectIndex(index * 3)}
-                              className={`h-2 rounded-full transition-all ${
-                                Math.floor(currentProjectIndex / 3) === index
-                                  ? 'bg-primary-500 w-8'
-                                  : 'bg-gray-300 hover:bg-gray-400 w-2'
-                              }`}
-                              aria-label={`페이지 ${index + 1}`}
-                            />
-                          ))}
-                        </div>
-                        
-                        <button
-                          onClick={goNextProjects}
-                          disabled={!canGoNextProjects && currentProjectIndex === 0}
-                          className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all ${
-                            canGoNextProjects || currentProjectIndex > 0
-                              ? 'bg-white border-primary-300 hover:bg-primary-50 hover:border-primary-500 cursor-pointer'
-                              : 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-50'
-                          }`}
-                          aria-label="다음"
-                        >
-                          <ChevronRight className={`w-5 h-5 ${canGoNextProjects || currentProjectIndex > 0 ? 'text-primary-600' : 'text-gray-700'}`} />
-                        </button>
-                      </div>
-                    )}
                   </div>
                 )}
               </>
@@ -453,20 +499,8 @@ export default function Home() {
         {/* Latest Articles Section */}
         <section className="section bg-background">
           <div className="container">
-            <div>
-                    <h2 className="text-4xl font-bold text-gray-900 mb-4">
-                      LATEST ARTICLES
-                    </h2>
-                    <p className="text-gray-700 text-lg mb-4">
-                      정보보안과 소프트웨어 개발의 모든 지식과 경험을 한곳에서. 최신 글과 소식을 통해 늘 새로운 인사이트를 만나보세요.
-                    </p>
-                    <Link href="/articles">
-                      <button className="btn btn-primary btn-lg mb-6">
-                        CS지식 둘러보기
-                      </button>
-                    </Link>
-
-            </div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-8">Latest Articles</h2>
+            <p className="text-gray-700 mb-12">Stay informed with expert insights</p>
             
             {articlesLoading ? (
               <div className="text-center py-12">
@@ -477,85 +511,46 @@ export default function Home() {
               <div className="text-center py-12">
                 <p className="text-red-500">{articlesError}</p>
               </div>
-            ) : allArticles.length > 0 ? (
+            ) : (gridArticles.length > 0 || loadingArticlePage) ? (
               <div>
                 <div className="relative px-12 lg:px-16">
-                  {/* Navigation Buttons - Desktop */}
-                  {allArticles.length > 2 && (
+                  {(totalArticlePages > 1 || gridArticles.length > 3) && (
                     <>
-                      {/* Previous Button */}
                       <button
                         onClick={goPrevArticles}
-                        className="hidden lg:flex absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white border border-primary-300 items-center justify-center hover:bg-primary-50 hover:border-primary-500 transition-all shadow-sm hover:shadow-md z-10"
+                        disabled={(!canGoPrevWithinArticlePage && !canGoPrevArticlePage) || loadingArticlePage}
+                        className="hidden lg:flex absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white border border-primary-300 items-center justify-center hover:bg-primary-50 hover:border-primary-500 transition-all shadow-sm hover:shadow-md z-10 disabled:opacity-50 disabled:pointer-events-none"
                         aria-label="이전 아티클 보기"
                       >
                         <ChevronLeft className="w-6 h-6 text-primary-600" />
                       </button>
-                      
-                      {/* Next Button */}
                       <button
                         onClick={goNextArticles}
-                        className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white border border-primary-300 items-center justify-center hover:bg-primary-50 hover:border-primary-500 transition-all shadow-sm hover:shadow-md z-10"
+                        disabled={(!canGoNextWithinArticlePage && !canGoNextArticlePage) || loadingArticlePage}
+                        className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white border border-primary-300 items-center justify-center hover:bg-primary-50 hover:border-primary-500 transition-all shadow-sm hover:shadow-md z-10 disabled:opacity-50 disabled:pointer-events-none"
                         aria-label="다음 아티클 보기"
                       >
-                        <ChevronRight className="w-6 h-6 text-primary-600" />
+                        {loadingArticlePage ? (
+                          <span className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-primary-500 border-t-transparent" />
+                        ) : (
+                          <ChevronRight className="w-6 h-6 text-primary-600" />
+                        )}
                       </button>
                     </>
                   )}
                   
-                  {/* Articles Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                      {visibleArticles.map((article) => (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {loadingArticlePage && gridArticles.length === 0 ? (
+                      <div className="col-span-full flex justify-center py-12">
+                        <span className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-primary-500 border-t-transparent" />
+                      </div>
+                    ) : (
+                      visibleArticles.map((article) => (
                         <ArticleCardHome key={article.id} article={article} />
-                      ))}
-                    </div>
-                </div>
-                
-                {/* Page Indicator */}
-                {allArticles.length > 3 && (
-                  <div className="mt-8 flex justify-center items-center gap-3">
-                    <button
-                      onClick={goPrevArticles}
-                      disabled={!canGoPrevArticles}
-                      className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all ${
-                        canGoPrevArticles
-                          ? 'bg-white border-primary-300 hover:bg-primary-50 hover:border-primary-500 cursor-pointer'
-                          : 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-50'
-                      }`}
-                      aria-label="이전"
-                    >
-                      <ChevronLeft className={`w-5 h-5 ${canGoPrevArticles ? 'text-primary-600' : 'text-gray-700'}`} />
-                    </button>
-                    
-                    <div className="flex gap-2">
-                      {Array.from({ length: Math.ceil(allArticles.length / 4) }).map((_, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setArticleIndex(index * 4)}
-                          className={`h-2 rounded-full transition-all ${
-                            Math.floor(articleIndex / 4) === index
-                              ? 'bg-primary-500 w-8'
-                              : 'bg-gray-300 hover:bg-gray-400 w-2'
-                          }`}
-                          aria-label={`페이지 ${index + 1}`}
-                        />
-                      ))}
-                    </div>
-                    
-                    <button
-                      onClick={goNextArticles}
-                      disabled={!canGoNextArticles && articleIndex === 0}
-                      className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all ${
-                        canGoNextArticles || articleIndex > 0
-                          ? 'bg-white border-primary-300 hover:bg-primary-50 hover:border-primary-500 cursor-pointer'
-                          : 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-50'
-                      }`}
-                      aria-label="다음"
-                    >
-                      <ChevronRight className={`w-5 h-5 ${canGoNextArticles || articleIndex > 0 ? 'text-primary-600' : 'text-gray-700'}`} />
-                    </button>
+                      ))
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             ) : (
               <div className="text-center py-12">
@@ -578,7 +573,6 @@ export default function Home() {
       </div>
 
       <Footer />
-      <ChatBot/>
     </>
   );
 }

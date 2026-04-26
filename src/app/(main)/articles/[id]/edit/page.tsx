@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, X, Upload, Search } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,9 +14,19 @@ import Image from 'next/image';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { requireNotGuest } from '@/lib/role-utils';
 import { fetchCategories } from '@/lib/api/services/project-services';
-import { fetchArticleById, updateArticle } from '@/lib/api/services/article-services';
+import { fetchArticleById, updateArticle, type AttachmentInfo, type AttachmentReq } from '@/lib/api/services/article-services';
 import { s3Service } from '@/lib/api/services/s3-services';
 import { decodeHtmlEntities } from '@/lib/html-utils';
+import ArticleAttachmentsPanel from '@/components/articles/ArticleAttachmentsPanel';
+import {
+  stripExternalLinksFromContent,
+  referenceLinkStringsFromForm,
+  formLinksFromReferenceStrings,
+  validateExternalLinkUrl,
+  MAX_ARTICLE_ATTACHMENT_BYTES,
+  ARTICLE_ATTACHMENT_MAX_LABEL,
+  type ExternalResourceLink,
+} from '@/lib/article-external-links';
 
 interface FormData {
   title: string;
@@ -46,6 +57,10 @@ export default function EditArticlePage({ params }: EditPageProps) {
   const [thumbnailKey, setThumbnailKey] = useState<string>('');
   const [contentImageKeys, setContentImageKeys] = useState<string[]>([]);
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
+  const [existingAttachments, setExistingAttachments] = useState<AttachmentInfo[]>([]);
+  const [attachmentKeysToDelete, setAttachmentKeysToDelete] = useState<string[]>([]);
+  const [pendingAttachments, setPendingAttachments] = useState<{ file: File; name: string }[]>([]);
+  const [externalLinks, setExternalLinks] = useState<ExternalResourceLink[]>([]);
 
   // API data states
   const [categories, setCategories] = useState<Array<{ id: number; name: string; description: string }>>([]);
@@ -100,17 +115,23 @@ export default function EditArticlePage({ params }: EditPageProps) {
         const articleData = await fetchArticleById(articleId);
         
         if (articleData) {
+          const decodedContent = decodeHtmlEntities(articleData.content || '');
+          const { content: bodyWithoutLinks, links: legacyLinks } = stripExternalLinksFromContent(decodedContent);
+          const fromApi = formLinksFromReferenceStrings(articleData.referenceLinks);
+          const linkRows = fromApi.length > 0 ? fromApi : legacyLinks;
           setFormData({
             title: decodeHtmlEntities(articleData.title || ''),
             category: decodeHtmlEntities(articleData.category || ''),
             excerpt: decodeHtmlEntities(articleData.description || ''),
-            content: decodeHtmlEntities(articleData.content || ''),
+            content: bodyWithoutLinks,
             tags: [], // tags is not returned from API, keep it empty for edit
           });
+          setExternalLinks(linkRows);
 
           if (articleData.thumbnailUrl) {
             setThumbnailPreview(articleData.thumbnailUrl);
           }
+          setExistingAttachments(articleData.attachments ?? []);
         }
       } catch (error) {
         console.error('Failed to load article:', error);
@@ -221,6 +242,16 @@ export default function EditArticlePage({ params }: EditPageProps) {
     setLoading(true);
 
     try {
+      const linksToSave = externalLinks.filter((l) => l.url.trim());
+      for (const l of linksToSave) {
+        const linkErr = validateExternalLinkUrl(l.url);
+        if (linkErr) {
+          toast.error(linkErr);
+          setLoading(false);
+          return;
+        }
+      }
+
       let uploadedThumbnailKey = thumbnailKey;
 
       if (thumbnailFile && !thumbnailKey) {
@@ -239,13 +270,33 @@ export default function EditArticlePage({ params }: EditPageProps) {
         }
       }
 
+      const uploadedAttachments: AttachmentReq[] = [];
+      for (const att of pendingAttachments) {
+        if (att.file.size > MAX_ARTICLE_ATTACHMENT_BYTES) {
+          toast.error(
+            `「${att.name}」은(는) 용량이 초과되었습니다. ${ARTICLE_ATTACHMENT_MAX_LABEL} 이하의 파일만 업로드할 수 있습니다.`
+          );
+          setLoading(false);
+          return;
+        }
+        try {
+          const result = await s3Service.uploadFile(att.file, { presignedUrlEndpoint: '/api/cs-knowledge/files/presigned-url' });
+          uploadedAttachments.push({ tempKey: result.key, originalFileName: att.name });
+        } catch (e) {
+          console.error('첨부파일 업로드 실패:', att.name, e);
+        }
+      }
+
       const articleData = {
         title: formData.title,
         content: formData.content,
         description: formData.excerpt.trim(),
         category: formData.category,
+        referenceLinks: referenceLinkStringsFromForm(linksToSave),
         ...(uploadedThumbnailKey && { thumbnailKey: uploadedThumbnailKey }),
         ...(contentImageKeys.length > 0 && { contentImageKeys }),
+        ...(attachmentKeysToDelete.length > 0 && { attachmentKeysToDelete }),
+        ...(uploadedAttachments.length > 0 && { attachments: uploadedAttachments }),
       };
 
       await updateArticle(articleId, articleData);
@@ -515,6 +566,16 @@ export default function EditArticlePage({ params }: EditPageProps) {
                 </div>
               </div>
             </div>
+
+            <ArticleAttachmentsPanel
+              pendingAttachments={pendingAttachments}
+              setPendingAttachments={setPendingAttachments}
+              externalLinks={externalLinks}
+              setExternalLinks={setExternalLinks}
+              existingAttachments={existingAttachments}
+              attachmentKeysToDelete={attachmentKeysToDelete}
+              setAttachmentKeysToDelete={setAttachmentKeysToDelete}
+            />
 
             {/* Content Editor Section */}
             <div className="space-y-4" id="form-field-content">

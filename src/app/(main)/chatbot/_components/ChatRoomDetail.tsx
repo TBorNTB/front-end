@@ -10,6 +10,8 @@ import { memberService } from "@/lib/api/services/user-services";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { decodeHtmlEntities } from "@/lib/html-utils";
 import { UserPlus, Pencil, User } from "lucide-react";
+import { useFloatingLayer } from "@/context/FloatingLayerContext";
+import { useResize, ResizeHandles, ResizeDirection } from "@/hooks/useResize";
 
 interface ChatRoomDetailProps {
   roomId: string;
@@ -44,14 +46,17 @@ const isJoinMarker = (content?: string | null): boolean => {
   return false;
 };
 
-const buildJoinSystemText = (nickname: string): string => {
-  const name = nickname.trim() || "알 수 없는 사용자";
-  return `${name}님이 채팅방에 들어왔습니다.`;
-};
-
 const CHAT_INVITE_ROLES = ["ASSOCIATE_MEMBER", "FULL_MEMBER", "SENIOR", "ADMIN"] as const;
+const MIN_W = 320;
+const MIN_H = 400;
+const MAX_W = 900;
+const MAX_H = 900;
+const DEFAULT_W = 384;
+const DEFAULT_H = 650;
 
 const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onClose, onBack, onRoomNameChange, onMembersChange, initialPosition }: ChatRoomDetailProps) => {
+  const LAYER_ID = `chatRoomDetail-${roomId}`;
+  const { register, bringToFront, getZIndex } = useFloatingLayer(LAYER_ID);
   const currentUsernameRef = useRef<string | null>(null);
   const pendingOwnMessagesRef = useRef<Array<{ localId: string; content: string; sentAtMs: number }>>([]);
   const lastHistoryCursorRequestedRef = useRef<number | null>(null);
@@ -60,8 +65,8 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
   const isUserNearBottomRef = useRef(true);
   const initialHistoryLoadedRef = useRef(false);
   const forceScrollToBottomOnOpenRef = useRef(true);
-  const lastJoinNoticeRef = useRef<{ key: string; at: number } | null>(null);
-
+  const avatarErrorIdsRef = useRef<Set<string>>(new Set());
+  const [, setAvatarErrorTick] = useState(0);
   const { user: currentUser } = useCurrentUser();
 
   // 채팅방 이름 변경 / 멤버 추가 모달
@@ -80,24 +85,29 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
   }, [currentUser?.username]);
 
   const [position, setPosition] = useState(() => {
-    if (initialPosition) {
-      return initialPosition;
-    }
-    // 기본 위치: 화면 오른쪽 하단
-    if (typeof window !== 'undefined') {
+    if (initialPosition) return initialPosition;
+    if (typeof window !== "undefined") {
       return {
-        x: window.innerWidth - 400 - 24,
-        y: window.innerHeight - 650 - 24,
+        x: window.innerWidth - DEFAULT_W - 24,
+        y: window.innerHeight - DEFAULT_H - 24,
       };
     }
     return { x: 0, y: 0 };
   });
+  const [size, setSize] = useState({ w: DEFAULT_W, h: DEFAULT_H });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const windowRef = useRef<HTMLDivElement>(null);
+
+  const { startResize } = useResize(position, size, setPosition, setSize);
   const headerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  useEffect(() => {
+    register(LAYER_ID);
+    bringToFront(LAYER_ID);
+  }, [LAYER_ID, register, bringToFront]);
 
   const getMemberThumbnailUrl = useCallback(
     (username?: string | null): string | null => {
@@ -166,29 +176,9 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
         return;
       }
 
-      if (message.type === "JOIN" && (message.content ?? "").trim().length > 0) {
-        const nickname = (message.nickname ?? "").trim() || (message.username ?? "").trim() || "알 수 없는 사용자";
-        const text = isJoinMarker(message.content) ? buildJoinSystemText(nickname) : (message.content ?? "");
-        const key = `${message.createdAt}|${message.username}|JOIN`;
-
-        // 중복 JOIN(재연결/개발 StrictMode 등)로 시스템 문구가 여러 번 쌓이는 것 방지
-        const last = lastJoinNoticeRef.current;
-        if (last && last.key === key && Date.now() - last.at < 10_000) {
-          return;
-        }
-        lastJoinNoticeRef.current = { key, at: Date.now() };
-
-        const newMessage: ChatMessage = {
-          id: `system-${message.createdAt}-${message.username}-join`,
-          sender: message.username,
-          senderName: nickname,
-          content: text,
-          timestamp: new Date(message.createdAt),
-          isOwn: false,
-          kind: "system",
-        };
-
-        setMessages((prev) => [...prev, newMessage]);
+      // 입장 알림 메시지는 UI에 표시하지 않음 (요청: "~~님께서 채팅방 들어왔습니다" 비표시)
+      if (message.type === "JOIN") {
+        return;
       }
     },
   });
@@ -349,20 +339,13 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
   }, [roomId, roomName, addMembersSelected, onMembersChange]);
 
   const mapHistoryItemToMessage = useCallback(
-    (item: ChatHistoryItem): ChatMessage => {
+    (item: ChatHistoryItem): ChatMessage | null => {
       const currentUsername = currentUsernameRef.current;
       const senderUsername = item.senderUsername;
 
+      // 입장 알림은 UI에 표시하지 않음
       if (isJoinMarker(item.message)) {
-        return {
-          id: `history-system-${item.createdAt}-${senderUsername}-join`,
-          sender: senderUsername,
-          senderName: item.senderNickname,
-          content: buildJoinSystemText(item.senderNickname),
-          timestamp: new Date(item.createdAt),
-          isOwn: false,
-          kind: "system",
-        };
+        return null;
       }
 
       return {
@@ -397,7 +380,10 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
 
         const res = await getRoomChatHistory(roomId, { cursorId, size: 20 });
 
-        const historyMessages = (res.items || []).map(mapHistoryItemToMessage).sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+        const historyMessages = (res.items || [])
+          .map(mapHistoryItemToMessage)
+          .filter((m): m is ChatMessage => m !== null)
+          .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
         setHistoryNextCursorId(res.nextCursorId);
         setHasMoreHistory(!!res.nextCursorId && res.nextCursorId !== 0);
 
@@ -432,6 +418,7 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
 
   // roomId 변경 시 상태 초기화 및 초기 히스토리 로드
   useEffect(() => {
+    avatarErrorIdsRef.current.clear();
     setMessages([]);
     pendingOwnMessagesRef.current = [];
     lastHistoryCursorRequestedRef.current = null;
@@ -524,58 +511,50 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
     isUserNearBottomRef.current = distanceFromBottom < 120;
   }, []);
 
-  // Drag handlers
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging && windowRef.current) {
         const newX = e.clientX - dragOffset.x;
         const newY = e.clientY - dragOffset.y;
-        
-        // 화면 경계 체크
         const maxX = window.innerWidth - windowRef.current.offsetWidth;
         const maxY = window.innerHeight - windowRef.current.offsetHeight;
-        
         setPosition({
           x: Math.max(0, Math.min(newX, maxX)),
           y: Math.max(0, Math.min(newY, maxY)),
         });
       }
     };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-
+    const handleMouseUp = () => setIsDragging(false);
     if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      document.body.style.userSelect = 'none';
-      document.body.style.cursor = 'grabbing';
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+      document.body.style.userSelect = "none";
+      document.body.style.cursor = "grabbing";
     }
-
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.body.style.userSelect = '';
-      document.body.style.cursor = '';
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
     };
   }, [isDragging, dragOffset]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    // 버튼이나 클릭 가능한 요소를 클릭한 경우 드래그 시작하지 않음
     const target = e.target as HTMLElement;
-    if (target.closest('button') || target.closest('a') || target.closest('input') || target.closest('textarea')) {
+    if (target.closest("button") || target.closest("a") || target.closest("input") || target.closest("textarea")) {
       return;
     }
-    
     if (headerRef.current && windowRef.current) {
+      bringToFront(LAYER_ID);
       const rect = windowRef.current.getBoundingClientRect();
-      setDragOffset({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      });
+      setDragOffset({ x: e.clientX - rect.left, y: e.clientY - rect.top });
       setIsDragging(true);
     }
+  };
+
+  const handleResizeStart = (e: React.MouseEvent, dir: ResizeDirection) => {
+    bringToFront(LAYER_ID);
+    startResize(e, dir);
   };
 
   const handleSendMessage = (content: string) => {
@@ -644,6 +623,8 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
 
     const thumb = (message.senderThumbnailUrl ?? "").trim();
     const hasThumb = thumb.length > 0 && thumb !== "string" && thumb !== "null" && thumb !== "undefined";
+    const avatarFailed = avatarErrorIdsRef.current.has(message.id);
+    const showThumb = hasThumb && !avatarFailed;
     const initial = (message.senderName ?? message.sender ?? "?").trim().charAt(0) || "?";
 
     return (
@@ -654,11 +635,16 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
         {!isOwn && (
           <div className="w-10 flex-shrink-0 flex justify-center">
             {showAvatar ? (
-              hasThumb ? (
+              showThumb ? (
                 <img
                   src={thumb}
                   alt={message.senderName}
                   className="w-8 h-8 rounded-full object-cover border border-gray-200"
+                  onError={() => {
+                    if (avatarErrorIdsRef.current.has(message.id)) return;
+                    avatarErrorIdsRef.current.add(message.id);
+                    setAvatarErrorTick((t) => t + 1);
+                  }}
                 />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-xs text-gray-700">
@@ -696,21 +682,28 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
     );
   };
 
+  const z = getZIndex(LAYER_ID);
+
   return (
     <div
       ref={windowRef}
-      className="fixed w-[calc(100vw-3rem)] h-[calc(100vh-8rem)] max-h-[calc(100vh-3rem)] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-gray-100 animate-slide-up md:w-96 md:h-[650px] md:max-h-[650px] backdrop-blur-sm cursor-default"
+      className="fixed bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-gray-100 animate-slide-up backdrop-blur-sm cursor-default"
       style={{
-        left: `${position.x}px`,
-        top: `${position.y}px`,
-        zIndex: 60,
+        left: position.x,
+        top: position.y,
+        width: size.w,
+        height: size.h,
+        minWidth: MIN_W,
+        minHeight: MIN_H,
+        zIndex: z,
       }}
+      onClick={() => bringToFront(LAYER_ID)}
     >
       {/* Header - Draggable */}
       <div
         ref={headerRef}
         onMouseDown={handleMouseDown}
-        className={`bg-gradient-to-r from-secondary-700 via-secondary-700 to-secondary-800 text-white px-5 py-4 flex items-center justify-between shadow-md ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+        className={`bg-gradient-to-r from-secondary-700 via-secondary-700 to-secondary-800 text-white px-5 py-4 flex items-center justify-between shadow-md ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
       >
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <button
@@ -902,6 +895,8 @@ const ChatRoomDetail = ({ roomId, roomName, roomType, memberCount, members, onCl
           </button>
         </div>
       </div>
+
+      <ResizeHandles onStartResize={handleResizeStart} />
 
       {/* 채팅방 이름 변경 모달 */}
       {showNameModal && (

@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from 'react';
-import { Mail, CheckCircle2, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { newsletterService, EmailFrequency } from '@/lib/api/services/newsletter-services';
-import { CategoryType, CategoryDisplayNames } from '@/types/services/category';
+import { Input } from '@/components/ui/input';
+import { CategoryItem, categoryService } from '@/lib/api/services/category-services';
+import { EmailFrequency, newsletterService } from '@/lib/api/services/newsletter-services';
+import { AlertCircle, ArrowLeft, CheckCircle2, Loader2, Mail, TrendingUp } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface NewsletterSubscribeProps {
   className?: string;
@@ -19,26 +19,29 @@ export default function NewsletterSubscribe({ className = "" }: NewsletterSubscr
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [chasingPopularity, setChasingPopularity] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // 모든 카테고리 목록
-  const allCategories = Object.values(CategoryType);
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
 
-  // 카테고리 토글
-  const toggleCategory = (category: CategoryType) => {
-    setSelectedCategories(prev => {
-      if (prev.includes(category)) {
-        return prev.filter(c => c !== category);
-      } else {
-        return [...prev, category];
-      }
-    });
+  useEffect(() => {
+    categoryService.getCategories()
+    .then(res => setCategories(res.categories))
+    .catch(() => setCategories([]))
+    .finally(() => setCategoriesLoading(false));
+  }, []);
+
+  const toggleCategory = (categoryName: string) => {
+    setSelectedCategories(prev =>
+      prev.includes(categoryName)
+        ? prev.filter(c => c !== categoryName)
+        : [...prev, categoryName]
+    );
   };
 
-  // 구독 요청
   const handleSubscribe = async () => {
     if (!email) {
       setError('이메일을 입력해주세요.');
@@ -50,7 +53,6 @@ export default function NewsletterSubscribe({ className = "" }: NewsletterSubscr
       return;
     }
 
-    // 이메일 형식 검증
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setError('올바른 이메일 형식을 입력해주세요.');
@@ -82,7 +84,6 @@ export default function NewsletterSubscribe({ className = "" }: NewsletterSubscr
     }
   };
 
-  // 인증 코드 확인
   const handleVerify = async () => {
     if (!verificationCode) {
       setError('인증 코드를 입력해주세요.');
@@ -106,8 +107,7 @@ export default function NewsletterSubscribe({ className = "" }: NewsletterSubscr
 
       setSuccess(response.message || '뉴스레터 구독이 완료되었습니다!');
       setError(null);
-      
-      // 성공 후 초기화
+
       setTimeout(() => {
         setStep('subscribe');
         setEmail('');
@@ -140,7 +140,7 @@ export default function NewsletterSubscribe({ className = "" }: NewsletterSubscr
             {step === 'subscribe' ? '뉴스레터 구독' : '인증 코드 확인'}
           </h2>
           <p className="text-gray-700">
-            {step === 'subscribe' 
+            {step === 'subscribe'
               ? '보안 학습 콘텐츠를 이메일로 받아보세요'
               : '이메일로 전송된 인증 코드를 입력해주세요'}
           </p>
@@ -181,87 +181,107 @@ export default function NewsletterSubscribe({ className = "" }: NewsletterSubscr
               />
             </div>
 
-            {/* Email Frequency */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                이메일 수신 빈도 <span className="text-red-500">*</span>
-              </label>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer group">
-                  <input
-                    type="radio"
-                    name="frequency"
-                    value="DAILY"
-                    checked={emailFrequency === 'DAILY'}
-                    onChange={() => setEmailFrequency('DAILY')}
-                    disabled={loading}
-                    className="w-4 h-4 text-primary-600 focus:ring-primary-500 cursor-pointer"
-                  />
-                  <span className="text-sm text-gray-700 group-hover:text-primary-600">매일</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer group">
-                  <input
-                    type="radio"
-                    name="frequency"
-                    value="WEEKLY"
-                    checked={emailFrequency === 'WEEKLY'}
-                    onChange={() => setEmailFrequency('WEEKLY')}
-                    disabled={loading}
-                    className="w-4 h-4 text-primary-600 focus:ring-primary-500 cursor-pointer"
-                  />
-                  <span className="text-sm text-gray-700 group-hover:text-primary-600">매주</span>
-                </label>
-              </div>
-            </div>
+            <hr className="border-gray-100" />
 
-            {/* Category Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                관심 카테고리 선택 <span className="text-red-500">*</span>
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {allCategories.map((category) => {
-                  const isSelected = selectedCategories.includes(category);
-                  return (
-                    <label
-                      key={category}
-                      className={`
-                        flex items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all
-                        ${isSelected 
-                          ? 'border-primary-500 bg-primary-50' 
-                          : 'border-gray-200 bg-white hover:border-primary-300 hover:bg-primary-50/50'
-                        }
-                      `}
-                    >
-                      <Checkbox
-                        checked={isSelected}
-                        onCheckedChange={() => toggleCategory(category)}
-                        disabled={loading}
-                      />
-                      <span className="text-sm text-gray-700 font-medium">
-                        {CategoryDisplayNames[category]}
-                      </span>
-                    </label>
-                  );
-                })}
+            {/* Section 1: 관심 카테고리 */}
+            <div className="space-y-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">관심 카테고리 <span className="text-red-500">*</span></p>
+                  <p className="text-xs text-gray-500 mt-0.5">선택한 분야의 콘텐츠를 원하는 주기로 받아보세요</p>
+                </div>
+                {/* Frequency toggle — scoped to categories */}
+                <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setEmailFrequency('DAILY')}
+                    disabled={loading}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                      emailFrequency === 'DAILY'
+                        ? 'bg-white text-primary-700 shadow-sm font-semibold'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    매일
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEmailFrequency('WEEKLY')}
+                    disabled={loading}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                      emailFrequency === 'WEEKLY'
+                        ? 'bg-white text-primary-700 shadow-sm font-semibold'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    매주
+                  </button>
+                </div>
               </div>
-              {selectedCategories.length === 0 && (
-                <p className="text-xs text-red-500 mt-2">최소 하나 이상의 카테고리를 선택해주세요.</p>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {categoriesLoading ? (
+                  <p className="text-sm text-gray-500 col-span-full">카테고리 로딩 중...</p>
+                ) : (
+                  categories.map((category) => {
+                    const isSelected = selectedCategories.includes(category.name);
+                    return (
+                      <label
+                        key={category.id}
+                        className={`
+                          flex items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all
+                          ${isSelected
+                            ? 'border-primary-500 bg-primary-50'
+                            : 'border-gray-200 bg-white hover:border-primary-300 hover:bg-primary-50/50'
+                          }
+                        `}
+                      >
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => toggleCategory(category.name)}
+                          disabled={loading}
+                        />
+                        <span className="text-sm text-gray-700 font-medium">
+                          {category.name}
+                        </span>
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+              {selectedCategories.length === 0 && !categoriesLoading && (
+                <p className="text-xs text-red-500">최소 하나 이상의 카테고리를 선택해주세요.</p>
               )}
             </div>
 
-            {/* Chasing Popularity */}
+            <hr className="border-gray-100" />
+
+            {/* Section 2: 인기 콘텐츠 추적 — always weekly */}
             <div>
-              <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:border-primary-300 hover:bg-primary-50/50 transition-all">
+              <label
+                className={`flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                  chasingPopularity
+                    ? 'border-amber-400 bg-amber-50'
+                    : 'border-gray-200 bg-white hover:border-amber-300 hover:bg-amber-50/40'
+                }`}
+              >
                 <Checkbox
                   checked={chasingPopularity}
                   onCheckedChange={(checked) => setChasingPopularity(checked === true)}
                   disabled={loading}
+                  className="mt-0.5"
                 />
-                <div>
-                  <span className="text-sm font-medium text-gray-700">인기 콘텐츠 추적</span>
-                  <p className="text-xs text-gray-700 mt-1">
-                    인기 있는 프로젝트와 아티클을 우선적으로 받아보기
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <TrendingUp className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                    <span className="text-sm font-semibold text-gray-800">인기 콘텐츠 추적</span>
+                    {/* Fixed weekly badge */}
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 border border-amber-200">
+                      매주 고정 발송
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    커뮤니티에서 인기 있는 프로젝트·아티클을 매주 한 번 정리해서 보내드려요
                   </p>
                 </div>
               </label>
@@ -280,9 +300,7 @@ export default function NewsletterSubscribe({ className = "" }: NewsletterSubscr
                   처리 중...
                 </>
               ) : (
-                <>
-                  구독하기
-                </>
+                '구독하기'
               )}
             </Button>
           </div>

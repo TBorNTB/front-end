@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Mail, Shield, Clock, BookOpen, Users, ChevronDown, ChevronUp } from 'lucide-react';
+import { Mail, Shield, Clock, BookOpen, Users, ChevronDown, ChevronUp, TrendingUp, CalendarDays } from 'lucide-react';
 import Image from 'next/image';
 import NewsletterSubscribe from './_components/NewsletterSubscribe';
 import NewsletterSubscriberStatus from './_components/NewsletterSubscriberStatus';
@@ -200,37 +200,48 @@ export default function SSGNewsletter() {
       {/* Benefits */}
       <section className="section py-20 bg-gray-50">
         <div className="container text-center">
-          <h2 className="text-3xl font-bold text-primary-800 mb-16">
-            SSG Newsletter와 함께 매일매일 성장해요!
+          <h2 className="text-3xl font-bold text-primary-800 mb-4">
+            두 가지 방식으로 보안 지식을 받아보세요
           </h2>
+          <p className="text-gray-600 mb-14 text-base">
+            관심 분야는 원하는 주기로, 인기 콘텐츠는 매주 정리해서 드려요
+          </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="card p-8">
-              <div className="w-12 h-12 bg-secondary-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <Mail className="w-6 h-6 text-secondary-600" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+            {/* 관심 카테고리 */}
+            <div className="card p-8 text-left">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <CalendarDays className="w-5 h-5 text-primary-600" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-gray-900">관심 카테고리</h3>
+                  <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-700">매일 또는 매주 선택</span>
+                </div>
               </div>
-              <h3 className="text-lg font-semibold mb-3">이메일 기반으로</h3>
-              <p className="text-gray-700 text-sm">푸시 피로감 없이 루틴화</p>
-               <p className="text-gray-700 mb-4">메일함을 확인해보세요</p>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  내가 선택한 보안 분야의<br />
-                  최신 보안 지식과 실습 문제를<br />
-                  확인하고 스스로 학습해보세요
-                </p>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                웹해킹, 리버싱, 포렌식, CTF 등<br />
+                내가 고른 분야의 최신 콘텐츠와<br />
+                실습 문제를 원하는 주기로 받아보세요
+              </p>
             </div>
 
-            <div className="card p-8">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <Shield className="w-6 h-6 text-green-600" />
+            {/* 인기 콘텐츠 추적 */}
+            <div className="card p-8 text-left border-amber-200">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <TrendingUp className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-gray-900">인기 콘텐츠 추적</h3>
+                  <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 border border-amber-200">매주 고정 발송</span>
+                </div>
               </div>
-              <h3 className="text-lg font-semibold mb-3">실제 보안 업무와 유사한 톤으로</h3>
-              <p className="text-gray-700 text-sm">실전 대비에 최적인 콘텐츠 구성</p>
-                <p className="text-gray-700 mb-4">매일 쌓인 지식은 따로 정리해놨어요</p>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  웹사이트에서 지금까지 받은<br />
-                  모든 보안 지식과 문제들을<br />
-                  체계적으로 정리해서 제공
-                </p>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                커뮤니티에서 주목받은<br />
+                인기 프로젝트·아티클을<br />
+                매주 한 번 정리해서 보내드려요
+              </p>
             </div>
           </div>
         </div>

@@ -4,18 +4,148 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ExternalLink, Github, ChevronLeft, ChevronRight, ThumbsUp, Eye, Crown, Users } from 'lucide-react';
-import { ProjectCardHome } from './ProjectCard';
 import TitleBanner from '@/components/layout/TitleBanner';
 import ContentFilterBar from '@/components/layout/TopSection';
 import CategoryFilter from '@/components/layout/CategoryFilter';
 import { CategoryHelpers, CategoryType, CategoryDisplayNames } from '@/types/services/category';
-import { getProjectStatusKorean, getProjectStatusColor, getProjectStatusApiValue, PROJECT_STATUS_FILTER_OPTIONS } from '@/types/services/project';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { categoryService, type CategoryItem } from '@/lib/api/services/category-services';
-import { fetchProjects, fetchProjectSearchSuggestions, type ProjectSortType } from '@/lib/api/services/project-services';
 import { decodeHtmlEntities } from '@/lib/html-utils';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { isGuest, getGuestRestrictionMessage } from '@/lib/role-utils';
+import { getSafeApiErrorMessage } from '@/lib/api/helpers';
+
+interface Project {
+  id: string;
+  title: string;
+  description: string;
+  thumbnailUrl: string;
+  projectStatus: 'IN_PROGRESS' | 'COMPLETED' | 'PLANNING' | 'ARCHIVED';
+  projectCategories: string[];
+  projectTechStacks: string[];
+  createdAt: string;
+  updatedAt: string;
+  likeCount: number;
+  viewCount: number;
+  owner?: {
+    username?: string;
+    nickname?: string;
+    realname?: string;
+    profileImageUrl?: string;
+  } | null;
+  collaborators?: Array<{
+    username?: string;
+    nickname?: string;
+    realname?: string;
+    profileImageUrl?: string;
+  }>;
+}
+
+// ============================================================================
+// 🔧 API Service Layer (Move to src/lib/services/project.ts later)
+// ============================================================================
+
+interface ProjectSearchParams {
+  query?: string;
+  projectStatus?: string;
+  categories?: string;
+  projectSortType?: string;
+  size?: number;
+  page?: number;
+}
+
+interface ProjectSearchResponse {
+  content: any[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  error?: string;
+}
+
+/**
+ * Fetch projects from Elasticsearch API
+ * TODO: Move to src/lib/services/project.ts with proper error handling
+ */
+const fetchProjects = async (params: ProjectSearchParams): Promise<ProjectSearchResponse> => {
+  try {
+    const queryParams = new URLSearchParams();
+    
+    // Query: only append if provided and not empty
+    const queryValue = params.query?.trim();
+    if (queryValue && queryValue !== ' ') {
+      queryParams.append('query', queryValue);
+    }
+    
+    // Project status: only append if selected
+    if (params.projectStatus) {
+      params.projectStatus.split(',').forEach(status => {
+        if (status.trim()) queryParams.append('projectStatus', status.trim());
+      });
+    }
+    
+    // Categories: append each separately
+    if (params.categories) {
+      params.categories.split(',').forEach(cat => {
+        if (cat.trim()) queryParams.append('categories', cat.trim());
+      });
+    }
+    
+    // Always include sort, size, page
+    queryParams.append('projectSortType', params.projectSortType || 'LATEST');
+    queryParams.append('size', (params.size || 12).toString());
+    queryParams.append('page', (params.page || 0).toString());
+
+    const url = `/api/projects/search?${queryParams.toString()}`; // ✅ Use API route
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      return {
+        content: [],
+        page: 0,
+        size: 0,
+        totalElements: 0,
+        totalPages: 0,
+        error: getSafeApiErrorMessage(response, '프로젝트'),
+      };
+    }
+
+    return await response.json();
+  } catch (error) {
+    return {
+      content: [],
+      page: 0,
+      size: 0,
+      totalElements: 0,
+      totalPages: 0,
+      error: '프로젝트 목록을 불러오는 중 오류가 발생했습니다.',
+    };
+  }
+};
+
+/**
+ * Fetch search suggestions from Elasticsearch
+ * 최대 5개 제안 반환
+ */
+const fetchSearchSuggestions = async (query: string): Promise<string[]> => {
+  if (!query?.trim()) return [];
+
+  try {
+    const response = await fetch(
+      `/api/projects/suggestions?query=${encodeURIComponent(query.trim())}`
+    );
+
+    if (!response.ok) return [];
+
+    const data = await response.json();
+    // API 라우트에서 이미 5개로 제한하지만, 안전을 위해 여기서도 제한
+    return Array.isArray(data) ? data.slice(0, 5) : [];
+  } catch (error) {
+    console.error('Error fetching search suggestions:', error);
+    return [];
+  }
+};
 
 // ============================================================================
 // 🎨 UI Helpers
@@ -23,9 +153,27 @@ import { isGuest, getGuestRestrictionMessage } from '@/lib/role-utils';
 
 const PAGE_SIZE = 6;
 
-const sortToApi = (sort: string): ProjectSortType => {
-  if (sort === '인기순') return 'POPULAR';
-  return 'LATEST';
+const statusMap: Record<string, string> = {
+  '진행중': 'IN_PROGRESS',
+  '완료': 'COMPLETED',
+  '계획중': 'ARCHIVED'
+};
+
+const sortMap: Record<string, string> = {
+  '최신순': 'LATEST',
+  '인기순': 'POPULAR',
+};
+
+const statusToEnglish = (status: string) => statusMap[status] || '';
+const sortToEnglish = (sort: string) => sortMap[sort] || 'LATEST';
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case '완료': return 'bg-green-100 text-green-700 border-green-300';
+    case '계획중': return 'bg-yellow-100 text-yellow-700 border-yellow-300';
+    case '진행중': return 'bg-blue-100 text-blue-700 border-blue-300';
+    default: return 'bg-gray-100 text-gray-700 border-gray-300';
+  }
 };
 
 const getValidImageUrl = (url: string | null | undefined): string => {
@@ -172,6 +320,7 @@ const AvatarStack = ({
 // 📄 Main Component
 // ============================================================================
 
+const statuses = ['전체', '진행중', '완료', '계획중'];
 const sortOptions = ['최신순', '인기순'];
 
 export default function ProjectsContent() {
@@ -230,11 +379,12 @@ export default function ProjectsContent() {
   const loadProjects = async (page: number = 0) => {
     setIsLoading(true);
     try {
-      const categoriesParam = selectedCategories.length > 0 ? selectedCategories : undefined;
+      // API에서 받은 카테고리 이름을 그대로 사용
+      const categoriesParam = selectedCategories.length > 0
+        ? selectedCategories.join(',')
+        : undefined;
       const statusParam = selectedStatuses.length > 0
-        ? selectedStatuses
-            .map(status => getProjectStatusApiValue(status))
-            .filter((status): status is NonNullable<typeof status> => Boolean(status))
+        ? selectedStatuses.map(status => statusToEnglish(status)).join(',')
         : undefined;
       const searchQuery = searchTerm.trim();
 
@@ -242,44 +392,35 @@ export default function ProjectsContent() {
         query: searchQuery,
         projectStatus: statusParam,
         categories: categoriesParam,
-        projectSortType: sortToApi(sortBy),
+        projectSortType: sortToEnglish(sortBy),
         size: PAGE_SIZE,
         page: page,
       });
 
-      const transformedProjects = response.content.map((item: any) => ({
+      const transformedProjects = response.content.map((item: any) => {
+        const raw = item.projectCategories;
+        const rawCategories = Array.isArray(raw) ? raw : (raw != null && raw !== '' ? [raw] : []);
+        const categoryDisplayNames = rawCategories.map((cat: any) => {
+          const value = typeof cat === 'string' ? cat : (cat?.categoryType ?? cat?.name ?? cat);
+          return value ? (CategoryDisplayNames[value as CategoryType] || value) : '';
+        }).filter(Boolean);
+        return {
         id: item.id,
         title: item.title || '제목 없음',
         description: item.description || '',
         image: getValidImageUrl(item.thumbnailUrl),
-        thumbnailUrl: getValidImageUrl(item.thumbnailUrl),
         tags: item.projectTechStacks || [],
-        techStacks: item.projectTechStacks || [],
-        category: item.projectCategories?.[0] ? 
-          CategoryDisplayNames[item.projectCategories[0] as CategoryType] || item.projectCategories[0] : 
-          '',
-        categories: (item.projectCategories || []).map((category: string) =>
-          CategoryDisplayNames[category as CategoryType] || category
-        ),
+        category: categoryDisplayNames[0] ?? '',
+        categories: categoryDisplayNames,
         topicSlug: item.projectCategories?.[0] ? 
           CategoryHelpers.getSlug(item.projectCategories[0] as CategoryType) : 
           '',
-        status: item.projectStatus || 'PLANNING',
+        status: item.projectStatus === 'IN_PROGRESS' ? '진행중' :
+                item.projectStatus === 'COMPLETED' ? '완료' :
+                item.projectStatus === 'ARCHIVED' ? '계획중' : '진행중',
         stars: item.likeCount || 0,
-        likes: item.likeCount || 0,
         likeCount: item.likeCount || 0,
-        views: item.viewCount || 0,
         viewCount: item.viewCount || 0,
-        comments: 0,
-        owner: item.owner ? {
-          username: item.owner.username || '',
-          nickname: item.owner.nickname || 'Unknown',
-          realname: item.owner.realname || '',
-          profileImageUrl: getValidProfileImageUrl(item.owner.profileImageUrl)
-        } : undefined,
-        collaborators: (item.collaborators || []).map((collab: any) => ({
-          profileImage: getValidProfileImageUrl(collab.profileImageUrl)
-        })),
         creator: item.owner ? {
           username: item.owner.username || '',
           nickname: item.owner.nickname || 'Unknown',
@@ -300,7 +441,8 @@ export default function ProjectsContent() {
         lastUpdate: item.updatedAt || item.createdAt || '',
         github: '',
         demo: null
-      }));
+      };
+      });
 
       setProjects(transformedProjects);
       setTotalPages(response.totalPages);
@@ -323,7 +465,7 @@ export default function ProjectsContent() {
     if (searchTerm.length > 0) {
       setIsSearching(true);
       debounceTimerRef.current = setTimeout(async () => {
-        const suggestions = await fetchProjectSearchSuggestions(searchTerm);
+        const suggestions = await fetchSearchSuggestions(searchTerm);
         setSearchSuggestions(suggestions);
         setShowSuggestions(suggestions.length > 0);
         setIsSearching(false);
@@ -417,7 +559,7 @@ export default function ProjectsContent() {
     <div className="min-h-screen bg-background">
       <TitleBanner
         title="Projects"
-        description="동아리 멤버들이 진행하는 다양한 보안 프로젝트 만나보세요."
+        description="동아리 멤버들이 만들어낸 프로젝트를 만나보세요."
         backgroundImage="/images/BgHeader.png"
       />
       <div className="w-full px-3 sm:px-4 lg:px-10 py-10">
@@ -470,7 +612,7 @@ export default function ProjectsContent() {
 
               {/* Status Filters */}
               <div className="space-y-3">
-                {PROJECT_STATUS_FILTER_OPTIONS.map((status) => {
+                {statuses.map((status) => {
                   const isSelected = status === '전체'
                     ? selectedStatuses.length === 0
                     : selectedStatuses.includes(status);
@@ -543,20 +685,15 @@ export default function ProjectsContent() {
 
             {/* Projects Grid/List */}
             {!isLoading && (
-              <div className={viewMode === 'grid'
-                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              <div className={viewMode === 'grid' 
+                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" 
                 : "space-y-6"
               }>
-                {viewMode === 'grid' ? (
-                  projects.map((project) => (
-                    <ProjectCardHome key={project.id} project={project} />
-                  ))
-                ) : (
-                  projects.map((project) => (
-                    <div key={project.id} className={`group ${viewMode === 'list' ? 'flex gap-6' : ''}`}>
-                      <div className={`bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-primary hover:shadow-lg transition-all duration-200 hover:-translate-y-1 ${
-                        viewMode === 'list' ? 'flex flex-1' : ''
-                      }`}>
+                {projects.map((project) => (
+                  <div key={project.id} className={`group ${viewMode === 'list' ? 'flex gap-6' : ''}`}>
+                    <div className={`bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-primary hover:shadow-lg transition-all duration-200 hover:-translate-y-1 ${
+                      viewMode === 'list' ? 'flex flex-1' : ''
+                    }`}>
                       {/* Image */}
                       <div className={`relative ${viewMode === 'list' ? 'w-56 flex-shrink-0 overflow-hidden' : 'overflow-hidden'}`}>
                         <ImageWithFallback
@@ -567,14 +704,22 @@ export default function ProjectsContent() {
                           height={viewMode === 'list' ? 224 : 240}
                           className={`w-full object-cover ${viewMode === 'list' ? 'h-full' : 'h-56'} group-hover:scale-105 transition-transform duration-200`}
                         />
-                        <div className="absolute top-3 left-3">
-                          <span className="bg-white/90 backdrop-blur-sm border border-gray-200 text-primary px-2 py-1 rounded-full text-xs font-medium">
-                            {decodeHtmlEntities(project.category)}
-                          </span>
+                        <div className="absolute top-3 left-3 flex flex-wrap gap-1 max-w-[85%]">
+                          {(project.categories && project.categories.length > 0
+                            ? project.categories
+                            : project.category ? [project.category] : []
+                          ).map((cat: string, idx: number) => (
+                            <span
+                              key={idx}
+                              className="bg-white/90 backdrop-blur-sm border border-gray-200 text-primary px-2 py-1 rounded-full text-xs font-medium"
+                            >
+                              {decodeHtmlEntities(cat)}
+                            </span>
+                          ))}
                         </div>
                         <div className="absolute top-3 right-3">
-                          <span className={`px-2 py-1 rounded-full text-xs border ${getProjectStatusColor(project.status)}`}>
-                            {getProjectStatusKorean(project.status)}
+                          <span className={`px-2 py-1 rounded-full text-xs border ${getStatusColor(project.status)}`}>
+                            {decodeHtmlEntities(project.status)}
                           </span>
                         </div>
                       </div>
@@ -622,7 +767,7 @@ export default function ProjectsContent() {
                         {/* Stats */}
                         <div className="flex items-center gap-4 mb-3 text-sm">
                           <div className="flex items-center gap-1 text-gray-700 font-medium">
-                            <ThumbsUp size={16} className="text-secondary-500 fill-secondary-500" />
+                            <ThumbsUp size={16} className="text-red-500 fill-red-500" />
                             <span>{project.likeCount || 0}</span>
                           </div>
                           <div className="flex items-center gap-1 text-gray-700 font-medium">
@@ -667,9 +812,8 @@ export default function ProjectsContent() {
                         </div>
                       </div>
                     </div>
-                    </div>
-                  ))
-                )}
+                  </div>
+                ))}
               </div>
             )}
 
@@ -688,66 +832,62 @@ export default function ProjectsContent() {
 
             {/* Pagination */}
             {!isLoading && totalPages > 1 && (
-              <div className="flex flex-col items-center gap-2 mt-8">
-                {/* Buttons + page numbers */}
-                <div className="flex items-center justify-center gap-2">
-                  <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 0}
-                    className={`p-2 rounded-lg border transition-colors ${
-                      currentPage === 0
-                        ? 'border-gray-200 text-gray-700 cursor-not-allowed'
-                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <ChevronLeft size={20} />
-                  </button>
+              <div className="flex items-center justify-center gap-2 mt-8">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 0}
+                  className={`p-2 rounded-lg border transition-colors ${
+                    currentPage === 0
+                      ? 'border-gray-200 text-gray-700 cursor-not-allowed'
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <ChevronLeft size={20} />
+                </button>
 
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNum: number;
-                      if (totalPages <= 5) {
-                        pageNum = i;
-                      } else if (currentPage < 3) {
-                        pageNum = i;
-                      } else if (currentPage > totalPages - 4) {
-                        pageNum = totalPages - 5 + i;
-                      } else {
-                        pageNum = currentPage - 2 + i;
-                      }
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum: number;
+                    if (totalPages <= 5) {
+                      pageNum = i;
+                    } else if (currentPage < 3) {
+                      pageNum = i;
+                    } else if (currentPage > totalPages - 4) {
+                      pageNum = totalPages - 5 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
 
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => handlePageChange(pageNum)}
-                          className={`px-4 py-2 rounded-lg border transition-colors ${
-                            currentPage === pageNum
-                              ? 'bg-primary text-white border-primary'
-                              : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                          }`}
-                        >
-                          {pageNum + 1}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage >= totalPages - 1}
-                    className={`p-2 rounded-lg border transition-colors ${
-                      currentPage >= totalPages - 1
-                        ? 'border-gray-200 text-gray-700 cursor-not-allowed'
-                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <ChevronRight size={20} />
-                  </button>
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`px-4 py-2 rounded-lg border transition-colors ${
+                          currentPage === pageNum
+                            ? 'bg-primary text-white border-primary'
+                            : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {pageNum + 1}
+                      </button>
+                    );
+                  })}
                 </div>
 
-                {/* Page indicator below */}
-                <span className="text-sm text-gray-700">
-                  {currentPage + 1} / {totalPages}
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= totalPages - 1}
+                  className={`p-2 rounded-lg border transition-colors ${
+                    currentPage >= totalPages - 1
+                      ? 'border-gray-200 text-gray-700 cursor-not-allowed'
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <ChevronRight size={20} />
+                </button>
+
+                <span className="ml-4 text-sm text-gray-700">
+                  {currentPage + 1} / {totalPages} 페이지
                 </span>
               </div>
             )}

@@ -28,12 +28,16 @@ const formatDate = (dateString: string) => {
 
 export default function ProfileContent() {
   const router = useRouter();
-  const { isAuthenticated, user: _user } = useAuth();
+  const { isAuthenticated, user: _user, logout } = useAuth();
   const [profile, setProfile] = useState<UserResponse | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  /** 1: 안내, 2: 최종 확인 */
+  const [withdrawStep, setWithdrawStep] = useState<1 | 2>(1);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -385,6 +389,116 @@ export default function ProfileContent() {
           </Link>
         </div>
       </div>
+
+      <div className="flex justify-start pt-2 mt-2">
+        <button
+          type="button"
+          onClick={() => {
+            setWithdrawStep(1);
+            setWithdrawOpen(true);
+          }}
+          className="rounded-lg border border-red-200/90 bg-white px-3 py-2 text-sm text-red-700 shadow-sm hover:bg-red-50 transition-colors"
+        >
+          회원 탈퇴
+        </button>
+      </div>
+
+      {withdrawOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={withdrawStep === 1 ? 'withdraw-info-title' : 'withdraw-confirm-title'}
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/40"
+            aria-label="닫기"
+            onClick={() => {
+              if (isWithdrawing) return;
+              setWithdrawOpen(false);
+              setWithdrawStep(1);
+            }}
+          />
+          <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl border border-gray-200 p-6">
+            {withdrawStep === 1 ? (
+              <>
+                <h2 id="withdraw-info-title" className="text-lg font-bold text-gray-900">
+                  회원 탈퇴 안내
+                </h2>
+                <p className="text-sm text-gray-700 mt-3 leading-relaxed">
+                  탈퇴하시면 계정 정보 및 서비스 이용 기록은 서비스 정책에 따라 처리되며, 복구가 어려울 수 있습니다.
+                  다음 단계에서 한 번 더 확인합니다.
+                </p>
+                <div className="flex flex-col-reverse sm:flex-row gap-2 mt-6 sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setWithdrawOpen(false)}
+                    className="btn btn-secondary w-full sm:w-auto"
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWithdrawStep(2)}
+                    className="btn btn-primary w-full sm:w-auto"
+                  >
+                    다음
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 id="withdraw-confirm-title" className="text-lg font-bold text-gray-900">
+                  정말로 삭제하시겠습니까?
+                </h2>
+                <p className="text-sm text-gray-700 mt-3 leading-relaxed">
+                  이 작업은 되돌릴 수 없습니다. 계속 진행하면 즉시 탈퇴 처리됩니다.
+                </p>
+                <div className="flex flex-col-reverse sm:flex-row gap-2 mt-6 sm:justify-end">
+                  <button
+                    type="button"
+                    disabled={isWithdrawing}
+                    onClick={() => setWithdrawStep(1)}
+                    className="btn btn-secondary w-full sm:w-auto"
+                  >
+                    이전
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isWithdrawing}
+                    onClick={async () => {
+                      try {
+                        setIsWithdrawing(true);
+                        await profileService.deleteAccount();
+                        toast.success('회원 탈퇴가 처리되었습니다.');
+                        await logout();
+                      } catch (err: unknown) {
+                        const msg = err instanceof Error ? err.message : '회원 탈퇴에 실패했습니다.';
+                        toast.error(msg);
+                      } finally {
+                        setIsWithdrawing(false);
+                        setWithdrawOpen(false);
+                        setWithdrawStep(1);
+                      }
+                    }}
+                    className="btn border border-red-300 bg-red-600 text-white hover:bg-red-700 w-full sm:w-auto"
+                  >
+                    {isWithdrawing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
+                        처리 중…
+                      </>
+                    ) : (
+                      '탈퇴하기'
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
