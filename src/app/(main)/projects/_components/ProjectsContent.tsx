@@ -14,6 +14,7 @@ import { decodeHtmlEntities } from '@/lib/html-utils';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { isGuest, getGuestRestrictionMessage } from '@/lib/role-utils';
 import { getSafeApiErrorMessage } from '@/lib/api/helpers';
+import { ProjectCardHome } from './ProjectCard';
 
 interface Project {
   id: string;
@@ -409,18 +410,23 @@ export default function ProjectsContent() {
         title: item.title || '제목 없음',
         description: item.description || '',
         image: getValidImageUrl(item.thumbnailUrl),
+        thumbnailUrl: getValidImageUrl(item.thumbnailUrl),
         tags: item.projectTechStacks || [],
+        techStacks: item.projectTechStacks || [],
         category: categoryDisplayNames[0] ?? '',
         categories: categoryDisplayNames,
-        topicSlug: item.projectCategories?.[0] ? 
-          CategoryHelpers.getSlug(item.projectCategories[0] as CategoryType) : 
+        topicSlug: item.projectCategories?.[0] ?
+          CategoryHelpers.getSlug(item.projectCategories[0] as CategoryType) :
           '',
         status: item.projectStatus === 'IN_PROGRESS' ? '진행중' :
                 item.projectStatus === 'COMPLETED' ? '완료' :
                 item.projectStatus === 'ARCHIVED' ? '계획중' : '진행중',
         stars: item.likeCount || 0,
+        likes: item.likeCount || 0,
         likeCount: item.likeCount || 0,
+        views: item.viewCount || 0,
         viewCount: item.viewCount || 0,
+        comments: 0,
         creator: item.owner ? {
           username: item.owner.username || '',
           nickname: item.owner.nickname || 'Unknown',
@@ -432,11 +438,20 @@ export default function ProjectsContent() {
           realname: '',
           avatar: '/images/placeholder/default-avatar.svg'
         },
+        owner: item.owner ? {
+          username: item.owner.username || '',
+          nickname: item.owner.nickname || 'Unknown',
+          realname: item.owner.realname || '',
+          profileImageUrl: getValidProfileImageUrl(item.owner.profileImageUrl),
+        } : undefined,
         contributors: (item.collaborators || []).map((collab: any) => ({
           username: collab.username || '',
           nickname: collab.nickname || 'Unknown',
           realname: collab.realname || '',
           avatar: getValidProfileImageUrl(collab.profileImageUrl)
+        })),
+        collaborators: (item.collaborators || []).map((collab: any) => ({
+          profileImage: getValidProfileImageUrl(collab.profileImageUrl)
         })),
         lastUpdate: item.updatedAt || item.createdAt || '',
         github: '',
@@ -690,10 +705,11 @@ export default function ProjectsContent() {
                 : "space-y-6"
               }>
                 {projects.map((project) => (
-                  <div key={project.id} className={`group ${viewMode === 'list' ? 'flex gap-6' : ''}`}>
-                    <div className={`bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-primary hover:shadow-lg transition-all duration-200 hover:-translate-y-1 ${
-                      viewMode === 'list' ? 'flex flex-1' : ''
-                    }`}>
+                  viewMode === 'grid' ? (
+                    <ProjectCardHome key={project.id} project={project} />
+                  ) : (
+                  <div key={project.id} className="group flex gap-6">
+                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-primary hover:shadow-lg transition-all duration-200 hover:-translate-y-1 flex flex-1">
                       {/* Image */}
                       <div className={`relative ${viewMode === 'list' ? 'w-56 flex-shrink-0 overflow-hidden' : 'overflow-hidden'}`}>
                         <ImageWithFallback
@@ -813,6 +829,7 @@ export default function ProjectsContent() {
                       </div>
                     </div>
                   </div>
+                  )
                 ))}
               </div>
             )}
