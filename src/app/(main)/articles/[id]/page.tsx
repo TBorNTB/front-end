@@ -996,7 +996,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                     </div>
                   )}
 
-                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                  <span className="px-2 py-1 rounded-full bg-primary-50 border border-primary-200 text-primary text-xs font-medium whitespace-nowrap">
                     {decodeHtmlEntities(displayPost.category)}
                   </span>
                 </div>
@@ -1147,22 +1147,24 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-3">
-                  <button 
-                    onClick={() => { if (requireNotGuest(currentUser?.role, 'edit')) router.push(`/articles/${articleId}/edit`); }}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-white text-primary-600 rounded-lg hover:bg-primary-50 transition-colors font-medium text-sm border border-primary-500 cursor-pointer"
-                  >
-                    <Edit className="w-4 h-4" />
-                    수정
-                  </button>
-                  <button 
-                    onClick={handleDeleteArticle}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-white text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium text-sm border border-red-300 cursor-pointer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    삭제
-                  </button>
-                </div>
+                {currentUser?.username === displayPost.author.username && (
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => { if (requireNotGuest(currentUser?.role, 'edit')) router.push(`/articles/${articleId}/edit`); }}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-white text-primary-600 rounded-lg hover:bg-primary-50 transition-colors font-medium text-sm border border-primary-500 cursor-pointer"
+                    >
+                      <Edit className="w-4 h-4" />
+                      수정
+                    </button>
+                    <button
+                      onClick={handleDeleteArticle}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-white text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium text-sm border border-red-300 cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      삭제
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Like Button */}
