@@ -29,7 +29,7 @@ export const s3Service = {
         body: JSON.stringify({
           fileName,
           contentType,
-          fileType: contentType,
+          fileType: fileName.split('.').pop() ?? 'uploads',
         }),
       });
 
