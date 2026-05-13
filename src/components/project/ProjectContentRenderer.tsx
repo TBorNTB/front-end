@@ -182,6 +182,33 @@ export function ProjectContentRenderer({ html, className, readOnly = false }: Pr
         .project-content-renderer.prose ul:has(.project-content-checkbox) li:has(.project-content-checkbox) > div p {
           margin: 0 !important;
         }
+        /* 본문 표 스타일: 테두리와 셀 경계를 명확하게 표시 */
+        .project-content-renderer table,
+        .project-content-renderer.prose table,
+        .news-content table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 1rem 0;
+          overflow: hidden;
+          border-radius: 0.375rem;
+        }
+        .project-content-renderer table th,
+        .project-content-renderer table td,
+        .project-content-renderer.prose table th,
+        .project-content-renderer.prose table td,
+        .news-content table th,
+        .news-content table td {
+          border: 1px solid #d1d5db;
+          padding: 0.625rem 0.75rem;
+          vertical-align: top;
+          text-align: left;
+        }
+        .project-content-renderer table th,
+        .project-content-renderer.prose table th,
+        .news-content table th {
+          background: #f9fafb;
+          font-weight: 600;
+        }
       `}</style>
       <div
         ref={containerRef}
