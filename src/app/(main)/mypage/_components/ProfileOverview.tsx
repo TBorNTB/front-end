@@ -28,7 +28,7 @@ const formatDate = (dateString: string) => {
 
 export default function ProfileContent() {
   const router = useRouter();
-  const { isAuthenticated, user: _user, logout } = useAuth();
+  const { isAuthenticated, loading: authLoading, user: _user, logout } = useAuth();
   const [profile, setProfile] = useState<UserResponse | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,6 +41,11 @@ export default function ProfileContent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // 인증 초기화가 끝나기 전에는 리디렉션하지 않음
+    if (authLoading) {
+      return;
+    }
+
     // 로그인 상태 확인
     if (!isAuthenticated) {
       router.push('/login');
@@ -70,9 +75,9 @@ export default function ProfileContent() {
     };
 
     loadProfile();
-  }, [isAuthenticated, router]);
+  }, [authLoading, isAuthenticated, router]);
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-center">

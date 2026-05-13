@@ -1,12 +1,12 @@
 // app/mypage/layout.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { User, Settings, Award, Activity, Bell } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
-import { profileService, UserResponse } from '@/lib/api/services/user-services';
+import { useAuth } from '@/context/AuthContext';
 
 const menuItems = [
   { 
@@ -48,31 +48,15 @@ export default function MyPageLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [profile, setProfile] = useState<UserResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user: profile, isAuthenticated, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        setIsLoading(true);
-        const profileData = await profileService.getProfile();
-        setProfile(profileData);
-      } catch (err: any) {
-        console.error('Failed to load profile:', err);
-        // 인증 에러인 경우 로그인 페이지로 리다이렉트
-        const errorMessage = err.message || '';
-        if (errorMessage.includes('로그인') || errorMessage.includes('인증') || err.response?.status === 401 || err.response?.status === 403) {
-          router.push('/login');
-          return;
-        }
-        // 에러가 발생해도 레이아웃은 계속 표시 (다른 에러인 경우)
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    if (authLoading) return;
 
-    loadProfile();
-  }, [router]);
+    if (!isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [authLoading, isAuthenticated, router]);
 
   // URL 유효성 검사 함수
   const isValidImageUrl = (url: string | null | undefined): string | null => {
@@ -119,7 +103,7 @@ export default function MyPageLayout({
                   {/* User Info Header */}
                   <div className="p-6 bg-gradient-to-r from-primary-500 to-primary-600 text-white">
                     <div className="flex items-center space-x-4">
-                      {isLoading ? (
+                      {authLoading ? (
                         <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
                           <User className="h-8 w-8" />
                         </div>
