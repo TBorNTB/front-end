@@ -190,6 +190,15 @@ export function LearningTopics() {
           .map(transformCategoryData)
           .filter((cat): cat is CategoryDisplayData => cat !== null);
         setCategories(transformedCategories);
+
+        // 카테고리별 프로젝트/아티클 수를 보완해서 반영
+        try {
+          const enriched = await fetchCountsForCategories(transformedCategories);
+          setCategories(enriched);
+        } catch (err) {
+          // 카운트 fetch 실패 시에는 기존 데이터 유지
+          console.warn('Failed to fetch category counts:', err);
+        }
       } catch (err) {
         console.error('Failed to fetch categories:', err);
         setError('카테고리를 불러오는데 실패했습니다.');
@@ -200,6 +209,43 @@ export function LearningTopics() {
 
     fetchCategories();
   }, []);
+
+  // 카테고리별 프로젝트/아티클 총 개수를 가져와 CategoryDisplayData에 반영
+  const fetchCountsForCategories = async (cats: CategoryDisplayData[]): Promise<CategoryDisplayData[]> => {
+    // 병렬 처리: 각 카테고리에 대해 프로젝트와 아티클 count 요청
+    const requests = cats.map(async (cat) => {
+      try {
+        const projParams = new URLSearchParams();
+        projParams.append('categories', cat.name);
+        projParams.append('size', '1');
+        projParams.append('page', '0');
+
+        const artParams = new URLSearchParams();
+        artParams.append('category', cat.name);
+        artParams.append('size', '1');
+        artParams.append('page', '0');
+
+        const [projRes, artRes] = await Promise.all([
+          fetch(`/api/projects/search?${projParams.toString()}`),
+          fetch(`/api/articles/search?${artParams.toString()}`),
+        ]);
+
+        const projJson = projRes.ok ? await projRes.json().catch(() => null) : null;
+        const artJson = artRes.ok ? await artRes.json().catch(() => null) : null;
+
+        return {
+          ...cat,
+          projects: projJson?.totalElements ?? cat.projects ?? 0,
+          articles: artJson?.totalElements ?? cat.articles ?? 0,
+        } as CategoryDisplayData;
+      } catch (e) {
+        console.warn('count fetch failed for', cat.name, e);
+        return cat;
+      }
+    });
+
+    return Promise.all(requests);
+  };
 
   // Fetch projects when category or project page changes
   useEffect(() => {
