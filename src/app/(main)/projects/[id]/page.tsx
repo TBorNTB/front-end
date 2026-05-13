@@ -2169,8 +2169,9 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                     )}
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <Menu as="div" className="relative">
-                                    <Menu.Button className="p-1 text-gray-900 hover:bg-gray-200 rounded-full">
+                                    {currentUser && (comment.user?.username === currentUser.username || comment.username === currentUser.username) && (
+                                      <Menu as="div" className="relative">
+                                        <Menu.Button className="p-1 text-gray-900 hover:bg-gray-200 rounded-full">
                                       <svg className="w-4 h-4 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                                       </svg>
@@ -2216,7 +2217,8 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                         </div>
                                       </Menu.Items>
                                     </Transition>
-                                  </Menu>
+                                    </Menu>
+                                  )}
                                 </div>
                               </div>
                               
@@ -2343,7 +2345,8 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                                       <span className="text-xs text-gray-800">(수정됨)</span>
                                                     )}
                                                   </div>
-                                                  <Menu as="div" className="relative">
+                                                  {currentUser && (reply.user?.username === currentUser.username || reply.username === currentUser.username) && (
+                                                    <Menu as="div" className="relative">
                                                     <Menu.Button className="p-1 text-gray-900 hover:bg-gray-200 rounded-full">
                                                       <svg className="w-3 h-3 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
@@ -2390,7 +2393,8 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                                         </div>
                                                       </Menu.Items>
                                                     </Transition>
-                                                  </Menu>
+                                                    </Menu>
+                                                  )}
                                                 </div>
                                                 {editingCommentId === reply.id ? (
                                                   <div className="space-y-2 mt-2">

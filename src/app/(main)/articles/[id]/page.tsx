@@ -1308,8 +1308,12 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                                     >
                                       답글
                                     </button>
-                                    <button onClick={() => { setEditingCommentId(comment.id); setEditContent(decodeHtmlEntities(comment.content)); }} className="text-sm text-gray-800 hover:text-primary-600">수정</button>
-                                    <button onClick={() => handleDeleteComment(comment.id)} className="text-sm text-red-500 hover:text-red-700">삭제</button>
+                                    {currentUser && (comment.user?.username === currentUser.username || comment.username === currentUser.username) && (
+                                      <>
+                                        <button onClick={() => { setEditingCommentId(comment.id); setEditContent(decodeHtmlEntities(comment.content)); }} className="text-sm text-gray-800 hover:text-primary-600">수정</button>
+                                        <button onClick={() => handleDeleteComment(comment.id)} className="text-sm text-red-500 hover:text-red-700">삭제</button>
+                                      </>
+                                    )}
                                     {comment.replyCount > 0 && (
                                       <button
                                         onClick={() => loadReplies(comment.id)}
