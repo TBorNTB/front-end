@@ -1399,7 +1399,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
           {/* Right Sidebar – 목차 / 인기 글 / 저자 다른 글 */}
           <aside className="lg:col-span-4 lg:self-start lg:sticky lg:top-24">
-            <div className="space-y-6 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-1 lg:pb-2">
+            <div className="space-y-6 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-1 lg:pb-2 toc-scrollbar">
               {/* Table of Contents */}
               {tableOfContents.length > 0 && (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 lg:max-h-[60vh] lg:flex lg:flex-col">
@@ -1407,7 +1407,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                     <FileText className="w-5 h-5 text-primary-500" />
                     목차
                   </h3>
-                  <nav className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-1">
+                  <nav className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-1 toc-scrollbar">
                     <ul className="space-y-1.5">
                       {tableOfContents.map((heading, index) => (
                         <li

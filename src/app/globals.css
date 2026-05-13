@@ -202,6 +202,25 @@
   background: #9799a2;
 }
 
+/* Hide scrollbar chrome while keeping scroll behavior */
+.toc-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.toc-scrollbar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.toc-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.toc-scrollbar::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
 /* Remove browser native password reveal icons */
 input::-ms-reveal {
   display: none;
