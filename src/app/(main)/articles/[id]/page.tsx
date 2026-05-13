@@ -961,7 +961,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                     </div>
                     <span className="font-medium text-gray-900">{displayPost.author.name}</span>
                   </div>
-                  
+
                   <div className="flex items-center gap-1.5 text-gray-700">
                     <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -1398,16 +1398,16 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
           </article>
 
           {/* Right Sidebar – 목차 / 인기 글 / 저자 다른 글 */}
-          <aside className="lg:col-span-4">
-            <div className="lg:sticky lg:top-8 space-y-6">
+          <aside className="lg:col-span-4 lg:self-start lg:sticky lg:top-24">
+            <div className="space-y-6 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-1 lg:pb-2">
               {/* Table of Contents */}
               {tableOfContents.length > 0 && (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 lg:max-h-[60vh] lg:flex lg:flex-col">
                   <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                     <FileText className="w-5 h-5 text-primary-500" />
                     목차
                   </h3>
-                  <nav>
+                  <nav className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-1">
                     <ul className="space-y-1.5">
                       {tableOfContents.map((heading, index) => (
                         <li
