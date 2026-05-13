@@ -5,12 +5,18 @@ export const metadata = {
   description: '새로운 글을 작성합니다.',
 };
 
-export default function CreateArticlePage() {
+export default function CreateArticlePage({
+  searchParams,
+}: {
+  searchParams?: { category?: string };
+}) {
+  const initialCategory = searchParams?.category;
+
   return (
     <>
       <div className="min-h-screen bg-background py-10">
         <div className="w-full px-3 sm:px-4 lg:px-10">
-          <NewArticleForm />
+          <NewArticleForm initialCategory={initialCategory} />
         </div>
       </div>
     </>

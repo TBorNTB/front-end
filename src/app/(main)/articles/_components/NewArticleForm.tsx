@@ -37,7 +37,11 @@ interface FormErrors {
   [key: string]: string;
 }
 
-export default function NewArticleForm() {
+interface NewArticleFormProps {
+  initialCategory?: string;
+}
+
+export default function NewArticleForm({ initialCategory }: NewArticleFormProps) {
   const router = useRouter();
   const { user: currentUser, isLoading: userLoading } = useCurrentUser();
   const [loading, setLoading] = useState(false);
@@ -79,6 +83,19 @@ export default function NewArticleForm() {
     };
     loadCategories();
   }, []);
+
+  useEffect(() => {
+    if (!initialCategory || categories.length === 0) return;
+
+    const hasInitialCategory = categories.some((cat) => cat.name === initialCategory);
+    if (!hasInitialCategory) return;
+
+    setFormData((prev) => (
+      prev.category === initialCategory
+        ? prev
+        : { ...prev, category: initialCategory }
+    ));
+  }, [initialCategory, categories]);
 
   const FORM_FIELD_ORDER = ['title', 'category', 'excerpt', 'content'] as const;
 

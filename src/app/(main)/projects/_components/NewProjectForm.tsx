@@ -32,12 +32,16 @@ interface FormData {
   collaborators: Array<{ name: string; email: string; role: string }>;
 }
 
+interface NewProjectFormProps {
+  initialCategory?: string;
+}
+
 
 interface FormErrors {
   [key: string]: string;
 }
 
-export default function NewProjectForm() {
+export default function NewProjectForm({ initialCategory }: NewProjectFormProps) {
     const router = useRouter();
     const { user: currentUser, isLoading: userLoading } = useCurrentUser();
     const [loading, setLoading] = useState(false);
@@ -111,6 +115,19 @@ export default function NewProjectForm() {
     };
     loadCategories();
   }, []);
+
+  useEffect(() => {
+    if (!initialCategory || categories.length === 0) return;
+
+    const hasInitialCategory = categories.some((cat) => cat.name === initialCategory);
+    if (!hasInitialCategory) return;
+
+    setFormData((prev) => (
+      prev.categories.includes(initialCategory)
+        ? prev
+        : { ...prev, categories: [initialCategory] }
+    ));
+  }, [initialCategory, categories]);
 
   // Load initial users with cursor pagination
   useEffect(() => {

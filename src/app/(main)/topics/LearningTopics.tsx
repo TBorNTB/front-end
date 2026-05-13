@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Clock, ArrowRight, Shield, Code, Lock, Search, Wifi, Cpu, Key, ChevronLeft, ChevronRight, ThumbsUp, Eye } from 'lucide-react';
+import { Clock, ArrowRight, Shield, Code, Lock, Search, Wifi, Cpu, Key, ChevronLeft, ChevronRight, ThumbsUp, Eye, Plus } from 'lucide-react';
 import TitleBanner from '@/components/layout/TitleBanner';
 import CategoryFilter from '@/components/layout/CategoryFilter';
 import type { LucideIcon } from 'lucide-react';
@@ -143,6 +143,11 @@ const getStatusText = (status: string) => {
     case 'In Progress': return '진행중';
     default: return status;
   }
+};
+
+const buildCreateHref = (basePath: '/projects/create' | '/articles/create', categoryName?: string) => {
+  if (!categoryName) return basePath;
+  return `${basePath}?category=${encodeURIComponent(categoryName)}`;
 };
 
 export function LearningTopics() {
@@ -526,11 +531,21 @@ export function LearningTopics() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Projects Section */}
                 <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-bold text-foreground">프로젝트</h2>
-                    <span className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium">
-                      {projectTotalElements}개
-                    </span>
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-xl font-bold text-foreground">프로젝트</h2>
+                      <span className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium">
+                        {projectTotalElements}개
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => router.push(buildCreateHref('/projects/create', cat?.name))}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700 hover:bg-primary-100 hover:border-primary-300 transition-colors"
+                    >
+                      <Plus size={12} />
+                      글 작성
+                    </button>
                   </div>
 
                   <div className="space-y-4">
@@ -650,11 +665,21 @@ export function LearningTopics() {
 
                 {/* Articles Section */}
                 <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-bold text-foreground">아티클</h2>
-                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
-                      {articleTotalElements}개
-                    </span>
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-xl font-bold text-foreground">아티클</h2>
+                      <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+                        {articleTotalElements}개
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => router.push(buildCreateHref('/articles/create', cat?.name))}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700 hover:bg-green-100 hover:border-green-300 transition-colors"
+                    >
+                      <Plus size={12} />
+                      글 작성
+                    </button>
                   </div>
 
                   <div className="space-y-4">
