@@ -23,6 +23,18 @@ export interface UserResponse {
   updatedAt: string;
 }
 
+export interface UpdateUserRequest {
+  email?: string;
+  nickname?: string;
+  realName?: string;
+  description?: string;
+  techStack?: string;
+  githubUrl?: string;
+  linkedinUrl?: string;
+  blogUrl?: string;
+  profileImageUrl?: string;
+}
+
 export interface MembersPageResponse {
   message: string;
   data: UserResponse[];
@@ -236,8 +248,8 @@ export const profileService = {
     return cleanUserResponse(data);
   },
 
-  updateProfile: async (data: Partial<UserResponse>): Promise<UserResponse> => {
-    const response = await fetchWithRefresh('/api/user/profile', {
+  updateProfile: async (data: UpdateUserRequest): Promise<UserResponse> => {
+    const response = await fetchWithRefresh(getUserApiUrl(USER_ENDPOINTS.USER.UPDATE_USER), {
       method: 'PATCH',
       headers: {
         accept: 'application/json',

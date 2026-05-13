@@ -17,6 +17,7 @@ type ProfileEditModalProps = {
 
 type FormState = {
   email: string;
+  nickname: string;
   realName: string;
   description: string;
   techStack: string;
@@ -39,6 +40,7 @@ export default function ProfileEditModal({ open, profile, onClose, onUpdated }: 
   const initialForm = useMemo<FormState>(() => {
     return {
       email: cleanValue(profile.email),
+      nickname: decodeHtmlEntities(cleanValue(profile.nickname)),
       realName: decodeHtmlEntities(cleanValue(profile.realName)),
       description: decodeHtmlEntities(cleanValue(profile.description)),
       techStack: decodeHtmlEntities(cleanValue(profile.techStack)),
@@ -77,8 +79,13 @@ export default function ProfileEditModal({ open, profile, onClose, onUpdated }: 
       setIsSaving(true);
       setError(null);
 
+      if (!form.nickname.trim()) {
+        throw new Error('닉네임은 필수 입력입니다.');
+      }
+
       // 이메일은 UI/서버 모두에서 변경 불가: payload에 포함하지 않음
       const cleaned = {
+        nickname: form.nickname.trim() || undefined,
         realName: form.realName.trim() || undefined,
         description: form.description.trim() || undefined,
         techStack: form.techStack.trim() || undefined,
@@ -155,6 +162,21 @@ export default function ProfileEditModal({ open, profile, onClose, onUpdated }: 
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 cursor-not-allowed"
               />
               <p className="text-xs text-gray-700 mt-2">한 번 설정된 이메일은 변경할 수 없습니다.</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <User className="inline h-4 w-4 mr-1 text-primary-600" />
+                닉네임
+              </label>
+              <input
+                type="text"
+                value={form.nickname}
+                onChange={(e) => setForm((prev) => ({ ...prev, nickname: e.target.value }))}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 transition-all duration-300"
+                placeholder="닉네임을 입력하세요"
+              />
             </div>
 
             <div>

@@ -27,6 +27,7 @@ import { decodeHtmlEntities } from '@/lib/html-utils';
 
 interface ProfileEditFormData {
   email: string;
+  nickname: string;
   realName: string;
   description: string;
   techStack: string;
@@ -50,6 +51,7 @@ export default function ProfileEditForm() {
   
   const [formData, setFormData] = useState<ProfileEditFormData>({
     email: '',
+    nickname: '',
     realName: '',
     description: '',
     techStack: '',
@@ -81,6 +83,7 @@ export default function ProfileEditForm() {
         setOriginalEmail(cleanValue(profileData.email));
         setFormData({
           email: cleanValue(profileData.email),
+          nickname: decodeHtmlEntities(cleanValue(profileData.nickname)),
           realName: decodeHtmlEntities(cleanValue(profileData.realName)),
           description: decodeHtmlEntities(cleanValue(profileData.description)),
           techStack: decodeHtmlEntities(cleanValue(profileData.techStack)),
@@ -188,6 +191,12 @@ export default function ProfileEditForm() {
       return;
     }
 
+    if (!formData.nickname.trim()) {
+      setError('닉네임은 필수 입력입니다.');
+      setIsSaving(false);
+      return;
+    }
+
     try {
       // 파일이 선택되어 있고 아직 업로드되지 않은 경우 먼저 업로드
       let finalProfileImageUrl = formData.profileImageUrl;
@@ -215,6 +224,7 @@ export default function ProfileEditForm() {
 
       // 빈 값 정리 및 필터링 (profileImageUrl은 이미 업로드로 처리됨)
       const cleanedData: Partial<ProfileEditFormData> = {
+        nickname: formData.nickname.trim() || undefined,
         realName: formData.realName.trim() || undefined,
         description: formData.description.trim() || undefined,
         techStack: formData.techStack.trim() || undefined,
@@ -459,6 +469,23 @@ export default function ProfileEditForm() {
               {isEmailLocked && (
                 <p className="text-xs text-gray-700 mt-2">이메일은 한 번 설정하면 변경할 수 없습니다.</p>
               )}
+            </div>
+
+            {/* Nickname */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <User className="inline h-4 w-4 mr-1 text-primary-600" />
+                닉네임
+              </label>
+              <input
+                type="text"
+                name="nickname"
+                value={formData.nickname}
+                onChange={handleInputChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg transition-all duration-300 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                placeholder="닉네임을 입력하세요"
+              />
             </div>
 
             {/* Real Name */}
