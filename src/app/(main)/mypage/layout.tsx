@@ -74,10 +74,10 @@ export default function MyPageLayout({
   };
 
   // 프로필 정보 표시용 변수
-  const displayName = profile?.realName || profile?.nickname || profile?.username || '사용자';
+  const displayName = profile?.full_name || profile?.nickname || '사용자';
   const displayEmail = profile?.email || 'API 연결이 필요합니다';
   const displayRole = profile?.role || 'Member';
-  const displayAvatar = isValidImageUrl(profile?.profileImageUrl) || '/images/placeholder/default-avatar.svg';
+  const displayAvatar = isValidImageUrl(profile?.profile_image) || '/images/placeholder/default-avatar.svg';
 
   return (
     <div className="min-h-screen bg-background text-foreground">      
